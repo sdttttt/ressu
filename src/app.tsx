@@ -1,20 +1,13 @@
-import { Logo } from './logo'
+import { FeedSidebar } from "./feed-sidebar/index";
+import styles from "./app.scss";
 
 export function App() {
-  return (
-    <>
-      <Logo />
-      <p>Hello Vite + Preact!</p>
-      <p>
-        <a
-          class="link"
-          href="https://preactjs.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Preact
-        </a>
-      </p>
-    </>
-  )
+	return (
+		<>
+			<div class={"a"}>
+				<FeedSidebar></FeedSidebar>
+				<p>Hello Vite + Preact!</p>
+			</div>
+		</>
+	);
 }
