@@ -1,7 +1,11 @@
 $navbarHeight: 5%;
 $bodyHeight: 95%;
 
+$normalBorder: rgb(222, 222, 222);
+
 :export {
 	navbarHeight: $navbarHeight;
 	bodyHeight: $bodyHeight;
+
+	normalBorder: $normalBorder;
 }

@@ -1,5 +1,3 @@
-import "semantic-ui-css/semantic.min.css";
-
 import { render } from 'preact'
 import { App } from './app'
 import './index.css'

@@ -1,6 +1,7 @@
 @import "../global.scss";
 
 .navbar-container {
+	padding-top: 2px;
+	border-bottom: 1px solid $normalBorder;
 	height: 100%;
-	border: 1px solid #000;
 }

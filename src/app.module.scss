@@ -1,12 +1,16 @@
 @import "./global.scss";
 
-.feed-sidebar {
+.main {
 	height: $bodyHeight;
+}
+
+.feed-sidebar {
+	height: 100%;
 	width: 300px;
 	top: $navbarHeight;
-	position: absolute;
 }
 
 .navbar {
 	height: $navbarHeight;
+	min-height: 44px;
 }
