@@ -6,8 +6,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-		"test": "vitest run",
-		"test:watch": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -17,14 +17,15 @@
     "@mui/material": "^5.5.2",
     "@seald-io/nedb": "^3.0.0",
     "@tauri-apps/api": "^1.0.0-rc.2",
-		"react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "redux": "^4.1.2"
   },
   "devDependencies": {
-		"@types/react": "^17.0.33",
+    "@tauri-apps/cli": "^1.0.0-rc.7",
+    "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@vitejs/plugin-react": "^1.0.7",
-    "@tauri-apps/cli": "^1.0.0-rc.7",
     "sass": "^1.49.9",
     "typescript": "^4.5.4",
     "vite": "^2.8.0",
