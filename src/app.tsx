@@ -7,10 +7,10 @@ import { Grid } from "@mui/material";
 export function App() {
 	return (
 		<>
-			<div class={classes.navbar}>
+			<div className={classes.navbar}>
 				<NavBar></NavBar>
 			</div>
-			<Grid container item class={classes.main} columns={24}>
+			<Grid container item className={classes.main} columns={24}>
 				<Grid md={6} xs={8} alignContent="center">
 					<FeedSidebar></FeedSidebar>
 				</Grid>
