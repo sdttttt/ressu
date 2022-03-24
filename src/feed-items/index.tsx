@@ -1,5 +1,12 @@
+import * as React from "react";
 import classes from "./index.module.scss";
 
-export default function FeedItems() {
-	return <>这里是新闻条目</>;
+export default class FeedItems extends React.Component {
+	constructor(props: any) {
+		super(props);
+	}
+
+	render(): React.ReactNode {
+		return <>这里是新闻条目</>;
+	}
 }

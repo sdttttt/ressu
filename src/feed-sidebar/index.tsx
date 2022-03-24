@@ -1,5 +1,11 @@
+import * as React from "react";
 
+export default class FeedSidebar extends React.Component {
+	constructor(props: any) {
+		super(props);
+	}
 
-export default function FeedSidebar() {
-	return <>这里是侧边栏</>;
+	render(): React.ReactNode {
+		return <>这里是侧边栏</>;
+	}
 }
