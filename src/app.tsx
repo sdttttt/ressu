@@ -5,14 +5,13 @@ import classes from "./app.module.scss";
 import { Grid } from "@mui/material";
 
 export function App() {
-	
 	return (
 		<>
 			<div className={classes.navbar}>
 				<NavBar></NavBar>
 			</div>
 			<Grid container className={classes.main} columns={24}>
-				<Grid item  md={6} xs={8} alignContent="center">
+				<Grid item md={6} xs={8} alignContent="center">
 					<FeedSidebar></FeedSidebar>
 				</Grid>
 

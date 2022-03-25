@@ -10,9 +10,9 @@ import "./index.scss";
 const theme = createTheme({
 	palette: {
 		primary: {
-			main: common.black,
-		},
-	},
+			main: common.black
+		}
+	}
 });
 
 render(

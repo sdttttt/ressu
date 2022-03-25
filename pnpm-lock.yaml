@@ -18,6 +18,7 @@ devDependencies:
   '@types/react': registry.npmmirror.com/@types/react/17.0.43
   '@types/react-dom': registry.npmmirror.com/@types/react-dom/17.0.14
   '@vitejs/plugin-react': registry.npmmirror.com/@vitejs/plugin-react/1.2.0
+  prettier: registry.npmmirror.com/prettier/2.6.1
   rollup-plugin-visualizer: registry.npmmirror.com/rollup-plugin-visualizer/5.6.0
   sass: registry.npmmirror.com/sass/1.49.9
   typescript: registry.npmmirror.com/typescript/4.6.3
@@ -2829,6 +2830,17 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/postcss/-/postcss-8.4.12.tgz'
     version: 8.4.12
+  registry.npmmirror.com/prettier/2.6.1:
+    dev: true
+    engines:
+      node: '>=10.13.0'
+    hasBin: true
+    name: prettier
+    resolution:
+      integrity: sha512-8UVbTBYGwN37Bs9LERmxCPjdvPxlEowx2urIL6urHzdb3SDq4B/Z6xLFCblrSnE4iKWcS6ziJ3aOYrc1kz/E2A==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/prettier/-/prettier-2.6.1.tgz'
+    version: 2.6.1
   registry.npmmirror.com/prop-types/15.8.1:
     dependencies:
       loose-envify: registry.npmmirror.com/loose-envify/1.4.0
@@ -3477,6 +3489,7 @@ specifiers:
   '@vitejs/plugin-react': ^1.0.7
   lodash: ^4.17.21
   notistack: ^2.0.3
+  prettier: ^2.6.1
   react: ^17.0.2
   react-dom: ^17.0.2
   react-redux: ^7.2.6

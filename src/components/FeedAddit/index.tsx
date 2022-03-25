@@ -14,7 +14,6 @@ type PropsType = {
 };
 
 const FeedAddit = (props: PropsType) => {
-
 	const { open, onClose, onSubmit } = props;
 
 	const [url, setURL] = useState("");
