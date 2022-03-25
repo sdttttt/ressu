@@ -1,0 +1,21 @@
+@import "../../global.scss";
+
+.input-container {
+	background-color: $normalBorder;
+	height: 40px;
+	border-radius: 3px;
+	display: flex;
+	flex-direction: row;
+}
+
+.input-prefix {
+}
+
+.in-input {
+	background-color: $normalBorder;
+	color: rgb(88, 88, 88);
+	height: 90%;
+	border: 0;
+	font-size: 17px;
+	outline: none;
+}

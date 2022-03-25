@@ -1,7 +1,9 @@
 @import "../global.scss";
 
 .sidebar-container {
-	border-right: 1px solid $normalBorder;
-	height: 100%;
-	width: 100%;
+	padding-left: 10px;
+}
+
+.search-input {
+	height: 18;
 }
