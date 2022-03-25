@@ -15,6 +15,8 @@ type PropsType = {
 
 const FeedAddit = (props: PropsType) => {
 
+	const { open, onClose, onSubmit } = props;
+
 	const [url, setURL] = useState("");
 
 	const handleChangUrl = (e: ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +27,7 @@ const FeedAddit = (props: PropsType) => {
 
 	return (
 		<>
-			<Dialog open={props.open} onClose={props.onClose} fullWidth>
+			<Dialog open={open} onClose={onClose} fullWidth>
 				<DialogTitle>添加RSS源</DialogTitle>
 				<DialogContent>
 					<DialogContentText>输入RSS源订阅的地址</DialogContentText>
@@ -41,8 +43,8 @@ const FeedAddit = (props: PropsType) => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={props.onClose}>取消</Button>
-					<Button onClick={() => props.onSubmit(url)}>订阅</Button>
+					<Button onClick={onClose}>取消</Button>
+					<Button onClick={() => onSubmit(url)}>订阅</Button>
 				</DialogActions>
 			</Dialog>
 		</>
