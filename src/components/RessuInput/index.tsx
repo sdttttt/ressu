@@ -2,8 +2,8 @@ import * as React from "react";
 import classes from "./index.module.scss";
 
 type PropsType = {
-	onChange: (e: React.ChangeEvent) => void;
-	onInput: (e: React.FormEvent) => void;
+	onChange?: (e: React.ChangeEvent) => void;
+	onInput?: (e: React.FormEvent) => void;
 	children?: React.ReactNode;
 };
 
