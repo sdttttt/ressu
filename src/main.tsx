@@ -5,7 +5,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { SnackbarProvider } from "notistack";
 
 import { App } from "./app";
-import "./index.css";
+import "./index.scss";
 
 const theme = createTheme({
 	palette: {
