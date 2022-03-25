@@ -5,11 +5,15 @@ dependencies:
   '@mui/material': registry.npmmirror.com/@mui/material/5.5.2_0177f6fdb6acb6d74036e1259a0d9727
   '@seald-io/nedb': registry.npmmirror.com/@seald-io/nedb/3.0.0
   '@tauri-apps/api': registry.npmmirror.com/@tauri-apps/api/1.0.0-rc.2
+  lodash: registry.npmmirror.com/lodash/4.17.21
+  notistack: registry.npmmirror.com/notistack/2.0.3_88d94c47bc4b31466c65ba11ea7f1f02
   react: registry.npmmirror.com/react/17.0.2
   react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
-  redux: registry.npmmirror.com/redux/4.1.2
+  react-redux: registry.npmmirror.com/react-redux/7.2.6_react-dom@17.0.2+react@17.0.2
 devDependencies:
   '@tauri-apps/cli': registry.npmmirror.com/@tauri-apps/cli/1.0.0-rc.7
+  '@types/lodash': registry.npmmirror.com/@types/lodash/4.14.180
+  '@types/node': registry.npmmirror.com/@types/node/17.0.23
   '@types/react': registry.npmmirror.com/@types/react/17.0.42
   '@types/react-dom': registry.npmmirror.com/@types/react-dom/17.0.14
   '@vitejs/plugin-react': registry.npmmirror.com/@vitejs/plugin-react/1.2.0
@@ -1092,6 +1096,33 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/@types/chai/-/chai-4.3.0.tgz'
     version: 4.3.0
+  registry.npmmirror.com/@types/hoist-non-react-statics/3.3.1:
+    dependencies:
+      '@types/react': registry.npmmirror.com/@types/react/17.0.43
+      hoist-non-react-statics: registry.npmmirror.com/hoist-non-react-statics/3.3.2
+    dev: false
+    name: '@types/hoist-non-react-statics'
+    resolution:
+      integrity: sha512-iMIqiko6ooLrTh1joXodJK5X9xeEALT1kM5G3ZLhD3hszxBdIEd5C75U834D9mLcINgD4OyZf5uQXjkuYydWvA==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/@types/hoist-non-react-statics/-/hoist-non-react-statics-3.3.1.tgz'
+    version: 3.3.1
+  registry.npmmirror.com/@types/lodash/4.14.180:
+    dev: true
+    name: '@types/lodash'
+    resolution:
+      integrity: sha512-XOKXa1KIxtNXgASAnwj7cnttJxS4fksBRywK/9LzRV5YxrF80BXZIGeQSuoESQ/VkUj30Ae0+YcuHc15wJCB2g==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/@types/lodash/-/lodash-4.14.180.tgz'
+    version: 4.14.180
+  registry.npmmirror.com/@types/node/17.0.23:
+    dev: true
+    name: '@types/node'
+    resolution:
+      integrity: sha512-UxDxWn7dl97rKVeVS61vErvw086aCYhDLyvRQZ5Rk65rZKepaFdm53GeqXaKBuOhED4e9uWq34IC3TdSdJJ2Gw==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/@types/node/-/node-17.0.23.tgz'
+    version: 17.0.23
   registry.npmmirror.com/@types/parse-json/4.0.0:
     dev: false
     name: '@types/parse-json'
@@ -1127,6 +1158,19 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/@types/react-is/-/react-is-17.0.3.tgz'
     version: 17.0.3
+  registry.npmmirror.com/@types/react-redux/7.1.23:
+    dependencies:
+      '@types/hoist-non-react-statics': registry.npmmirror.com/@types/hoist-non-react-statics/3.3.1
+      '@types/react': registry.npmmirror.com/@types/react/17.0.43
+      hoist-non-react-statics: registry.npmmirror.com/hoist-non-react-statics/3.3.2
+      redux: registry.npmmirror.com/redux/4.1.2
+    dev: false
+    name: '@types/react-redux'
+    resolution:
+      integrity: sha512-D02o3FPfqQlfu2WeEYwh3x2otYd2Dk1o8wAfsA0B1C2AJEFxE663Ozu7JzuWbznGgW248NaOF6wsqCGNq9d3qw==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/@types/react-redux/-/react-redux-7.1.23.tgz'
+    version: 7.1.23
   registry.npmmirror.com/@types/react-transition-group/4.4.4:
     dependencies:
       '@types/react': registry.npmmirror.com/@types/react/17.0.42
@@ -1148,6 +1192,18 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/@types/react/-/react-17.0.42.tgz'
     version: 17.0.42
+  registry.npmmirror.com/@types/react/17.0.43:
+    dependencies:
+      '@types/prop-types': registry.npmmirror.com/@types/prop-types/15.7.4
+      '@types/scheduler': registry.npmmirror.com/@types/scheduler/0.16.2
+      csstype: registry.npmmirror.com/csstype/3.0.11
+    dev: false
+    name: '@types/react'
+    resolution:
+      integrity: sha512-8Q+LNpdxf057brvPu1lMtC5Vn7J119xrP1aq4qiaefNioQUYANF/CYeK4NsKorSZyUGJ66g0IM+4bbjwx45o2A==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/@types/react/-/react-17.0.43.tgz'
+    version: 17.0.43
   registry.npmmirror.com/@types/scheduler/0.16.2:
     name: '@types/scheduler'
     resolution:
@@ -2421,6 +2477,14 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/localforage/-/localforage-1.10.0.tgz'
     version: 1.10.0
+  registry.npmmirror.com/lodash/4.17.21:
+    dev: false
+    name: lodash
+    resolution:
+      integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/lodash/-/lodash-4.17.21.tgz'
+    version: 4.17.21
   registry.npmmirror.com/loose-envify/1.4.0:
     dependencies:
       js-tokens: registry.npmmirror.com/js-tokens/4.0.0
@@ -2479,6 +2543,34 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/normalize-path/-/normalize-path-3.0.0.tgz'
     version: 3.0.0
+  registry.npmmirror.com/notistack/2.0.3_88d94c47bc4b31466c65ba11ea7f1f02:
+    dependencies:
+      '@emotion/react': registry.npmmirror.com/@emotion/react/11.8.2_e172d252c66b8263a0fc6c22242511b8
+      '@emotion/styled': registry.npmmirror.com/@emotion/styled/11.8.1_a08c0cdde42e73513cd4c3382592b31e
+      '@mui/material': registry.npmmirror.com/@mui/material/5.5.2_0177f6fdb6acb6d74036e1259a0d9727
+      clsx: registry.npmmirror.com/clsx/1.1.1
+      hoist-non-react-statics: registry.npmmirror.com/hoist-non-react-statics/3.3.2
+      react: registry.npmmirror.com/react/17.0.2
+      react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
+    dev: false
+    id: registry.npmmirror.com/notistack/2.0.3
+    name: notistack
+    peerDependencies:
+      '@emotion/react': ^11.4.1
+      '@emotion/styled': ^11.3.0
+      '@mui/material': ^5.0.0
+      react: ^16.8.0 || ^17.0.0
+      react-dom: ^16.8.0 || ^17.0.0
+    peerDependenciesMeta:
+      '@emotion/react':
+        optional: true
+      '@emotion/styled':
+        optional: true
+    resolution:
+      integrity: sha512-krmVFtTO9kEY1Pa4NrbyexrjiRcV6TqBM2xLx8nuDea1g96Z/OZfkvVLmYKkTvoSJ3jyQntWK16z86ssW5kt4A==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/notistack/-/notistack-2.0.3.tgz'
+    version: 2.0.3
   registry.npmmirror.com/object-assign/4.1.1:
     dev: false
     engines:
@@ -2650,6 +2742,33 @@ packages:
       registry: 'https://registry.npm.taobao.org/'
       tarball: 'https://registry.npmmirror.com/react-is/-/react-is-17.0.2.tgz'
     version: 17.0.2
+  registry.npmmirror.com/react-redux/7.2.6_react-dom@17.0.2+react@17.0.2:
+    dependencies:
+      '@babel/runtime': registry.npmmirror.com/@babel/runtime/7.17.8
+      '@types/react-redux': registry.npmmirror.com/@types/react-redux/7.1.23
+      hoist-non-react-statics: registry.npmmirror.com/hoist-non-react-statics/3.3.2
+      loose-envify: registry.npmmirror.com/loose-envify/1.4.0
+      prop-types: registry.npmmirror.com/prop-types/15.8.1
+      react: registry.npmmirror.com/react/17.0.2
+      react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
+      react-is: registry.npmmirror.com/react-is/17.0.2
+    dev: false
+    id: registry.npmmirror.com/react-redux/7.2.6
+    name: react-redux
+    peerDependencies:
+      react: ^16.8.3 || ^17
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    resolution:
+      integrity: sha512-10RPdsz0UUrRL1NZE0ejTkucnclYSgXp5q+tB5SWx2qeG2ZJQJyymgAhwKy73yiL/13btfB6fPr+rgbMAaZIAQ==
+      registry: 'https://registry.npm.taobao.org/'
+      tarball: 'https://registry.npmmirror.com/react-redux/-/react-redux-7.2.6.tgz'
+    version: 7.2.6
   registry.npmmirror.com/react-refresh/0.11.0:
     dev: true
     engines:
@@ -3103,12 +3222,16 @@ specifiers:
   '@seald-io/nedb': ^3.0.0
   '@tauri-apps/api': ^1.0.0-rc.2
   '@tauri-apps/cli': ^1.0.0-rc.7
+  '@types/lodash': ^4.14.180
+  '@types/node': ^17.0.23
   '@types/react': ^17.0.33
   '@types/react-dom': ^17.0.10
   '@vitejs/plugin-react': ^1.0.7
+  lodash: ^4.17.21
+  notistack: ^2.0.3
   react: ^17.0.2
   react-dom: ^17.0.2
-  redux: ^4.1.2
+  react-redux: ^7.2.6
   sass: ^1.49.9
   typescript: ^4.5.4
   vite: ^2.8.0
