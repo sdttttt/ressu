@@ -28,6 +28,10 @@ jobs:
             toolchain: stable
             override: true
             components: rustfmt, clippy
+            
+    - name: install gdk
+      run: |
+        apt-get install gdk
 
     - name: install pnpm
       run: |
