@@ -22,6 +22,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Install lastest stable rust
+      uses: actions-rs/toolchain@v1
+      with:
+            toolchain: stable
+            override: true
+            components: rustfmt, clippy
+
     - name: install pnpm
       run: |
         npm install -g pnpm
@@ -37,4 +44,8 @@ jobs:
     - name: build
       run: |
         pnpm build
+        
+    - name: Package
+      run: |
+        pnpm tauri build
         
