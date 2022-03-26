@@ -10,16 +10,16 @@ export function App() {
 			<div className={classes.navbar}>
 				<NavBar></NavBar>
 			</div>
-			<Grid container item className={classes.main} columns={24}>
-				<Grid md={6} xs={8} alignContent="center">
+			<Grid container className={classes.main} columns={24}>
+				<Grid item md={6} xs={8} alignContent="center">
 					<FeedSidebar></FeedSidebar>
 				</Grid>
 
-				<Grid md={6} xs={8} alignContent="center">
+				<Grid item md={6} xs={8} alignContent="center">
 					<FeedItems></FeedItems>
 				</Grid>
 
-				<Grid md={24 - 6 - 6} xs={24 - 8 - 8} alignContent="center">
+				<Grid item md={24 - 6 - 6} alignContent="center">
 					这里是内容栏
 				</Grid>
 			</Grid>

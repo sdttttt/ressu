@@ -1,4 +1,6 @@
 import * as React from "react";
+import RessuInput from "@/components/RessuInput";
+import classes from "./index.module.scss";
 
 export default class FeedSidebar extends React.Component {
 	constructor(props: any) {
@@ -6,6 +8,10 @@ export default class FeedSidebar extends React.Component {
 	}
 
 	render(): React.ReactNode {
-		return <>这里是侧边栏</>;
+		return (
+			<div className={classes["sidebar-container"]}>
+				<RessuInput></RessuInput>
+			</div>
+		);
 	}
 }
