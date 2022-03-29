@@ -28,6 +28,11 @@ jobs:
             toolchain: stable
             override: true
             components: rustfmt, clippy
+    
+    - uses: jetli/wasm-pack-action@v0.3.0
+      with:
+        # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')
+        version: 'latest'
             
     - name: install dependencies (ubuntu only)
       run: |
@@ -42,11 +47,16 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           src-tauri/target/
+          wasm/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: install pnpm
       run: |
         npm install -g pnpm
+    
+    - name: Compile WASM
+      run: |
+        pnpm wasm
     
     - name: install dependency
       run: |
@@ -56,11 +66,7 @@ jobs:
       run: |
         pnpm test
         
-    - name: build
-      run: |
-        pnpm build
-        
     - name: Package
       run: |
-        pnpm tauri build
+        pnpm tauri build -d
         
