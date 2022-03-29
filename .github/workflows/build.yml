@@ -47,11 +47,16 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           src-tauri/target/
+          wasm/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: install pnpm
       run: |
         npm install -g pnpm
+    
+    - name: Compile WASM
+      run: |
+        pnpm wasm
     
     - name: install dependency
       run: |
