@@ -17,10 +17,11 @@ const theme = createTheme({
 });
 
 
-import initWasm, { greet } from "wasm";
+import initWasm, { greet, wasm_log as wasmLog } from "wasm";
 
 initWasm().then(() => {
 	greet();
+	wasmLog("Ok, this is from WASM.");
 })
 
 render(

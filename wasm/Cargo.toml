@@ -3,6 +3,9 @@ name = "wasm"
 version = "0.1.0"
 authors = ["Lin <sdttttt@icloud.com>"]
 edition = "2018"
+repository = "https://github.com/sdttttt/ressu"
+description = "this wasm is for ressu"
+license = "unlicense"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

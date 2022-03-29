@@ -21,3 +21,8 @@ extern {
 pub fn greet() {
     alert("Hello, wasm!");
 }
+
+#[wasm_bindgen]
+pub fn wasm_log(s: &str) {
+	log(s);
+}
