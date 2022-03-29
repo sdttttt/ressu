@@ -16,7 +16,6 @@
     "@emotion/styled": "^11.8.1",
     "@mui/icons-material": "^5.5.1",
     "@mui/material": "^5.5.2",
-    "@seald-io/nedb": "^3.0.0",
     "@tauri-apps/api": "^1.0.0-rc.2",
     "lodash": "^4.17.21",
     "lowdb": "^3.0.0",
