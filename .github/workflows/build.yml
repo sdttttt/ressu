@@ -66,11 +66,7 @@ jobs:
       run: |
         pnpm test
         
-    - name: build
-      run: |
-        pnpm build
-        
     - name: Package
       run: |
-        pnpm tauri build
+        pnpm tauri build -d
         
