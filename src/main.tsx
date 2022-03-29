@@ -4,6 +4,7 @@ import { common } from "@mui/material/colors";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { SnackbarProvider } from "notistack";
 
+
 import { App } from "./app";
 import "./index.scss";
 
@@ -14,6 +15,13 @@ const theme = createTheme({
 		}
 	}
 });
+
+
+import initWasm, { greet } from "wasm";
+
+initWasm().then(() => {
+	greet();
+})
 
 render(
 	<React.StrictMode>
