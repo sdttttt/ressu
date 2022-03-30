@@ -8,7 +8,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "app": "tauri",
+		"app": "tauri",
+    "app:dev": "tauri dev",
+		"app:build": "tauri build",
     "wasm": "wasm-pack build ./wasm --target web",
     "build": "pnpm wasm && pnpm vite:build",
     "format": "prettier --config prettier.config.js --write {src,redux,test}/**/*.{js,scss,tsx,ts,json,yml,yaml,html}"

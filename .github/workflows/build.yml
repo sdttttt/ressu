@@ -8,11 +8,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [14.x, 16.x]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
     
     steps:
     - uses: actions/checkout@v2
@@ -54,10 +56,6 @@ jobs:
       run: |
         npm install -g pnpm
     
-    - name: Compile WASM
-      run: |
-        pnpm wasm
-    
     - name: install dependency
       run: |
         pnpm install
@@ -68,5 +66,4 @@ jobs:
         
     - name: Package
       run: |
-        pnpm tauri build -d
-        
+        pnpm build
