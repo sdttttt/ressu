@@ -59,10 +59,16 @@ jobs:
           wasm/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+
+
     - name: install pnpm
       run: |
         npm install -g pnpm
-    
+
+    - name: WASM Compile
+      run: |
+        pnpm wasm
+        
     - name: install dependency
       run: |
         pnpm install
