@@ -1,6 +1,7 @@
 import * as React from "react";
 import RessuInput from "@/components/RessuInput";
 import classes from "./index.module.scss";
+import SearchIcon from "@mui/icons-material/Search"
 
 export default class FeedSidebar extends React.Component {
 	constructor(props: any) {
@@ -10,7 +11,7 @@ export default class FeedSidebar extends React.Component {
 	render(): React.ReactNode {
 		return (
 			<div className={classes["sidebar-container"]}>
-				<RessuInput></RessuInput>
+				<RessuInput children={<SearchIcon></SearchIcon>}></RessuInput>
 			</div>
 		);
 	}

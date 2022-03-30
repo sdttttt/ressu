@@ -2,7 +2,7 @@
 
 .input-container {
 	background-color: $normalBorder;
-	height: 30px;
+	height: 33px;
 	border-radius: 3px;
 	display: flex;
 	flex-direction: row;
@@ -10,12 +10,14 @@
 }
 
 .input-prefix {
+
 }
 
 .in-input {
 	background-color: $normalBorder;
 	color: rgb(88, 88, 88);
 	height: 90%;
+	width: 99%;
 	border: 0;
 	font-size: 14px;
 	outline: none;
