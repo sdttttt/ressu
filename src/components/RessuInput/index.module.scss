@@ -2,10 +2,11 @@
 
 .input-container {
 	background-color: $normalBorder;
-	height: 40px;
+	height: 30px;
 	border-radius: 3px;
 	display: flex;
 	flex-direction: row;
+	padding: 5px;
 }
 
 .input-prefix {
@@ -16,6 +17,6 @@
 	color: rgb(88, 88, 88);
 	height: 90%;
 	border: 0;
-	font-size: 17px;
+	font-size: 14px;
 	outline: none;
 }

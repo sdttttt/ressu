@@ -1,9 +1,10 @@
+import initWasm, { greet } from "wasm";
+
 import React from "react";
 import { render } from "react-dom";
 import { common } from "@mui/material/colors";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { SnackbarProvider } from "notistack";
-
 
 import { App } from "./app";
 import "./index.scss";
@@ -16,12 +17,8 @@ const theme = createTheme({
 	}
 });
 
-
-import initWasm, { greet, wasm_log as wasmLog } from "wasm";
-
 initWasm().then(() => {
 	greet();
-	wasmLog("Ok, this is from WASM.");
 })
 
 render(

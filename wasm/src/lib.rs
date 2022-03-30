@@ -9,20 +9,24 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern {
+extern "C" {
 
-	#[wasm_bindgen(js_namespace = console)]
-	fn log(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 
     fn alert(s: &str);
 }
 
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, wasm!");
+macro_rules! console_log  {
+	($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+#[wasm_bindgen(start)]
+pub fn on_start() {
+    console_log!("WASM starting ...");
 }
 
 #[wasm_bindgen]
-pub fn wasm_log(s: &str) {
-	log(s);
+pub fn greet() {
+    console_log!("from WASM greet!");
 }
