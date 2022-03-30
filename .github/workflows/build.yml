@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         node-version: [14.x, 16.x]
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
     
     runs-on: ${{ matrix.os }}
     
@@ -32,10 +32,16 @@ jobs:
             components: rustfmt, clippy
     
     - uses: jetli/wasm-pack-action@v0.3.0
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       with:
         # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')
         version: 'latest'
-            
+    
+    - name: Install wasm-pack (for Windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        cargo install wasm-pack
+      
     - name: install dependencies (ubuntu only)
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
