@@ -5,7 +5,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, MouseEventHandler, useState } from "react";
 
 type PropsType = {
 	open: boolean;
@@ -18,9 +18,20 @@ const FeedAddit = (props: PropsType) => {
 
 	const [url, setURL] = useState("");
 
+	// 关闭后置空
+	const handleOnClose = () => {
+		onClose();
+		setURL("");
+	};
+
+	const handleOnSubmit = () => {
+		onSubmit(url);
+		setURL("");
+	};
+
+	// URL变化
 	const handleChangUrl = (e: ChangeEvent<HTMLInputElement>) => {
 		const url = e.target.value;
-		console.log(url);
 		setURL(url);
 	};
 
@@ -42,8 +53,8 @@ const FeedAddit = (props: PropsType) => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={onClose}>取消</Button>
-					<Button onClick={() => onSubmit(url)}>订阅</Button>
+					<Button onClick={handleOnClose}>取消</Button>
+					<Button onClick={() => handleOnSubmit()}>订阅</Button>
 				</DialogActions>
 			</Dialog>
 		</>
