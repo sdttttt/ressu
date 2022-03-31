@@ -1,7 +1,5 @@
-import { ADD_RSS, MARK_READ_ALL_RSS, MARK_READ_RSS, MARK_READ_RSS_ITEM } from './constants';
+import { ADD_RSS, MARK_READ_ALL_RSS, MARK_READ_RSS, MARK_READ_RSS_ITEM, REMOVE_RSS } from './constants';
 import type { StoreAction } from './typing';
-
-
 
 export const RSSActions = {
 	addRSSAddr: (url: string): StoreAction => ({
@@ -19,5 +17,10 @@ export const RSSActions = {
 	markReadRSSItem: (url: string, date: string, title: string): StoreAction => ({
 		type: MARK_READ_RSS_ITEM,
 		payload: { url, date, title }
+	}),
+
+	removeRSS: (url: string): StoreAction => ({
+		type: REMOVE_RSS,
+		payload: { url }
 	})
 };
