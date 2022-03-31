@@ -20,7 +20,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": resolve("src"),
-			"@redux": resolve("redux"),
+			"@store": resolve("store"),
 		}
 	}
 })
