@@ -1,28 +1,20 @@
 import { ADD_RSS, MARK_READ_ALL_RSS, MARK_READ_RSS, MARK_READ_RSS_ITEM } from './constants';
 
-export function addRSSAddr(url: string) {
-	return {
+export const RSSActions = {
+	addRSSAddr: (url: string) => ({
 		type: ADD_RSS,
 		payload: { url },
-	};
-}
+	}),
 
-export function markReadAllRSS() {
-	return {
-		type: MARK_READ_ALL_RSS,
-	}
-}
+	markReadAllRSS: () => ({ type: MARK_READ_ALL_RSS, }),
 
-export function markReadRSS(url: string) {
-	return {
+	markReadRSS: (url: string) => ({
 		type: MARK_READ_RSS,
 		payload: { url }
-	}
-}
+	}),
 
-export function markReadRSSItem(url: string, date: string, title: string) {
-	return {
+	markReadRSSItem: (url: string, date: string, title: string) => ({
 		type: MARK_READ_RSS_ITEM,
 		payload: { url, date, title }
-	}
-}
+	})
+};
