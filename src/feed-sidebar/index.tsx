@@ -9,6 +9,7 @@ export default class FeedSidebar extends React.Component {
 	}
 
 	render(): React.ReactNode {
+
 		return (
 			<div className={classes["sidebar-container"]}>
 				<RessuInput children={<SearchIcon></SearchIcon>}></RessuInput>
