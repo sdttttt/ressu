@@ -1,12 +1,12 @@
-import { RessuStore, StoreAction, RSSItem } from "./typing";
+import { RessuStore, StoreAction, RSSChannel } from "./typing";
 import { REMOVE_RSS } from "./constants"
 
 const initialState: RessuStore = {
-    rss: [],
+    channels: [],
     settings: {},
 };
 
-const rssReducer = (rss: RSSItem[], action: StoreAction): RSSItem[] => {
+const rssReducer = (rss: RSSChannel[], action: StoreAction): RSSChannel[] => {
 
     switch(action.type) {
         case REMOVE_RSS:
@@ -22,7 +22,7 @@ const settingsReducer = (settings: {}, action: StoreAction): {} => {
 }
 
 
-export default ({ rss, settings }: RessuStore = initialState, action: StoreAction) => ({
-    rss: rssReducer(rss, action),
+export default ({ channels, settings }: RessuStore = initialState, action: StoreAction) => ({
+    channels: rssReducer(channels, action),
     settings: settingsReducer(settings, action)
 })

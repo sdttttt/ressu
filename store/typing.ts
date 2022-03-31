@@ -6,15 +6,17 @@ export type StoreAction = {
 };
 
 export type RessuStore = {
-    rss: RSSItem[]
+    channels: RSSChannel[]
 
     settings: {},
 };
 
-export type RSSItem = {
+export type RSSChannel = {
     title: string,
 
     url: string,
+
+    description: string,
 
     posts: Post[]
 };
