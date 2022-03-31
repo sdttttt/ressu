@@ -12,3 +12,5 @@ You need the following environment:
 - Node.js
 - pnpm (node package manager)
 - wasm-pack
+
+After WASM compile complete, you need reinstall node_modules.
