@@ -16,6 +16,7 @@ default = ["console_error_panic_hook"]
 
 [dependencies]
 wasm-bindgen = "0.2.63"
+wasm-bindgen-futures = "0.4.29"
 reqwest = { version = "0.11", features = ["json"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

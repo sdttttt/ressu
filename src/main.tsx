@@ -1,4 +1,4 @@
-import initWasm, { greet } from "wasm";
+import initWasm, { hello, http_get as httpGet } from "wasm";
 
 import React from "react";
 import { Provider } from "react-redux";
@@ -20,7 +20,8 @@ const theme = createTheme({
 });
 
 initWasm().then(() => {
-	greet();
+	hello();
+	httpGet("https://hyper.rs");
 })
 
 render(
