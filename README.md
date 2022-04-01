@@ -14,3 +14,8 @@ You need the following environment:
 - wasm-pack
 
 After WASM compile complete, need reinstall node_modules.
+
+
+## WASM
+
+Ressu is i also an  attempt on wasm, and her rss acquisition and parsing will be done by Rust.
