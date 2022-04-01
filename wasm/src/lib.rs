@@ -23,7 +23,11 @@ macro_rules! console_log  {
 
 #[wasm_bindgen(start)]
 pub fn on_start() {
+
     console_log!("WASM starting ...");
+		let window = web_sys::window().expect("should have a window in this context");
+		window.document().expect("window should have a document");
+		
 }
 
 #[wasm_bindgen]
