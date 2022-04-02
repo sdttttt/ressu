@@ -1,11 +1,5 @@
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import { ChangeEvent, useState } from "react";
+import PopupPanel from "@/components/PopupPanel"
 
 type PropsType = {
 	open: boolean;
@@ -37,26 +31,8 @@ const FeedAddit = (props: PropsType) => {
 
 	return (
 		<>
-			<Dialog open={open} onClose={onClose} fullWidth>
-				<DialogTitle>添加RSS源</DialogTitle>
-				<DialogContent>
-					<DialogContentText>输入RSS源订阅的地址</DialogContentText>
-					<TextField
-						autoFocus
-						margin="dense"
-						id="name"
-						label="URL"
-						type="text"
-						fullWidth
-						variant="standard"
-						onChange={handleChangUrl}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleOnClose}>取消</Button>
-					<Button onClick={() => handleOnSubmit()}>订阅</Button>
-				</DialogActions>
-			</Dialog>
+				<PopupPanel open={open}>
+				</PopupPanel>
 		</>
 	);
 };
