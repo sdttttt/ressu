@@ -31,7 +31,7 @@ const FeedAddit = (props: PropsType) => {
 
 	return (
 		<>
-				<PopupPanel open={open}>
+				<PopupPanel open={open} confirm>
 				</PopupPanel>
 		</>
 	);

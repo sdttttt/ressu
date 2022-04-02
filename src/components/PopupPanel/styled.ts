@@ -30,3 +30,13 @@ export const Container = styled.div<ContainerPropsType>`
 	margin: 0  auto;
 	z-index: 999;
 `;
+
+export const ConfirmDiv = styled.div`
+	position: absolute;
+	bottom: 10px;
+	width: 95%;
+	height: 30px;
+	display: flex;
+	justify-content: space-between;
+	flex-direction: row;
+`;
