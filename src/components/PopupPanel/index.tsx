@@ -1,12 +1,28 @@
-import { ReactNode, EventHandler, MouseEventHandler } from "react";
+import { ReactNode, MouseEventHandler } from "react";
 import { Container, ConfirmDiv } from "./styled";
 import Button from "@mui/material/Button";
 
 type PropsType = {
+	/**
+	 * popup display.
+	 */
 	open: boolean;
+
+	/**
+	 * confirm and cancel button display.
+	 */
 	confirm?: boolean;
+	
+	/**
+	 * confirm button click callback.
+	 */
 	onConfirm?: MouseEventHandler<HTMLButtonElement>,
+	
+	/**
+	 * cancel button click callback;   
+	 */
 	onCancel?: MouseEventHandler<HTMLButtonElement>,
+
 	children?: ReactNode;
 };
 
