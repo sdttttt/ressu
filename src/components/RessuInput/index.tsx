@@ -4,16 +4,16 @@ import classes from "./index.module.scss";
 type PropsType = {
 	onChange?: (e: React.ChangeEvent) => void;
 	onInput?: (e: React.FormEvent) => void;
-	children?: React.ReactNode;
+	prefix?: React.ReactNode;
 };
 
 const RessuInput = (props: PropsType) => {
-	const { children, onChange, onInput } = props;
+	const { prefix, onChange, onInput } = props;
 
 	return (
 		<div className={classes["input-container"]}>
-			{children ? (
-				<div className={classes["input-prefix"]}>{children}</div>
+			{prefix ? (
+				<div className={classes["input-prefix"]}>{prefix}</div>
 			) : (
 				""
 			)}

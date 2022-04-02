@@ -1,5 +1,5 @@
 import { ReactNode, MouseEventHandler } from "react";
-import { Container, ConfirmDiv, HeaderDiv,TitleH4, DescriptionSpan } from "./styled";
+import { Frame, Container, ConfirmDiv, HeaderDiv, TitleH4, DescriptionSpan } from "./styled";
 import Button from "@mui/material/Button";
 
 type PropsType = {
@@ -22,12 +22,12 @@ type PropsType = {
 	 * confirm and cancel button display.
 	 */
 	confirm?: boolean;
-	
+
 	/**
 	 * confirm button click callback.
 	 */
 	onConfirm?: MouseEventHandler<HTMLButtonElement>,
-	
+
 	/**
 	 * cancel button click callback;   
 	 */
@@ -44,8 +44,8 @@ export default (props: PropsType) => {
 
 
 	const HeaderBar = () => (<HeaderDiv>
-		{ title ? <TitleH4>{title}</TitleH4> : "" }
-		{ description ? <DescriptionSpan>{description}</DescriptionSpan> : "" }
+		{ title ? <TitleH4>{title}</TitleH4> : ""}
+		{ description ? <DescriptionSpan>{description}</DescriptionSpan> : ""}
 	</HeaderDiv>);
 
 	const ConfirmBar = () => (
@@ -67,9 +67,11 @@ export default (props: PropsType) => {
 	return (
 		<Container open={open} borderColor={"#DDD"}>
 			<HeaderBar></HeaderBar>
-			
-			{children}
 
+			<Frame>
+				{children}
+			</Frame>
+			
 			{confirm ? <ConfirmBar /> : ""}
 		</Container>
 	);

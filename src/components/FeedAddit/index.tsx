@@ -1,5 +1,7 @@
 import { ChangeEvent, useState } from "react";
 import PopupPanel from "@/components/PopupPanel"
+import RessuInput from "@/components/RessuInput";
+import RssFeedIcon from '@mui/icons-material/RssFeed';
 
 type PropsType = {
 	open: boolean;
@@ -31,8 +33,15 @@ const FeedAddit = (props: PropsType) => {
 
 	return (
 		<>
-				<PopupPanel open={open} title="添加订阅源" description="请输入URL" confirm>
-				</PopupPanel>
+			<PopupPanel
+				open={open}
+				title="订阅源"
+				description="请输入需要添加的RSS订阅地址."
+				confirm
+			>
+
+				<RessuInput prefix={<RssFeedIcon />}></RessuInput>
+			</PopupPanel>
 		</>
 	);
 };
