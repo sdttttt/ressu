@@ -50,3 +50,19 @@ export const ConfirmDiv = styled.div`
 	justify-content: space-between;
 	flex-direction: row;
 `;
+
+export const HeaderDiv = styled.div`
+	padding-top: 10px;
+	padding-left: 10px;	
+`;
+
+export const TitleH4 = styled.h4`
+	font-weight: 350;
+	margin-bottom: 10px;	
+`;
+
+export const DescriptionSpan = styled.span`
+	font-weight: 350;
+	font-size: 11px;
+	color: #888;
+`;

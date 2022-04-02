@@ -31,7 +31,7 @@ const FeedAddit = (props: PropsType) => {
 
 	return (
 		<>
-				<PopupPanel open={open} confirm>
+				<PopupPanel open={open} title="添加订阅源" description="请输入URL" confirm>
 				</PopupPanel>
 		</>
 	);

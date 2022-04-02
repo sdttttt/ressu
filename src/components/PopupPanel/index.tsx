@@ -1,5 +1,5 @@
 import { ReactNode, MouseEventHandler } from "react";
-import { Container, ConfirmDiv } from "./styled";
+import { Container, ConfirmDiv, HeaderDiv,TitleH4, DescriptionSpan } from "./styled";
 import Button from "@mui/material/Button";
 
 type PropsType = {
@@ -7,6 +7,16 @@ type PropsType = {
 	 * popup display.
 	 */
 	open: boolean;
+
+	/**
+	 * title text.
+	 */
+	title?: string;
+
+	/**
+	 * description text.
+	 */
+	description?: string;
 
 	/**
 	 * confirm and cancel button display.
@@ -28,8 +38,15 @@ type PropsType = {
 
 export default (props: PropsType) => {
 	const { open, confirm,
+		title, description,
 		onConfirm, onCancel,
 		children } = props;
+
+
+	const HeaderBar = () => (<HeaderDiv>
+		{ title ? <TitleH4>{title}</TitleH4> : "" }
+		{ description ? <DescriptionSpan>{description}</DescriptionSpan> : "" }
+	</HeaderDiv>);
 
 	const ConfirmBar = () => (
 		<ConfirmDiv>
@@ -49,10 +66,11 @@ export default (props: PropsType) => {
 
 	return (
 		<Container open={open} borderColor={"#DDD"}>
+			<HeaderBar></HeaderBar>
+			
 			{children}
+
 			{confirm ? <ConfirmBar /> : ""}
 		</Container>
 	);
-
-
 };
