@@ -4,7 +4,10 @@ import FeedItems from "./feed-items/index";
 import classes from "./app.module.scss";
 import { Grid } from "@mui/material";
 
+
 export function App() {
+
+
 	return (
 		<>
 			<div className={classes.navbar}>

@@ -19,10 +19,13 @@ const theme = createTheme({
 	}
 });
 
-initWasm().then(() => {
++(async () => {
+
+	await initWasm();
 	hello();
 	httpGet("https://hyper.rs");
-})
+	
+})();
 
 render(
 	<React.StrictMode>
