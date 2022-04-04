@@ -1,7 +1,6 @@
 import { ReactNode, MouseEventHandler } from "react";
 import { Frame, Container, ConfirmDiv, HeaderDiv, TitleH4, DescriptionSpan } from "./styled";
-import Button from "@mui/material/Button";
-
+import  { Button }  from "evergreen-ui";
 type PropsType = {
 	/**
 	 * popup display.
@@ -51,13 +50,13 @@ export default (props: PropsType) => {
 	const ConfirmBar = () => (
 		<ConfirmDiv>
 			<div>
-				<Button size="small" onClick={onCancel}>
+				<Button appearance="minimal" onClick={onCancel}>
 					取消
 				</Button>
 			</div>
 
 			<div>
-				<Button color="success" size="small" onClick={onConfirm}>
+				<Button appearance="minimal" intent="success" onClick={onConfirm}>
 					确认
 				</Button>
 			</div>
