@@ -1,13 +1,9 @@
 import { useState } from "react";
 import classes from "./index.module.scss";
-import { Grid, IconButton } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
-import AddIcon from "@mui/icons-material/Add";
 import FeedAddit from "@/components/FeedAddit/index";
-import { useSnackbar } from "notistack";
+import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 
 export default function NavBar() {
-	const { enqueueSnackbar } = useSnackbar();
 
 	const [additOpen, setAdditOpen] = useState(false);
 
@@ -22,35 +18,27 @@ export default function NavBar() {
 	const handleSubmitAddit = (url: string) => {
 		console.log(url);
 		setAdditOpen(false);
-		enqueueSnackbar("URL: " + url, { variant: "success" });
 	};
 
 	return (
 		<div className={classes["navbar-container"]}>
-			<Grid container columns={24}>
-				<Grid md={12} xs={12} columns={24} container item>
-					<Grid item md={3} xs={3} textAlign="center">
-						<IconButton aria-label="add" onClick={handleOpenAddit}>
-							<AddIcon fontSize="small"></AddIcon>
-						</IconButton>
-					</Grid>
-				</Grid>
+			<Pane
+				display="flex"
+				padding={4}
+				justifyContent="space-between"
+			>
+				<Pane display="flex" justifyContent="left" alignItems="center">
+					<Pane>
+						<IconButton icon={PlusIcon} onClick={handleOpenAddit}></IconButton>
+					</Pane>
+				</Pane>
 
-				<Grid
-					md={12}
-					xs={12}
-					columns={24}
-					container
-					item
-					direction="row-reverse"
-				>
-					<Grid item md={3} xs={3} textAlign="center">
-						<IconButton aria-label="settings">
-							<SettingsIcon fontSize="small"></SettingsIcon>
-						</IconButton>
-					</Grid>
-				</Grid>
-			</Grid>
+				<Pane display="flex" justifyContent="right" alignItems="center">
+					<Pane>
+						<IconButton icon={CogIcon}></IconButton>
+					</Pane>
+				</Pane>
+			</Pane>
 
 			<FeedAddit
 				open={additOpen}

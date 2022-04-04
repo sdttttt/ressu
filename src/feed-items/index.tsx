@@ -1,5 +1,4 @@
 import * as React from "react";
-import classes from "./index.module.scss";
 
 export default class FeedItems extends React.Component {
 	constructor(props: any) {

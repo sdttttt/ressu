@@ -1,5 +1,5 @@
 import * as React from "react";
-import classes from "./index.module.scss";
+import { InputContainer, InputPrefix, InInput } from "./styled";
 
 type PropsType = {
 	onChange?: (e: React.ChangeEvent) => void;
@@ -11,18 +11,17 @@ const RessuInput = (props: PropsType) => {
 	const { prefix, onChange, onInput } = props;
 
 	return (
-		<div className={classes["input-container"]}>
+		<InputContainer>
 			{prefix ? (
-				<div className={classes["input-prefix"]}>{prefix}</div>
+				<InputPrefix>{prefix}</InputPrefix>
 			) : (
-				""
+				{}
 			)}
-			<input
-				className={classes["in-input"]}
+			<InInput
 				onChange={onChange}
 				onInput={onInput}
-			></input>
-		</div>
+			></InInput>
+		</InputContainer>
 	);
 };
 

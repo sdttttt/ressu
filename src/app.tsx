@@ -1,31 +1,30 @@
 import FeedSidebar from "./feed-sidebar/index";
 import NavBar from "./nav-bar/index";
 import FeedItems from "./feed-items/index";
-import classes from "./app.module.scss";
-import { Grid } from "@mui/material";
-
+import { Pane } from "evergreen-ui";
+import { NavbarContainer  } from "./app.styled"
 
 export function App() {
 
-
 	return (
 		<>
-			<div className={classes.navbar}>
+			<NavbarContainer>
 				<NavBar></NavBar>
-			</div>
-			<Grid container className={classes.main} columns={24}>
-				<Grid item md={6} xs={8} alignContent="center">
-					<FeedSidebar></FeedSidebar>
-				</Grid>
+			</NavbarContainer>
 
-				<Grid item md={6} xs={8} alignContent="center">
-					<FeedItems></FeedItems>
-				</Grid>
+			<Pane display="flex" padding={8}>
+				<Pane flex={1}>
+				<FeedSidebar></FeedSidebar>
+				</Pane>
 
-				<Grid item md={24 - 6 - 6} alignContent="center">
-					这里是内容栏
-				</Grid>
-			</Grid>
+				<Pane  flex={1}>
+				<FeedItems></FeedItems>
+				</Pane>
+
+				<Pane  flex={2}>
+				这里是内容栏
+				</Pane>
+			</Pane>
 		</>
 	);
 }

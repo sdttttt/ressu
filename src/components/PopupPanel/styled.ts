@@ -1,9 +1,9 @@
-import styled from "styled-components";
+import styled from "@emotion/styled";
 import { normalBorder } from "@/global.style";
 import { computeFixedLeftDistanceFromPercent } from "@/styles/window";
 
 export const Frame = styled.div`
-	width: 100%
+	width: 100%;
 	height: 100%;
 	padding: 10px;
 `;

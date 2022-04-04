@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from "react";
 import PopupPanel from "@/components/PopupPanel"
 import RessuInput from "@/components/RessuInput";
-import RssFeedIcon from '@mui/icons-material/RssFeed';
+import { FeedIcon } from "evergreen-ui";
 
 type PropsType = {
 	open: boolean;
@@ -40,7 +40,7 @@ const FeedAddit = (props: PropsType) => {
 				confirm
 			>
 
-				<RessuInput prefix={<RssFeedIcon />}></RessuInput>
+				<RessuInput prefix={<FeedIcon />}></RessuInput>
 			</PopupPanel>
 		</>
 	);
