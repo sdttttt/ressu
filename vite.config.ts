@@ -11,7 +11,7 @@ const mode = process.env.NODE_ENV || 'development'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [react(), visualizer({ open: true })],
+	plugins: [react(), visualizer()],
 	clearScreen: false,
 	build: {
 		minify: mode === 'development' ? false : "terser",
