@@ -3,6 +3,7 @@ import PopupPanel from "@/components/PopupPanel"
 import RessuInput from "@/components/RessuInput";
 import { FeedIcon } from "evergreen-ui";
 
+
 type PropsType = {
 	open: boolean;
 	onClose: () => void;
@@ -22,13 +23,13 @@ const FeedAddit = (props: PropsType) => {
 
 	const handleOnSubmit = () => {
 		onSubmit(url);
-		setURL("");
 	};
 
 	// URL变化
-	const handleChangUrl = (e: ChangeEvent<HTMLInputElement>) => {
+	const handleChangeUrl = (e: ChangeEvent<HTMLInputElement>) => {
 		const url = e.target.value;
 		setURL(url);
+		
 	};
 
 	return (
@@ -38,9 +39,10 @@ const FeedAddit = (props: PropsType) => {
 				title="订阅源"
 				description="请输入需要添加的RSS订阅地址."
 				confirm
+				onConfirm={handleOnSubmit}
 			>
 
-				<RessuInput prefix={<FeedIcon />}></RessuInput>
+				<RessuInput prefix={<FeedIcon />} onChange={handleChangeUrl}></RessuInput>
 			</PopupPanel>
 		</>
 	);

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
-import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
+import { Pane, IconButton, PlusIcon, CogIcon, toaster } from "evergreen-ui";
+import { successDelay } from "@/utils/noitce";
+
 
 export default function NavBar() {
 
@@ -18,6 +20,7 @@ export default function NavBar() {
 	const handleSubmitAddit = (url: string) => {
 		console.log(url);
 		setAdditOpen(false);
+		successDelay("添加：" + url, 1000);
 	};
 
 	return (

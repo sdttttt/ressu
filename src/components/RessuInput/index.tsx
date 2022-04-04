@@ -2,8 +2,8 @@ import * as React from "react";
 import { InputContainer, InputPrefix, InInput } from "./styled";
 
 type PropsType = {
-	onChange?: (e: React.ChangeEvent) => void;
-	onInput?: (e: React.FormEvent) => void;
+	onChange?: React.ChangeEventHandler;
+	onInput?: React.FormEventHandler;
 	prefix?: React.ReactNode;
 };
 
