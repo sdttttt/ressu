@@ -1,5 +1,8 @@
-import { ADD_RSS_CHANNEL, MARK_READ_ALL_RSS_CHANNEL, MARK_READ_RSS_CHANNEL, MARK_READ_RSS_POST, REMOVE_RSS } from './constants';
-import type { StoreAction } from './typing';
+import { Dispatch } from 'redux';
+import { ADD_RSS_CHANNEL, INITIALIZE_WASM, MARK_READ_ALL_RSS_CHANNEL, MARK_READ_RSS_CHANNEL, MARK_READ_RSS_POST, REMOVE_RSS } from './constants';
+import type { AsyncAction, RessuStore, StoreAction } from './typing';
+import initWasm from "wasm";
+import { ThunkAction } from 'redux-thunk';
 
 export const RSSActions = {
 	addRSSAddr: (url: string): StoreAction => ({
@@ -23,4 +26,19 @@ export const RSSActions = {
 		type: REMOVE_RSS,
 		payload: { url }
 	})
+};
+
+
+export const WASMActions = {
+
+	initializeWASM: (): StoreAction => ({
+		type: INITIALIZE_WASM,
+	}),
+
+	initializeWASMAsync: (): AsyncAction => {
+		return async (dispath: Dispatch<StoreAction>) => {
+			await initWasm();
+			dispath({ type: INITIALIZE_WASM });
+		}
+	},
 };

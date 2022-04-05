@@ -1,3 +1,4 @@
+import { ThunkAction } from "redux-thunk";
 
 export type StoreAction = {
     type: Symbol,
@@ -5,10 +6,14 @@ export type StoreAction = {
     payload?: any
 };
 
+export type AsyncAction = ThunkAction<Promise<void>, RessuStore, unknown, StoreAction>;
+
 export type RessuStore = {
     channels: RSSChannel[]
 
     settings: {},
+
+	hasInitWASM: boolean,
 };
 
 export type RSSChannel = {

@@ -7,3 +7,5 @@ export const MARK_READ_RSS_CHANNEL = Symbol("MARK_READ_RSS");
 export const MARK_READ_RSS_POST = Symbol("MARK_READ_RSS_ITEM");
 
 export const REMOVE_RSS = Symbol("REMOVE_RSS");
+
+export const INITIALIZE_WASM = Symbol("INITIALIZE_WASM");

@@ -37,7 +37,7 @@ export const Container = styled.div<{
 	border-radius: 4px;
 	margin: 0  auto;
 	z-index: 999;
-	transition: top .5s;
+	transition: top .3s;
 `;
 
 export const ConfirmDiv = styled.div`

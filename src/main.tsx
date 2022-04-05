@@ -1,4 +1,4 @@
-import initWasm, { hello, http_get as httpGet } from "wasm";
+import { hello } from "wasm";
 
 import React from "react";
 import { Provider } from "react-redux";
@@ -7,15 +7,11 @@ import { render } from "react-dom";
 import { App } from "./app";
 import store from "@store/index";
 import "./index.scss";
+import { runWASM } from "./utils/wasm";
 
-
-+(async () => {
-
-	await initWasm();
+runWASM( async () => {
 	hello();
-	httpGet("https://hyper.rs");
-	
-})();
+});
 
 render(
 	<React.StrictMode>
