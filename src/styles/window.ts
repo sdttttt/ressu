@@ -15,6 +15,7 @@ export function computeFixedLeftDistanceFromPercent(percent: number): string {
 if (import.meta.vitest) {
 	// @ts-ignore
 	const { it, expect, assert } = import.meta.vitest;
+
 	it("Math.sqrt()", () => {
 		expect(Math.sqrt(4)).toBe(2);
 		expect(Math.sqrt(144)).toBe(12);

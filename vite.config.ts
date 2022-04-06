@@ -7,15 +7,19 @@ function resolve(path: string) {
 	return join(__dirname, path);
 }
 
-const mode = process.env.NODE_ENV || 'development'
+function isDev() {
+	const mode = process.env.NODE_ENV || 'development'
+	return mode === 'development';
+}
+
 
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [react(), visualizer()],
 	clearScreen: false,
 	build: {
-		minify: mode === 'development' ? false : "terser",
-		sourcemap: mode === 'development' ? "inline" : false,
+		minify: !isDev(),
+		sourcemap: isDev() ? "inline" : false,
 	},
 	resolve: {
 		alias: {
