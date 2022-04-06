@@ -1,13 +1,10 @@
-import initWASM, { http_get  } from "wasm";
-import { WASMActions } from "@store/actions";
 import store from "@store/index";
+import { initWASMAsync } from "@store/wasm"
 
 export const runWASM = async (func: () => void) => {
-	const { hasInitWASM } = store.getState();
-	if (!hasInitWASM) {
-		console.log("JS: init WASM...");
-		await initWASM();
-		store.dispatch(WASMActions.initializeWASM());
+	const { wasm: {ready} } = store.getState();
+	if (!ready) {
+		await store.dispatch(initWASMAsync());
 	}
 	func();
 };

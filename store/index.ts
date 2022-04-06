@@ -1,5 +1,13 @@
-import reducers from "./reducers";
-import { createStore, applyMiddleware } from "redux";
-import thunkMiddleware from 'redux-thunk'
+import { configureStore } from "@reduxjs/toolkit";
+import wasm from "./wasm";
+import channels from "./channels";
+import settings from "./settings";
 
-export default createStore(reducers, applyMiddleware(thunkMiddleware));
+const store = configureStore({
+    reducer: {
+        wasm, channels, settings,
+    }
+});
+
+
+export default store;
