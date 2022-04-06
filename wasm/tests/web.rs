@@ -4,11 +4,10 @@
 
 extern crate wasm_bindgen_test;
 use wasm::greet;
-use wasm_bindgen_test::{console_log};
+use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
-
 
 #[wasm_bindgen_test]
 fn pass() {
@@ -21,7 +20,7 @@ async fn simple_example() {
         .await
         .expect("http get example");
     console_log!("Status: {}", res.status());
-	
+
     let body = res.text().await.expect("response to utf-8 text");
     console_log!("Body:\n\n{}", body);
 }
