@@ -15,6 +15,12 @@ You need the following environment:
 
 After WASM compile complete, need reinstall node_modules.
 
+## TODO
+
+- [x] Layout.
+- [ ] RSS parse.
+- [ ] Local storage.
+- [ ] Deep UI Design.
 
 ## Special
 
