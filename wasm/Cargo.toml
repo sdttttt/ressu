@@ -18,6 +18,8 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.63"
 wasm-bindgen-futures = "0.4.29"
 reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0.136", features = [ "derive" ] }
+quick-xml = { version = "0.22", features = [ "serialize" ] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
