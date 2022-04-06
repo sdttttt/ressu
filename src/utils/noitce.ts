@@ -20,7 +20,3 @@ export const dangerDelay = async (message: string, delay: number) => {
 	await sleep(delay)
 	toaster.danger(message);
 }
-
-
-if (import.meta.vitest) {
-}
