@@ -7,7 +7,6 @@ repository = "https://github.com/sdttttt/ressu"
 description = "this wasm is for ressu"
 license = "unlicense"
 
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 

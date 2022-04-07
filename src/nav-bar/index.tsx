@@ -2,7 +2,8 @@ import { useState } from "react";
 import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon, toaster } from "evergreen-ui";
-import { successDelay } from "@/utils/noitce";
+import { dangerDelay, successDelay } from "@/utils/noitce";
+import isURL from "validator/lib/isURL"
 
 
 export default function NavBar() {
@@ -20,7 +21,11 @@ export default function NavBar() {
 	const handleSubmitAddit = (url: string) => {
 		console.log(url);
 		setAdditOpen(false);
-		successDelay("添加：" + url, 1000);
+		if (isURL(url)) {
+			successDelay("添加：" + url, 300);
+		} else {
+			dangerDelay("输入的不是一个URL.", 300);
+		}
 	};
 
 	return (

@@ -12,6 +12,7 @@ specifiers:
   '@types/react': ^17.0.0
   '@types/react-dom': ^17.0.14
   '@types/styled-components': ^5.1.24
+  '@types/validator': ^13.7.2
   '@types/ws': ^8.5.3
   '@vitejs/plugin-react': ^1.3.0
   evergreen-ui: ^6.9.5
@@ -27,6 +28,7 @@ specifiers:
   rollup-plugin-visualizer: ^5.6.0
   sass: ^1.49.11
   typescript: ^4.6.3
+  validator: ^13.7.0
   vite: ^2.9.1
   vite-plugin-banner: ^0.2.0
   vitest: ^0.8.4
@@ -43,6 +45,7 @@ dependencies:
   react: registry.npmmirror.com/react/17.0.2
   react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
   react-redux: registry.npmmirror.com/react-redux/7.2.8_react-dom@17.0.2+react@17.0.2
+  validator: 13.7.0
   wasm: link:wasm/pkg
 
 devDependencies:
@@ -53,6 +56,7 @@ devDependencies:
   '@types/react': registry.npmmirror.com/@types/react/17.0.43
   '@types/react-dom': registry.npmmirror.com/@types/react-dom/17.0.14
   '@types/styled-components': registry.npmmirror.com/@types/styled-components/5.1.24
+  '@types/validator': 13.7.2
   '@types/ws': registry.npmmirror.com/@types/ws/8.5.3
   '@vitejs/plugin-react': registry.npmmirror.com/@vitejs/plugin-react/1.3.0
   happy-dom: registry.npmmirror.com/happy-dom/2.55.0
@@ -174,6 +178,10 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
+
+  /@types/validator/13.7.2:
+    resolution: {integrity: sha512-KFcchQ3h0OPQgFirBRPZr5F/sVjxZsOrQHedj3zi8AH3Zv/hOLx2OLR4hxR5HcfoU+33n69ZuOfzthKVdMoTiw==}
+    dev: true
 
   /esbuild-android-64/0.14.31:
     resolution: {integrity: sha512-MYkuJ91w07nGmr4EouejOZK2j/f5TCnsKxY8vRr2+wpKKfHD1LTJK28VbZa+y1+AL7v1V9G98ezTUwsV3CmXNw==}
@@ -387,6 +395,11 @@ packages:
 
   /reselect/4.1.5:
     resolution: {integrity: sha512-uVdlz8J7OO+ASpBYoz1Zypgx0KasCY20H+N8JD13oUMtPvSHQuscrHop4KbXrbsBcdB9Ds7lVK7eRkBIfO43vQ==}
+    dev: false
+
+  /validator/13.7.0:
+    resolution: {integrity: sha512-nYXQLCBkpJ8X6ltALua9dRrZDHVYxjJ1wgskNt1lH9fzGjs3tgojGSCBjmEPwkWS1y29+DrizMTW19Pr9uB2nw==}
+    engines: {node: '>= 0.10'}
     dev: false
 
   /vite-plugin-banner/0.2.0:
