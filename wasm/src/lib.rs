@@ -14,7 +14,7 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 
-#[wasm_bindgen(start)]
+#[wasm_bindgen(start, js_name = onStart)]
 pub fn on_start() {
     console_log!("WASM starting ...");
     let window = web_sys::window().expect("should have a window in this context");
