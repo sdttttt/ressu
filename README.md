@@ -15,7 +15,7 @@ You need the following environment:
 - pnpm (node package manager)
 - wasm-pack
 
-After WASM compile complete, need reinstall node_modules.
+After WASM compile complete, need **reinstall node_modules** to found wasm library. It is imported as link in package.json.
 
 ## TODO
 
