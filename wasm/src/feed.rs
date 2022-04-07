@@ -12,7 +12,16 @@ pub struct RSSFeed {
 }
 
 #[wasm_bindgen]
-pub async fn get_feed_meta(url: String) -> RSSFeed {
+impl RSSFeed {
+    
+    #[wasm_bindgen(getter = version)]
+    pub fn version(&self) -> Option<String>  {
+        self.version.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub async fn get_feed_meta(url: String) -> RSSFeed  {
     let body = http_get(url).await;
     let rss = from_str::<RSSFeed>(&body).unwrap();
     rss
