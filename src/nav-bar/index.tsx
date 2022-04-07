@@ -3,7 +3,7 @@ import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon, toaster } from "evergreen-ui";
 import { dangerDelay, successDelay } from "@/utils/noitce";
-import isURL from "validator/lib/isURL"
+import isURL from "validator/es/lib/isURL"
 
 
 export default function NavBar() {
