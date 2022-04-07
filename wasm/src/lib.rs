@@ -3,6 +3,7 @@ mod utils;
 mod js_bind;
 
 pub mod http;
+pub mod feed;
 
 
 use wasm_bindgen::prelude::*;

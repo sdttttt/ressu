@@ -1,7 +1,7 @@
 import { useState } from "react";
 import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
-import { Pane, IconButton, PlusIcon, CogIcon, toaster } from "evergreen-ui";
+import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import { dangerDelay, successDelay } from "@/utils/noitce";
 import isURL from "validator/es/lib/isURL"
 
