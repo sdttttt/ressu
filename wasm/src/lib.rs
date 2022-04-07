@@ -1,6 +1,7 @@
 #[macro_use]
 mod utils;
 mod js_bind;
+mod constants;
 
 pub mod http;
 pub mod feed;

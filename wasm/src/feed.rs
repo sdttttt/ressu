@@ -1,11 +1,12 @@
 use wasm_bindgen::prelude::*;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 use quick_xml::de::from_str;
 
 use crate::http::*;
+use crate::constants::*;
 
 #[wasm_bindgen]
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename = "rss")]
 pub struct RSSFeed {
     version: Option<String>
@@ -17,6 +18,16 @@ impl RSSFeed {
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> Option<String>  {
         self.version.clone()
+    }
+
+    #[wasm_bindgen(js_name = isSpecification)]
+    pub fn is_specification(&self) -> bool {
+        self.version.as_deref().unwrap_or("") == RSS_VERSION_AVAILABLE
+    }
+
+    #[wasm_bindgen]
+    pub fn json(&self) -> JsValue {
+        JsValue::from_serde(self).unwrap()
     }
 }
 
