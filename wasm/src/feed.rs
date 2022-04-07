@@ -31,9 +31,14 @@ impl RSSFeed {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = getFeedMeta)]
 pub async fn get_feed_meta(url: String) -> RSSFeed  {
     let body = http_get(url).await;
     let rss = from_str::<RSSFeed>(&body).unwrap();
     rss
+}
+
+#[wasm_bindgen(js_name = getFeedJSON)]
+pub async fn get_feed_json(url: String) -> JsValue {
+    get_feed_meta(url).await.json()
 }
