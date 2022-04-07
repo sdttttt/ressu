@@ -13,7 +13,8 @@
     "app:build": "tauri build",
     "wasm": "wasm-pack build ./wasm --dev --target web",
     "wasm:release": "wasm-pack build ./wasm --target web --release",
-    "build": "pnpm wasm:release && pnpm vite:build",
+    "build": "pnpm wasm && pnpm vite:build",
+    "release": "pnpm wasm:release && pnpm vite:build",
     "format": "prettier --config prettier.config.js --write {src,redux,test}/**/*.{js,scss,tsx,ts,json,yml,yaml,html}"
   },
   "dependencies": {
