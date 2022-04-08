@@ -13,10 +13,10 @@ export const runWASM = async (func: () => void) => {
 /**
  * generate with args wasm runtime func.
  */
-export const runWASMWithArgs = (func: Function) => {
-	return async (...arge: unknown[]) => {
+export const runWASMWithArgs = <R = any>(func: (...args: unknown[]) => R) => {
+	return async (...arge: unknown[]): Promise<R> => {
 		await initWASM();
-		func(...arge);
+		return func(...arge);
 	}
 }
 
