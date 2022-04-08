@@ -3,11 +3,10 @@ import { initWASMAsync } from "@store/wasm"
 
 /**
  * init wasm and run func.
- * @param func callback
  */
-export const runWASM = async (func: () => void) => {
+export const runWASM = async <R = any>(func: () => R): Promise<R> => {
 	await initWASM();
-	func();
+	return func();
 };
 
 /**
