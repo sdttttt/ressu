@@ -3,12 +3,16 @@ import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import { dangerDelay, successDelay } from "@/utils/noitce";
-import isURL from "validator/es/lib/isURL"
+import isURL from "validator/es/lib/isURL";
+import { useDispatch } from "react-redux"
+import { addRSSChannelAsync } from "@store/channels"
 
 
 export default function NavBar() {
 
 	const [additOpen, setAdditOpen] = useState(false);
+
+	const dispatch = useDispatch();
 
 	const handleOpenAddit = () => {
 		setAdditOpen(true);
@@ -23,6 +27,7 @@ export default function NavBar() {
 		setAdditOpen(false);
 		if (isURL(url)) {
 			successDelay("添加：" + url, 300);
+			dispatch(addRSSChannelAsync(url));
 		} else {
 			dangerDelay("输入的不是一个URL.", 300);
 		}
