@@ -1,9 +1,10 @@
-import { getFeedMeta } from "wasm";
+import { getFeedMeta } from "wasm"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, RSSChannel } from "./typing"
 import isURL from "validator/es/lib/isURL";
 import { runWASM } from "@/utils/wasm";
 import { toaster } from "evergreen-ui";
+
 
 const initialState: RSSChannel[] = [];
 
@@ -33,7 +34,7 @@ const channelSlice = createSlice({
 
     extraReducers: (builder) => {
         builder.addCase(addRSSChannelAsync.fulfilled, (channels, actions) => {
-            console.log(actions.payload);
+            console.log(actions.payload, channels);
         })
     }
 });

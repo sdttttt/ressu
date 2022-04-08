@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "pnpm wasm && vite",
+    "dev": "pnpm wasm && vite --force",
     "check": "tsc",
     "vite:build": "tsc && vite build --clearScreen false",
     "preview": "vite preview",

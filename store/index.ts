@@ -1,13 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import wasm from "./wasm";
-import channels from "./channels";
 import settings from "./settings";
+import channels from "./channels";
 
-const store = configureStore({
+export default configureStore({
     reducer: {
-        wasm, channels, settings,
+        wasm, settings, channels
     }
 });
-
-
-export default store;
