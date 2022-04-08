@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "pnpm wasm && vite",
+    "check": "tsc",
     "vite:build": "tsc && vite build --clearScreen false",
     "preview": "vite preview",
     "test": "vitest run",

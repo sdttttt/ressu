@@ -8,12 +8,12 @@ use crate::constants::*;
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename = "rss")]
-pub struct RSSFeed {
+pub struct RSSChannel {
     version: Option<String>
 }
 
 #[wasm_bindgen]
-impl RSSFeed {
+impl RSSChannel {
     
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> Option<String>  {
@@ -32,9 +32,9 @@ impl RSSFeed {
 }
 
 #[wasm_bindgen(js_name = getFeedMeta)]
-pub async fn get_feed_meta(url: String) -> RSSFeed  {
+pub async fn get_feed_meta(url: String) -> RSSChannel  {
     let body = http_get(url).await;
-    let rss = from_str::<RSSFeed>(&body).unwrap();
+    let rss = from_str::<RSSChannel>(&body).unwrap();
     rss
 }
 
