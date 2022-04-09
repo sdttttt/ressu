@@ -6,6 +6,7 @@ pub async fn http_get(url: String) -> String {
     console_log!("Status: {}", res.status());
 
     let body = res.text().await.expect("response to utf-8 text");
+    
     console_log!("Body:\n\n{}", body);
 
     body

@@ -1,5 +1,8 @@
-import store from "@store/index";
-import { initWASMAsync } from "@store/wasm"
+import init from "wasm";
+
+const wasmState = {
+	ready: false
+};
 
 /**
  * init wasm and run func.
@@ -23,8 +26,9 @@ export const runWASMWithArgs = <R = any>(func: (...args: unknown[]) => R) => {
  * init wasm.
  */
 export const initWASM = async () => {
-	const { wasm: { ready } } = store.getState();
+	const { ready } = wasmState;
 	if (!ready) {
-		await store.dispatch(initWASMAsync());
+		await init();
+		wasmState.ready = true;
 	}
 }

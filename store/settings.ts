@@ -3,13 +3,10 @@ import { RessuStore, Settings } from "./typing"
 
 const initialState: Settings = {};
 
-
 const settingsSlice = createSlice({
     name: "settings",
     initialState,
-    reducers: {
-
-    }
+    reducers: {}
 });
 
 export const selectSettings = (state: RessuStore) => state.settings;

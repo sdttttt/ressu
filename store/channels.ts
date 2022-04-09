@@ -5,7 +5,6 @@ import isURL from "validator/es/lib/isURL";
 import { runWASM } from "@/utils/wasm";
 import { toaster } from "evergreen-ui";
 
-
 const initialState: RSSChannel[] = [];
 
 /**
@@ -13,13 +12,14 @@ const initialState: RSSChannel[] = [];
  */
 export const addRSSChannelAsync = createAsyncThunk('channels/add', async (url: string) => {
     if (isURL(url)) {
-        const metaInfo = await runWASM(() => getFeedMeta(url));
+        const metaInfo = await runWASM(async () =>  await getFeedMeta(url));
         if (metaInfo.isSpecification()) {
             console.log(metaInfo.json());
             return metaInfo;
         } else {
             toaster.danger("该URL不是规范的RSS订阅源。")
         }
+        console.log(url);
     }
 })
 
