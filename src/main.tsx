@@ -1,4 +1,4 @@
-import { getFeedMeta, hello } from "wasm";
+import { hello } from "wasm";
 
 import { fetch, ResponseType } from "@tauri-apps/api/http"
 

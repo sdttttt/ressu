@@ -8,9 +8,3 @@ extern "C" {
 
     pub fn alert(s: &str);
 }
-
-
-#[wasm_bindgen(module = "@tauri-apps/api/http")]
-extern  "C" {
-	pub async fn fetch(url: &str);
-}

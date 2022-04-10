@@ -2,7 +2,6 @@ use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 use quick_xml::de::from_str;
 
-use crate::http::*;
 use crate::constants::*;
 
 #[wasm_bindgen]
@@ -32,13 +31,12 @@ impl RSSChannel {
 }
 
 #[wasm_bindgen(js_name = getFeedMeta)]
-pub async fn get_feed_meta(url: String) -> RSSChannel  {
-    let body = http_get(url).await;
-    let rss = from_str::<RSSChannel>(&body).unwrap();
+pub async fn get_feed_meta(rss_text: String) -> RSSChannel  {
+    let rss = from_str::<RSSChannel>(&rss_text).unwrap();
     rss
 }
 
 #[wasm_bindgen(js_name = getFeedJSON)]
-pub async fn get_feed_json(url: String) -> JsValue {
-    get_feed_meta(url).await.json()
+pub async fn get_feed_json(rss_text: String) -> JsValue {
+    get_feed_meta(rss_text).await.json()
 }
