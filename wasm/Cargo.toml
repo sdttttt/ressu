@@ -40,6 +40,9 @@ features = [
 	'Document'
 ]
 
+[dependencies.js-sys]
+version = "0.3.50"
+
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
