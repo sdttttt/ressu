@@ -1,5 +1,7 @@
 import { getFeedMeta, hello } from "wasm";
 
+import { fetch, ResponseType } from "@tauri-apps/api/http"
+
 import React from "react";
 import { Provider } from "react-redux";
 import { render } from "react-dom";
@@ -11,8 +13,8 @@ import { runWASM } from "./utils/wasm";
 
 runWASM(() => {
 	hello();
-	getFeedMeta("https://www.yystv.cn/rss/feed");
-	fetch("https://www.yystv.cn/rss/feed", { credentials: "omit" })
+	fetch("https://www.yystv.cn/rss/feed", { responseType: ResponseType.Text, method: "GET" })
+	.then(res => console.log(res.data));
 });
 
 render(
