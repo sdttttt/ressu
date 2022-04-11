@@ -7,7 +7,6 @@ This is a modern **RSS Reader**, built using React in Tauri, and it's aimed at W
 
 ## Dev
 
-Ressu is based on `tauri`, `react` and `wasm`.
 You need the following environment:
 
 - Rust
