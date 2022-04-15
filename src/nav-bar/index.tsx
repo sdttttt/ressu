@@ -5,7 +5,7 @@ import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import { dangerDelay, successDelay } from "@/utils/noitce";
 import isURL from "validator/es/lib/isURL";
 import { useDispatch } from "react-redux"
-import { addRSSChannelAsync } from "@store/channels"
+import { addRSSChannelAsync } from "@store/feeds"
 
 
 export default function NavBar() {

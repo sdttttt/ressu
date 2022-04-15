@@ -1,11 +1,13 @@
 import { getFeedMetaFormUrl } from "wasm"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RessuStore, RSSChannel } from "./typing"
+import { RessuStore,  Feeds } from "./typing"
 import isURL from "validator/es/lib/isURL";
 import { runWASM } from "@/utils/wasm";
 import { toaster } from "evergreen-ui";
 
-const initialState: RSSChannel[] = [];
+const initialState: Feeds = {
+    channels: [],
+};
 
 /**
  * async add new rss channel.
@@ -23,12 +25,13 @@ export const addRSSChannelAsync = createAsyncThunk('channels/add', async (url: s
     }
 })
 
-const channelSlice = createSlice({
+const feedsSlice = createSlice({
     name: "channels",
     initialState,
     reducers: {
-        remove: (channels, url: PayloadAction<string>) => {
-            return channels.filter(rss => rss.url != url.payload);
+        remove: (state, url: PayloadAction<string>) => {
+            const { channels } = state
+            state.channels = channels.filter(rss => rss.url != url.payload);
         },
     },
 
@@ -39,9 +42,9 @@ const channelSlice = createSlice({
     }
 });
 
-export const selectChannels = (state: RessuStore) => state.channels;
-export const selectChannelsCount = (state: RessuStore) => state.channels.length;
+export const selectFeeds = (state: RessuStore) => state.feeds;
+export const selectChannelSize = (state: RessuStore) => state.feeds.channels.length;
 
-export const { remove } = channelSlice.actions;
+export const { remove } = feedsSlice.actions;
 
-export default channelSlice.reducer;
+export default feedsSlice.reducer;
