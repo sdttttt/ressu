@@ -1,21 +1,67 @@
-use quick_xml::de::from_str;
+
+use quick_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::{constants::*, js_bind::fetchRSSText};
+use crate::{constants::*, js_bind::fetchRSSText, utils::attrs_get_str};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename = "rss")]
 pub struct RSSChannel {
     version: Option<String>,
+
+    title: Option<String>,
+
+    url: Option<String>,
 }
 
 #[wasm_bindgen]
 impl RSSChannel {
+    pub fn from_str(text: &str) -> Self {
+        let mut version = None;
+        let mut title = None;
+        let mut url = None;
+
+        let mut reader = Reader::from_str(&text);
+        reader.trim_text(true);
+        let mut buf = Vec::new();
+
+        loop {
+            match reader.read_event(&mut buf) {
+                Ok(Event::Start(ref e)) => match e.name() {
+                    b"rss" => {
+                        version = attrs_get_str(&mut reader, e.attributes(), "rss").unwrap();
+                    }
+
+                    b"title" => {
+                        title = attrs_get_str(&mut reader, e.attributes(), "title").unwrap();
+                    },
+
+                    b"url" => {
+                        url = attrs_get_str(&mut reader, e.attributes(), "url").unwrap();
+                    },
+
+                    _ => {},
+                },
+
+                Ok(Event::Eof) => break,
+
+                Ok(_) => {}
+                Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
+            }
+        }
+
+        Self {
+            version,
+            title,
+            url,
+        }
+    }
+
     #[wasm_bindgen(getter = version)]
-    pub fn version(&self) -> Option<String> {
-        self.version.clone()
+    pub fn version(&self) -> String {
+        self.version.as_deref().unwrap_or("").to_string()
     }
 
     #[wasm_bindgen(js_name = isSpecification)]

@@ -1,6 +1,6 @@
 import { getFeedMetaFormUrl } from "wasm"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RessuStore,  Feeds } from "./typing"
+import { RessuStore, Feeds } from "./typing"
 import isURL from "validator/es/lib/isURL";
 import { runWASM } from "@/utils/wasm";
 import { toaster } from "evergreen-ui";
@@ -17,11 +17,10 @@ export const addRSSChannelAsync = createAsyncThunk('channels/add', async (url: s
         const metaInfo = await runWASM(() => getFeedMetaFormUrl(url));
         if (metaInfo.isSpecification()) {
             console.log(metaInfo.json());
-            return metaInfo;
+            return metaInfo.json();
         } else {
-            toaster.danger("该URL不是规范的RSS订阅源。")
+            toaster.danger("该订阅源不是RSS2.0标准, 尚不支持其他标准的RSS.")
         }
-        console.log(url);
     }
 })
 
@@ -36,8 +35,8 @@ const feedsSlice = createSlice({
     },
 
     extraReducers: (builder) => {
-        builder.addCase(addRSSChannelAsync.fulfilled, (channels, actions) => {
-            console.log(actions.payload, channels);
+        builder.addCase(addRSSChannelAsync.fulfilled, (state, actions) => {
+            console.log(actions.payload, state);
         })
     }
 });
