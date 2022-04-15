@@ -1,4 +1,4 @@
-import { getFeedMeta } from "wasm"
+import { getFeedMetaFormUrl } from "wasm"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, RSSChannel } from "./typing"
 import isURL from "validator/es/lib/isURL";
@@ -12,7 +12,7 @@ const initialState: RSSChannel[] = [];
  */
 export const addRSSChannelAsync = createAsyncThunk('channels/add', async (url: string) => {
     if (isURL(url)) {
-        const metaInfo = await runWASM(async () =>  await getFeedMeta(url));
+        const metaInfo = await runWASM(() => getFeedMetaFormUrl(url));
         if (metaInfo.isSpecification()) {
             console.log(metaInfo.json());
             return metaInfo;
