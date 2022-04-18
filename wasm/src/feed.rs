@@ -1,4 +1,3 @@
-
 use quick_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -36,18 +35,21 @@ impl RSSChannel {
 
                     b"title" => {
                         title = attrs_get_str(&mut reader, e.attributes(), "title").unwrap();
-                    },
+                    }
 
                     b"url" => {
                         url = attrs_get_str(&mut reader, e.attributes(), "url").unwrap();
-                    },
+                    }
 
-                    _ => {},
+                    _ => {}
                 },
 
                 Ok(Event::Eof) => break,
 
                 Ok(_) => {}
+
+                Err(quick_xml::Error::EndEventMismatch { expected: _, found: _ }) => {}
+
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
         }

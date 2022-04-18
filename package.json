@@ -13,6 +13,7 @@
     "app:dev": "tauri dev",
     "app:build": "tauri build",
     "wasm": "wasm-pack build ./wasm --dev --target web",
+    "wasm:test": "wasm-pack test --chrome ./wasm",
     "wasm:release": "wasm-pack build ./wasm --target web --release",
     "build": "pnpm wasm && pnpm vite:build",
     "release": "pnpm wasm:release && pnpm vite:build",
