@@ -30,7 +30,7 @@ impl RSSChannel {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => match e.name() {
                     b"rss" => {
-                        version = attrs_get_str(&mut reader, e.attributes(), "rss").unwrap();
+                        version = attrs_get_str(&mut reader, e.attributes(), "version").unwrap();
                     }
 
                     b"title" => {

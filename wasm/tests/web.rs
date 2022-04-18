@@ -22,6 +22,7 @@ fn pass() {
 fn test_parse_rss_from_str() {
     let rss_feed = RSSChannel::from_str(RSSHUB_TEST_CONTENT);
     console_log!("{:?}", rss_feed);
+    assert_eq!(rss_feed.is_specification(), true);
 }
 
 const RSSHUB_TEST_CONTENT: &'static str = r#"
