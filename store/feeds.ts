@@ -42,7 +42,7 @@ const feedsSlice = createSlice({
 });
 
 export const selectFeeds = (state: RessuStore) => state.feeds;
-export const selectChannelSize = (state: RessuStore) => state.feeds.channels.length;
+export const selectChannelLength = (state: RessuStore) => state.feeds.channels.length;
 
 export const { remove } = feedsSlice.actions;
 
