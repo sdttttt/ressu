@@ -6,6 +6,7 @@ import { dangerDelay, successDelay } from "@/utils/noitce";
 import isURL from "validator/es/lib/isURL";
 import { useDispatch } from "react-redux"
 import { addRSSChannelAsync } from "@store/feeds"
+import { toast, ToastContainer } from "react-toastify";
 
 
 export default function NavBar() {
@@ -29,7 +30,7 @@ export default function NavBar() {
 			successDelay("添加：" + url, 300);
 			dispatch(addRSSChannelAsync(url));
 		} else {
-			dangerDelay("输入的不是一个URL.", 300);
+			toast.success("Wow so easy!");
 		}
 	};
 

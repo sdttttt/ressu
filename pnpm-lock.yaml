@@ -24,6 +24,7 @@ specifiers:
   react-dom: ^17.0.0
   react-is: ^17.0.0
   react-redux: ^7.2.8
+  react-toastify: ^8.2.0
   rollup: ^2.70.1
   rollup-plugin-visualizer: ^5.6.0
   sass: ^1.49.11
@@ -45,6 +46,7 @@ dependencies:
   react: registry.npmmirror.com/react/17.0.2
   react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
   react-redux: registry.npmmirror.com/react-redux/7.2.8_react-dom@17.0.2+react@17.0.2
+  react-toastify: 8.2.0_react-dom@17.0.2+react@17.0.2
   validator: 13.7.0
   wasm: link:wasm/pkg
 
@@ -213,6 +215,11 @@ packages:
   /check-error/1.0.2:
     resolution: {integrity: sha1-V00xLt2Iu13YkS6Sht1sCu1KrII=}
     dev: true
+
+  /clsx/1.1.1:
+    resolution: {integrity: sha512-6/bPho624p3S2pMyvP5kKBPXnI3ufHLObBFCfgx+LkeR5lg2XYy2hqZqUf45ypD8COn2bhgGJSUE+l5dhNBieA==}
+    engines: {node: '>=6'}
+    dev: false
 
   /deep-eql/3.0.1:
     resolution: {integrity: sha512-+QeIQyN5ZuO+3Uk5DYh6/1eKO0m0YmJFGNmFHGACpf1ClL1nmlV/p4gNgbl2pJGxgXb4faqo6UE+M5ACEMyVcw==}
@@ -499,6 +506,17 @@ packages:
       picocolors: 1.0.0
       source-map-js: 1.0.2
     dev: true
+
+  /react-toastify/8.2.0_react-dom@17.0.2+react@17.0.2:
+    resolution: {integrity: sha512-Pg2Ju7NngAamarFvLwqrFomJ57u/Ay6i6zfLurt/qPynWkAkOthu6vxfqYpJCyNhHRhR4hu7+bySSeWWJu6PAg==}
+    peerDependencies:
+      react: '>=16'
+      react-dom: '>=16'
+    dependencies:
+      clsx: 1.1.1
+      react: registry.npmmirror.com/react/17.0.2
+      react-dom: registry.npmmirror.com/react-dom/17.0.2_react@17.0.2
+    dev: false
 
   /redux-thunk/2.4.1_redux@4.1.2:
     resolution: {integrity: sha512-OOYGNY5Jy2TWvTL1KgAlVy6dcx3siPJ1wTq741EPyUKfn6W6nChdICjZwCd0p8AZBs5kWpZlbkXW2nE/zjUa+Q==}
