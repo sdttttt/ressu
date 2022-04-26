@@ -33,4 +33,8 @@ export type Post = {
     content: string,
 };
 
+export type Message = {
+    contents: string[]
+};
+
 export type Settings = {};

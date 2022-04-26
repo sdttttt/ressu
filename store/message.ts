@@ -1,17 +1,24 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { RessuStore } from "./typing"
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Message, RessuStore } from "./typing"
 
-const initialState = {
-    content: []
+const initialState: Message = {
+    contents: []
 };
 
 const messageSlice = createSlice({
     name: "message",
     initialState,
-    reducers: {}
+    reducers: {
+        send: (state, { payload }: PayloadAction<string>) => {
+            const { contents } = state;
+            contents.push(payload)
+        }
+    }
 });
 
 export const selectMessage = (store: RessuStore) => store.message;
-export const selectMessageLength = (store: RessuStore) => store.message.content.length;
+export const selectMessageLength = (store: RessuStore) => store.message.contents.length;
+
+export const { send } = messageSlice.actions;
 
 export default messageSlice.reducer;
