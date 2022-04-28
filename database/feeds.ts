@@ -24,6 +24,15 @@ export async function feedsDataLocalSync(data: Feeds) {
 	return await feedDB.write()
 }
 
+/**
+ * get Feeds data from local.
+ * @returns 
+ */
+export async function feedsDataLocalGet(): Promise<Feeds> {
+	feedDB.read();
+	return await feedDB.data;
+}
+
 // @ts-ignore
 if (import.meta.vitest) {
 	const {
