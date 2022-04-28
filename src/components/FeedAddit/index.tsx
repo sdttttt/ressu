@@ -1,8 +1,7 @@
 import { ChangeEvent, useState } from "react";
-import PopupPanel from "@/components/PopupPanel"
+import PopupPanel from "@/components/PopupPanel";
 import RessuInput from "@/components/RessuInput";
 import { FeedIcon } from "evergreen-ui";
-
 
 type PropsType = {
 	open: boolean;
@@ -29,7 +28,6 @@ const FeedAddit = (props: PropsType) => {
 	const handleChangeUrl = (e: ChangeEvent<HTMLInputElement>) => {
 		const url = e.target.value;
 		setURL(url);
-		
 	};
 
 	return (
@@ -41,8 +39,10 @@ const FeedAddit = (props: PropsType) => {
 				confirm
 				onConfirm={handleOnSubmit}
 			>
-
-				<RessuInput prefix={<FeedIcon />} onChange={handleChangeUrl}></RessuInput>
+				<RessuInput
+					prefix={<FeedIcon />}
+					onChange={handleChangeUrl}
+				></RessuInput>
 			</PopupPanel>
 		</>
 	);

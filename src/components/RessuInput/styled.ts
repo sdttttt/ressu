@@ -1,4 +1,4 @@
-import { normalBorder } from "@/global.style"
+import { normalBorder } from "@/global.style";
 import styled from "@emotion/styled";
 
 export const InputContainer = styled.div`
@@ -10,7 +10,7 @@ export const InputContainer = styled.div`
 	padding: 5px;
 `;
 
-export  const InputPrefix = styled.div`
+export const InputPrefix = styled.div`
 	padding-top: 3px;
 	padding-left: 3px;
 `;

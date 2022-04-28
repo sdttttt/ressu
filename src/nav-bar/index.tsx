@@ -4,13 +4,11 @@ import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import { dangerDelay, successDelay } from "@/utils/noitce";
 import isURL from "validator/es/lib/isURL";
-import { useDispatch } from "react-redux"
-import { addRSSChannelAsync } from "@store/feeds"
+import { useDispatch } from "react-redux";
+import { addRSSChannelAsync } from "@store/feeds";
 import { toast, ToastContainer } from "react-toastify";
 
-
 export default function NavBar() {
-
 	const [additOpen, setAdditOpen] = useState(false);
 
 	const dispatch = useDispatch();
@@ -36,11 +34,7 @@ export default function NavBar() {
 
 	return (
 		<div className={classes["navbar-container"]}>
-			<Pane
-				display="flex"
-				padding={4}
-				justifyContent="space-between"
-			>
+			<Pane display="flex" padding={4} justifyContent="space-between">
 				<Pane display="flex" justifyContent="left" alignItems="center">
 					<Pane>
 						<IconButton icon={PlusIcon} onClick={handleOpenAddit}></IconButton>

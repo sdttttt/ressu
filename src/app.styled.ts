@@ -1,4 +1,4 @@
-import styled from "@emotion/styled"
+import styled from "@emotion/styled";
 import { bodyHeight, navbarHeight } from "@/global.style";
 
 export const Main = styled.div`

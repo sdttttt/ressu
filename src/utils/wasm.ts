@@ -19,8 +19,8 @@ export const runWASMWithArgs = <R = any>(func: (...args: unknown[]) => R) => {
 	return async (...arge: unknown[]): Promise<R> => {
 		await initWASM();
 		return func(...arge);
-	}
-}
+	};
+};
 
 /**
  * init wasm.
@@ -31,4 +31,4 @@ export const initWASM = async () => {
 		await init();
 		wasmState.ready = true;
 	}
-}
+};

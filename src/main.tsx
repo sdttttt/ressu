@@ -10,8 +10,8 @@ import "./index.scss";
 import { runWASM } from "./utils/wasm";
 import { fetchRSSText } from "@/utils/http";
 
-import { ToastContainer } from "react-toastify"
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 runWASM(() => {
 	hello();
@@ -20,8 +20,8 @@ runWASM(() => {
 
 render(
 	<React.StrictMode>
-		<Provider store={store} >
-				<App />
+		<Provider store={store}>
+			<App />
 		</Provider>
 
 		<ToastContainer></ToastContainer>

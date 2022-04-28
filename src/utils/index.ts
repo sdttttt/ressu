@@ -1,10 +1,10 @@
 /**
- * 
+ *
  * @param delay  mini seconds
- * @returns 
+ * @returns
  */
 export const sleep = async (delay: number) => {
-	return new Promise((resolve) => {
+	return new Promise(resolve => {
 		setTimeout(resolve, delay);
 	});
-}
+};

@@ -1,6 +1,13 @@
 import { ReactNode, MouseEventHandler } from "react";
-import { Frame, Container, ConfirmDiv, HeaderDiv, TitleH4, DescriptionSpan } from "./styled";
-import  { Button }  from "evergreen-ui";
+import {
+	Frame,
+	Container,
+	ConfirmDiv,
+	HeaderDiv,
+	TitleH4,
+	DescriptionSpan
+} from "./styled";
+import { Button } from "evergreen-ui";
 type PropsType = {
 	/**
 	 * popup display.
@@ -25,27 +32,26 @@ type PropsType = {
 	/**
 	 * confirm button click callback.
 	 */
-	onConfirm?: MouseEventHandler<HTMLButtonElement>,
+	onConfirm?: MouseEventHandler<HTMLButtonElement>;
 
 	/**
-	 * cancel button click callback;   
+	 * cancel button click callback;
 	 */
-	onCancel?: MouseEventHandler<HTMLButtonElement>,
+	onCancel?: MouseEventHandler<HTMLButtonElement>;
 
 	children?: ReactNode;
 };
 
 export default (props: PropsType) => {
-	const { open, confirm,
-		title, description,
-		onConfirm, onCancel,
-		children } = props;
+	const { open, confirm, title, description, onConfirm, onCancel, children } =
+		props;
 
-
-	const HeaderBar = () => (<HeaderDiv>
-		{ title ? <TitleH4>{title}</TitleH4> : ""}
-		{ description ? <DescriptionSpan>{description}</DescriptionSpan> : ""}
-	</HeaderDiv>);
+	const HeaderBar = () => (
+		<HeaderDiv>
+			{title ? <TitleH4>{title}</TitleH4> : ""}
+			{description ? <DescriptionSpan>{description}</DescriptionSpan> : ""}
+		</HeaderDiv>
+	);
 
 	const ConfirmBar = () => (
 		<ConfirmDiv>
@@ -67,10 +73,8 @@ export default (props: PropsType) => {
 		<Container open={open} borderColor={"#DDD"}>
 			<HeaderBar></HeaderBar>
 
-			<Frame>
-				{children}
-			</Frame>
-			
+			<Frame>{children}</Frame>
+
 			{confirm ? <ConfirmBar /> : ""}
 		</Container>
 	);

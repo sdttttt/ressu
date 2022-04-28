@@ -12,15 +12,8 @@ const RessuInput = (props: PropsType) => {
 
 	return (
 		<InputContainer>
-			{prefix ? (
-				<InputPrefix>{prefix}</InputPrefix>
-			) : (
-				{}
-			)}
-			<InInput
-				onChange={onChange}
-				onInput={onInput}
-			></InInput>
+			{prefix ? <InputPrefix>{prefix}</InputPrefix> : {}}
+			<InInput onChange={onChange} onInput={onInput}></InInput>
 		</InputContainer>
 	);
 };

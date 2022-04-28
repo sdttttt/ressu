@@ -8,36 +8,33 @@ export const Frame = styled.div`
 	padding: 10px;
 `;
 
-
 export const Container = styled.div<{
-	open: boolean,
-	borderColor?: string,
-	height?: number,
+	open: boolean;
+	borderColor?: string;
+	height?: number;
 }>`
 	position: fixed;
 	margin: 0 auto;
-	top: ${
-		props => {
-			const { open, height = 200 } = props;
-			if (open) {
-				return -10;
-			} else {
-				return (-10 - Number(height));
-			}
+	top: ${props => {
+		const { open, height = 200 } = props;
+		if (open) {
+			return -10;
+		} else {
+			return -10 - Number(height);
 		}
-	}px;
+	}}px;
 	padding: 10px;
 	width: 35%;
 	left: ${() => computeFixedLeftDistanceFromPercent(35)};
 	min-width: 300px;
-	height: ${props => props.height || 200}px; 
-	box-shadow: 1px 1px 10px #EEE;
-	border:  1px ${props => props.borderColor || normalBorder} solid;
-	background-color: #FFF;
+	height: ${props => props.height || 200}px;
+	box-shadow: 1px 1px 10px #eee;
+	border: 1px ${props => props.borderColor || normalBorder} solid;
+	background-color: #fff;
 	border-radius: 4px;
-	margin: 0  auto;
+	margin: 0 auto;
 	z-index: 999;
-	transition: top .3s;
+	transition: top 0.3s;
 `;
 
 export const ConfirmDiv = styled.div`
@@ -52,12 +49,12 @@ export const ConfirmDiv = styled.div`
 
 export const HeaderDiv = styled.div`
 	padding-top: 10px;
-	padding-left: 10px;	
+	padding-left: 10px;
 `;
 
 export const TitleH4 = styled.h4`
 	font-weight: 350;
-	margin-bottom: 10px;	
+	margin-bottom: 10px;
 `;
 
 export const DescriptionSpan = styled.span`
