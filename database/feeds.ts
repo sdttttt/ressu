@@ -29,8 +29,8 @@ export async function feedsDataLocalSync(data: Feeds) {
  * @returns 
  */
 export async function feedsDataLocalGet(): Promise<Feeds> {
-	feedDB.read();
-	return await feedDB.data;
+	await feedDB.read();
+	return feedDB.data;
 }
 
 // @ts-ignore
