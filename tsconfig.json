@@ -30,12 +30,17 @@
 			],
 			"@store/*": [
 				"store/*"
+			],
+			"@database/*": [
+				"database/*"
 			]
 		}
 	},
 	"exclude": ["./node_modules/**/*"],
 	"include": [
-		"src"
+		"src",
+		"store",
+		"database"
 	],
 	"references": [
 		{

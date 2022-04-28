@@ -28,6 +28,7 @@ export default defineConfig({
 		alias: {
 			"@": resolve("src"),
 			"@store": resolve("store"),
+			"@database": resolve("database"),
 		}
 	}
 })
