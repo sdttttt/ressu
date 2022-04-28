@@ -19,7 +19,9 @@ export type RSSChannel = {
 
     description: string,
 
-    posts: Post[]
+    postSize: number,
+
+    posts?: Post[]
 };
 
 
