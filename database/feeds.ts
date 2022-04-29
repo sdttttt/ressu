@@ -7,8 +7,11 @@ import { appDir } from "@tauri-apps/api/path";
 
 let feedDB: Low<Feeds>;
 
+
 /**
- * Feed persistence
+ * It takes a `Feeds` object, clones it, and then sets the `posts` property of each `Channel` object to
+ * an empty array.
+ * @param {Feeds} data - Feeds
  */
 export async function feedsDataLocalSync(data: Feeds) {
 	await initializeFeedDB();
@@ -25,9 +28,10 @@ export async function feedsDataLocalSync(data: Feeds) {
 	return await feedDB.write()
 }
 
+
 /**
- * get Feeds data from local.
- * @returns 
+ * It gets the data from the local database
+ * @returns A promise that resolves to the data in the feedDB.
  */
 export async function feedsDataLocalGet(): Promise<Feeds | null> {
 	await feedDB.read();
@@ -35,6 +39,9 @@ export async function feedsDataLocalGet(): Promise<Feeds | null> {
 }
 
 
+/**
+ * It creates a new instance of the LowDB database, and it uses a JSON file as the storage medium
+ */
 async function initializeFeedDB() {
 	if (!feedDB) {
 		const rootDir = await appDir();
