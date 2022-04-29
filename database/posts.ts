@@ -1,11 +1,9 @@
 import type { Post, RSSChannel } from "@store/typing";
 import { Low } from "lowdb";
 import { JSONFile } from "./adapters/TauriJSONFile";
-import sha1 from "crypto-js/sha1";
-import encUft8 from "crypto-js/enc-utf8";
-import { appDir, sep } from "@tauri-apps/api/path";
-import { DATABASES_PATH, POSTS_DB_DIR } from "./names";
-import { isString, map } from "lodash-es";
+import { appDir, join } from "@tauri-apps/api/path";
+import { DATABASES_PATH, postFileName, POSTS_DB_DIR } from "./names";
+import { map } from "lodash-es";
 
 type DayPostMap = {
 	[key: string]: Post[];
@@ -36,7 +34,7 @@ export async function postDataLocalSync(channel: RSSChannel) {
 	}, {} as DayPostMap);
 
 	const writeFull = map(dayToPostMap, async (posts, dateKey) => {
-		const db = await getPostsDB(channel, new Date(dateKey));
+		const db = await getPostsDB(channel, dateKey);
 		db.data = posts;
 		await db.write();
 	});
@@ -48,7 +46,6 @@ export async function postDataLocalSync(channel: RSSChannel) {
 /**
  * "Get the posts data from the local database for the given channel and date."
  *
- * The first thing we do is check if the date is a string. If it is, we convert it to a Date object
  * @param {RSSChannel} channel - RSSChannel
  * @param {Date | string} date - Date | string
  * @returns The data from the database.
@@ -57,39 +54,24 @@ export async function postsDataLocalGet(
 	channel: RSSChannel,
 	date: Date | string
 ) {
-	if (isString(date)) {
-		date = new Date(date);
-	}
 
 	const db = await getPostsDB(channel, date);
 	await db.read();
 	return db.data;
 }
 
+
 /**
- * Since JS does not perform well in reading and writing large files, we use this method to block all articles from * the subscribed source into small files by date.
- *
- * @param param0
- * @param date
- * @returns
+ * It returns a database of posts for a given RSS channel and date.
+ * @param {RSSChannel}  - RSSChannel - is an object that contains the url of the RSS feed
+ * @param {string | Date} date - string | Date
+ * @returns A new instance of the LowDB class.
  */
-async function getPostsDB({ url }: RSSChannel, date: Date) {
-	const key = sha1(url).toString(encUft8).slice(0, 16);
-	const dateKey =
-		date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+async function getPostsDB({ url }: RSSChannel, date: string | Date) {
 
 	const rootDir = await appDir();
-	const fullFilePath =
-		rootDir +
-		sep +
-		DATABASES_PATH +
-		sep +
-		POSTS_DB_DIR +
-		sep +
-		key +
-		"-" +
-		dateKey +
-		".json";
+	const filename = postFileName(url, date);
 
+	const fullFilePath = await join(rootDir, DATABASES_PATH, POSTS_DB_DIR, filename);
 	return new Low(new JSONFile<Post[]>(fullFilePath));
 }

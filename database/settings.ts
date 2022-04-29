@@ -2,7 +2,7 @@ import type { Settings } from "@store/typing";
 import { JSONFile } from "@database/adapters/TauriJSONFile";
 import { Low } from "lowdb";
 import { DATABASES_PATH, SETTINGS_DB_FILENAME } from "./names";
-import { appDir } from "@tauri-apps/api/path";
+import { appDir, join } from "@tauri-apps/api/path";
 
 let settingsdb: Low<Settings>;
 
@@ -32,7 +32,7 @@ async function initializeSettingsDB() {
 		const rootDir = await appDir();
 		settingsdb = new Low(
 			new JSONFile<Settings>(
-				rootDir + "/" + DATABASES_PATH + "/" + SETTINGS_DB_FILENAME
+				await join(rootDir, DATABASES_PATH, SETTINGS_DB_FILENAME)
 			)
 		);
 	}

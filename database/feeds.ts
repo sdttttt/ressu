@@ -3,7 +3,7 @@ import { Low } from "lowdb";
 import { JSONFile } from "./adapters/TauriJSONFile";
 import { DATABASES_PATH, FEED_DB_FILENAME } from "./names";
 import { clone } from "lodash-es";
-import { appDir } from "@tauri-apps/api/path";
+import { appDir, join } from "@tauri-apps/api/path";
 
 let feedDB: Low<Feeds>;
 
@@ -42,7 +42,7 @@ async function initializeFeedDB() {
 		const rootDir = await appDir();
 		feedDB = new Low(
 			new JSONFile<Feeds>(
-				rootDir + "/" + DATABASES_PATH + "/" + FEED_DB_FILENAME
+				await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME)
 			)
 		);
 	}
