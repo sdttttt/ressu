@@ -40,13 +40,8 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt-get update
-
-    - uses: awalsh128/cache-apt-pkgs-action@v1
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      with:
-          packages: libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
-          version: 1.0
-
+        sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
+        
 #     - uses: actions/cache@v3
 #       with:
 #         path: |
