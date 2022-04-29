@@ -12,6 +12,7 @@
     "app": "tauri",
     "app:dev": "tauri dev",
     "app:build": "tauri build",
+		"app:devbuild": "tauri build --debug",
     "wasm": "wasm-pack build ./wasm --dev --target web",
     "wasm:test": "wasm-pack test --chrome ./wasm",
     "wasm:release": "wasm-pack build ./wasm --target web --release",
