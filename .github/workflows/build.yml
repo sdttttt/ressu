@@ -123,15 +123,15 @@ jobs:
 
     - name: Package
       run: |
-        pnpm app:devbuild
+        pnpm app:build
         
     - uses: actions/upload-artifact@v3
       with:
-        name: ressu_amd64_debug.deb
-        path: ./src-tauri/target/debug/bundle/deb/ressu_0.1.0_amd64.deb
+        name: ressu_amd64.deb
+        path: ./src-tauri/target/release/bundle/deb/ressu_0.1.0_amd64.deb
         
     - uses: actions/upload-artifact@v3
       with:
-        name: ressu_amd64_debug.AppImage
-        path: ./src-tauri/target/debug/bundle/appimage/ressu_0.1.0_amd64.AppImage
+        name: ressu_amd64.AppImage
+        path: ./src-tauri/target/release/bundle/appimage/ressu_0.1.0_amd64.AppImage
     
