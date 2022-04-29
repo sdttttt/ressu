@@ -42,18 +42,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
 
-    - uses: actions/cache@v3
+#     - uses: actions/cache@v3
+#       with:
+#         path: |
+#           ~/.cargo/bin/
+#           ~/.cargo/registry/index/
+#           ~/.cargo/registry/cache/
+#           ~/.cargo/git/db/
+#           src-tauri/target/
+#           wasm/target/
+#         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - uses: Swatinem/rust-cache@v1
       with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          src-tauri/target/
-          wasm/target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-
+        working-directory: ./wasm
 
     - name: install pnpm
       run: |
