@@ -65,3 +65,58 @@ jobs:
     - name: Package
       run: |
         pnpm build
+
+
+
+  package:
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+        os: [ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install lastest stable rust
+      uses: actions-rs/toolchain@v1
+      with:
+            toolchain: stable
+            override: true
+            components: rustfmt, clippy
+    
+    - uses: jetli/wasm-pack-action@v0.3.0
+      with:
+        # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')
+        version: 'latest'
+      
+    - name: Apt Update (ubuntu only)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
+    - uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: ./wasm
+
+    - name: install pnpm
+      run: |
+        npm install -g pnpm
+    - name: WASM Compile
+      run: |
+        pnpm wasm
+        
+    - name: install dependency
+      run: |
+        pnpm install
+        
+    - name: Package
+      run: |
+        pnpm app:build
