@@ -5,7 +5,7 @@ import sha1 from "crypto-js/sha1";
 import encUft8 from "crypto-js/enc-utf8"
 import { appDir, sep } from "@tauri-apps/api/path";
 import { DATABASES_PATH, POSTS_DB_DIR } from "./names";
-import { map } from "lodash-es";
+import { isString, map } from "lodash-es";
 
 type DayPostMap = {
 	[key: string]: Post[]
@@ -43,6 +43,25 @@ export async function postDataLocalSync(channel: RSSChannel) {
 
 	// wait for all writes to finish.
 	return await Promise.all(writeFull);
+}
+
+
+/**
+ * "Get the posts data from the local database for the given channel and date."
+ * 
+ * The first thing we do is check if the date is a string. If it is, we convert it to a Date object
+ * @param {RSSChannel} channel - RSSChannel
+ * @param {Date | string} date - Date | string
+ * @returns The data from the database.
+ */
+export async function postsDataLocalGet(channel: RSSChannel, date: Date | string) {
+	if (isString(date)) {
+		date = new Date(date);
+	}
+
+	const db = await getPostsDB(channel, date);
+	await db.read();
+	return db.data;
 }
 
 
