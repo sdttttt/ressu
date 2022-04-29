@@ -2,11 +2,10 @@ import { useState } from "react";
 import classes from "./index.module.scss";
 import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
-import { dangerDelay, successDelay } from "@/utils/noitce";
 import isURL from "validator/es/lib/isURL";
 import { useDispatch } from "react-redux";
 import { addRSSChannelAsync } from "@store/feeds";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 export default function NavBar() {
 	const [additOpen, setAdditOpen] = useState(false);
@@ -25,7 +24,7 @@ export default function NavBar() {
 		console.log(url);
 		setAdditOpen(false);
 		if (isURL(url)) {
-			successDelay("添加：" + url, 300);
+			toast.success("添加：" + url);
 			dispatch(addRSSChannelAsync(url));
 		} else {
 			toast.success("Wow so easy!");

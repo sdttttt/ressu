@@ -5,7 +5,7 @@ const wasmState = {
 };
 
 /**
- * init wasm and run func.
+ * run func in wasm runtime.
  */
 export const runWASM = async <R = any>(func: () => R): Promise<R> => {
 	await initWASM();

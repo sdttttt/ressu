@@ -10,9 +10,9 @@ export function computeFixedLeftDistanceFromPercent(percent: number): string {
 	return `${(windoWidth - divWidth) / 2}px`;
 }
 
-// @ts-ignore
+
 if (import.meta.vitest) {
-	// @ts-ignore
+
 	const { it, expect, assert } = import.meta.vitest;
 
 	it("Math.sqrt()", () => {
