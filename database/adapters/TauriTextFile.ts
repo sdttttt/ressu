@@ -1,18 +1,18 @@
-import { Adapter } from "lowdb/lib/Low"
-import { writeFile, readTextFile } from "@tauri-apps/api/fs"
+import { Adapter } from "lowdb/lib/Low";
+import { writeFile, readTextFile } from "@tauri-apps/api/fs";
 
 export class TauriTextFile implements Adapter<string> {
-    #filePath: string;
+	#filePath: string;
 
-    constructor(filePath: string) {
-        this.#filePath = filePath
-    }
+	constructor(filePath: string) {
+		this.#filePath = filePath;
+	}
 
-    read(): Promise<string> {
-        return readTextFile(this.#filePath)
-    }
+	read(): Promise<string> {
+		return readTextFile(this.#filePath);
+	}
 
-    write(data: string): Promise<void> {
-        return writeFile({ path: this.#filePath, contents: data })
-    }
+	write(data: string): Promise<void> {
+		return writeFile({ path: this.#filePath, contents: data });
+	}
 }

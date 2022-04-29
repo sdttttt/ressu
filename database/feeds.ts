@@ -1,12 +1,11 @@
-import type { Feeds } from "@store/typing"
-import { Low } from "lowdb"
-import { JSONFile } from "./adapters/TauriJSONFile"
+import type { Feeds } from "@store/typing";
+import { Low } from "lowdb";
+import { JSONFile } from "./adapters/TauriJSONFile";
 import { DATABASES_PATH, FEED_DB_FILENAME } from "./names";
-import { clone } from "lodash-es"
+import { clone } from "lodash-es";
 import { appDir } from "@tauri-apps/api/path";
 
 let feedDB: Low<Feeds>;
-
 
 /**
  * It takes a `Feeds` object, clones it, and then sets the `posts` property of each `Channel` object to
@@ -16,18 +15,15 @@ let feedDB: Low<Feeds>;
 export async function feedsDataLocalSync(data: Feeds) {
 	await initializeFeedDB();
 	const realLocalData = clone(data);
-	realLocalData.channels = data.channels.map(
-		channel => {
-			const result = clone(channel);
-			result.posts = [];
-			return result;
-		}
-	)
+	realLocalData.channels = data.channels.map(channel => {
+		const result = clone(channel);
+		result.posts = [];
+		return result;
+	});
 
 	feedDB.data = realLocalData;
-	return await feedDB.write()
+	return await feedDB.write();
 }
-
 
 /**
  * It gets the data from the local database
@@ -38,21 +34,19 @@ export async function feedsDataLocalGet(): Promise<Feeds | null> {
 	return feedDB.data;
 }
 
-
 /**
  * It creates a new instance of the LowDB database, and it uses a JSON file as the storage medium
  */
 async function initializeFeedDB() {
 	if (!feedDB) {
 		const rootDir = await appDir();
-		feedDB = new Low(new JSONFile<Feeds>(
-			rootDir
-			+ "/"
-			+ DATABASES_PATH
-			+ "/" + FEED_DB_FILENAME));
+		feedDB = new Low(
+			new JSONFile<Feeds>(
+				rootDir + "/" + DATABASES_PATH + "/" + FEED_DB_FILENAME
+			)
+		);
 	}
 }
-
 
 // @ts-ignore
 if (import.meta.vitest) {
@@ -62,7 +56,7 @@ if (import.meta.vitest) {
 		// @ts-ignore
 	} = import.meta.vitest;
 
-	it('feed copy but not copy posts.', () => {
+	it("feed copy but not copy posts.", () => {
 		const feeds: Feeds = {
 			channels: [
 				{
@@ -73,16 +67,14 @@ if (import.meta.vitest) {
 					posts: [{ title: "hellow", url: "hellow", content: "", date: "1" }]
 				}
 			]
-		}
+		};
 
 		const realLocalData = clone(feeds);
-		realLocalData.channels = feeds.channels.map(
-			channel => {
-				const result = clone(channel);
-				result.posts = [];
-				return result;
-			}
-		)
+		realLocalData.channels = feeds.channels.map(channel => {
+			const result = clone(channel);
+			result.posts = [];
+			return result;
+		});
 
 		expect(realLocalData.channels.length).toBe(1);
 		expect(realLocalData.channels[0].title).toBe("1");
@@ -90,5 +82,5 @@ if (import.meta.vitest) {
 		expect(realLocalData.channels[0].description).toBe("111");
 		expect(realLocalData.channels[0].postSize).toBe(1);
 		expect(realLocalData.channels[0]!.posts!.length).toBe(0);
-	})
+	});
 }

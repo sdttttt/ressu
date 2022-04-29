@@ -18,7 +18,7 @@
     "wasm:release": "wasm-pack build ./wasm --target web --release",
     "build": "pnpm wasm && pnpm vite:build",
     "release": "pnpm wasm:release && pnpm vite:build",
-    "format": "prettier --config prettier.config.js --write {src,redux,test}/**/*.{js,scss,tsx,ts,json,yml,yaml,html}"
+    "format": "prettier --config prettier.config.js --write {src,store,test,database}/**/*.{js,scss,tsx,ts,json,yml,yaml,html}"
   },
   "dependencies": {
     "@emotion/react": "^11.8.2",

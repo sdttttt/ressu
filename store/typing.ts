@@ -1,42 +1,43 @@
 import store from ".";
 
 export type StoreAction = {
-    type: Symbol,
+	type: Symbol;
 
-    payload?: any
+	payload?: any;
 };
 
 export type RessuStore = ReturnType<typeof store.getState>;
 
 export type Feeds = {
-    channels: RSSChannel[],
+	channels: RSSChannel[];
 };
 
 export type RSSChannel = {
-    title: string,
+	title: string;
 
-    url: string,
+	url: string;
 
-    description: string,
+	description: string;
 
-    postSize: number,
+	postSize: number;
 
-    posts?: Post[]
+	posts?: Post[];
 };
 
-
 export type Post = {
-    title: string,
-    url: string,
+	title: string;
+	url: string;
 
-    // timestrap
-    date: string,
+	// timestrap
+	date: string;
 
-    content: string,
+	content: string;
+
+	read?: boolean;
 };
 
 export type Message = {
-    contents: string[]
+	contents: string[];
 };
 
 export type Settings = {};

@@ -1,6 +1,6 @@
-import type { Settings } from "@store/typing"
-import { JSONFile } from "@database/adapters/TauriJSONFile"
-import { Low } from "lowdb"
+import type { Settings } from "@store/typing";
+import { JSONFile } from "@database/adapters/TauriJSONFile";
+import { Low } from "lowdb";
 import { DATABASES_PATH, SETTINGS_DB_FILENAME } from "./names";
 import { appDir } from "@tauri-apps/api/path";
 
@@ -8,8 +8,8 @@ let settingsdb: Low<Settings>;
 
 /**
  * Settings persistence
- * @param data 
- * @returns 
+ * @param data
+ * @returns
  */
 export async function settingsDataLocalSync(data: Settings) {
 	await initializeSettingsDB();
@@ -19,7 +19,7 @@ export async function settingsDataLocalSync(data: Settings) {
 
 /**
  * Get settings from local.
- * @returns 
+ * @returns
  */
 export async function settingsDataLocalGet(): Promise<Settings | null> {
 	await initializeSettingsDB();
@@ -30,11 +30,10 @@ export async function settingsDataLocalGet(): Promise<Settings | null> {
 async function initializeSettingsDB() {
 	if (!settingsdb) {
 		const rootDir = await appDir();
-		settingsdb = new Low(new JSONFile<Settings>(
-			rootDir
-			+ "/"
-			+ DATABASES_PATH
-			+ "/"
-			+ SETTINGS_DB_FILENAME));
+		settingsdb = new Low(
+			new JSONFile<Settings>(
+				rootDir + "/" + DATABASES_PATH + "/" + SETTINGS_DB_FILENAME
+			)
+		);
 	}
 }
