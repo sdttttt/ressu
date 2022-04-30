@@ -1,5 +1,6 @@
 import { fetchRSSText } from "@/utils/http";
-import { getFeedMeta } from "wasm"
+import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
+import { getFeedMeta } from "wasm";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds } from "./typing";
 import isURL from "validator/es/lib/isURL";
@@ -29,6 +30,19 @@ export const addRSSChannelAsync = createAsyncThunk(
 	}
 );
 
+export const initinalizeFeedsFromLocal = createAsyncThunk(
+	"channels/initFromLocal",
+	async (): Promise<Feeds> => {
+		let feedsLocal = await feedsDataLocalGet();
+		if (feedsLocal === null) {
+			await feedsDataLocalSync(initialState);
+			feedsLocal = initialState;
+		}
+
+		return feedsLocal;
+	}
+);
+
 const feedsSlice = createSlice({
 	name: "channels",
 	initialState,
@@ -47,6 +61,13 @@ const feedsSlice = createSlice({
 		builder.addCase(addRSSChannelAsync.fulfilled, (state, actions) => {
 			console.log(actions.payload, state);
 		});
+
+		builder.addCase(
+			initinalizeFeedsFromLocal.fulfilled,
+			(state, { payload }: PayloadAction<Feeds>) => {
+				state.channels = payload.channels;
+			}
+		);
 	}
 });
 
