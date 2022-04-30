@@ -1,5 +1,5 @@
 import { useState } from "react";
-import classes from "./index.module.scss";
+import { NavbarContainer } from "./styled";
 import FeedAddit from "@/components/FeedAddit/index";
 import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import isURL from "validator/es/lib/isURL";
@@ -32,7 +32,7 @@ export default function NavBar() {
 	};
 
 	return (
-		<div className={classes["navbar-container"]}>
+		<NavbarContainer>
 			<Pane display="flex" padding={4} justifyContent="space-between">
 				<Pane display="flex" justifyContent="left" alignItems="center">
 					<Pane>
@@ -52,6 +52,6 @@ export default function NavBar() {
 				onClose={handleCloseAddit}
 				onSubmit={handleSubmitAddit}
 			></FeedAddit>
-		</div>
+		</NavbarContainer>
 	);
 }
