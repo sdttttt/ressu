@@ -1,10 +1,8 @@
 name: pkg-size
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ] # ⬅ Add other branches you want size checks on
 
 jobs:
   pkg-size:
