@@ -2,7 +2,7 @@ use quick_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::{constants::*, js_bind::fetchRSSText, utils::attrs_get_str};
+use crate::{constants::*, utils::attrs_get_str};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -86,16 +86,4 @@ pub fn get_feed_meta(rss_text: &str) -> RSSChannel {
 #[wasm_bindgen(js_name = getFeedJSON)]
 pub fn get_feed_json(rss_text: &str) -> JsValue {
     get_feed_meta(rss_text).json()
-}
-
-#[wasm_bindgen(js_name = getFeedMetaFormUrl)]
-pub async fn get_feed_meta_from_url(url: String) -> RSSChannel {
-    let text = fetchRSSText(url.as_str()).await.as_string().unwrap();
-    get_feed_meta(text.as_str())
-}
-
-#[wasm_bindgen(js_name = getFeedJSONFormUrl)]
-pub async fn get_feed_json_form_url(url: String) -> JsValue {
-    let text = fetchRSSText(url.as_str()).await.as_string().unwrap();
-    get_feed_json(text.as_str())
 }
