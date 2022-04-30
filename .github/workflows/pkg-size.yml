@@ -55,8 +55,14 @@ jobs:
       run: |
         pnpm install
         
+    - name: Package
+      run: |
+        pnpm build
+        
     - name: Package size report
       uses: pkg-size/action@v1
+      with:
+        build-command: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
