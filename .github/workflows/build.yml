@@ -39,6 +39,13 @@ jobs:
     - uses: Swatinem/rust-cache@v1
       with:
         working-directory: ./wasm
+    
+    - name: pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          /home/runner/.pnpm-store
+        key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
     - name: install pnpm
       run: |
@@ -109,6 +116,13 @@ jobs:
     - uses: Swatinem/rust-cache@v1
       with:
         working-directory: ./src-tauri
+        
+    - name: pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          /home/runner/.pnpm-store
+        key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
     - name: install pnpm
       run: |
