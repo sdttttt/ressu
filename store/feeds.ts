@@ -20,9 +20,12 @@ export const addRSSChannelAsync = createAsyncThunk(
 		if (isURL(url)) {
 			const rssText = await fetchRSSText(url);
 			const metaInfo = await runWASM(() => getFeedMeta(rssText));
+			
 			if (metaInfo.isSpecification()) {
-				console.log(metaInfo.json());
-				return metaInfo.json();
+				const resultJson = metaInfo.json();
+				console.log(resultJson);
+				metaInfo.free();
+				return resultJson;
 			} else {
 				toaster.danger("该订阅源不是RSS2.0标准, 尚不支持其他标准的RSS.");
 			}
