@@ -13,6 +13,7 @@ specifiers:
   '@types/node': ^17.0.23
   '@types/react': ^17.0.0
   '@types/react-dom': ^17.0.14
+  '@types/react-redux': ^7.1.24
   '@types/styled-components': ^5.1.24
   '@types/validator': ^13.7.2
   '@types/ws': ^8.5.3
@@ -63,6 +64,7 @@ devDependencies:
   '@types/node': registry.npmmirror.com/@types/node/17.0.31
   '@types/react': registry.npmmirror.com/@types/react/17.0.44
   '@types/react-dom': registry.npmmirror.com/@types/react-dom/17.0.16
+  '@types/react-redux': registry.npmmirror.com/@types/react-redux/7.1.24
   '@types/styled-components': registry.npmmirror.com/@types/styled-components/5.1.25
   '@types/validator': registry.npmmirror.com/@types/validator/13.7.2
   '@types/ws': registry.npmmirror.com/@types/ws/8.5.3
@@ -363,7 +365,6 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: registry.npmmirror.com/regenerator-runtime/0.13.9
-    dev: false
 
   registry.npmmirror.com/@babel/template/7.16.7:
     resolution: {integrity: sha512-I8j/x8kHUrbYRTUxXrrMbfCa7jxkE7tZre39x3kjr9hvI82cK1FfqLygotcWN5kdPGWcLdWMHpSBavse5tWw3w==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@babel/template/-/template-7.16.7.tgz}
@@ -875,7 +876,6 @@ packages:
       '@types/react': registry.npmmirror.com/@types/react/17.0.44
       hoist-non-react-statics: registry.npmmirror.com/hoist-non-react-statics/3.3.2
       redux: registry.npmmirror.com/redux/4.2.0
-    dev: false
 
   registry.npmmirror.com/@types/react-transition-group/4.4.4:
     resolution: {integrity: sha512-7gAPz7anVK5xzbeQW9wFBDg7G++aPLAFY0QaSMOou9rJZpbuI58WAuJrgu+qR92l61grlnCUe7AFX8KGahAgug==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@types/react-transition-group/-/react-transition-group-4.4.4.tgz}
@@ -2488,13 +2488,11 @@ packages:
     version: 4.2.0
     dependencies:
       '@babel/runtime': registry.npmmirror.com/@babel/runtime/7.17.9
-    dev: false
 
   registry.npmmirror.com/regenerator-runtime/0.13.9:
     resolution: {integrity: sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/regenerator-runtime/-/regenerator-runtime-0.13.9.tgz}
     name: regenerator-runtime
     version: 0.13.9
-    dev: false
 
   registry.npmmirror.com/require-directory/2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/require-directory/-/require-directory-2.1.1.tgz}
