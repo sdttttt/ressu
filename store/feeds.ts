@@ -33,11 +33,14 @@ export const addRSSChannelAsync = createAsyncThunk(
 	}
 );
 
+
 export const initinalizeFeedsFromLocal = createAsyncThunk(
 	"channels/initFromLocal",
 	async (): Promise<Feeds> => {
 		let feedsLocal = await feedsDataLocalGet();
+		console.log(feedsLocal);
 		if (feedsLocal === null) {
+			console.log("init: no local data.");
 			await feedsDataLocalSync(initialState);
 			feedsLocal = initialState;
 		}

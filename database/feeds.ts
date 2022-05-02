@@ -22,6 +22,7 @@ export async function feedsDataLocalSync(data: Feeds) {
 	});
 
 	feedDB.data = realLocalData;
+	console.log("Sync Feeds Data", realLocalData);
 	return await feedDB.write();
 }
 
@@ -57,6 +58,7 @@ export async function addChannelDataLocalSync(channel: RSSChannel) {
 async function initializeFeedDB() {
 	if (!feedDB) {
 		const rootDir = await appDir();
+		console.log("root dir = ", rootDir);
 		feedDB = new Low(
 			new JSONFile<Feeds>(
 				await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME)
@@ -65,12 +67,11 @@ async function initializeFeedDB() {
 	}
 }
 
-// @ts-ignore
+
 if (import.meta.vitest) {
 	const {
 		it,
 		expect
-		// @ts-ignore
 	} = import.meta.vitest;
 
 	it("feed copy but not copy posts.", () => {

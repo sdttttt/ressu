@@ -1,7 +1,5 @@
 import sha1 from "crypto-js/sha1";
 import encUft8 from "crypto-js/enc-utf8";
-import { isString } from "lodash-es"
-import { dataDir } from "@tauri-apps/api/path";
 
 export const DATABASES_PATH = "databases";
 

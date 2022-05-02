@@ -57,7 +57,10 @@
 			},
 			"fs": {
 				"all": true,
-				"scope": ["$APP/databases/*"]
+				"scope": ["$APP/*"]
+			},
+			"path": {
+				"all": true
 			}
 		},
 		"windows": [
