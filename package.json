@@ -26,7 +26,7 @@
     "@reduxjs/toolkit": "^1.8.1",
     "@tauri-apps/api": "^1.0.0-rc.3",
     "crypto-js": "^4.1.1",
-    "evergreen-ui": "^6.9.5",
+    "evergreen-ui": "^6.9.9",
     "lodash-es": "^4.17.21",
     "lowdb": "^3.0.0",
     "react": "^17.0.0",
