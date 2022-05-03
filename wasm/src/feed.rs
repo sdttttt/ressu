@@ -46,11 +46,16 @@ impl RSSChannel {
                     }
 
                     b"item" => {
-                        let text = reader.read_text(e.name(), &mut Vec::new()).unwrap();
-                        posts.push(ChannelItem::from_str(text.as_str()));
+						
+                        if let Ok(text) = reader.read_text(e.name(), &mut Vec::new()) {
+							posts.push(ChannelItem::from_str(text.as_str()));
+						}
                     }
 
-                    _ => {}
+                    _ => {
+						console_log!("{}", String::from_utf8_lossy(e.name()));
+						
+					}
                 },
 
                 Ok(Event::Eof) => break,
