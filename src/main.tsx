@@ -7,13 +7,10 @@ import { ToastContainer } from "react-toastify";
 import { App } from "./app";
 import store from "@store/index";
 import "./index.scss";
-import { initinalizeFeedsFromLocal } from "@store/feeds";
 
 import "react-toastify/dist/ReactToastify.css";
 
 import "./init";
-
-store.dispatch(initinalizeFeedsFromLocal());
 
 
 render(

@@ -37,7 +37,7 @@ specifiers:
   vite: ^2.9.1
   vite-plugin-banner: ^0.2.0
   vitest: ^0.10.0
-  wasm: link:wasm/pkg
+  wasm: link:wasm\pkg
 
 dependencies:
   '@emotion/react': registry.npmmirror.com/@emotion/react/11.9.0_ca4a8ec32d887456a4de02f8cb6532ee
