@@ -13,7 +13,11 @@ export class JSONFile<T> implements Adapter<T> {
 		if (data === null) {
 			return null;
 		} else {
-			return JSON.parse(data) as T;
+			try {
+				return JSON.parse(data) as T;
+			} catch(_) {
+				return null;
+			}
 		}
 	}
 
