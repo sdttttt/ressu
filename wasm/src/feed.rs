@@ -2,6 +2,7 @@ use quick_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use crate::item::ChannelItem;
 use crate::{constants::*, utils::attrs_get_str};
 
 #[wasm_bindgen]
@@ -13,6 +14,8 @@ pub struct RSSChannel {
     title: Option<String>,
 
     url: Option<String>,
+
+    posts: Vec<ChannelItem>,
 }
 
 #[wasm_bindgen]
@@ -21,6 +24,7 @@ impl RSSChannel {
         let mut version = None;
         let mut title = None;
         let mut url = None;
+        let mut posts = Vec::<ChannelItem>::new();
 
         let mut reader = Reader::from_str(&text);
         reader.trim_text(true);
@@ -41,6 +45,11 @@ impl RSSChannel {
                         url = attrs_get_str(&mut reader, e.attributes(), "url").unwrap();
                     }
 
+                    b"item" => {
+                        let text = reader.read_text(e.name(), &mut Vec::new()).unwrap();
+                        posts.push(ChannelItem::from_str(text.as_str()));
+                    }
+
                     _ => {}
                 },
 
@@ -48,7 +57,10 @@ impl RSSChannel {
 
                 Ok(_) => {}
 
-                Err(quick_xml::Error::EndEventMismatch { expected: _, found: _ }) => {}
+                Err(quick_xml::Error::EndEventMismatch {
+                    expected: _,
+                    found: _,
+                }) => {}
 
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
@@ -58,6 +70,7 @@ impl RSSChannel {
             version,
             title,
             url,
+            posts,
         }
     }
 
@@ -75,6 +88,11 @@ impl RSSChannel {
     pub fn json(&self) -> JsValue {
         JsValue::from_serde(self).unwrap()
     }
+
+	#[wasm_bindgen]
+	pub fn posts_len(&self) -> usize {
+		self.posts.len()
+	}
 }
 
 #[wasm_bindgen(js_name = getFeedMeta)]

@@ -4,6 +4,7 @@ mod js_bind;
 mod constants;
 
 pub mod feed;
+pub mod item;
 
 
 use wasm_bindgen::prelude::*;

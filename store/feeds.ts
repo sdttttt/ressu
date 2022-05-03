@@ -1,6 +1,6 @@
 import { fetchRSSText } from "@/utils/http";
 import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
-import { getFeedMeta } from "wasm";
+import { getFeedMeta, RSSChannel } from "wasm";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds } from "./typing";
 import isURL from "validator/es/lib/isURL";
@@ -30,6 +30,13 @@ export const addRSSChannelAsync = createAsyncThunk(
 				toaster.danger("该订阅源不是RSS2.0标准, 尚不支持其他标准的RSS.");
 			}
 		}
+	}
+);
+
+export const pullRSSChannelAsync = createAsyncThunk(
+	"channels/pull",
+	async (channels: RSSChannel[]) => {
+		
 	}
 );
 
