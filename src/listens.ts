@@ -1,11 +1,14 @@
 import { listen } from "@tauri-apps/api/event";
 
 export enum RessuEvent {
-	SyncLocal = "ressu://sync-local"
+	SyncLocal = "ressu://sync-local",
+
+	PullAllRSS = "ressu://pull-all-rss"
 }
 
 const uninstallFnMap = {
-	[RessuEvent.SyncLocal]: () => {}
+	[RessuEvent.SyncLocal]: () => {},
+	[RessuEvent.PullAllRSS]: () => {}
 };
 
 /**
@@ -15,6 +18,11 @@ const uninstallFnMap = {
 export const install = async () => {
 	uninstallFnMap[RessuEvent.SyncLocal] = await listen(
 		RessuEvent.SyncLocal,
+		async () => {}
+	);
+
+	uninstallFnMap[RessuEvent.PullAllRSS] = await listen(
+		RessuEvent.PullAllRSS,
 		async () => {}
 	);
 };
