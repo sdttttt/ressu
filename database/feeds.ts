@@ -22,7 +22,7 @@ export async function feedsDataLocalSync(data: Feeds) {
 	});
 
 	feedDB.data = realLocalData;
-	console.log("Sync Feeds Data", realLocalData);
+	console.log("Sync Feeds Data:", realLocalData);
 	return await feedDB.write();
 }
 
@@ -36,7 +36,6 @@ export async function feedsDataLocalGet(): Promise<Feeds | null> {
 	return feedDB.data;
 }
 
-
 /**
  * It adds a channel to the local database
  * @param {RSSChannel} channel - RSSChannel - The channel to add to the database
@@ -44,7 +43,7 @@ export async function feedsDataLocalGet(): Promise<Feeds | null> {
  */
 export async function addChannelDataLocalSync(channel: RSSChannel) {
 	await initializeFeedDB();
-	await feedDB.read()
+	await feedDB.read();
 	if (!feedDB.data) {
 		throw new Error("No data in the feedDB");
 	}
@@ -60,19 +59,13 @@ async function initializeFeedDB() {
 		const rootDir = await appDir();
 		console.log("root dir = ", rootDir);
 		feedDB = new Low(
-			new JSONFile<Feeds>(
-				await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME)
-			)
+			new JSONFile<Feeds>(await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME))
 		);
 	}
 }
 
-
 if (import.meta.vitest) {
-	const {
-		it,
-		expect
-	} = import.meta.vitest;
+	const { it, expect } = import.meta.vitest;
 
 	it("feed copy but not copy posts.", () => {
 		const feeds: Feeds = {

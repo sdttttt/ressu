@@ -12,7 +12,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 import "./init";
 
-
 render(
 	<React.StrictMode>
 		<Provider store={store}>

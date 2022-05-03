@@ -6,10 +6,10 @@ import store from "@store/index";
 import { install as installListens } from "./listens";
 
 (async () => {
-	const rootPathAsync = await appDir();
-	await createDir(await join(rootPathAsync, DATABASES_PATH), { recursive: true });
-	store.dispatch(initinalizeFeedsFromLocal());
 	installListens();
-})()
-
-
+	const rootPathAsync = await appDir();
+	await createDir(await join(rootPathAsync, DATABASES_PATH), {
+		recursive: true
+	});
+	store.dispatch(initinalizeFeedsFromLocal());
+})();

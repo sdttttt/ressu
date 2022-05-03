@@ -15,7 +15,7 @@ export class JSONFile<T> implements Adapter<T> {
 		} else {
 			try {
 				return JSON.parse(data) as T;
-			} catch(_) {
+			} catch (_) {
 				return null;
 			}
 		}

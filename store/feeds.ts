@@ -20,7 +20,7 @@ export const addRSSChannelAsync = createAsyncThunk(
 		if (isURL(url)) {
 			const rssText = await fetchRSSText(url);
 			const metaInfo = await runWASM(() => getFeedMeta(rssText));
-			
+
 			if (metaInfo.isSpecification()) {
 				const resultJson = metaInfo.json();
 				console.log(resultJson);
@@ -32,7 +32,6 @@ export const addRSSChannelAsync = createAsyncThunk(
 		}
 	}
 );
-
 
 export const initinalizeFeedsFromLocal = createAsyncThunk(
 	"channels/initFromLocal",

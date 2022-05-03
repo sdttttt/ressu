@@ -3,7 +3,7 @@ import RessuInput from "@/components/RessuInput";
 import { SearchIcon } from "evergreen-ui";
 import { selectChannels } from "@store/feeds";
 import { useSelector } from "react-redux";
-import { SidebarContainer } from "./styled"
+import { SidebarContainer } from "./styled";
 
 export default function FeedSidebar() {
 	const channels = useSelector(selectChannels);
