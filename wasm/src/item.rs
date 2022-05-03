@@ -15,6 +15,7 @@ pub struct ChannelItem {
     link: Option<String>,
 }
 
+#[wasm_bindgen]
 impl ChannelItem {
     pub fn from_str(text: &str) -> Self {
         let mut title = None;
@@ -88,4 +89,26 @@ impl ChannelItem {
             link,
         }
     }
+
+
+	#[wasm_bindgen]
+	pub fn title(&self) -> String {
+		self.title.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	#[wasm_bindgen]
+	pub fn description(&self) -> String {
+		self.description.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	#[wasm_bindgen]
+	pub fn pub_date(&self) -> String {
+		self.pub_date.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	#[wasm_bindgen]
+	pub fn link(&self) -> String {
+		self.link.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
 }
