@@ -21,7 +21,7 @@ After WASM compile complete, need **reinstall node_modules** to found wasm libra
 ## TODO
 
 - [x] Layout.
-- [ ] RSS parse.
+- [x] RSS parse.
 - [ ] Local storage.
 - [ ] Deep UI Design.
 
