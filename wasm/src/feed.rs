@@ -1,4 +1,4 @@
-use quick_xml::{de::from_str, events::Event, Reader};
+use fast_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -46,27 +46,54 @@ impl RSSChannel {
                     }
 
                     b"item" => {
-						
-                        if let Ok(text) = reader.read_text(e.name(), &mut Vec::new()) {
-							posts.push(ChannelItem::from_str(text.as_str()));
+						let mut item_buf = Vec::new();
+                        match reader.read_event(&mut item_buf) {
+							Ok(Event::Start(ref e)) => {
+								match e.name() {
+									b"title" => {
+										if let Ok(text) = reader.read_text(e.name(), &mut Vec::new()) {
+											title = Some(text.to_string())
+										}
+									}
+
+									_ => {}
+								}
+							}
+
+							Ok(Event::Text(ref e)) => {
+								console_log!("{}", String::from_utf8_lossy(e));
+							}
+			
+							Ok(Event::Eof) => break,
+			
+							Ok(_) => {}
+			
+							Err(fast_xml::Error::EndEventMismatch {
+								expected: _,
+								found: _,
+							}) => {}
+							
+							Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
 						}
                     }
 
                     _ => {
-						console_log!("{}", String::from_utf8_lossy(e.name()));
-						
 					}
                 },
+
+				Ok(Event::Text(ref e)) => {
+					console_log!("{}", String::from_utf8_lossy(e));
+				}
 
                 Ok(Event::Eof) => break,
 
                 Ok(_) => {}
 
-                Err(quick_xml::Error::EndEventMismatch {
+                Err(fast_xml::Error::EndEventMismatch {
                     expected: _,
                     found: _,
                 }) => {}
-
+				
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
         }
@@ -78,6 +105,7 @@ impl RSSChannel {
             posts,
         }
     }
+
 
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> String {

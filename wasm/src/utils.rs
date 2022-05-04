@@ -1,4 +1,4 @@
-use quick_xml::{events::attributes::Attributes, Reader};
+use fast_xml::{events::attributes::Attributes, Reader};
 
 use std::borrow::Cow;
 
@@ -26,7 +26,7 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
     reader: &mut Reader<B>,
     attrs: Attributes<'a>,
     key: &'a str,
-) -> quick_xml::Result<Option<String>> {
+) -> fast_xml::Result<Option<String>> {
     let mut value = None;
 
     for attribute in attrs {

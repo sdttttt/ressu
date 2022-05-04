@@ -1,4 +1,6 @@
-use quick_xml::{events::Event, Reader};
+use std::io::BufRead;
+
+use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -17,6 +19,7 @@ pub struct ChannelItem {
 
 #[wasm_bindgen]
 impl ChannelItem {
+
     pub fn from_str(text: &str) -> Self {
         let mut title = None;
         let mut description = None;
@@ -73,7 +76,7 @@ impl ChannelItem {
 
                 Ok(_) => {}
 
-                Err(quick_xml::Error::EndEventMismatch {
+                Err(fast_xml::Error::EndEventMismatch {
                     expected: _,
                     found: _,
                 }) => {}
@@ -90,10 +93,26 @@ impl ChannelItem {
         }
     }
 
+	pub fn new() -> Self {
+		Self {
+			title: None,
+			description: None,
+			pub_date: None,
+			link: None,
+		}
+	}
+
+	pub fn set_title(&mut self, title: &str) {
+		self.title = Some(title.to_string());
+	}
 
 	#[wasm_bindgen]
 	pub fn title(&self) -> String {
 		self.title.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	pub fn set_description(&mut self, description: &str) {
+		self.description = Some(description.to_string());
 	}
 
 	#[wasm_bindgen]
@@ -101,9 +120,17 @@ impl ChannelItem {
 		self.description.as_deref().unwrap_or_else(|| "").to_string()
 	}
 
+	pub fn set_pub_date(&mut self, pub_date: &str) {
+		self.pub_date = Some(pub_date.to_string());
+	}
+
 	#[wasm_bindgen]
 	pub fn pub_date(&self) -> String {
 		self.pub_date.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	pub fn set_link(&mut self, link: &str) {
+		self.link = Some(link.to_string());
 	}
 
 	#[wasm_bindgen]
