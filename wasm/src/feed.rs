@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::item::ChannelItem;
-use crate::{constants::*, utils::attrs_get_str};
+use crate::{constants::*, utils::attrs_get_str, utils::reader_get_text};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -32,58 +32,95 @@ impl RSSChannel {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match e.name() {
-                    b"rss" => {
-                        version = attrs_get_str(&mut reader, e.attributes(), "version").unwrap();
+                Ok(Event::Start(ref e)) => match reader.decode( e.name()).unwrap() {
+                    "rss" => {
+                        version = attrs_get_str(&reader, e.attributes(), "version").unwrap()
                     }
 
-                    b"title" => {
-                        title = attrs_get_str(&mut reader, e.attributes(), "title").unwrap();
+                    "title" => {
+                        title = attrs_get_str(&reader, e.attributes(), "title").unwrap()
                     }
 
-                    b"url" => {
-                        url = attrs_get_str(&mut reader, e.attributes(), "url").unwrap();
+                    "url" => url = attrs_get_str(&reader, e.attributes(), "url").unwrap(),
+
+                    "item" => {
+                        let mut item_buf = Vec::new();
+
+                        let mut item = ChannelItem::new();
+                        
+
+                        reader.check_end_names(false);
+
+                        loop {
+                            match reader.read_event(&mut item_buf) {
+                                Ok(Event::Start(ref e)) => match reader.decode( e.name()).unwrap() {
+                                    "title" => {
+                                        let text = reader_get_text(&mut reader, e.name());
+                                        console_log!("title => {}", &text);
+                                        item.set_title(text.as_str());
+                                    }
+
+                                  
+
+                                    "pubDate" => {
+                                        let text = reader_get_text(&mut reader, e.name());
+                                        console_log!("pub_date => {}", &text);
+                                        item.set_pub_date(text.as_str());
+                                    }
+
+                                    "link" => {
+                                        let text = reader_get_text(&mut reader, e.name());
+                                        console_log!("link => {}", &text);
+                                        item.set_link(text.as_str());
+                                    }
+
+                                    "description" => {
+                                        let mut descript_buf = Vec::new();
+                                        reader.read_to_end(e.name(),&mut descript_buf).unwrap();
+                                        
+                                        console_log!(" ========== {}", reader.decode(&descript_buf).unwrap());
+                                    }
+
+                                    _ => {}
+                                },
+
+                                Ok(Event::End(ref e)) =>  match reader.decode(  e.name()).unwrap() {
+                                    "item" => break,
+                                    _ => {}
+                                },
+
+                                Ok(Event::Text(ref e)) => {
+                                    console_log!("{}", String::from_utf8_lossy(e));
+                                }
+
+                                Ok(Event::Eof) => break,
+
+                                Ok(_) => {}
+
+                                Err(fast_xml::Error::EndEventMismatch {
+                                    expected: _,
+                                    found: _,
+                                }) => {}
+
+                                Err(e) => panic!(
+                                    "Error at position {}: {:?}",
+                                    reader.buffer_position(),
+                                    e
+                                ),
+                            }
+                        }
+
+                        reader.check_end_names(true);
+
+                        posts.push(item);
                     }
 
-                    b"item" => {
-						let mut item_buf = Vec::new();
-                        match reader.read_event(&mut item_buf) {
-							Ok(Event::Start(ref e)) => {
-								match e.name() {
-									b"title" => {
-										if let Ok(text) = reader.read_text(e.name(), &mut Vec::new()) {
-											title = Some(text.to_string())
-										}
-									}
-
-									_ => {}
-								}
-							}
-
-							Ok(Event::Text(ref e)) => {
-								console_log!("{}", String::from_utf8_lossy(e));
-							}
-			
-							Ok(Event::Eof) => break,
-			
-							Ok(_) => {}
-			
-							Err(fast_xml::Error::EndEventMismatch {
-								expected: _,
-								found: _,
-							}) => {}
-							
-							Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-						}
-                    }
-
-                    _ => {
-					}
+                    _ => {}
                 },
 
-				Ok(Event::Text(ref e)) => {
-					console_log!("{}", String::from_utf8_lossy(e));
-				}
+                Ok(Event::Text(ref e)) => {
+                    console_log!("{}", String::from_utf8_lossy(e));
+                }
 
                 Ok(Event::Eof) => break,
 
@@ -93,7 +130,7 @@ impl RSSChannel {
                     expected: _,
                     found: _,
                 }) => {}
-				
+
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
         }
@@ -105,7 +142,6 @@ impl RSSChannel {
             posts,
         }
     }
-
 
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> String {
@@ -122,10 +158,10 @@ impl RSSChannel {
         JsValue::from_serde(self).unwrap()
     }
 
-	#[wasm_bindgen]
-	pub fn posts_len(&self) -> usize {
-		self.posts.len()
-	}
+    #[wasm_bindgen]
+    pub fn posts_len(&self) -> usize {
+        self.posts.len()
+    }
 }
 
 #[wasm_bindgen(js_name = getFeedMeta)]

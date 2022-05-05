@@ -23,7 +23,7 @@ macro_rules! console_log  {
 * from attributes get key str;
 */
 pub fn attrs_get_str<'a, B: std::io::BufRead>(
-    reader: &mut Reader<B>,
+    reader: &Reader<B>,
     attrs: Attributes<'a>,
     key: &'a str,
 ) -> fast_xml::Result<Option<String>> {
@@ -48,4 +48,16 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
         );
     }
     Ok(value)
+}
+
+
+pub fn reader_get_text<B: std::io::BufRead>(
+    reader: &mut Reader<B>,
+    end: &[u8]
+) -> String {
+    if let Ok(text) = reader.read_text(end, &mut Vec::new()) {
+        text
+    } else {
+        String::from("")
+    }
 }
