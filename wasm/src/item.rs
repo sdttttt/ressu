@@ -3,6 +3,9 @@ use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use crate::FromXml;
+use crate::buf::BufPool;
+
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename = "item")]
@@ -16,18 +19,16 @@ pub struct ChannelItem {
     link: Option<String>,
 }
 
-#[wasm_bindgen]
-impl ChannelItem {
+impl FromXml  for ChannelItem {
+    fn from_xml<B: std::io::BufRead>(bufs: &BufPool, reader: &mut fast_xml::Reader<B>) -> fast_xml::Result<ChannelItem> {
 
-    pub fn from_str(text: &str) -> Self {
         let mut title = None;
         let mut description = None;
         let mut pub_date = None;
         let mut link = None;
 
-        let mut reader = Reader::from_str(&text);
         reader.trim_text(true);
-        let mut buf = Vec::new();
+        let mut buf = bufs.pop();
 
         loop {
             match reader.read_event(&mut buf) {
@@ -35,8 +36,7 @@ impl ChannelItem {
                     b"title" => {
                         title = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())
-                                .unwrap()
+                                .read_text(e.name(), &mut Vec::new())?
                                 .to_string(),
                         )
                     }
@@ -44,8 +44,7 @@ impl ChannelItem {
                     b"description" => {
                         description = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())
-                                .unwrap()
+                                .read_text(e.name(), &mut Vec::new())?
                                 .to_string(),
                         )
                     }
@@ -53,8 +52,7 @@ impl ChannelItem {
                     b"pubDate" => {
                         pub_date = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())
-                                .unwrap()
+                                .read_text(e.name(), &mut Vec::new())?
                                 .to_string(),
                         )
                     }
@@ -62,8 +60,7 @@ impl ChannelItem {
                     b"link" => {
                         link = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())
-                                .unwrap()
+                                .read_text(e.name(), &mut Vec::new())?
                                 .to_string(),
                         )
                     }
@@ -84,12 +81,24 @@ impl ChannelItem {
             }
         }
 
-        Self {
+        Ok(Self {
             title,
             description,
             pub_date,
             link,
-        }
+        })
+    }
+}
+
+
+#[wasm_bindgen]
+impl ChannelItem {
+
+    pub fn from_str(text: &str) -> ChannelItem {
+        let mut reader = Reader::from_str(text);
+        let mut bufs = BufPool::new(4, 512);
+        
+        Self::from_xml(&mut bufs, &mut reader).unwrap()
     }
 
 	pub fn new() -> Self {
