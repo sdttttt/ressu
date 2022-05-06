@@ -53,11 +53,14 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
 
 pub fn reader_get_text<B: std::io::BufRead>(
     reader: &mut Reader<B>,
-    end: &[u8]
+    end: &[u8],
+    buf: &mut Vec<u8>
 ) -> String {
-    if let Ok(text) = reader.read_text(end, &mut Vec::new()) {
+    if let Ok(text) = reader.read_text(end, buf) {
+        buf.clear();
         text
     } else {
+        buf.clear();
         String::from("")
     }
 }

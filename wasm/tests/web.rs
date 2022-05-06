@@ -25,6 +25,4 @@ fn test_parse_rss_from_str() {
     let rss_feed = RSSChannel::from_str(include_str!("../data/rss2.0.xml"));
     console_log!("{:?}", rss_feed);
     assert_eq!(rss_feed.is_specification(), true);
-
-    console_log!("JsValue: {:?}", JsValue::from_serde(&rss_feed).unwrap());
 }
