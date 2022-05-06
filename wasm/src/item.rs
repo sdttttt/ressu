@@ -118,11 +118,39 @@ impl FromXml  for ChannelItem {
 #[wasm_bindgen]
 impl ChannelItem {
 
+	#[wasm_bindgen]
+	pub fn title(&self) -> String {
+		self.title.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+
+	#[wasm_bindgen]
+	pub fn description(&self) -> String {
+		self.description.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+
+
+	#[wasm_bindgen]
+	pub fn pub_date(&self) -> String {
+		self.pub_date.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+	#[wasm_bindgen]
+	pub fn link(&self) -> String {
+		self.link.as_deref().unwrap_or_else(|| "").to_string()
+	}
+
+}
+
+impl ChannelItem {
+
     pub fn from_str(text: &str) -> ChannelItem {
         let mut bufs = BufPool::new(16, 512);
         
         Self::from_xml(&mut bufs, text).unwrap()
     }
+
 
 	pub fn new() -> Self {
 		Self {
@@ -137,36 +165,17 @@ impl ChannelItem {
 		self.title = Some(title.to_string());
 	}
 
-	#[wasm_bindgen]
-	pub fn title(&self) -> String {
-		self.title.as_deref().unwrap_or_else(|| "").to_string()
-	}
 
 	pub fn set_description(&mut self, description: &str) {
 		self.description = Some(description.to_string());
 	}
 
-	#[wasm_bindgen]
-	pub fn description(&self) -> String {
-		self.description.as_deref().unwrap_or_else(|| "").to_string()
-	}
-
-	pub fn set_pub_date(&mut self, pub_date: &str) {
+    pub fn set_pub_date(&mut self, pub_date: &str) {
 		self.pub_date = Some(pub_date.to_string());
-	}
-
-	#[wasm_bindgen]
-	pub fn pub_date(&self) -> String {
-		self.pub_date.as_deref().unwrap_or_else(|| "").to_string()
 	}
 
 	pub fn set_link(&mut self, link: &str) {
 		self.link = Some(link.to_string());
-	}
-
-	#[wasm_bindgen]
-	pub fn link(&self) -> String {
-		self.link.as_deref().unwrap_or_else(|| "").to_string()
 	}
 
 }

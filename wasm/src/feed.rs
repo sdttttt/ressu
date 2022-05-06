@@ -111,11 +111,6 @@ impl FromXml for RSSChannel {
 
 #[wasm_bindgen]
 impl RSSChannel {
-    pub fn from_str(text: &str) -> RSSChannel {
-        let mut bufs = BufPool::new(4, 2048);
-
-        Self::from_xml(&mut bufs, text).unwrap()
-    }
 
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> String {
@@ -135,6 +130,14 @@ impl RSSChannel {
     #[wasm_bindgen(js_name = postsLen)]
     pub fn posts_len(&self) -> usize {
         self.posts.len()
+    }
+}
+
+impl RSSChannel {
+    pub fn from_str(text: &str) -> RSSChannel {
+        let mut bufs = BufPool::new(4, 2048);
+
+        Self::from_xml(&mut bufs, text).unwrap()
     }
 }
 
