@@ -2,8 +2,11 @@ use fast_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use crate::FromXml;
+use crate::buf::BufPool;
 use crate::item::ChannelItem;
 use crate::{constants::*, utils::attrs_get_str, utils::reader_get_text};
+
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -18,28 +21,27 @@ pub struct RSSChannel {
     posts: Vec<ChannelItem>,
 }
 
-#[wasm_bindgen]
-impl RSSChannel {
-    pub fn from_str(text: &str) -> Self {
+impl FromXml for RSSChannel {
+
+    fn from_xml<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut Reader<B>,
+    ) -> fast_xml::Result<RSSChannel> {
         let mut version = None;
         let mut title = None;
         let mut url = None;
         let mut posts = Vec::<ChannelItem>::new();
 
-        let mut reader = Reader::from_str(&text);
         reader.trim_text(true);
-        let mut buf = Vec::new();
+
+        let mut buf = bufs.pop();
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match reader.decode( e.name()).unwrap() {
-                    "rss" => {
-                        version = attrs_get_str(&reader, e.attributes(), "version").unwrap()
-                    }
+                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
+                    "rss" => version = attrs_get_str(&reader, e.attributes(), "version").unwrap(),
 
-                    "title" => {
-                        title = attrs_get_str(&reader, e.attributes(), "title").unwrap()
-                    }
+                    "title" => title = attrs_get_str(&reader, e.attributes(), "title").unwrap(),
 
                     "url" => url = attrs_get_str(&reader, e.attributes(), "url").unwrap(),
 
@@ -47,44 +49,46 @@ impl RSSChannel {
                         let mut item_buf = Vec::new();
 
                         let mut item = ChannelItem::new();
-                        
 
                         reader.check_end_names(false);
 
                         loop {
                             match reader.read_event(&mut item_buf) {
-                                Ok(Event::Start(ref e)) => match reader.decode( e.name()).unwrap() {
+                                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
                                     "title" => {
-                                        let text = reader_get_text(&mut reader, e.name());
+                                        let text = reader_get_text(reader, e.name());
                                         console_log!("title => {}", &text);
                                         item.set_title(text.as_str());
                                     }
 
-                                  
-
                                     "pubDate" => {
-                                        let text = reader_get_text(&mut reader, e.name());
+                                        let text = reader_get_text(reader, e.name());
                                         console_log!("pub_date => {}", &text);
                                         item.set_pub_date(text.as_str());
                                     }
 
                                     "link" => {
-                                        let text = reader_get_text(&mut reader, e.name());
+                                        let text = reader_get_text(reader, e.name());
                                         console_log!("link => {}", &text);
                                         item.set_link(text.as_str());
                                     }
 
                                     "description" => {
-                                        let mut descript_buf = Vec::new();
-                                        reader.read_to_end(e.name(),&mut descript_buf).unwrap();
-                                        
-                                        console_log!(" ========== {}", reader.decode(&descript_buf).unwrap());
+                                        let mut descript_buf = bufs.pop();
+                                        reader.read_to_end(e.name(), &mut descript_buf).unwrap();
+
+                                        console_log!(
+                                            " ========== {}",
+                                            reader.decode(&descript_buf).unwrap()
+                                        );
+
+                                        descript_buf.clear();
                                     }
 
                                     _ => {}
                                 },
 
-                                Ok(Event::End(ref e)) =>  match reader.decode(  e.name()).unwrap() {
+                                Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
                                     "item" => break,
                                     _ => {}
                                 },
@@ -135,12 +139,25 @@ impl RSSChannel {
             }
         }
 
-        Self {
+        buf.clear();
+
+        Ok(Self {
             version,
             title,
             url,
             posts,
-        }
+        })
+    }
+}
+
+#[wasm_bindgen]
+impl RSSChannel {
+
+    pub fn from_str(text: &str) -> RSSChannel {
+        let mut bufs =  BufPool::new(4, 512);
+        let mut reader = fast_xml::Reader::from_str(text);
+        
+        Self::from_xml(&mut bufs, &mut reader).unwrap()
     }
 
     #[wasm_bindgen(getter = version)]
@@ -158,7 +175,7 @@ impl RSSChannel {
         JsValue::from_serde(self).unwrap()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = postsLen)]
     pub fn posts_len(&self) -> usize {
         self.posts.len()
     }

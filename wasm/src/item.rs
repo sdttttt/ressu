@@ -1,4 +1,3 @@
-use std::io::BufRead;
 
 use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};

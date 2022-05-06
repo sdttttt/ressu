@@ -3,9 +3,11 @@ mod utils;
 mod js_bind;
 mod constants;
 
+mod buf;
 pub mod feed;
 pub mod item;
 
+use crate::buf::BufPool;
 
 use wasm_bindgen::prelude::*;
 
@@ -26,4 +28,40 @@ pub fn on_start() {
 #[wasm_bindgen]
 pub fn hello() {
     console_log!("from WASM greet!");
+}
+
+
+pub trait FromXml: Sized {
+    fn from_xml<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut fast_xml::Reader<B>,
+    ) -> fast_xml::Result<Self>;
+}
+
+struct SkipThisElement;
+
+use fast_xml::events::Event as XmlEvent;
+use fast_xml::Reader as XmlReader;
+
+impl FromXml for SkipThisElement {
+
+    fn from_xml<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut XmlReader<B>
+    ) -> fast_xml::Result<Self> {
+        let mut buf = bufs.pop();
+        let mut depth = 1u64;
+        loop {
+            match reader.read_event(&mut buf) {
+                Ok(XmlEvent::Start(_)) => depth += 1,
+                Ok(XmlEvent::End(_)) if depth == 1 => break,
+                Ok(XmlEvent::End(_)) => depth -= 1,
+                Ok(XmlEvent::Eof) => break, // just ignore EOF
+                Err(err) => return Err(err.into()),
+                _ => (),
+            }
+            buf.clear();
+        }
+        Ok(SkipThisElement)
+    }
 }
