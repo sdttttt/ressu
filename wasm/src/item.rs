@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::FromXml;
 use crate::buf::BufPool;
+use crate::utils::reader_get_text;
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -40,9 +41,21 @@ impl FromXml  for ChannelItem {
                     "title" => {
                         let mut title_buf = bufs.pop();
                         title = Some(
-                            reader
-                                .read_text(e.name(), &mut title_buf)?
-                                .to_string(),
+                            reader_get_text(&mut reader, e.name(), &mut title_buf)
+                        )
+                    }
+
+                    "pubDate" => {
+                        let mut pub_date_buf = bufs.pop();
+                        pub_date = Some(
+                            reader_get_text(&mut reader, e.name(), &mut pub_date_buf)
+                        )
+                    }
+
+                    "link" => {
+                        let mut link_buf = bufs.pop();
+                        link = Some(
+                            reader_get_text(&mut reader, e.name(), &mut link_buf)
                         )
                     }
 
@@ -72,24 +85,6 @@ impl FromXml  for ChannelItem {
                         let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
                     
                         description = Some(String::from_utf8_lossy(item_slice).borrow_mut().to_string());
-                    }
-
-                    "pubDate" => {
-                        let mut pub_date_buf = bufs.pop();
-                        pub_date = Some(
-                            reader
-                                .read_text(e.name(), &mut pub_date_buf)?
-                                .to_string(),
-                        )
-                    }
-
-                    "link" => {
-                        let mut link_buf = bufs.pop();
-                        link = Some(
-                            reader
-                                .read_text(e.name(), &mut link_buf)?
-                                .to_string(),
-                        )
                     }
 
                     _ => {}
