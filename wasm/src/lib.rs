@@ -32,9 +32,9 @@ pub fn hello() {
 
 
 pub trait FromXml: Sized {
-    fn from_xml<B: std::io::BufRead>(
+    fn from_xml(
         bufs: &BufPool,
-        reader: &mut fast_xml::Reader<B>,
+        text: &str
     ) -> fast_xml::Result<Self>;
 }
 
@@ -45,10 +45,11 @@ use fast_xml::Reader as XmlReader;
 
 impl FromXml for SkipThisElement {
 
-    fn from_xml<B: std::io::BufRead>(
+    fn from_xml(
         bufs: &BufPool,
-        reader: &mut XmlReader<B>
+        text: &str,
     ) -> fast_xml::Result<Self> {
+        let mut reader = XmlReader::from_str(text);
         let mut buf = bufs.pop();
         let mut depth = 1u64;
         loop {

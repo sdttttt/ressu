@@ -1,4 +1,6 @@
 
+use std::borrow::BorrowMut;
+
 use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -20,7 +22,9 @@ pub struct ChannelItem {
 }
 
 impl FromXml  for ChannelItem {
-    fn from_xml<B: std::io::BufRead>(bufs: &BufPool, reader: &mut fast_xml::Reader<B>) -> fast_xml::Result<ChannelItem> {
+    fn from_xml(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
+
+        let mut reader = Reader::from_str(text);
 
         let mut title = None;
         let mut description = None;
@@ -32,35 +36,58 @@ impl FromXml  for ChannelItem {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match e.name() {
-                    b"title" => {
+                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
+                    "title" => {
+                        let mut title_buf = bufs.pop();
                         title = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())?
+                                .read_text(e.name(), &mut title_buf)?
                                 .to_string(),
                         )
                     }
 
-                    b"description" => {
-                        description = Some(
-                            reader
-                                .read_text(e.name(), &mut Vec::new())?
-                                .to_string(),
-                        )
+                    "description" => {
+                        let mut description_buf = bufs.pop();
+
+                        let start_position = reader.buffer_position();
+
+                        reader.check_end_names(false);
+                        loop {
+                            match reader.read_event(&mut description_buf) {
+                                Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
+                                    "description" => break,
+                                    _ => {}
+                                },
+                                Ok(Event::Eof) => break,
+                                _ => {}
+                            }
+                        }
+                        reader.check_end_names(true);
+                        
+                        let end_position = reader.buffer_position();
+
+                        let end_tag_len = "</description>".len();
+
+                        let text_string = text.to_string();
+                        let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
+                    
+                        description = Some(String::from_utf8_lossy(item_slice).borrow_mut().to_string());
                     }
 
-                    b"pubDate" => {
+                    "pubDate" => {
+                        let mut pub_date_buf = bufs.pop();
                         pub_date = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())?
+                                .read_text(e.name(), &mut pub_date_buf)?
                                 .to_string(),
                         )
                     }
 
-                    b"link" => {
+                    "link" => {
+                        let mut link_buf = bufs.pop();
                         link = Some(
                             reader
-                                .read_text(e.name(), &mut Vec::new())?
+                                .read_text(e.name(), &mut link_buf)?
                                 .to_string(),
                         )
                     }
@@ -81,6 +108,8 @@ impl FromXml  for ChannelItem {
             }
         }
 
+        buf.clear();
+
         Ok(Self {
             title,
             description,
@@ -95,10 +124,9 @@ impl FromXml  for ChannelItem {
 impl ChannelItem {
 
     pub fn from_str(text: &str) -> ChannelItem {
-        let mut reader = Reader::from_str(text);
-        let mut bufs = BufPool::new(4, 512);
+        let mut bufs = BufPool::new(16, 512);
         
-        Self::from_xml(&mut bufs, &mut reader).unwrap()
+        Self::from_xml(&mut bufs, text).unwrap()
     }
 
 	pub fn new() -> Self {
