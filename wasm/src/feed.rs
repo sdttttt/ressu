@@ -1,7 +1,12 @@
-use quick_xml::{de::from_str, events::Event, Reader};
+use std::borrow::BorrowMut;
+
+use fast_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use crate::buf::BufPool;
+use crate::item::ChannelItem;
+use crate::FromXml;
 use crate::{constants::*, utils::attrs_get_str};
 
 #[wasm_bindgen]
@@ -13,52 +18,103 @@ pub struct RSSChannel {
     title: Option<String>,
 
     url: Option<String>,
+
+    posts: Vec<ChannelItem>,
 }
 
-#[wasm_bindgen]
-impl RSSChannel {
-    pub fn from_str(text: &str) -> Self {
+impl FromXml for RSSChannel {
+    fn from_xml(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
+        let mut reader = Reader::from_str(text);
+
         let mut version = None;
         let mut title = None;
         let mut url = None;
+        let mut posts = Vec::<ChannelItem>::new();
 
-        let mut reader = Reader::from_str(&text);
         reader.trim_text(true);
-        let mut buf = Vec::new();
+
+        let mut buf = bufs.pop();
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match e.name() {
-                    b"rss" => {
-                        version = attrs_get_str(&mut reader, e.attributes(), "version").unwrap();
-                    }
+                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
+                    "rss" => version = attrs_get_str(&reader, e.attributes(), "version").unwrap(),
 
-                    b"title" => {
-                        title = attrs_get_str(&mut reader, e.attributes(), "title").unwrap();
-                    }
+                    "title" => title = attrs_get_str(&reader, e.attributes(), "title").unwrap(),
 
-                    b"url" => {
-                        url = attrs_get_str(&mut reader, e.attributes(), "url").unwrap();
+                    "url" => url = attrs_get_str(&reader, e.attributes(), "url").unwrap(),
+
+                    "item" => {
+                        let mut buf = bufs.pop();
+
+                        let start_position = reader.buffer_position();
+
+                        reader.check_end_names(false);
+                        loop {
+                            match reader.read_event(&mut buf) {
+                                Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
+                                    "item" => break,
+                                    _ => {}
+                                },
+                                Ok(Event::Eof) => break,
+                                _ => {}
+                            }
+                        }
+                        reader.check_end_names(true);
+
+                        let end_position = reader.buffer_position();
+
+                        let end_tag_len = "</item>".len();
+
+                        let text_string = text.to_string();
+                        let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
+
+                        buf.clear();
+
+                        console_log!("start: {}, end: {}", start_position, end_position - end_tag_len);
+
+                        let item =
+                            ChannelItem::from_str(String::from_utf8_lossy(item_slice).borrow_mut());
+                        posts.push(item);
                     }
 
                     _ => {}
                 },
 
+                Ok(Event::Text(ref e)) => {
+                    console_log!("{}", String::from_utf8_lossy(e));
+                }
+
                 Ok(Event::Eof) => break,
 
                 Ok(_) => {}
 
-                Err(quick_xml::Error::EndEventMismatch { expected: _, found: _ }) => {}
+                Err(fast_xml::Error::EndEventMismatch {
+                    expected: _,
+                    found: _,
+                }) => {}
 
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
         }
 
-        Self {
+        buf.clear();
+
+        Ok(Self {
             version,
             title,
             url,
-        }
+            posts,
+        })
+    }
+}
+
+#[wasm_bindgen]
+impl RSSChannel {
+    pub fn from_str(text: &str) -> RSSChannel {
+        let mut bufs = BufPool::new(4, 2048);
+
+        Self::from_xml(&mut bufs, text).unwrap()
     }
 
     #[wasm_bindgen(getter = version)]
@@ -74,6 +130,11 @@ impl RSSChannel {
     #[wasm_bindgen]
     pub fn json(&self) -> JsValue {
         JsValue::from_serde(self).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = postsLen)]
+    pub fn posts_len(&self) -> usize {
+        self.posts.len()
     }
 }
 

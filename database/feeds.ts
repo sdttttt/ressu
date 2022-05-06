@@ -1,4 +1,4 @@
-import type { Feeds } from "@store/typing";
+import type { Feeds, RSSChannel } from "@store/typing";
 import { Low } from "lowdb";
 import { JSONFile } from "./adapters/TauriJSONFile";
 import { DATABASES_PATH, FEED_DB_FILENAME } from "./names";
@@ -22,6 +22,7 @@ export async function feedsDataLocalSync(data: Feeds) {
 	});
 
 	feedDB.data = realLocalData;
+	console.log("Sync Feeds Data:", realLocalData);
 	return await feedDB.write();
 }
 
@@ -30,8 +31,24 @@ export async function feedsDataLocalSync(data: Feeds) {
  * @returns A promise that resolves to the data in the feedDB.
  */
 export async function feedsDataLocalGet(): Promise<Feeds | null> {
+	await initializeFeedDB();
 	await feedDB.read();
 	return feedDB.data;
+}
+
+/**
+ * It adds a channel to the local database
+ * @param {RSSChannel} channel - RSSChannel - The channel to add to the database
+ * @returns The promise of the write operation.
+ */
+export async function addChannelDataLocalSync(channel: RSSChannel) {
+	await initializeFeedDB();
+	await feedDB.read();
+	if (!feedDB.data) {
+		throw new Error("No data in the feedDB");
+	}
+	feedDB.data.channels.push(channel);
+	return await feedDB.write();
 }
 
 /**
@@ -40,21 +57,15 @@ export async function feedsDataLocalGet(): Promise<Feeds | null> {
 async function initializeFeedDB() {
 	if (!feedDB) {
 		const rootDir = await appDir();
+		console.log("root dir = ", rootDir);
 		feedDB = new Low(
-			new JSONFile<Feeds>(
-				await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME)
-			)
+			new JSONFile<Feeds>(await join(rootDir, DATABASES_PATH, FEED_DB_FILENAME))
 		);
 	}
 }
 
-// @ts-ignore
 if (import.meta.vitest) {
-	const {
-		it,
-		expect
-		// @ts-ignore
-	} = import.meta.vitest;
+	const { it, expect } = import.meta.vitest;
 
 	it("feed copy but not copy posts.", () => {
 		const feeds: Feeds = {

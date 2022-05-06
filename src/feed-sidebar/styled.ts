@@ -6,4 +6,4 @@ export const SidebarContainer = styled.div`
 
 export const SearchInput = styled.div`
 	height: 18;
-`
+`;

@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { normalBorder } from "@/global.style"
+import { normalBorder } from "@/global.style";
 
 export const NavbarContainer = styled.div`
 	padding-top: 2px;

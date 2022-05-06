@@ -54,12 +54,10 @@ export async function postsDataLocalGet(
 	channel: RSSChannel,
 	date: Date | string
 ) {
-
 	const db = await getPostsDB(channel, date);
 	await db.read();
 	return db.data;
 }
-
 
 /**
  * It returns a database of posts for a given RSS channel and date.
@@ -68,10 +66,14 @@ export async function postsDataLocalGet(
  * @returns A new instance of the LowDB class.
  */
 async function getPostsDB({ url }: RSSChannel, date: string | Date) {
-
 	const rootDir = await appDir();
 	const filename = postFileName(url, date);
 
-	const fullFilePath = await join(rootDir, DATABASES_PATH, POSTS_DB_DIR, filename);
+	const fullFilePath = await join(
+		rootDir,
+		DATABASES_PATH,
+		POSTS_DB_DIR,
+		filename
+	);
 	return new Low(new JSONFile<Post[]>(fullFilePath));
 }

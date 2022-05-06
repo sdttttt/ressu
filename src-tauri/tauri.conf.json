@@ -28,12 +28,10 @@
 			"shortDescription": "",
 			"longDescription": "",
 			"deb": {
-				"depends": [],
-				"useBootstrapper": false
+				"depends": []
 			},
 			"macOS": {
 				"frameworks": [],
-				"useBootstrapper": false,
 				"exceptionDomain": "",
 				"signingIdentity": null,
 				"providerShortName": null,
@@ -57,7 +55,10 @@
 			},
 			"fs": {
 				"all": true,
-				"scope": ["$APP/databases/*"]
+				"scope": ["$APP/*"]
+			},
+			"path": {
+				"all": true
 			}
 		},
 		"windows": [

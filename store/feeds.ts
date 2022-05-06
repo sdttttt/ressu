@@ -1,5 +1,6 @@
 import { fetchRSSText } from "@/utils/http";
-import { getFeedMeta } from "wasm"
+import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
+import { getFeedMeta, RSSChannel } from "wasm";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds } from "./typing";
 import isURL from "validator/es/lib/isURL";
@@ -19,13 +20,38 @@ export const addRSSChannelAsync = createAsyncThunk(
 		if (isURL(url)) {
 			const rssText = await fetchRSSText(url);
 			const metaInfo = await runWASM(() => getFeedMeta(rssText));
+
 			if (metaInfo.isSpecification()) {
-				console.log(metaInfo.json());
-				return metaInfo.json();
+				const resultJson = metaInfo.json();
+				console.log(resultJson);
+				metaInfo.free();
+				return resultJson;
 			} else {
 				toaster.danger("该订阅源不是RSS2.0标准, 尚不支持其他标准的RSS.");
 			}
 		}
+	}
+);
+
+export const pullRSSChannelAsync = createAsyncThunk(
+	"channels/pull",
+	async (channels: RSSChannel[]) => {
+		
+	}
+);
+
+export const initinalizeFeedsFromLocal = createAsyncThunk(
+	"channels/initFromLocal",
+	async (): Promise<Feeds> => {
+		let feedsLocal = await feedsDataLocalGet();
+		console.log(feedsLocal);
+		if (feedsLocal === null) {
+			console.log("init: no local data.");
+			await feedsDataLocalSync(initialState);
+			feedsLocal = initialState;
+		}
+
+		return feedsLocal;
 	}
 );
 
@@ -47,6 +73,13 @@ const feedsSlice = createSlice({
 		builder.addCase(addRSSChannelAsync.fulfilled, (state, actions) => {
 			console.log(actions.payload, state);
 		});
+
+		builder.addCase(
+			initinalizeFeedsFromLocal.fulfilled,
+			(state, { payload }: PayloadAction<Feeds>) => {
+				state.channels = payload.channels;
+			}
+		);
 	}
 });
 
