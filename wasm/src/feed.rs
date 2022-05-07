@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
+use crate::utils::{reader_get_sub_node_str, reader_get_text};
 use crate::{constants::*, utils::attrs_get_str};
 use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
@@ -37,54 +38,49 @@ impl FromXmlWithStr for RSSChannel {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
-                    "rss" => version = attrs_get_str(&reader, e.attributes(), "version").unwrap(),
+                Ok(Event::Start(ref re)) => match reader.decode(re.name())? {
+                    "rss" => version = attrs_get_str(&reader, re.attributes(), "version")?,
 
-                    "title" => title = attrs_get_str(&reader, e.attributes(), "title").unwrap(),
+                    "channel" => {
+                        let mut cbuf = bufs.pop();
 
-                    "url" => url = attrs_get_str(&reader, e.attributes(), "url").unwrap(),
+                        let mut count = 0u64;
 
-                    "item" => {
-                        let mut buf = bufs.pop();
-
-                        let start_position = reader.buffer_position();
-
-                        reader.check_end_names(false);
                         loop {
-                            match reader.read_event(&mut buf) {
-                                Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
-                                    "item" => break,
+                            match reader.read_event(&mut cbuf) {
+                                Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
+                                    "title" => title = Some(reader_get_text(&mut reader, bufs)?),
+
+                                    "link" => url = Some(reader_get_text(&mut reader, bufs)?),
+
+                                    "item" => {
+                                        let tag = reader.decode(ce.name())?;
+                                        let item_slice =
+                                            reader_get_sub_node_str(&mut reader, bufs, tag, text)?;
+
+                                        let item = ChannelItem::from_str(&item_slice);
+                                        posts.push(item);
+                                        count += 1;
+                                    }
+
                                     _ => {
-                                        SkipThisElement::from_xml_with_reader(&bufs, &mut reader)?;
+                                        SkipThisElement::from_xml_with_reader(bufs, &mut reader)?;
                                     }
                                 },
+                                Ok(Event::End(ref ce)) => match reader.decode(ce.name())? {
+                                    "channel" => break,
+                                    _ => (),
+                                },
                                 Ok(Event::Eof) => break,
-                                _ => ()
+                                _ => (),
                             }
-                            buf.clear();
+                            cbuf.clear()
                         }
-                        reader.check_end_names(true);
 
-                        let end_position = reader.buffer_position();
-
-                        let end_tag_len = "</item>".len();
-
-                        let text_string = text.to_string();
-                        let item_slice =
-                            &text_string.as_bytes()[start_position..end_position - end_tag_len];
-
-                        console_log!(
-                            "start: {}, end: {}",
-                            start_position,
-                            end_position - end_tag_len
-                        );
-
-                        let item =
-                            ChannelItem::from_str(String::from_utf8_lossy(item_slice).borrow_mut());
-                        posts.push(item);
+                        console_log!("item count: {}", count);
                     }
 
-                    _ => ()
+                    _ => (),
                 },
 
                 Ok(Event::Text(ref e)) => {
@@ -102,9 +98,8 @@ impl FromXmlWithStr for RSSChannel {
 
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
+            buf.clear();
         }
-
-        buf.clear();
 
         Ok(Self {
             version,

@@ -3,9 +3,9 @@ use fast_xml::{
     Reader,
 };
 
-use std::borrow::Cow;
+use std::borrow::{Cow};
 
-use crate::buf::BufPool;
+use crate::{buf::BufPool, SkipThisElement, FromXmlWithReader};
 
 #[allow(dead_code)]
 pub fn set_panic_hook() {
@@ -38,7 +38,7 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
         let attribute = attribute?;
 
         if attribute.key != key.as_bytes() {
-            break;
+            continue;
         }
 
         value = Some(
@@ -57,7 +57,6 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
 
 pub fn reader_get_text<B: std::io::BufRead>(
     reader: &mut Reader<B>,
-    end: &[u8],
     bufs: &BufPool,
 ) -> fast_xml::Result<String> {
     let mut buf = bufs.pop();
@@ -70,4 +69,50 @@ pub fn reader_get_text<B: std::io::BufRead>(
 
     buf.clear();
     Ok(text)
+}
+
+pub fn reader_get_sub_node_str<B: std::io::BufRead>(
+    reader: &mut Reader<B>,
+    bufs: &BufPool,
+	tag: &str,
+    origin_text: &str,
+) -> fast_xml::Result<String> {
+    let mut buf = bufs.pop();
+
+    let start_position = reader.buffer_position();
+
+    reader.check_end_names(false);
+    loop {
+        match reader.read_event(&mut buf) {
+            Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
+                "item" => break,
+                _ => (),
+            },
+            Ok(Event::Eof) => break,
+			_ => ()
+        }
+        buf.clear();
+    }
+    reader.check_end_names(true);
+
+    let end_position = reader.buffer_position();
+
+    let end_tag_len = format!("</{}>", tag).len();
+
+    let text_string = origin_text.to_string();
+    let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
+
+    console_log!(
+        "tag: {}, start: {}, end: {}, size: {}",
+		tag,
+        start_position,
+        end_position - end_tag_len,
+		end_position - end_tag_len - start_position
+    );
+
+	let item_utf8 = String::from_utf8_lossy(item_slice);
+	match item_utf8 {
+		Cow::Borrowed(e) => Ok(e.to_string()),
+		Cow::Owned(e) => Ok(e.to_string()),
+	}
 }

@@ -42,50 +42,26 @@ impl FromXmlWithStr  for ChannelItem {
                 Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
                     "title" => {
                         title = Some(
-                            reader_get_text(&mut reader, e.name(), bufs)?
+                            reader_get_text(&mut reader, bufs)?
                         )
                     }
 
                     "pubDate" => {
                         pub_date = Some(
-                            reader_get_text(&mut reader, e.name(), bufs)?
+                            reader_get_text(&mut reader, bufs)?
                         )
                     }
 
                     "link" => {
                         link = Some(
-                            reader_get_text(&mut reader, e.name(), bufs)?
+                            reader_get_text(&mut reader, bufs)?
                         )
                     }
 
                     "description" => {
-                        let mut description_buf = bufs.pop();
-
-                        let start_position = reader.buffer_position();
-
-                        reader.check_end_names(false);
-                        loop {
-                            match reader.read_event(&mut description_buf) {
-                                Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
-                                    "description" => break,
-                                    _ => {}
-                                },
-                                Ok(Event::Eof) => break,
-                                _ => { SkipThisElement::from_xml_with_reader(&bufs, &mut reader)?; }
-                            }
-                            description_buf.clear();
-                        }
-
-                        reader.check_end_names(true);
-                        
-                        let end_position = reader.buffer_position();
-
-                        let end_tag_len = "</description>".len();
-
-                        let text_string = text.to_string();
-                        let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
-                    
-                        description = Some(String::from_utf8_lossy(item_slice).borrow_mut().to_string());
+						description = Some(
+                            reader_get_text(&mut reader, bufs)?
+                        )
                     }
 
                     _ => {}
@@ -100,11 +76,10 @@ impl FromXmlWithStr  for ChannelItem {
                     found: _,
                 }) => {}
 
-                Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
+                Err(e) => return Err(e.into()),
             }
+			buf.clear();
         }
-
-        buf.clear();
 
         Ok(Self {
             title,
@@ -147,7 +122,7 @@ impl ChannelItem {
 impl ChannelItem {
 
     pub fn from_str(text: &str) -> ChannelItem {
-        let mut bufs = BufPool::new(16, 512);
+        let mut bufs = BufPool::new(64, 8192);
         
         Self::from_xml_with_str(&mut bufs, text).unwrap()
     }
