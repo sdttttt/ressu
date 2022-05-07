@@ -1,5 +1,4 @@
 
-use std::borrow::BorrowMut;
 
 use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
@@ -64,7 +63,7 @@ impl FromXmlWithStr  for ChannelItem {
                         )
                     }
 
-                    _ => {}
+                    _ => { SkipThisElement::from_xml_with_reader(bufs, &mut reader)?; }
                 },
 
                 Ok(Event::Eof) => break,

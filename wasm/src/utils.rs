@@ -5,7 +5,7 @@ use fast_xml::{
 
 use std::borrow::{Cow};
 
-use crate::{buf::BufPool, SkipThisElement, FromXmlWithReader};
+use crate::{buf::BufPool};
 
 #[allow(dead_code)]
 pub fn set_panic_hook() {

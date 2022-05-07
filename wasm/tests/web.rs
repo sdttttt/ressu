@@ -5,11 +5,7 @@
 extern crate wasm_bindgen_test;
 use std::assert_eq;
 use std::include_str;
-
-use wasm::feed::get_feed_json;
-use wasm::feed::get_feed_meta;
 use wasm::feed::RSSChannel;
-use wasm_bindgen::JsValue;
 use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::*;
 
