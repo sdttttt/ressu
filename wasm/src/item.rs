@@ -5,7 +5,9 @@ use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::FromXml;
+use crate::FromXmlWithReader;
+use crate::FromXmlWithStr;
+use crate::SkipThisElement;
 use crate::buf::BufPool;
 use crate::utils::reader_get_text;
 
@@ -22,8 +24,8 @@ pub struct ChannelItem {
     link: Option<String>,
 }
 
-impl FromXml  for ChannelItem {
-    fn from_xml(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
+impl FromXmlWithStr  for ChannelItem {
+    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
 
         let mut reader = Reader::from_str(text);
 
@@ -72,9 +74,11 @@ impl FromXml  for ChannelItem {
                                     _ => {}
                                 },
                                 Ok(Event::Eof) => break,
-                                _ => {}
+                                _ => { SkipThisElement::from_xml_with_reader(&bufs, &mut reader)?; }
                             }
+                            description_buf.clear();
                         }
+
                         reader.check_end_names(true);
                         
                         let end_position = reader.buffer_position();
@@ -148,7 +152,7 @@ impl ChannelItem {
     pub fn from_str(text: &str) -> ChannelItem {
         let mut bufs = BufPool::new(16, 512);
         
-        Self::from_xml(&mut bufs, text).unwrap()
+        Self::from_xml_with_str(&mut bufs, text).unwrap()
     }
 
 

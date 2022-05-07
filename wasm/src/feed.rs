@@ -6,8 +6,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
-use crate::FromXml;
 use crate::{constants::*, utils::attrs_get_str};
+use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -22,8 +22,8 @@ pub struct RSSChannel {
     posts: Vec<ChannelItem>,
 }
 
-impl FromXml for RSSChannel {
-    fn from_xml(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
+impl FromXmlWithStr for RSSChannel {
+    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
         let mut reader = Reader::from_str(text);
 
         let mut version = None;
@@ -54,11 +54,14 @@ impl FromXml for RSSChannel {
                             match reader.read_event(&mut buf) {
                                 Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
                                     "item" => break,
-                                    _ => {}
+                                    _ => {
+                                        SkipThisElement::from_xml_with_reader(&bufs, &mut reader)?;
+                                    }
                                 },
                                 Ok(Event::Eof) => break,
-                                _ => {}
+                                _ => ()
                             }
+                            buf.clear();
                         }
                         reader.check_end_names(true);
 
@@ -67,18 +70,21 @@ impl FromXml for RSSChannel {
                         let end_tag_len = "</item>".len();
 
                         let text_string = text.to_string();
-                        let item_slice = &text_string.as_bytes()[start_position..end_position - end_tag_len];
+                        let item_slice =
+                            &text_string.as_bytes()[start_position..end_position - end_tag_len];
 
-                        buf.clear();
-
-                        console_log!("start: {}, end: {}", start_position, end_position - end_tag_len);
+                        console_log!(
+                            "start: {}, end: {}",
+                            start_position,
+                            end_position - end_tag_len
+                        );
 
                         let item =
                             ChannelItem::from_str(String::from_utf8_lossy(item_slice).borrow_mut());
                         posts.push(item);
                     }
 
-                    _ => {}
+                    _ => ()
                 },
 
                 Ok(Event::Text(ref e)) => {
@@ -111,7 +117,6 @@ impl FromXml for RSSChannel {
 
 #[wasm_bindgen]
 impl RSSChannel {
-
     #[wasm_bindgen(getter = version)]
     pub fn version(&self) -> String {
         self.version.as_deref().unwrap_or("").to_string()
@@ -137,7 +142,7 @@ impl RSSChannel {
     pub fn from_str(text: &str) -> RSSChannel {
         let mut bufs = BufPool::new(4, 2048);
 
-        Self::from_xml(&mut bufs, text).unwrap()
+        Self::from_xml_with_str(&mut bufs, text).unwrap()
     }
 }
 

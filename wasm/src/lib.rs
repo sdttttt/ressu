@@ -7,6 +7,8 @@ mod buf;
 pub mod feed;
 pub mod item;
 
+use std::io::BufRead;
+
 use crate::buf::BufPool;
 
 use wasm_bindgen::prelude::*;
@@ -27,14 +29,20 @@ pub fn on_start() {
 
 #[wasm_bindgen]
 pub fn hello() {
-    console_log!("from WASM greet!");
+   console_log!("from WASM greet!");
 }
 
-
-pub trait FromXml: Sized {
-    fn from_xml(
+pub trait FromXmlWithStr: Sized {
+    fn from_xml_with_str(
         bufs: &BufPool,
         text: &str
+    ) -> fast_xml::Result<Self>;
+}
+
+pub trait FromXmlWithReader: Sized {
+    fn from_xml_with_reader<B: BufRead>(
+        bufs: &BufPool,
+        reader: &mut XmlReader<B>
     ) -> fast_xml::Result<Self>;
 }
 
@@ -43,15 +51,15 @@ struct SkipThisElement;
 use fast_xml::events::Event as XmlEvent;
 use fast_xml::Reader as XmlReader;
 
-impl FromXml for SkipThisElement {
+impl FromXmlWithReader for SkipThisElement {
 
-    fn from_xml(
+    fn from_xml_with_reader<B: BufRead>(
         bufs: &BufPool,
-        text: &str,
+        reader: &mut XmlReader<B>,
     ) -> fast_xml::Result<Self> {
-        let mut reader = XmlReader::from_str(text);
         let mut buf = bufs.pop();
         let mut depth = 1u64;
+        reader.check_end_names(false);
         loop {
             match reader.read_event(&mut buf) {
                 Ok(XmlEvent::Start(_)) => depth += 1,
@@ -63,6 +71,7 @@ impl FromXml for SkipThisElement {
             }
             buf.clear();
         }
+        reader.check_end_names(true);
         Ok(SkipThisElement)
     }
 }
