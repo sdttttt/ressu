@@ -1,6 +1,11 @@
-use fast_xml::{events::attributes::Attributes, Reader};
+use fast_xml::{
+    events::{attributes::Attributes, Event},
+    Reader,
+};
 
 use std::borrow::Cow;
+
+use crate::buf::BufPool;
 
 #[allow(dead_code)]
 pub fn set_panic_hook() {
@@ -50,17 +55,19 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
     Ok(value)
 }
 
-
 pub fn reader_get_text<B: std::io::BufRead>(
     reader: &mut Reader<B>,
     end: &[u8],
-    buf: &mut Vec<u8>
-) -> String {
-    if let Ok(text) = reader.read_text(end, buf) {
-        buf.clear();
-        text
-    } else {
-        buf.clear();
-        String::from("")
-    }
+    bufs: &BufPool,
+) -> fast_xml::Result<String> {
+    let mut buf = bufs.pop();
+
+    let text = match reader.read_event(&mut buf) {
+        Ok(Event::Text(ref e) | Event::CData(ref e)) => reader.decode(e)?.to_string(),
+        Ok(_) => String::from(""),
+        Err(e) => return Err(e.into()),
+    };
+
+    buf.clear();
+    Ok(text)
 }

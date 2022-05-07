@@ -41,23 +41,20 @@ impl FromXmlWithStr  for ChannelItem {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
                     "title" => {
-                        let mut title_buf = bufs.pop();
                         title = Some(
-                            reader_get_text(&mut reader, e.name(), &mut title_buf)
+                            reader_get_text(&mut reader, e.name(), bufs)?
                         )
                     }
 
                     "pubDate" => {
-                        let mut pub_date_buf = bufs.pop();
                         pub_date = Some(
-                            reader_get_text(&mut reader, e.name(), &mut pub_date_buf)
+                            reader_get_text(&mut reader, e.name(), bufs)?
                         )
                     }
 
                     "link" => {
-                        let mut link_buf = bufs.pop();
                         link = Some(
-                            reader_get_text(&mut reader, e.name(), &mut link_buf)
+                            reader_get_text(&mut reader, e.name(), bufs)?
                         )
                     }
 
