@@ -165,7 +165,7 @@ impl FromStr for RSSChannel {
 
 #[wasm_bindgen(js_name = getFeedMeta)]
 pub fn get_feed_meta(rss_text: &str) -> RSSChannel {
-    from_str::<RSSChannel>(rss_text).unwrap()
+    RSSChannel::from_str(rss_text).unwrap()
 }
 
 #[wasm_bindgen(js_name = getFeedJSON)]
