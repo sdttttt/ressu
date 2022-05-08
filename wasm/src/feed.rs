@@ -1,7 +1,7 @@
 
 use std::str::FromStr;
 
-use fast_xml::{de::from_str, events::Event, Reader};
+use fast_xml::{events::Event, Reader};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -151,6 +151,11 @@ impl RSSChannel {
     pub fn posts_len(&self) -> usize {
         self.posts.len()
     }
+	
+	#[wasm_bindgen(js_name = posts)]
+	pub fn posts(&self) -> JsValue {
+		JsValue::from_serde(&self.posts).unwrap()
+	}
 }
 
 impl FromStr for RSSChannel {

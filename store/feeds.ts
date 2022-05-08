@@ -1,8 +1,8 @@
 import { fetchRSSText } from "@/utils/http";
 import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
-import { getFeedMeta, RSSChannel } from "wasm";
+import { getFeedMeta, RSSChannel as RSSChannelWasm } from "wasm";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RessuStore, Feeds } from "./typing";
+import { RessuStore, Feeds, RSSChannel } from "./typing";
 import isURL from "validator/es/lib/isURL";
 import { runWASM } from "@/utils/wasm";
 import { toaster } from "evergreen-ui";
@@ -27,16 +27,26 @@ export const addRSSChannelAsync = createAsyncThunk(
 				metaInfo.free();
 				return resultJson;
 			} else {
-				toaster.danger("该订阅源不是RSS2.0标准, 尚不支持其他标准的RSS.");
+				toaster.danger("Ressu目前只支持RSS2.0.");
 			}
 		}
 	}
 );
 
+/**
+ * async fetch all rss channel.
+ */
 export const pullRSSChannelAsync = createAsyncThunk(
 	"channels/pull",
-	async (channels: RSSChannel[]) => {
-		
+	async (channels: RSSChannel[]): Promise<[string, RSSChannelWasm][]> => {
+		const promiseResults: Promise<[string, RSSChannelWasm]>[] = channels
+		.map(async (ch): Promise<[string, RSSChannelWasm]> => {
+			const rssText = await fetchRSSText(ch.url);
+			const metaInfo = await runWASM(() => getFeedMeta(rssText));
+			return [ch.url, metaInfo];
+		});
+
+		return await Promise.all(promiseResults);
 	}
 );
 
@@ -70,9 +80,15 @@ const feedsSlice = createSlice({
 	},
 
 	extraReducers: builder => {
-		builder.addCase(addRSSChannelAsync.fulfilled, (state, actions) => {
-			console.log(actions.payload, state);
+		builder.addCase(addRSSChannelAsync.fulfilled, (state, { payload }) => {
+			console.log(payload, state);
 		});
+
+
+		builder.addCase(pullRSSChannelAsync.fulfilled, (state, { payload }) => {
+			console.log(payload);
+		});
+
 
 		builder.addCase(
 			initinalizeFeedsFromLocal.fulfilled,
