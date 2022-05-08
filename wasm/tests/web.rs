@@ -3,6 +3,7 @@
 #![cfg(target_arch = "wasm32")]
 
 extern crate wasm_bindgen_test;
+use std::str::FromStr;
 use std::assert_eq;
 use std::include_str;
 use wasm::feed::RSSChannel;
@@ -18,21 +19,21 @@ fn pass() {
 
 #[wasm_bindgen_test]
 fn test_parse_3dm_rss_from_str() {
-    let rss_feed = RSSChannel::from_str(include_str!("../data/3DM_RSS2.0.xml"));
+    let rss_feed = RSSChannel::from_str(include_str!("../data/3DM_RSS2.0.xml")).unwrap();
     console_log!("{:?}", rss_feed);
     assert_eq!(rss_feed.is_specification(), true);
 }
 
 #[wasm_bindgen_test]
 fn test_parse_els_rss_from_str() {
-    let rss_feed = RSSChannel::from_str(include_str!("../data/ELS_RSS2.0.xml"));
+    let rss_feed = RSSChannel::from_str(include_str!("../data/ELS_RSS2.0.xml")).unwrap();
     console_log!("{:?}", rss_feed);
 	assert_eq!(rss_feed.is_specification(), true);
 }
 
 #[wasm_bindgen_test]
 fn test_parse_ns_rss_from_str() {
-    let rss_feed = RSSChannel::from_str(include_str!("../data/JUMP_PS5_ALL_RSS2.0.xml"));
+    let rss_feed = RSSChannel::from_str(include_str!("../data/JUMP_PS5_ALL_RSS2.0.xml")).unwrap();
     console_log!("{:?}", rss_feed);
 	assert_eq!(rss_feed.is_specification(), true);
 }
@@ -40,7 +41,7 @@ fn test_parse_ns_rss_from_str() {
 
 #[wasm_bindgen_test]
 fn test_parse_ps5_rss_from_str() {
-    let rss_feed = RSSChannel::from_str(include_str!("../data/JUMP_NS_ALL_RSS2.0.xml"));
+    let rss_feed = RSSChannel::from_str(include_str!("../data/JUMP_NS_ALL_RSS2.0.xml")).unwrap();
     console_log!("{:?}", rss_feed);
 	assert_eq!(rss_feed.is_specification(), true);
 }
