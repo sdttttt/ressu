@@ -19,19 +19,18 @@ export type RSSChannel = {
 
 	description: string;
 
-	postSize: number;
-
 	posts?: Post[];
 };
 
 export type Post = {
 	title: string;
-	url: string;
+
+	link: string;
 
 	// timestrap
-	date: string;
+	pubDate: string;
 
-	content: string;
+	descriptioin: string;
 
 	read?: boolean;
 };

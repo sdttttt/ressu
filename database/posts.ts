@@ -21,7 +21,7 @@ export async function postDataLocalSync(channel: RSSChannel) {
 	if (!posts) return;
 
 	const dayToPostMap = posts.reduce((total, next) => {
-		const date = new Date(next.date);
+		const date = new Date(next.pubDate);
 		const dateKey =
 			date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
 

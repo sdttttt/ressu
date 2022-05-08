@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
-    "@tauri-apps/cli": "^1.0.0-rc.8",
+    "@tauri-apps/cli": "^1.0.0-rc.10",
     "@types/crypto-js": "^4.1.1",
     "@types/lodash": "^4.14.181",
     "@types/lodash-es": "^4.17.6",

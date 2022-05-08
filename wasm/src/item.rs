@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use fast_xml::Result;
 use fast_xml::{events::Event, Reader};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
@@ -12,15 +12,19 @@ use crate::FromXmlWithStr;
 use crate::SkipThisElement;
 
 #[wasm_bindgen]
-#[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
+#[derive(Debug, Serialize, Default)]
 #[serde(rename = "item")]
 pub struct ChannelItem {
+	
     title: Option<String>,
 
+	
     description: Option<String>,
 
+	#[serde(rename = "pubDate")]
     pub_date: Option<String>,
 
+	
     link: Option<String>,
 }
 
@@ -88,22 +92,22 @@ impl FromXmlWithStr for ChannelItem {
 
 #[wasm_bindgen]
 impl ChannelItem {
-    #[wasm_bindgen]
+    #[wasm_bindgen(getter)]
     pub fn title(&self) -> String {
         self.title.as_deref().unwrap_or("").to_string()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(getter)]
     pub fn description(&self) -> String {
         self.description.as_deref().unwrap_or("").to_string()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(getter, js_name = pubDate)]
     pub fn pub_date(&self) -> String {
         self.pub_date.as_deref().unwrap_or("").to_string()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(getter)]
     pub fn link(&self) -> String {
         self.link.as_deref().unwrap_or("").to_string()
     }
@@ -116,23 +120,5 @@ impl FromStr for ChannelItem {
         let bufs = BufPool::new(64, 8192);
 
         Self::from_xml_with_str(&bufs, text)
-    }
-}
-
-impl ChannelItem {
-    pub fn set_title(&mut self, title: &str) {
-        self.title = Some(title.to_string());
-    }
-
-    pub fn set_description(&mut self, description: &str) {
-        self.description = Some(description.to_string());
-    }
-
-    pub fn set_pub_date(&mut self, pub_date: &str) {
-        self.pub_date = Some(pub_date.to_string());
-    }
-
-    pub fn set_link(&mut self, link: &str) {
-        self.link = Some(link.to_string());
     }
 }

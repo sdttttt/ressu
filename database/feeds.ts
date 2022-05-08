@@ -74,8 +74,7 @@ if (import.meta.vitest) {
 					title: "1",
 					url: "1.1.1",
 					description: "111",
-					postSize: 1,
-					posts: [{ title: "hellow", url: "hellow", content: "", date: "1" }]
+					posts: [{ title: "hellow", link: "hellow", pubDate: "", descriptioin: "1" }]
 				}
 			]
 		};
@@ -91,7 +90,6 @@ if (import.meta.vitest) {
 		expect(realLocalData.channels[0].title).toBe("1");
 		expect(realLocalData.channels[0].url).toBe("1.1.1");
 		expect(realLocalData.channels[0].description).toBe("111");
-		expect(realLocalData.channels[0].postSize).toBe(1);
 		expect(realLocalData.channels[0]!.posts!.length).toBe(0);
 	});
 }

@@ -2,7 +2,7 @@
 use std::str::FromStr;
 
 use fast_xml::{events::Event, Reader};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
@@ -12,12 +12,16 @@ use crate::{constants::*, utils::attrs_get_str};
 use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
 #[wasm_bindgen]
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Serialize)]
 #[serde(rename = "rss")]
 pub struct RSSChannel {
-    version: Option<String>,
+	
+	#[serde(skip)]
+	version: Option<String>,
 
     title: Option<String>,
+
+	description: Option<String>,
 
     url: Option<String>,
 
@@ -48,6 +52,7 @@ impl FromXmlWithStr for RSSChannel {
 
         let mut version = None;
         let mut title = None;
+		let mut description = None;
         let mut url = None;
         let mut posts = Vec::<ChannelItem>::new();
 
@@ -69,6 +74,8 @@ impl FromXmlWithStr for RSSChannel {
                             match reader.read_event(&mut cbuf) {
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
                                     "title" => title = Some(reader_get_text(&mut reader, bufs)?),
+
+									"description" => description = Some(reader_get_text(&mut reader, bufs)?),
 
                                     "link" => url = Some(reader_get_text(&mut reader, bufs)?),
 
@@ -124,6 +131,7 @@ impl FromXmlWithStr for RSSChannel {
         Ok(Self {
             version,
             title,
+			description,
             url,
             posts,
         })

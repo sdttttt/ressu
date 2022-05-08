@@ -23,8 +23,8 @@ export const addRSSChannelAsync = createAsyncThunk(
 
 			if (metaInfo.isSpecification()) {
 				const resultJson = metaInfo.json();
-				console.log(resultJson);
 				metaInfo.free();
+				console.log(resultJson);
 				return resultJson;
 			} else {
 				toaster.danger("Ressu目前只支持RSS2.0.");
