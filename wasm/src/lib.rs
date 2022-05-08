@@ -32,8 +32,10 @@ pub fn hello() {
    console_log!("from WASM greet!");
 }
 
+/// A trait that is implemented by the structs that are used to parse the XML.
 pub trait FromXmlWithStr: Sized {
-    fn from_xml_with_str(
+    /// A function that takes a BufPool and a string and returns a fast_xml::Result<Self>
+	fn from_xml_with_str(
         bufs: &BufPool,
         text: &str
     ) -> fast_xml::Result<Self>;
@@ -53,7 +55,20 @@ use fast_xml::Reader as XmlReader;
 
 impl FromXmlWithReader for SkipThisElement {
 
-    fn from_xml_with_reader<B: BufRead>(
+    /// "Skip the current element and all its children."
+	/// 
+	/// The function is called `from_xml_with_reader` because it's part of a trait called
+	/// `FromXmlWithReader` that's implemented for all types that can be deserialized from XML
+	/// 
+	/// Arguments:
+	/// 
+	/// * `bufs`: &BufPool
+	/// * `reader`: &mut XmlReader<B>
+	/// 
+	/// Returns:
+	/// 
+	/// A SkipThisElement
+	fn from_xml_with_reader<B: BufRead>(
         bufs: &BufPool,
         reader: &mut XmlReader<B>,
     ) -> fast_xml::Result<Self> {

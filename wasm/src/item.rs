@@ -25,6 +25,17 @@ pub struct ChannelItem {
 }
 
 impl FromXmlWithStr for ChannelItem {
+	
+   /// It reads the XML and populates the fields of the struct
+   /// 
+   /// Arguments:
+   /// 
+   /// * `bufs`: &BufPool - this is a pool of buffers that are used to read the XML.
+   /// * `text`: The XML text to parse.
+   /// 
+   /// Returns:
+   /// 
+   /// A ChannelItem
     fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
         let mut reader = Reader::from_str(text);
 

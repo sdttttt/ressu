@@ -25,7 +25,25 @@ pub struct RSSChannel {
 }
 
 impl FromXmlWithStr for RSSChannel {
-    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
+
+    /// It reads the XML document, and when it finds a `<channel>` element, it reads the sub-elements of
+	/// that element, and when it finds an `<item>` element, it reads the sub-elements of that element,
+	/// and when it finds an `<enclosure>` element, it reads the sub-elements of that element, and when
+	/// it finds an `<image>` element, it reads the sub-elements of that element, and when it finds an
+	/// `<url>` element, it reads the sub-elements of that element, and when it finds an `<title>`
+	/// element, it reads the sub-elements of that element, and when it finds an `<link>` element, it
+	/// reads the sub-elements of that element, and when it finds an `<description>` element, it reads
+	/// the sub-elements of that element, and when it finds an `
+	/// 
+	/// Arguments:
+	/// 
+	/// * `bufs`: &BufPool - a pool of buffers that are used to read the XML.
+	/// * `text`: The XML string to parse.
+	/// 
+	/// Returns:
+	/// 
+	/// A `RSSChannel` struct.
+	fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
         let mut reader = Reader::from_str(text);
 
         let mut version = None;
@@ -139,7 +157,7 @@ impl FromStr for RSSChannel {
 	type Err = fast_xml::Error;
 
     fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
-        let bufs = BufPool::new(4, 2048);
+        let bufs = BufPool::new(16, 4096);
 
         Self::from_xml_with_str(&bufs, text)
     }

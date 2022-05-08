@@ -16,7 +16,16 @@ impl BufPool {
         }
     }
 
-    pub fn pop(&self) -> Buffer {
+    /// `pop` takes a `BufferPool` and returns a `Buffer`
+	/// 
+	/// The `BufferPool` is a `Rc<RefCell<Vec<Vec<u8>>>>` and the `Buffer` is a `Rc<RefCell<Vec<u8>>>`
+	/// 
+	/// The `BufferPool` is a `Vec` of `Vec`s of `u8`s. The `Buffer` is a `Vec` of `u8`s
+	/// 
+	/// Returns:
+	/// 
+	/// A Buffer struct.
+	pub fn pop(&self) -> Buffer {
         let buf = self
             .pool
             .borrow_mut()
