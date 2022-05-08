@@ -1,11 +1,10 @@
-import { fetchRSSText } from "@/utils/http";
+
 import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
-import { getFeedMeta, RSSChannel as RSSChannelWasm } from "wasm";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds, RSSChannel } from "./typing";
 import isURL from "validator/es/lib/isURL";
-import { runWASM } from "@/utils/wasm";
-import { toaster } from "evergreen-ui";
+import { parseRSSFromURL } from "@/utils/wasm";
+import { toast } from "react-toastify";
 
 const initialState: Feeds = {
 	channels: []
@@ -18,17 +17,9 @@ export const addRSSChannelAsync = createAsyncThunk(
 	"channels/add",
 	async (url: string) => {
 		if (isURL(url)) {
-			const rssText = await fetchRSSText(url);
-			const metaInfo = await runWASM(() => getFeedMeta(rssText));
-
-			if (metaInfo.isSpecification()) {
-				const resultJson = metaInfo.json();
-				metaInfo.free();
-				console.log(resultJson);
-				return resultJson;
-			} else {
-				toaster.danger("Ressu目前只支持RSS2.0.");
-			}
+			return parseRSSFromURL(url);
+		} else {
+			toast.error("URL格式错误");
 		}
 	}
 );
@@ -38,12 +29,11 @@ export const addRSSChannelAsync = createAsyncThunk(
  */
 export const pullRSSChannelAsync = createAsyncThunk(
 	"channels/pull",
-	async (channels: RSSChannel[]): Promise<[string, RSSChannelWasm][]> => {
-		const promiseResults: Promise<[string, RSSChannelWasm]>[] = channels
-		.map(async (ch): Promise<[string, RSSChannelWasm]> => {
-			const rssText = await fetchRSSText(ch.url);
-			const metaInfo = await runWASM(() => getFeedMeta(rssText));
-			return [ch.url, metaInfo];
+	async (channels: RSSChannel[]): Promise<[string, RSSChannel|undefined][]> => {
+		const promiseResults: Promise<[string, RSSChannel|undefined]>[] = channels
+		.map(async (ch): Promise<[string, RSSChannel|undefined]> => {
+			const result = await parseRSSFromURL(ch.url);
+			return [ch.url, result];
 		});
 
 		return await Promise.all(promiseResults);
