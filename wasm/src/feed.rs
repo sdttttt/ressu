@@ -1,4 +1,5 @@
 
+use std::str::FromStr;
 
 use fast_xml::{de::from_str, events::Event, Reader};
 use serde::{Deserialize, Serialize};
@@ -58,7 +59,7 @@ impl FromXmlWithStr for RSSChannel {
                                         let item_slice =
                                             reader_get_sub_node_str(&mut reader, bufs, tag, text)?;
 
-                                        let item = ChannelItem::from_str(&item_slice);
+                                        let item = ChannelItem::from_str(&item_slice)?;
                                         posts.push(item);
                                         count += 1;
                                     }
@@ -67,10 +68,11 @@ impl FromXmlWithStr for RSSChannel {
                                         SkipThisElement::from_xml_with_reader(bufs, &mut reader)?;
                                     }
                                 },
-                                Ok(Event::End(ref ce)) => match reader.decode(ce.name())? {
-                                    "channel" => break,
-                                    _ => (),
-                                },
+                                Ok(Event::End(ref ce)) => {
+                                    if reader.decode(ce.name())? == "channel" {
+                                        break;
+                                    }
+                                }
                                 Ok(Event::Eof) => break,
                                 _ => (),
                             }
@@ -133,18 +135,19 @@ impl RSSChannel {
     }
 }
 
-impl RSSChannel {
-    pub fn from_str(text: &str) -> RSSChannel {
-        let mut bufs = BufPool::new(4, 2048);
+impl FromStr for RSSChannel {
+	type Err = fast_xml::Error;
 
-        Self::from_xml_with_str(&mut bufs, text).unwrap()
+    fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
+        let bufs = BufPool::new(4, 2048);
+
+        Self::from_xml_with_str(&bufs, text)
     }
 }
 
 #[wasm_bindgen(js_name = getFeedMeta)]
 pub fn get_feed_meta(rss_text: &str) -> RSSChannel {
-    let rss = from_str::<RSSChannel>(&rss_text).unwrap();
-    rss
+    from_str::<RSSChannel>(rss_text).unwrap()
 }
 
 #[wasm_bindgen(js_name = getFeedJSON)]

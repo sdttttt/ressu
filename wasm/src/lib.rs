@@ -66,7 +66,7 @@ impl FromXmlWithReader for SkipThisElement {
                 Ok(XmlEvent::End(_)) if depth == 1 => break,
                 Ok(XmlEvent::End(_)) => depth -= 1,
                 Ok(XmlEvent::Eof) => break, // just ignore EOF
-                Err(err) => return Err(err.into()),
+                Err(err) => return Err(err),
                 _ => (),
             }
             buf.clear();

@@ -3,9 +3,9 @@ use fast_xml::{
     Reader,
 };
 
-use std::borrow::{Cow};
+use std::borrow::Cow;
 
-use crate::{buf::BufPool};
+use crate::buf::BufPool;
 
 #[allow(dead_code)]
 pub fn set_panic_hook() {
@@ -24,18 +24,18 @@ macro_rules! console_log  {
 	($($t:tt)*) => (crate::js_bind::log(&format_args!($($t)*).to_string()))
 }
 
-/// 
+///
 /// from attributes get key str.
 /// It takes a `Reader` and `Attributes` and a `key` and returns a `Result` of an `Option` of a `String`
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `reader`: &Reader<B> - The reader that is reading the XML file.
 /// * `attrs`: Attributes<'a>
 /// * `key`: The key of the attribute you want to get the value of.
-/// 
+///
 /// Returns:
-/// 
+///
 /// A function that takes a reader, attributes, and a key and returns a Result of an Option of a String.
 pub fn attrs_get_str<'a, B: std::io::BufRead>(
     reader: &Reader<B>,
@@ -67,14 +67,14 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
 
 /// It reads the next event from the reader, and if it's a text or CDATA event, it returns the text.
 /// Otherwise, it returns an empty string
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `reader`: &mut Reader<B>
 /// * `bufs`: A BufPool is a pool of buffers that are used to read the XML.
-/// 
+///
 /// Returns:
-/// 
+///
 /// A string
 pub fn reader_get_text<B: std::io::BufRead>(
     reader: &mut Reader<B>,
@@ -85,7 +85,7 @@ pub fn reader_get_text<B: std::io::BufRead>(
     let text = match reader.read_event(&mut buf) {
         Ok(Event::Text(ref e) | Event::CData(ref e)) => reader.decode(e)?.to_string(),
         Ok(_) => String::from(""),
-        Err(e) => return Err(e.into()),
+        Err(e) => return Err(e),
     };
 
     buf.clear();
@@ -94,21 +94,21 @@ pub fn reader_get_text<B: std::io::BufRead>(
 
 /// It reads the XML file from the current position to the end of the current tag, and returns the text
 /// between the current position and the end of the current tag
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `reader`: &mut Reader<B>
 /// * `bufs`: a pool of buffers that are used to read the XML file.
 /// * `tag`: the tag name of the node you want to get
 /// * `origin_text`: the original text of the XML file
-/// 
+///
 /// Returns:
-/// 
+///
 /// A string.
 pub fn reader_get_sub_node_str<B: std::io::BufRead>(
     reader: &mut Reader<B>,
     bufs: &BufPool,
-	tag: &str,
+    tag: &str,
     origin_text: &str,
 ) -> fast_xml::Result<String> {
     let mut buf = bufs.pop();
@@ -118,12 +118,13 @@ pub fn reader_get_sub_node_str<B: std::io::BufRead>(
     reader.check_end_names(false);
     loop {
         match reader.read_event(&mut buf) {
-            Ok(Event::End(ref e)) => match reader.decode(e.name()).unwrap() {
-                "item" => break,
-                _ => (),
-            },
+            Ok(Event::End(ref e)) => {
+                if reader.decode(e.name())? == "item" {
+                    break;
+                }
+            }
             Ok(Event::Eof) => break,
-			_ => ()
+            _ => (),
         }
         buf.clear();
     }
@@ -138,15 +139,15 @@ pub fn reader_get_sub_node_str<B: std::io::BufRead>(
 
     console_log!(
         "tag: {}, start: {}, end: {}, size: {}",
-		tag,
+        tag,
         start_position,
         end_position - end_tag_len,
-		end_position - end_tag_len - start_position
+        end_position - end_tag_len - start_position
     );
 
-	let item_utf8 = String::from_utf8_lossy(item_slice);
-	match item_utf8 {
-		Cow::Borrowed(e) => Ok(e.to_string()),
-		Cow::Owned(e) => Ok(e.to_string()),
-	}
+    let item_utf8 = String::from_utf8_lossy(item_slice);
+    match item_utf8 {
+        Cow::Borrowed(e) => Ok(e.to_string()),
+        Cow::Owned(e) => Ok(e),
+    }
 }

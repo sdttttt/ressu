@@ -38,7 +38,7 @@ impl Drop for Buffer {
     fn drop(&mut self) {
         self.pool
             .borrow_mut()
-            .push(std::mem::replace(&mut self.inner, Vec::new()))
+            .push(std::mem::take(&mut self.inner))
     }
 }
 
