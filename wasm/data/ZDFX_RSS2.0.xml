@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"
+
+
+>
+    <channel>
+        <title><![CDATA[终点分享]]></title>
+        <link>https://bbs.zdfx.net/</link>
+        <atom:link href="http://rsshub.app/zdfx" rel="self" type="application/rss+xml" />
+        <description><![CDATA[终点分享最新汉化通知 - Made with love by RSSHub(https://github.com/DIYgod/RSSHub)]]></description>
+        <generator>RSSHub</generator>
+        <webMaster>i@diygod.me (DIYgod)</webMaster>
+        
+        
+        
+        <language>zh-cn</language>
+        
+        <lastBuildDate>Sun, 08 May 2022 07:09:25 GMT</lastBuildDate>
+        <ttl>120</ttl>
+        
+        <item>
+            <title><![CDATA[（新人分享）分享一些acg风景美图]]></title>
+            <description><![CDATA[<img src="https://zdimg.tianshi2.net:8889/block/c5/c5bfd154ae202aa9bc5dc04289317cd5.jpg" width="860" height="395" referrerpolicy="no-referrer">]]></description>
+            
+            <guid isPermaLink="false">https://bbs.zdfx.net/thread-511243-1-1.html</guid>
+            <link>https://bbs.zdfx.net/thread-511243-1-1.html</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+    </channel>
+</rss>

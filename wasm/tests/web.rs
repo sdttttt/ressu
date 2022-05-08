@@ -18,11 +18,26 @@ fn pass() {
 }
 
 #[wasm_bindgen_test]
+fn test_parse_zdfx_rss_from_str() {
+    let rss_feed = RSSChannel::from_str(include_str!("../data/ZDFX_RSS2.0.xml")).unwrap();
+    console_log!("{:?}", rss_feed);
+	assert_eq!(rss_feed.is_specification(), true);
+}
+
+#[wasm_bindgen_test]
 fn test_parse_3dm_rss_from_str() {
     let rss_feed = RSSChannel::from_str(include_str!("../data/3DM_RSS2.0.xml")).unwrap();
     console_log!("{:?}", rss_feed);
     assert_eq!(rss_feed.is_specification(), true);
 }
+
+#[wasm_bindgen_test]
+fn test_parse_genshin_rss_from_str() {
+    let rss_feed = RSSChannel::from_str(include_str!("../data/GENSHIN_RSS2.0.xml")).unwrap();
+    console_log!("{:?}", rss_feed);
+    assert_eq!(rss_feed.is_specification(), true);
+}
+
 
 #[wasm_bindgen_test]
 fn test_parse_els_rss_from_str() {
@@ -38,6 +53,13 @@ fn test_parse_ns_rss_from_str() {
 	assert_eq!(rss_feed.is_specification(), true);
 }
 
+
+#[wasm_bindgen_test]
+fn test_parse_qidian_rss_from_str() {
+    let rss_feed = RSSChannel::from_str(include_str!("../data/QIDIAN_RSS2.0.xml")).unwrap();
+    console_log!("{:?}", rss_feed);
+	assert_eq!(rss_feed.is_specification(), true);
+}
 
 #[wasm_bindgen_test]
 fn test_parse_ps5_rss_from_str() {

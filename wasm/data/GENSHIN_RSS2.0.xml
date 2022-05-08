@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"
+
+
+>
+    <channel>
+        <title><![CDATA[最新 - 原神]]></title>
+        <link>https://ys.mihoyo.com/content/ysCn/getContentList?pageSize=5&#38;pageNum=1&#38;channelId=10</link>
+        <atom:link href="http://rsshub.app/yuanshen" rel="self" type="application/rss+xml" />
+        <description><![CDATA[最新 - 原神 - Made with love by RSSHub(https://github.com/DIYgod/RSSHub)]]></description>
+        <generator>RSSHub</generator>
+        <webMaster>i@diygod.me (DIYgod)</webMaster>
+        
+        
+        
+        <language>zh-cn</language>
+        
+        <lastBuildDate>Sun, 08 May 2022 05:33:58 GMT</lastBuildDate>
+        <ttl>120</ttl>
+        
+        <item>
+            <title><![CDATA[《原神》2.7版本更新延期补偿说明]]></title>
+            <description><![CDATA[《原神》2.7版本更新延期补偿说明]]></description>
+            <pubDate>Thu, 05 May 2022 14:00:00 GMT</pubDate>
+            <guid isPermaLink="false">https://ys.mihoyo.com/main/news/detail/21131</guid>
+            <link>https://ys.mihoyo.com/main/news/detail/21131</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+        <item>
+            <title><![CDATA[《原神》2.6版本「流风眷堇庭」活动速递第三期]]></title>
+            <description><![CDATA[《原神》2.6版本「流风眷堇庭」活动速递第三期]]></description>
+            <pubDate>Thu, 05 May 2022 03:00:00 GMT</pubDate>
+            <guid isPermaLink="false">https://ys.mihoyo.com/main/news/detail/21064</guid>
+            <link>https://ys.mihoyo.com/main/news/detail/21064</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+        <item>
+            <title><![CDATA[《原神》「百货奇货」活动即将开启]]></title>
+            <description><![CDATA[《原神》「百货奇货」活动即将开启]]></description>
+            <pubDate>Wed, 04 May 2022 04:00:00 GMT</pubDate>
+            <guid isPermaLink="false">https://ys.mihoyo.com/main/news/detail/21063</guid>
+            <link>https://ys.mihoyo.com/main/news/detail/21063</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+        <item>
+            <title><![CDATA[《原神》「裁景入画」旅照札记摄影征集活动今日开启]]></title>
+            <description><![CDATA[《原神》「裁景入画」旅照札记摄影征集活动今日开启]]></description>
+            <pubDate>Mon, 02 May 2022 04:00:00 GMT</pubDate>
+            <guid isPermaLink="false">https://ys.mihoyo.com/main/news/detail/20931</guid>
+            <link>https://ys.mihoyo.com/main/news/detail/20931</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+        <item>
+            <title><![CDATA[提瓦特美食札记 | "晚餐…"——迪卢克生日快乐！]]></title>
+            <description><![CDATA[提瓦特美食札记 | "晚餐…"——迪卢克生日快乐！]]></description>
+            <pubDate>Sat, 30 Apr 2022 06:00:00 GMT</pubDate>
+            <guid isPermaLink="false">https://ys.mihoyo.com/main/news/detail/20917</guid>
+            <link>https://ys.mihoyo.com/main/news/detail/20917</link>
+            
+            
+            
+            
+            
+                
+            
+            
+        </item>
+        
+    </channel>
+</rss>
