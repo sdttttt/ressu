@@ -4,8 +4,6 @@
 
 This is a free, modern **RSS Reader**, built using React in WebView(Tauri).
 
-*Of course, it's free.*
-
 
 > Ressu primary target is the Windows platform and then the Linux platform.
 
