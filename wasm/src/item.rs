@@ -29,18 +29,19 @@ pub struct ChannelItem {
 }
 
 impl FromXmlWithStr for ChannelItem {
-	
-   /// It reads the XML and populates the fields of the struct
-   /// 
-   /// Arguments:
-   /// 
-   /// * `bufs`: &BufPool - this is a pool of buffers that are used to read the XML.
-   /// * `text`: The XML text to parse.
-   /// 
-   /// Returns:
-   /// 
-   /// A ChannelItem
-    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
+    /// `Self::from_xml_with_reader(bufs, &mut reader)`
+	/// 
+	/// The `Self` is a reference to the current type, which is `ChannelItem`
+	/// 
+	/// Arguments:
+	/// 
+	/// * `bufs`: &BufPool - this is a pool of buffers that the parser uses to store the data it reads.
+	/// * `text`: &str - the XML string to parse
+	/// 
+	/// Returns:
+	/// 
+	/// A ChannelItem
+	fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
         let mut reader = Reader::from_str(text);
 
         Self::from_xml_with_reader(bufs, &mut reader)
@@ -49,6 +50,17 @@ impl FromXmlWithStr for ChannelItem {
 
 
 impl FromXmlWithReader for ChannelItem {
+	/// > The function reads the XML events from the reader, and when it encounters a start tag, it calls
+	/// the `from_xml_with_reader` function of the corresponding field
+	/// 
+	/// Arguments:
+	/// 
+	/// * `bufs`: &BufPool
+	/// * `reader`: &mut Reader<B>
+	/// 
+	/// Returns:
+	/// 
+	/// a Result<Self>
 	fn from_xml_with_reader<B: std::io::BufRead>(bufs: &BufPool, reader: &mut Reader<B>) -> fast_xml::Result<Self> {
 		
         let mut title = None;
