@@ -76,6 +76,7 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
 /// Returns:
 ///
 /// A string
+#[inline]
 pub fn reader_get_text<B: std::io::BufRead>(
     reader: &mut Reader<B>,
     bufs: &BufPool,

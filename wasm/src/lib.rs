@@ -1,11 +1,11 @@
 #[macro_use]
 mod utils;
-mod js_bind;
 mod constants;
-
 mod buf;
+
 pub mod feed;
 pub mod item;
+pub mod js_bind;
 
 use std::io::BufRead;
 
@@ -68,6 +68,7 @@ impl FromXmlWithReader for SkipThisElement {
 	/// Returns:
 	/// 
 	/// A SkipThisElement
+    #[inline]
 	fn from_xml_with_reader<B: BufRead>(
         bufs: &BufPool,
         reader: &mut XmlReader<B>,
