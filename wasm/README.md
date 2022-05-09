@@ -14,3 +14,5 @@ from wasm_bindgen_test:
 - It takes **3.3s** to process about **1600 items**, each of which is about **0.5kb** in size. (data/QIDIAN_RSS2.0.xml)
 - It takes **0.1s** to process about **14 items**, each of which is about **10kb** in size. (data/ELS_RSS2.0.xml)
 - It takes **0.007s** to process about **20 items**, each of which is about **4kb** in size. (data/3DM_RSS2.0.xml)
+
+I'm not satisfied with this speed. The memory copy of to_string takes too much time, and I'm trying to optimize it.
