@@ -6,6 +6,7 @@ use fast_xml::{
 use std::borrow::Cow;
 
 use crate::buf::BufPool;
+use crate::FromXmlWithReader;
 
 #[allow(dead_code)]
 pub fn set_panic_hook() {
@@ -22,6 +23,44 @@ pub fn set_panic_hook() {
 #[macro_export]
 macro_rules! console_log  {
 	($($t:tt)*) => (crate::js_bind::log(&format_args!($($t)*).to_string()))
+}
+
+pub type TextOrCData = Option<String>;
+
+impl FromXmlWithReader for TextOrCData {
+    /// It reads the next event from the reader, and if it's a text or CDATA event, it returns the text.
+    /// Otherwise, it returns an empty string
+    ///
+    /// Arguments:
+    ///
+    /// * `reader`: &mut Reader<B>
+    /// * `bufs`: A BufPool is a pool of buffers that are used to read the XML.
+    ///
+    /// Returns:
+    ///
+    /// A string
+    fn from_xml_with_reader<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut Reader<B>,
+    ) -> fast_xml::Result<Self> {
+        let mut buf = bufs.pop();
+
+        let mut text = None;
+
+        loop {
+            match reader.read_event(&mut buf) {
+                Ok(Event::Text(ref e) | Event::CData(ref e)) => {
+                    text = Some(reader.decode(e)?.to_string())
+                }
+                Ok(Event::End(_) | Event::Eof) => break,
+                Ok(_) => {}
+                Err(e) => return Err(e),
+            };
+            buf.clear();
+        }
+
+        Ok(text)
+    }
 }
 
 ///
@@ -57,45 +96,11 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
                     s
                 } else {
                     unreachable!();
-                })
-                .unwrap()
+                })?
                 .to_string(),
         );
     }
     Ok(value)
-}
-
-/// It reads the next event from the reader, and if it's a text or CDATA event, it returns the text.
-/// Otherwise, it returns an empty string
-///
-/// Arguments:
-///
-/// * `reader`: &mut Reader<B>
-/// * `bufs`: A BufPool is a pool of buffers that are used to read the XML.
-///
-/// Returns:
-///
-/// A string
-#[inline]
-pub fn reader_get_text<B: std::io::BufRead>(
-    reader: &mut Reader<B>,
-    bufs: &BufPool,
-) -> fast_xml::Result<String> {
-    let mut buf = bufs.pop();
-
-	let mut text: String = String::from("");
-
-	loop {
-		match reader.read_event(&mut buf) {
-			Ok(Event::Text(ref e) | Event::CData(ref e)) => text = reader.decode(e)?.to_string(),
-			Ok(Event::End(_) | Event::Eof) => break,
-			Ok(_) => {},
-			Err(e) => return Err(e),
-		};
-		buf.clear();
-	}
-
-    Ok(text)
 }
 
 /// It reads the XML file from the current position to the end of the current tag, and returns the text

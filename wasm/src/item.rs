@@ -6,7 +6,7 @@ use serde::{Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
-use crate::utils::reader_get_text;
+use crate::utils::TextOrCData;
 use crate::FromXmlWithReader;
 use crate::FromXmlWithStr;
 use crate::SkipThisElement;
@@ -62,13 +62,13 @@ impl FromXmlWithReader for ChannelItem {
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => match reader.decode(e.name())? {
-                    "title" => title = Some(reader_get_text(reader, bufs)?),
+                    "title" => title =  TextOrCData::from_xml_with_reader(bufs, reader)?,
 
-                    "pubDate" => pub_date = Some(reader_get_text(reader, bufs)?),
+                    "pubDate" => pub_date =  TextOrCData::from_xml_with_reader(bufs, reader)?,
 
-                    "link" => link = Some(reader_get_text(reader, bufs)?),
+                    "link" => link = TextOrCData::from_xml_with_reader(bufs, reader)?,
 
-                    "description" => description = Some(reader_get_text(reader, bufs)?),
+                    "description" => description =  TextOrCData::from_xml_with_reader(bufs, reader)?,
 
                     _ => {
                         SkipThisElement::from_xml_with_reader(bufs, reader)?;

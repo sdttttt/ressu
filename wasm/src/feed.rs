@@ -6,9 +6,9 @@ use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
-use crate::utils::{reader_get_sub_node_str, reader_get_text};
+use crate::utils::TextOrCData;
 use crate::{constants::*, utils::attrs_get_str};
-use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
+use crate::{utils, FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize)]
@@ -70,13 +70,19 @@ impl FromXmlWithStr for RSSChannel {
                         loop {
                             match reader.read_event(&mut cbuf) {
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
-                                    "title" => title = Some(reader_get_text(&mut reader, bufs)?),
-
-                                    "description" => {
-                                        description = Some(reader_get_text(&mut reader, bufs)?)
+                                    "title" => {
+                                        title =
+                                            TextOrCData::from_xml_with_reader(bufs, &mut reader)?
                                     }
 
-                                    "link" => url = Some(reader_get_text(&mut reader, bufs)?),
+                                    "description" => {
+                                        description =
+                                            TextOrCData::from_xml_with_reader(bufs, &mut reader)?;
+                                    }
+
+                                    "link" => {
+                                        url = TextOrCData::from_xml_with_reader(bufs, &mut reader)?
+                                    }
 
                                     "item" => {
                                         let item =
@@ -91,7 +97,7 @@ impl FromXmlWithStr for RSSChannel {
                                 },
 
                                 Ok(Event::Eof | Event::End(_)) => break,
-								Ok(_) => (),
+                                Ok(_) => (),
                                 Err(e) => return Err(e),
                             }
                             cbuf.clear()
