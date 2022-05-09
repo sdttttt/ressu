@@ -145,9 +145,5 @@ pub fn reader_get_sub_node_str<B: std::io::BufRead>(
         end_position - end_tag_len - start_position
     );
 
-    let item_utf8 = String::from_utf8_lossy(item_slice);
-    match item_utf8 {
-        Cow::Borrowed(e) => Ok(e.to_string()),
-        Cow::Owned(e) => Ok(e),
-    }
+    Ok(unsafe { String::from_utf8_unchecked(item_slice.into()) })
 }
