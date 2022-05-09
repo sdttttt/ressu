@@ -2,7 +2,7 @@
 
 [![build](https://github.com/sdttttt/ressu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/sdttttt/ressu/actions/workflows/build.yml)
 
-This is a modern **RSS Reader**, built using React in WebView(Tauri).
+This is a free, modern **RSS Reader**, built using React in WebView(Tauri).
 
 *Of course, it's free.*
 
