@@ -83,13 +83,18 @@ pub fn reader_get_text<B: std::io::BufRead>(
 ) -> fast_xml::Result<String> {
     let mut buf = bufs.pop();
 
-    let text = match reader.read_event(&mut buf) {
-        Ok(Event::Text(ref e) | Event::CData(ref e)) => reader.decode(e)?.to_string(),
-        Ok(_) => String::from(""),
-        Err(e) => return Err(e),
-    };
+	let mut text: String = String::from("");
 
-    buf.clear();
+	loop {
+		match reader.read_event(&mut buf) {
+			Ok(Event::Text(ref e) | Event::CData(ref e)) => text = reader.decode(e)?.to_string(),
+			Ok(Event::End(_) | Event::Eof) => break,
+			Ok(_) => {},
+			Err(e) => return Err(e),
+		};
+		buf.clear();
+	}
+
     Ok(text)
 }
 

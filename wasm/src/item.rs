@@ -61,7 +61,7 @@ impl FromXmlWithReader for ChannelItem {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
+                Ok(Event::Start(ref e)) => match reader.decode(e.name())? {
                     "title" => title = Some(reader_get_text(reader, bufs)?),
 
                     "pubDate" => pub_date = Some(reader_get_text(reader, bufs)?),
@@ -75,16 +75,13 @@ impl FromXmlWithReader for ChannelItem {
                     }
                 },
 
-                Ok(Event::Eof) => break,
+                Ok(Event::Eof | Event::End(_)) => break,
 
-                Ok(_) => {}
+                Ok(_) => (),
 
-                Err(fast_xml::Error::EndEventMismatch {
-                    expected: _,
-                    found: _,
-                }) => {}
-
-                Err(e) => return Err(e),
+                Err(e) => {
+					return Err(e) 
+				},
             }
             buf.clear();
         }

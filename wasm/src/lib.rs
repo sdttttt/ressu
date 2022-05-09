@@ -74,8 +74,7 @@ impl FromXmlWithReader for SkipThisElement {
         reader: &mut XmlReader<B>,
     ) -> fast_xml::Result<Self> {
         let mut buf = bufs.pop();
-        let mut depth = 1u64;
-        reader.check_end_names(false);
+        let mut depth = 1usize;
         loop {
             match reader.read_event(&mut buf) {
                 Ok(XmlEvent::Start(_)) => depth += 1,
@@ -87,7 +86,6 @@ impl FromXmlWithReader for SkipThisElement {
             }
             buf.clear();
         }
-        reader.check_end_names(true);
         Ok(SkipThisElement)
     }
 }

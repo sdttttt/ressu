@@ -1,8 +1,7 @@
-
 use std::str::FromStr;
 
 use fast_xml::{events::Event, Reader};
-use serde::{Serialize};
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
@@ -15,13 +14,12 @@ use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 #[derive(Debug, Serialize)]
 #[serde(rename = "rss")]
 pub struct RSSChannel {
-	
-	#[serde(skip)]
-	version: Option<String>,
+    #[serde(skip)]
+    version: Option<String>,
 
     title: Option<String>,
 
-	description: Option<String>,
+    description: Option<String>,
 
     url: Option<String>,
 
@@ -29,30 +27,29 @@ pub struct RSSChannel {
 }
 
 impl FromXmlWithStr for RSSChannel {
-
     /// It reads the XML document, and when it finds a `<channel>` element, it reads the sub-elements of
-	/// that element, and when it finds an `<item>` element, it reads the sub-elements of that element,
-	/// and when it finds an `<enclosure>` element, it reads the sub-elements of that element, and when
-	/// it finds an `<image>` element, it reads the sub-elements of that element, and when it finds an
-	/// `<url>` element, it reads the sub-elements of that element, and when it finds an `<title>`
-	/// element, it reads the sub-elements of that element, and when it finds an `<link>` element, it
-	/// reads the sub-elements of that element, and when it finds an `<description>` element, it reads
-	/// the sub-elements of that element, and when it finds an `
-	/// 
-	/// Arguments:
-	/// 
-	/// * `bufs`: &BufPool - a pool of buffers that are used to read the XML.
-	/// * `text`: The XML string to parse.
-	/// 
-	/// Returns:
-	/// 
-	/// A `RSSChannel` struct.
-	fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
+    /// that element, and when it finds an `<item>` element, it reads the sub-elements of that element,
+    /// and when it finds an `<enclosure>` element, it reads the sub-elements of that element, and when
+    /// it finds an `<image>` element, it reads the sub-elements of that element, and when it finds an
+    /// `<url>` element, it reads the sub-elements of that element, and when it finds an `<title>`
+    /// element, it reads the sub-elements of that element, and when it finds an `<link>` element, it
+    /// reads the sub-elements of that element, and when it finds an `<description>` element, it reads
+    /// the sub-elements of that element, and when it finds an `
+    ///
+    /// Arguments:
+    ///
+    /// * `bufs`: &BufPool - a pool of buffers that are used to read the XML.
+    /// * `text`: The XML string to parse.
+    ///
+    /// Returns:
+    ///
+    /// A `RSSChannel` struct.
+    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
         let mut reader = Reader::from_str(text);
 
         let mut version = None;
         let mut title = None;
-		let mut description = None;
+        let mut description = None;
         let mut url = None;
         let mut posts = Vec::<ChannelItem>::new();
 
@@ -75,16 +72,15 @@ impl FromXmlWithStr for RSSChannel {
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
                                     "title" => title = Some(reader_get_text(&mut reader, bufs)?),
 
-									"description" => description = Some(reader_get_text(&mut reader, bufs)?),
+                                    "description" => {
+                                        description = Some(reader_get_text(&mut reader, bufs)?)
+                                    }
 
                                     "link" => url = Some(reader_get_text(&mut reader, bufs)?),
 
                                     "item" => {
-                                        let tag = reader.decode(ce.name())?;
-                                        let item_slice =
-                                            reader_get_sub_node_str(&mut reader, bufs, tag, text)?;
-
-                                        let item = ChannelItem::from_str(&item_slice)?;
+                                        let item =
+                                            ChannelItem::from_xml_with_reader(bufs, &mut reader)?;
                                         posts.push(item);
                                         count += 1;
                                     }
@@ -93,13 +89,10 @@ impl FromXmlWithStr for RSSChannel {
                                         SkipThisElement::from_xml_with_reader(bufs, &mut reader)?;
                                     }
                                 },
-                                Ok(Event::End(ref ce)) => {
-                                    if reader.decode(ce.name())? == "channel" {
-                                        break;
-                                    }
-                                }
-                                Ok(Event::Eof) => break,
-                                _ => (),
+
+                                Ok(Event::Eof | Event::End(_)) => break,
+								Ok(_) => (),
+                                Err(e) => return Err(e),
                             }
                             cbuf.clear()
                         }
@@ -114,14 +107,9 @@ impl FromXmlWithStr for RSSChannel {
                     console_log!("{}", String::from_utf8_lossy(e));
                 }
 
-                Ok(Event::Eof) => break,
+                Ok(Event::Eof | Event::End(_)) => break,
 
                 Ok(_) => {}
-
-                Err(fast_xml::Error::EndEventMismatch {
-                    expected: _,
-                    found: _,
-                }) => {}
 
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
@@ -131,7 +119,7 @@ impl FromXmlWithStr for RSSChannel {
         Ok(Self {
             version,
             title,
-			description,
+            description,
             url,
             posts,
         })
@@ -159,15 +147,15 @@ impl RSSChannel {
     pub fn posts_len(&self) -> usize {
         self.posts.len()
     }
-	
-	#[wasm_bindgen(js_name = posts)]
-	pub fn posts(&self) -> JsValue {
-		JsValue::from_serde(&self.posts).unwrap()
-	}
+
+    #[wasm_bindgen(js_name = posts)]
+    pub fn posts(&self) -> JsValue {
+        JsValue::from_serde(&self.posts).unwrap()
+    }
 }
 
 impl FromStr for RSSChannel {
-	type Err = fast_xml::Error;
+    type Err = fast_xml::Error;
 
     fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
         let bufs = BufPool::new(16, 4096);
