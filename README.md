@@ -7,7 +7,7 @@ This is a modern **RSS Reader**, built using React in WebView(Tauri), also cross
 *Of course, it's free.*
 
 
-> Our primary target is the Windows platform and then the Linux platform.
+> Ressu primary target is the Windows platform and then the Linux platform.
 
 
 ## Build
