@@ -7,7 +7,10 @@ Part of the code comes from [github.com/iovxw/rssbot](https://github.com/iovxw/r
 
 # Benchmark
 
-Under the blessing of WASM of Rust, the memory copy is optimized and the terrifying speed of RSS parsing is achieved.
+Under the blessing of WASM of Rust, the memory copy is optimized and the excellent RSS parsing speed is achieved.
+
+Browser: `Microsoft Edge 101.0.1210.39`
+Hardware: `CPU: i7-12700H` `Mem: 32G` 
 
 from wasm_bindgen_test:
 
