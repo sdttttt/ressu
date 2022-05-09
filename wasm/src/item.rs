@@ -43,6 +43,14 @@ impl FromXmlWithStr for ChannelItem {
     fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<ChannelItem> {
         let mut reader = Reader::from_str(text);
 
+        Self::from_xml_with_reader(bufs, &mut reader)
+    }
+}
+
+
+impl FromXmlWithReader for ChannelItem {
+	fn from_xml_with_reader<B: std::io::BufRead>(bufs: &BufPool, reader: &mut Reader<B>) -> fast_xml::Result<Self> {
+		
         let mut title = None;
         let mut description = None;
         let mut pub_date = None;
@@ -54,16 +62,16 @@ impl FromXmlWithStr for ChannelItem {
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => match reader.decode(e.name()).unwrap() {
-                    "title" => title = Some(reader_get_text(&mut reader, bufs)?),
+                    "title" => title = Some(reader_get_text(reader, bufs)?),
 
-                    "pubDate" => pub_date = Some(reader_get_text(&mut reader, bufs)?),
+                    "pubDate" => pub_date = Some(reader_get_text(reader, bufs)?),
 
-                    "link" => link = Some(reader_get_text(&mut reader, bufs)?),
+                    "link" => link = Some(reader_get_text(reader, bufs)?),
 
-                    "description" => description = Some(reader_get_text(&mut reader, bufs)?),
+                    "description" => description = Some(reader_get_text(reader, bufs)?),
 
                     _ => {
-                        SkipThisElement::from_xml_with_reader(bufs, &mut reader)?;
+                        SkipThisElement::from_xml_with_reader(bufs, reader)?;
                     }
                 },
 
@@ -87,8 +95,9 @@ impl FromXmlWithStr for ChannelItem {
             pub_date,
             link,
         })
-    }
+	}
 }
+
 
 #[wasm_bindgen]
 impl ChannelItem {
