@@ -7,7 +7,7 @@ This is a modern **RSS Reader**, built using React in Tauri, and it's aimed at W
 *Of course, it's free.*
 
 
-## Dev
+## Build
 
 You need the following environment:
 
@@ -20,11 +20,15 @@ After WASM compile complete, need **reinstall node_modules** to found wasm libra
 
 ## TODO
 
-- [x] Layout.
-- [x] RSS parse.
-- [ ] Local storage.
-- [ ] Deep UI Design.
+**Stage 1:**
 
+- [x] RSS Parse.
+- [x] Local Storage.
+- [ ] UI Design.
+
+**Stage 2:**
+
+- [ ] Complete settings options. 
 
 ## LICENSE
 
