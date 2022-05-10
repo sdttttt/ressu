@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
-use crate::utils::TextOrCData;
+use crate::utils::{NumberData, TextOrCData};
 use crate::{constants::*, utils::attrs_get_str};
 use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
@@ -23,61 +23,70 @@ pub struct RSSChannel {
 
     url: Option<String>,
 
-		language: Option<String>,
-		
-		#[serde(rename = "webMaster")]
-		web_master: Option<String>,
+    language: Option<String>,
+
+    #[serde(rename = "webMaster")]
+    web_master: Option<String>,
+
+    #[serde(rename = "lastBuildDate")]
+    last_build_date: Option<String>,
+
+    ttl: Option<usize>,
 
     posts: Vec<ChannelItem>,
 }
 
 impl FromXmlWithStr for RSSChannel {
-
     /// > It takes a string, creates a reader from it, and then calls the function that takes a reader
-	/// 
-	/// Arguments:
-	/// 
-	/// * `bufs`: &BufPool - this is a pool of buffers that the parser uses to store the data it reads.
-	/// * `text`: The XML text to parse.
-	/// 
-	/// Returns:
-	/// 
-	/// A `fast_xml::Result<RSSChannel>`
-	fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
+    ///
+    /// Arguments:
+    ///
+    /// * `bufs`: &BufPool - this is a pool of buffers that the parser uses to store the data it reads.
+    /// * `text`: The XML text to parse.
+    ///
+    /// Returns:
+    ///
+    /// A `fast_xml::Result<RSSChannel>`
+    fn from_xml_with_str(bufs: &BufPool, text: &str) -> fast_xml::Result<RSSChannel> {
         let mut reader = Reader::from_str(text);
-		
-		Self::from_xml_with_reader(bufs, &mut reader)
+
+        Self::from_xml_with_reader(bufs, &mut reader)
     }
 }
 
 impl FromXmlWithReader for RSSChannel {
-	/// > Read the XML document, and for each element, if it's a `<rss>` element, get the `version`
-	/// attribute, if it's a `<channel>` element, read the `<title>`, `<description>`, `<link>` and
-	/// `<item>` elements, and if it's a `<item>` element, read the `<title>`, `<description>`, `<link>`,
-	/// `<pubDate>`, `<guid>` and `<category>` elements
-	/// 
-	/// Arguments:
-	/// 
-	/// * `bufs`: &BufPool - this is a pool of buffers that are used to read the XML.
-	/// * `reader`: &mut Reader<B>
-	/// 
-	/// Returns:
-	/// 
-	/// A `Result` of `Channel`
-	fn from_xml_with_reader<B: std::io::BufRead>(bufs: &BufPool, reader: &mut Reader<B>) -> fast_xml::Result<Self> {
-		
+    /// > Read the XML document, and for each element, if it's a `<rss>` element, get the `version`
+    /// attribute, if it's a `<channel>` element, read the `<title>`, `<description>`, `<link>` and
+    /// `<item>` elements, and if it's a `<item>` element, read the `<title>`, `<description>`, `<link>`,
+    /// `<pubDate>`, `<guid>` and `<category>` elements
+    ///
+    /// Arguments:
+    ///
+    /// * `bufs`: &BufPool - this is a pool of buffers that are used to read the XML.
+    /// * `reader`: &mut Reader<B>
+    ///
+    /// Returns:
+    ///
+    /// A `Result` of `Channel`
+    fn from_xml_with_reader<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut Reader<B>,
+    ) -> fast_xml::Result<Self> {
         let mut version = None;
         let mut title = None;
         let mut description = None;
         let mut url = None;
-				let mut language = None;
-				let mut web_master = None;
+        let mut language = None;
+        let mut web_master = None;
+        let mut last_build_date = None;
+        let mut ttl = None;
         let mut posts = Vec::<ChannelItem>::new();
 
         reader.trim_text(true);
 
         let mut buf = bufs.pop();
 
+		
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref re)) => match reader.decode(re.name())? {
@@ -92,8 +101,7 @@ impl FromXmlWithReader for RSSChannel {
                             match reader.read_event(&mut cbuf) {
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
                                     "title" => {
-                                        title =
-                                            TextOrCData::from_xml_with_reader(bufs, reader)?
+                                        title = TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
 
                                     "description" => {
@@ -105,17 +113,24 @@ impl FromXmlWithReader for RSSChannel {
                                         url = TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
 
-																		"language" => {
-																			language = TextOrCData::from_xml_with_reader(bufs, reader)?
-																		}
+                                    "language" => {
+                                        language = TextOrCData::from_xml_with_reader(bufs, reader)?
+                                    }
 
-																		"webMaster" => {
-																			web_master = TextOrCData::from_xml_with_reader(bufs, reader)?
-																		}
+                                    "webMaster" => {
+                                        web_master =
+                                            TextOrCData::from_xml_with_reader(bufs, reader)?
+                                    }
+
+                                    "lastBuildDate" => {
+                                        last_build_date =
+                                            TextOrCData::from_xml_with_reader(bufs, reader)?
+                                    }
+
+                                    "ttl" => ttl = NumberData::from_xml_with_reader(bufs, reader)?,
 
                                     "item" => {
-                                        let item =
-                                            ChannelItem::from_xml_with_reader(bufs, reader)?;
+                                        let item = ChannelItem::from_xml_with_reader(bufs, reader)?;
                                         posts.push(item);
                                         count += 1;
                                     }
@@ -138,13 +153,8 @@ impl FromXmlWithReader for RSSChannel {
                     _ => (),
                 },
 
-                Ok(Event::Text(ref e)) => {
-                    console_log!("{}", String::from_utf8_lossy(e));
-                }
-
                 Ok(Event::Eof | Event::End(_)) => break,
-
-                Ok(_) => {}
+                Ok(_) => (),
 
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             }
@@ -156,11 +166,13 @@ impl FromXmlWithReader for RSSChannel {
             title,
             description,
             url,
-						language,
-						web_master,
+            language,
+            web_master,
+            last_build_date,
+            ttl,
             posts,
         })
-	}
+    }
 }
 
 #[wasm_bindgen]

@@ -3,7 +3,7 @@ use fast_xml::{
     Reader,
 };
 
-use std::borrow::Cow;
+use std::{borrow::Cow};
 
 use crate::buf::BufPool;
 use crate::FromXmlWithReader;
@@ -26,6 +26,7 @@ macro_rules! console_log  {
 }
 
 pub type TextOrCData = Option<String>;
+pub type NumberData = Option<usize>;
 
 impl FromXmlWithReader for TextOrCData {
     /// It reads the next event from the reader, and if it's a text or CDATA event, it returns the text.
@@ -61,6 +62,48 @@ impl FromXmlWithReader for TextOrCData {
 
         Ok(text)
     }
+}
+
+impl FromXmlWithReader for NumberData {
+    /// It reads the XML file, and if it finds a number, it returns it
+		/// 
+		/// Arguments:
+		/// 
+		/// * `bufs`: &BufPool,
+		/// * `reader`: &mut Reader<B>
+		/// 
+		/// Returns:
+		/// 
+		/// A Result<Option<usize>>
+		fn from_xml_with_reader<B: std::io::BufRead>(
+        bufs: &BufPool,
+        reader: &mut Reader<B>,
+    ) -> fast_xml::Result<Self> {
+			let mut buf = bufs.pop();
+			let mut number = None;
+
+			loop {
+				match reader.read_event(&mut buf) {
+						Ok(Event::Text(ref e) | Event::CData(ref e)) => {
+							let number_str = reader.decode(e)?;
+							number = Some(
+									match number_str.parse::<usize>() {
+										Err(_) => return Err(fast_xml::Error::UnexpectedToken(
+											(format!("{} to number failed!", number_str))
+											.to_string())),
+										Ok(n) => n,
+									}
+								)
+						}
+						Ok(Event::End(_) | Event::Eof) => break,
+						Ok(_) => {}
+						Err(e) => return Err(e),
+				};
+				buf.clear();
+		}
+
+		Ok(number)
+		}
 }
 
 ///

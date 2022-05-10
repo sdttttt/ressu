@@ -68,7 +68,7 @@ impl FromXmlWithReader for SkipThisElement {
 	/// Returns:
 	/// 
 	/// A SkipThisElement
-    #[inline]
+  #[inline]
 	fn from_xml_with_reader<B: BufRead>(
         bufs: &BufPool,
         reader: &mut XmlReader<B>,
