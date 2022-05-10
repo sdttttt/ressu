@@ -1,0 +1,929 @@
+<rss version="2.0">
+<channel>
+<title><![CDATA[游研社]]></title>
+<description><![CDATA[无论你是游戏死忠，还是轻度的休闲玩家，在这里都能找到感兴趣的东西。]]></description>
+<copyright>游研社</copyright>
+<link>https://www.yystv.cn</link>
+<image>
+<url>https://alioss.yystv.cn/images/yyslogo124.png</url>
+<title>游研社</title>
+<link>https://www.yystv.cn</link>
+</image>
+<ttl>5</ttl>
+<item>
+<title><![CDATA[一名游戏说书人（DM）的自我修养]]></title>
+<link>https://www.yystv.cn/p/9103</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p>D‌‌‌‌‌M，网络流行词，是Dungeon Master的缩写，在剧本杀、跑团里一般被称为主持人，也是时下最为火爆的聚会桌游《血染钟楼》里的说书人。</p></blockquote><p>要问时下最为火爆的聚会桌游是什么？</p><div class="picbox"><img src="https://alioss.yystv.cn/news/09f70501339743169d8c4998fbe81023.jpg_mw680water" data-="" width="1080" height="1528" data-id="377691eg" alt="" style="width: 1080px; background-color: transparent;"></div><p>《Blood On The Clocktower》（暂译“《血染钟楼》”）无疑是顶流中的顶流，堪称新时代现象级聚会游戏。以一己之力打通了桌游行业与剧本杀行业的任督二脉，无数魑魅魍魉汇集于钟楼广场，蠢蠢欲动尔虞我诈。</p><p><span style="font-size: 100%;"><b>这游戏好玩在哪儿？</b></span></p><p>游戏的整个流程接近狼人杀一类的身份推理游戏，善良阵营玩家需要找到恶魔，并将其投票出局才能获胜。反之，邪恶阵营玩家获胜。<b>但它去掉了所有狼人杀游戏的糟粕：</b></p><p>1.出局玩家的坐牢时间过长</p><p>2.主持人只是工具人，没什么游戏体验</p><p>3.信息量少的玩家游戏体验较差</p><p>4.……</p><p><b>以上差体验统统都没有！</b>而且同时还支持新玩家随时加入游戏。</p><p>游戏的公开聊天环节中，支持玩家私聊，甚至抱团。每个人的身份都不一样，信息也不一样，都有独特的游戏体验。这几点上的体验则很像剧本杀。</p><p>但今天在这里的主要目的不是给大家讲述这个游戏有多好玩。而是聊聊这个游戏最具特色的主持人机制——也就是游戏中的<b>说书人</b>。</p><p><b>准确点说，今天带来的是一篇说书人攻略。</b></p><div class="picbox"><img src="https://alioss.yystv.cn/news/aa3e398c8ab3352e42c6cb2f297403fb.jpg_mw680water" data-="" width="399" height="276" data-id="377691xn" alt="" style="width: 399px; background-color: transparent;"></div><p><br></p><h2><span style="font-size: 120%;"><b><span class="r-triangle">►说书人起源：从TRPG到“血染钟楼”</span></b></span></h2><h3 style="text-align: left;"><span class="r-triangle">起源：TRPG（俗称跑团）</span></h3><div><span class="r-triangle"><br></span></div><p>桌上角色扮演游戏（Tabletop Role-playing game），简称TRPG。是一种角色扮演活动。其实我们应当称它为角色扮演游戏（Role-playing game，RPG），但为了更方便理解识别，我们在前面加上了一个T（Tabletop）。</p><p>桌上角色扮演游戏，是各类角色扮演游戏的基础。它是一种桌面形式的，通过言语描述进行的，最早的角色扮演游戏。由在这些游戏活动中担当游戏主持的人——主持人，负责协调各个扮演人间的沟通、游戏世界状况的描述等工作，以便游戏顺利进行。</p><p>扮演角色的人——扮演者，需专心扮演自己的角色。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/7df5a3288290be6e5255f85829e79307.png_mw680water" data-="" width="700" height="700" data-id="377691hk" alt="" style="width: 700px; background-color: transparent;"></div><h3 style="text-align: left;"><b><span class="r-triangle">主持人与DM</span></b></h3><div><b><span class="r-triangle"><br></span></b></div><p>D‌‌‌‌‌M，网络流行词，是Dungeon Master的缩写，在剧本杀里一般被称为主持人。</p><p><b>DM包括了导演、裁判、公证人等多种身份，因此在剧本杀里起到了至关重要的作用，是剧本杀游戏中的关键剧情的连接人物。</b></p><p>DM最早出自游戏《Dungeons&amp;Dragons》（龙与地下城）直译为地下城城主，也就是游戏的组织者，后被引入各类游戏中。</p><p>这便是说书人的历史渊源，俗称DM。</p><h2><b><span style="font-size: 120%;"><span class="r-triangle">►说书人的基本要求（如何做一个说书人）</span></span></b></h2><h3 style="text-align: left;"><b><span class="r-triangle">大前提：熟悉游戏基本运作规则</span></b></h3><div><b><span class="r-triangle"><br></span></b></div><p>不要怕麻烦，因为你才是这个游戏的核心。这局所有人的游戏体验如何，全看你的表演和安排，你才是真正的主角，导演。你要清楚一切，熟悉一切，甚至创造新的一切。如果你真的很想当说书人的话，那就继续吧！<br></p><p>这里是非官方翻译的完整中文版规则链接，强烈建议详读一遍。其中包含了更加详细的关于负面状态，旅行者，技能结算，魔典使用的相关规则表述。<b>请熟读并运用好他：</b><a href="https://www.iyingdi.com/tz/post/5179885" target="_blank"><b>https://www.iyingdi.com/tz/post/5179885</b></a></p><p><b>我这里就做一个简单的大流程梳理：</b></p><p>1、<b>熟悉当前游戏剧本中不同角色的技能和结算顺序。</b>你有义务让玩家理解清楚游戏的结算顺序和一些细节，并且欢迎他们在游戏过程中来找你私聊询问。</p><p>2、<b>根据玩家人数，设置好这局游戏需要用到的善良阵营和邪恶阵营角色。</b>熟悉剧本的话，推荐自行决定角色的安排。魔典主要是辅助你对游戏环节的记忆和掌控。<a href="https://image.gcores.com/42db020b-5c85-492f-834f-e5bf473a2906.png?x-oss-process=image/quality,q_90/watermark,image_d2F0ZXJtYXJrLnBuZw,g_se,x_10,y_10" target="_blank"></a>说书人需要根据玩家人数对双方阵营的配置进行安排</p><div class="picbox"><img src="https://alioss.yystv.cn/news/03d916434e2db5bd9146baae967d9b37.png_mw680water" data-="" width="597" height="282" data-id="377691ua" alt="" style="width: 597px; background-color: transparent;"></div><p>3、<b>夜晚可能很长</b>，白天有义务告知玩家夜晚有哪些角色会使用技能（针对线下）</p><p>4、白天的公开聊天环节，你几乎没什么事情要做，但<b>欢迎玩家来私下向你询问任何问题</b>。5、<b>提名，自述以及投票环节</b>，尽量活跃气氛，结束之后进入下一个夜晚。</p><p>6、重复环节3~5，直到游戏结束。</p><h2 style="text-align: left;"><b><span style="font-size: 120%;"><span class="r-triangle">►对官方建议进行拆解（如何做好一个说书人）</span></span></b></h2><p>以下的一些好习惯，会帮助你的这局游戏能有一个平稳的发展。</p><p>1、在游戏还未正式开始的时候，为玩家梳理一下晚上的流程。</p><p>2、夜晚的时候<b>反复确认玩家的选择</b>，不要去猜测玩家的意图。如有必要的话，提前准备一些帮助指示的小道具，或是走到对应玩家面前都是可以的。</p><p>3、<b>不规律的随意走动，或者绕圈</b>，如果有背景音乐的话，效果更佳，这样可以避免场外信息干扰玩家的判断。</p><p>4、<b>熟练运用你的魔典</b>，但是注意魔典不要暴露给玩家看，那是你的剧本。这轮游戏未被使用的角色和标记都不要显露出来，这些额外信息会对游戏的代入体验造成影响。</p><p>5、<b>如果犯了错误，能及时补救，就尝试及时补救</b>。比如我第一次夜晚并没有按照顺序结算，但还好最后补上来了，没有暴露哪些角色没有出现在游戏里。</p><p>6、<b>每个人都可能会私下问你问题</b>。请找一个偏僻的角落或者你觉得不会被别人听到的方式谈论。</p><p>7、第一个晚上游戏才真正开始，尽量<b>不要让玩家过早的讨论他们的身份</b>，这会对部分身份的玩家体验造成影响。</p><p>8、尽量控制玩家<b>不要走得太远</b>，这样不容易召集玩家进行提名环节，从而将游戏时间不必要的拉长。</p><p>9、<b>当一方玩家已经确定获胜后，请直接结束游戏</b>。一旦达成游戏结束的条件，请公正的结束游戏，不要搞事情。</p><p>10、<b>制造一些戏剧性情节</b>。说明书没有禁止即可为，你可以就是规则本身，你是最终的决断者，但不要肆意破坏大框架的规则。<b>我们说书人的目的是创作一场盛大的演出，所有玩家都是你的“演员”，或者说“棋子”。</b><br>**你可以根据情节的需要，编造一些合适的故事或是开场白，甚至一些比较夸张的小表演。</p><p><b>如果玩家愿意配合你的表演，那么这可能会是一局令人难忘的游戏之旅。</b></p><p>一些戏剧性的演出或者服化道可能会加深玩家对于情节的印象，但大部分时候可能并不会用到。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/ba0662ac5bae7f085d53d09862cbf113.jpg_mw680water" data-="" width="700" height="467" data-id="377692rg" alt="" style="width: 700px; background-color: transparent;"></div><p>12、<b>及时处理玩家的消极行为</b>。和所有带有社交属性的游戏一样，一些大喊大叫，霸道行为，贴脸操作都应该被扼杀在摇篮之中，<b>一个健康愉快的游戏氛围是最需要保障的</b>。</p><p>**输赢不重要，耐心的解决问题，平复一些焦躁的情绪都会对故事的发展有着莫大的帮助。13、<b>帮助一些新人玩家建立自信</b>。并不是每一个玩家都能快速的进入游戏状态，害羞的玩家往往会在一开始就保持沉默，放弃交流。你可以试着私下和他们沟通，把你放在他的角色角度会怎么思考，找谁交流，分析支招，给予他信心。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/ef1d85b14340e3562fe9fe928eeb79c1.png_mw680water" data-="" width="719" height="539" data-id="377691di" alt="" style="width: 719px; background-color: transparent;"></div><h3><span style="font-size: 100%;"><span class="r-triangle">其他的经验：</span></span></h3><div><span style="font-size: 100%;"><span class="r-triangle"><br></span></span></div><p><span style="font-size: 100%;">&nbsp;**合理运用醉酒和中毒等状态效果，可以帮助你让故事发展的更加精彩。</span></p><p><span style="font-size: 100%;">&nbsp;**<b>如果可以的话，请让游戏进行到最后一天，最终决战的仪式感将达到峰值。</b></span></p><p><span style="font-size: 100%;">不到最后一刻，真相都不会揭晓。</span></p><p>你并非公正的裁决者，而是混乱中立的端水大师。</p><p>游戏的设置，邪恶与善良的对抗往往就是不平衡的，所以需要你去做这个调停人。审时度势，关注弱势的一方，以游戏规则内的行为，帮助他们。</p><p>要记住，这是一个大概率发生小概率事件的游戏，你是说书人，你来决定，你扔的是遥控骰子。判断玩家类型，游走在他们之间，分析他们的心理，预测局势的走向，敲响故事的结局。</p><p><span style="font-size: 120%;"><b><span class="r-triangle">►我个人的说书人理解和经验分享</span></b></span></p><p>为什么说书人如此吸引我，好玩在哪里？</p><p>或者说，什么玩家适合当说书人？</p><p>我的回答是：<b>体验型玩家。</b></p><p>胜利并非最根本的追求，他们渴望的只是一场精彩的对战。</p><p>追逐一局游戏中的丰富变化，而非胜利本身。剑拔弩张的游戏气氛是他们最想要的。而说书人就完美符合了这条预期，因为他不参与对战，在这里它只需要去追求他最纯粹的愿望———精彩。</p><p>我个人作为说书人的经验值还在上升阶段，很多细节，局面掌控和临场发挥都在不断精进。</p><p>但这个过程也同样充满了趣味。</p><p>一点小的个人经验分享：</p><p>1、可以多观察其他人是如何当说书人的。</p><p>2、如果有玩家的体验不太好，可以和他聊一聊并反思自己。哪怕不是自己带过的剧本，也可以多问问，看看他们那局比赛问题出在了哪里。是因为确实不是这类玩家，还是说书人经验不太够。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/3add06a7e9ef95d68dc25b67a58706ff.png_mw680water" data-="" width="720" height="719" data-id="377692ac" alt="" style="width: 720px; background-color: transparent;"></div><p><b><span style="font-size: 120%;"><span class="r-triangle">►一段赠予玩家（非说书人）的话</span></span></b></p><p><b>不要过于在意游戏的胜负，这只是一场即兴表演，大家都是一场盛大演出的出演者，所谓的失败不过是剧情需要。</b></p><p>**不要因为你太入戏又刚刚好拿到了败者一方的剧本而感到心情烦躁。</p><p>&nbsp;**<b>大家只会记住那位演技出众的表演者，而不是“故事里的胜利者”</b></p><div class="picbox"><img src="https://alioss.yystv.cn/news/e73d2a7f4dd9db3082ddecf87a3b070b.png_mw680water" data-="" width="667" height="785" data-id="377692ui" alt="" style="width: 667px; background-color: transparent;"></div><p><span style="font-size: 80%;">附录：</span><span style="font-size: 80%;">线上网页版的说书人辅助电子魔典推荐（英文版）</span><a href="https://clocktower.online/" target="_blank" style="font-size: 80%;">https://clocktower.online/</a></p>]]></description>
+<pubDate>Mon, 09 May 2022 20:10:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by </source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9103</guid>
+</item>
+<item>
+<title><![CDATA[【实习生的小本子】回归！《枪弹辩驳》毛绒钥匙扣、刺客信条盲盒上架奖池！]]></title>
+<category><![CDATA[趣闻]]></category>
+<link>https://www.yystv.cn/p/9104</link>
+<description><![CDATA[<p style="text-align:center;"><b><span class="r-triangle">【前言】</span></b></p><p>每周油盐板都会涌现出许多有趣的、用心的帖子，但仅仅出现在油盐板怎么够呢？实习生还要记录在小本子上。<br></p><p>油盐板新栏目【实习生的小本子】来啦。每周一，实习生都会带来上一周油盐板精彩的内容，以及本周的福利预告。如果发现这里有你无意间错过的帖子，别忘了点进去给社友们点个赞~！</p><p><br></p><p style="text-align:center;"><b><span class="r-triangle">【“狂乱星期五”兑换预告】</span></b></p><p>K*C的“疯狂星期四”要花钱？不如来参加YYS的“狂乱星期五”！</p><p>鸽了一周，实习生携小本子荣耀回归！！</p><p>从本月起，我们将每月初在奖池上架<b>1币抽</b>奖品。本月奖品《Nintendo Switch 运动》已经上架啦！没参与的朋友赶快戳<a href="https://www.yystv.cn/drawlist" target="_blank">这里</a>抽奖~</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/48c1eb5fdeb843c36dfcabebaefeda78.PNG_mw680water" width="1170" height="389" title="" alt=""></p><p>具体规则如下：<br></p><p>1.“狂乱星期五”活动依旧于<b>每周五</b><b>不定时</b>开启<b>油盐币奖品 抽取&amp;</b><b>兑换；</b></p><p>2.兑换&amp;抽取将于<b>固定时间段（10:00~16:00）</b>，某个<b>整点</b>开启；</p><p>3.开抢前会有<b>短讯、</b><b>推送</b><b>提醒。</b></p><p>如果无法及时收到推送，那么就请多多关注油盐板动态吧~！</p><p><br></p><p>本周“狂乱星期五”奖品如下。</p><ul><li><b>兑换奖品</b>：《枪弹辩驳》毛绒挂件钥匙扣<b>*3（999币兑换）</b></li></ul><p style="text-align: justify;"><b></b></p><ul>《枪弹辩驳》十周年主题的正版授权周边，我社淘宝小店还有黑白熊毛绒包、学院风斜挎包、御守挂件和马口铁徽章在售。</ul><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/ae78dc4e9bbb551d196c5d5cfcc0723e.jpg_mw680water" width="800" height="800" title="" alt=""></p><ul><li><b style="font-weight: bold;">抽取奖品：</b>刺客信条盲盒<b>*3</b>（<b>999币抽取</b>）</li></ul><ul>我社淘宝小店新上架了由 ACTOYS 和 育碧 联合出品的盒蛋，再现了 6 位经典角色，达芬奇款还会首发特典飞行器金属徽章。预计 6 月初发货。</ul><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/9247d804f33ca503d9ec8c5c57a4435b.jpg_mw680water" width="800" height="800" title="" alt=""></p><p><b><br></b></p><p style="text-align:center;"><b><span class="r-triangle">【聊了啥】</span></b></p><p>本月我社举办了<b>运动打卡冲击卡路里活动</b>，邀请全体社友共享进度条，冲击三百万卡路里。很快啊，一周时间，这个目标就达成了。</p><p>活动开始以来，在<b>“运动研究社”</b>tag下也有不少社友分享了自己健身的经历。如果你也有经验想要分享，或者疑惑有待解答，欢迎点击<a href="https://www.yystv.cn/ntag/453" target="_blank" title="运动研究社">运动研究社</a>tag发帖~</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/255c09ed3587fa3978c6cb5d9e8aa2fc.jpg_mw680water" width="960" height="720" title="" alt=""></p><p><a href="https://www.yystv.cn/n/968197">今天又是抱石打卡！</a><br></p><p><a href="https://www.yystv.cn/n/968213">身体好才能好好打游戏啊！</a></p><p><b>欢迎来到游戏研究社：</b></p><p><a href="https://www.yystv.cn/n/968230">大家需要拿纸笔记录的第一个游戏是什么？</a></p><p><a href="https://www.yystv.cn/n/968527">朝花夕拾——我的第一次西游之路</a></p><p><a href="https://www.yystv.cn/n/968233">绝版游戏保护工程</a></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/e886b4e9c8a7877c2dec1affb702f7f1.gif_mw680" width="360" height="202" title="" alt=""></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968431">第一款对外发布的游戏</a></p><p>五一期间，游研社各个线下交友群都开展了聚会活动，"<b>交友研究社</b>”更加名副其实了：</p><p><a href="https://www.yystv.cn/n/968416">深圳市游研社委员会红树林野餐</a></p><p><a href="https://www.yystv.cn/n/968343">副摄视角下的深圳五一聚会</a></p><p><a href="https://www.yystv.cn/n/968207">致敬劳动者——游研社深圳群五一小聚！</a></p><p><a href="https://www.yystv.cn/n/968542">湖南分社首次线下局竟然有足足</a></p><p><a href="https://www.yystv.cn/n/968273">吃了烤群主——游研社广州群第3次线下聚会</a></p><p><a href="https://www.yystv.cn/n/968361">游研社杭州群第五次聚会 拔草之旅</a></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968324">南京油盐社🏸️羽毛球活动！</a></p><p><b>什么都研究：</b><br></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/8c9a9ddd937b1f6a8f5572c9ee94da24.jpeg_mw680water" width="960" height="720" title="" alt=""></p><p><a href="https://www.yystv.cn/n/968169">传火失败，但野米饭还是能吃的</a></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968316">再给大家推荐一下肉霸堡</a></p><p><a href="https://www.yystv.cn/n/968188">我离谱的爹</a></p><p><a href="https://www.yystv.cn/n/968388">谢谢你，陌生人！</a></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968387">奇奇怪怪的书：《我爱你，废柴》</a></p><p><br></p><p style="text-align:center;"><b><span class="r-triangle">【都是图】</span></b></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/2c9106d101e5697ae165adc8b5612a9b.jpg_mw680water" width="960" height="721" title="" alt=""></p><p><a href="https://www.yystv.cn/n/968497">五一假期的碎片</a></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/72a7bc03153d403bafb3cf031fa677c6.jpg_mw680water" width="960" height="591" title="" alt=""></p><p><a href="https://www.yystv.cn/n/968372">其实比起人物更喜欢画风景</a></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9104/c88ee73a05c265d3efd1145bbf7a50e2.jpg_mw680water" width="884" height="1462" title="" alt=""></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968442">忙里偷闲</a></p><p><br></p><p style="text-align:center;"><b><span class="r-triangle">【玩了啥】</span></b></p><p>在油盐板的“荐游”、“游研鉴赏团”等标签和游戏库的评价页面中，经常有社友分享自己的游戏体验。实习生也将每周汇总，方便大家查看。</p><p><melo-data></melo-data></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968191">《NS sports》评测——在游戏中感受体育的魅力</a></p><p><a href="https://www.yystv.cn/n/968234">《Switch Sports》鉴赏：在虚拟都市中释放你的运动本能！</a></p><p><a href="https://www.yystv.cn/n/968206">最终幻想15测评：王子虽已不在，山河依旧静好</a></p><p><a href="https://www.yystv.cn/n/968353">【假期小游】一些文字类游戏记录</a></p><p><a href="https://www.yystv.cn/n/968658">《TUNIC》——艾尔登法狐的救母之旅</a></p><p><a href="https://www.yystv.cn/n/968450">《世界之石》谢谢你让我明白了什么是学嘤语</a></p><p><a href="https://www.yystv.cn/n/968576">《世上英雄》：从未想过成为英雄，只想做爱你的普通人</a></p><p><a href="https://www.yystv.cn/n/968586">《哥布林弹球》简评：肉鸽遇上像素弹球，轻松休闲乐趣无穷</a></p><p><a href="https://www.yystv.cn/n/968613">四人，2年，100万做出个“坐牢模拟器”——《隐世神剑传》</a></p><p><melo-data></melo-data></p><p><a href="https://www.yystv.cn/n/968574">打着国产肉鸽名号的魂系游戏？——合金突变试玩测评</a></p>]]></description>
+<pubDate>Mon, 09 May 2022 19:25:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 社长的实习生</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9104</guid>
+</item>
+<item>
+<title><![CDATA[被疫情困住的上海新娘，决定在动森里举行婚礼]]></title>
+<category><![CDATA[文化]]></category>
+<link>https://www.yystv.cn/p/9101</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p><b>
+    做永久的伙伴。</b></p></blockquote>
+<p>
+    我拜访小陈的飞机掠过岛屿上空时，她身穿印着《空洞骑士》里小骑士头像的裙子向我招手。
+</p>
+<p>
+    我已经一年多没打开动森了，但此刻在游戏里远赴他乡，是为了去参加一次婚礼。准确地说，是去参观婚礼现场，因为正式的婚礼已经在我登岛的前一天刚刚举办完毕。
+</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/69755e3e44714e93ccd0cae07114bd19.jpeg_mw680water" width="1080" height="608" class="" alt="向我挥手的新娘" title="向我挥手的新娘">
+    <span class="picinfo">
+        向我挥手的新娘
+    </span>
+</p>
+<p>
+    小陈是岛屿的主人，也是婚礼的新娘，因为疫情受困于上海，她和未婚夫饭店仔的海南婚礼被屡屡推迟，最终他们决定在游戏《动物森友会》里实现这份愿望。
+</p>
+<p>
+    鲜花、蛋糕、管风琴，就像一场真正的婚礼那样，它们一样不落地排列在岛屿的广场中间，白色的婚礼拱门和迎宾牌则放置在机场门口，小陈手捧鲜花等待着宾客们登岛的广播。</p>
+<p>
+    5月4日晚上8点整，婚礼便这样开始了。
+</p>
+<p>
+    <br>
+</p>
+<p style="text-align: center;"><b><span class="r-triangle">
+    1</span></b></p>
+<p>
+    小陈并不那么喜欢现实中的婚礼。在她看来，自己实在有些社恐，传统婚宴的阵势让人觉得难以招架，但男友饭店仔仍希望有一场婚礼，于是他们选择了一个折中的方案，叫上亲朋好友，去海南办一场旅行婚礼。</p>
+<p>
+    海南之行原定在今年三月，但疫情突然在上海爆发，行程被打乱了。因为楼里出现了密接，小陈在3月6日第一次收到了48小时的封禁消息，接下来的两周又喜提了一次48小时封禁，再后来，上海进入了“大静默期”，“等待解封就像在等待戈多”。</p>
+<p>
+    旅行婚礼再次确定被推迟以后，小陈决定把婚礼改在《动物森友会》里举行。这并不是一时兴起，对小陈来说，在游戏里举办婚礼是她“中二的梦想”，此前也和男友提起过几回，鉴于婚期已经被疫情拖延了一年，饭店仔和小陈一拍即合，打开了搁置一年的动森，更新了足有36个小时。</p>
+<p>
+    反响更激烈的反而是小陈的朋友们，在提出动森婚礼的想法后，朋友们立刻要求小陈开岛，把礼服和家具给她送过来。在2020年6月，动森开启了婚礼季活动，推出了大量供婚礼布置使用的家具，玩得更久一些的朋友早就集齐了全套，统统丢到了小陈的岛上。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/11d553458886a958df2e3404a759db89.jpeg_mw680water" width="1080" height="608" class="" alt="婚礼季活动要给羊驼夫妇设计婚礼现场" title="婚礼季活动要给羊驼夫妇设计婚礼现场"><span class="picinfo">婚礼季活动要给羊驼夫妇设计婚礼现场</span></p>
+<p>
+    除了送礼之外，朋友们在这场婚礼中“各显神通”。一位做广告的朋友为小陈安排好了整个流程，宾客们登岛、合影、如何举行婚礼誓词仪式，还有朋友为他们做了一张赛博请帖，请帖里饭店仔穿着裙子，小陈则是穿着见我时那身小骑士的衣服。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/478224fe37862bfda8f44d38e18cce8a.jpeg_mw680water" width="567" height="655"></p>
+<p>
+    让男友穿裙子的想法来自于电视剧《恶作剧之吻》，虽然在现实中难以实现，那么在赛博婚礼里来一次性别互换或许更容易接受。而《空洞骑士》则是小陈最喜欢的游戏之一，在未能成行的海南旅行中，她原计划让策划在新人发言的环节播放和Boss“三螳螂”战斗的音乐。</p>
+<p>
+    “就像是遇到了一群小精灵，帮我变南瓜马车帮我准备礼服，嘭地一下一应俱全了。”面对朋友们的热情援助，小陈觉得自己反而是“顺水推舟”地策划起了婚礼。
+</p>
+<p>
+    <br>
+</p>
+<p style="text-align: center;"><b><span class="r-triangle">
+    2</span></b></p>
+<p>
+    三四个月没上线，刚打开游戏小陈感到了明显的陌生，不仅操作变得不熟练了，房间里还爬满了蟑螂，甚至连自己岛上什么时候换了只小动物、多了只鸡都没发现。</p>
+<p>
+    但朋友们的家具已经寄到邮箱，似乎是是箭在弦上不得不发了。花了整整一个晚上，从铺地砖开始，小陈设计好了婚礼现场。说是设计，其实只是把朋友们援助过来的家具一股脑搬到了广场上，好在大多数家具本就整齐划一，铺陈在一起就已经足够好看。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/6bced311547d5f808ad8009f34fe081f.jpeg_mw680water" width="1080" height="608"></p>
+<p>
+    赛博婚礼的好处是，无论朋友们是远在北京还是近在隔壁，不论是社恐患者还是行程匆忙的上班族，在小岛上到齐都会变得十分容易，但它的问题也十分明显，动森能容纳登岛人数有限，算上主角二人只能容得下六位客人。</p>
+<p>
+    它还有一个更严重的问题，这是小陈在开始婚礼以后才意识到的。</p>
+<p>
+    晚上八点，登岛的时间到了。小陈和朋友们打开了腾讯会议以确保所有人能按顺序到场，且在合影的时候能整齐划一地喊出口号，打开大门以后，朋友们开始陆续登岛……然后，炸房了。</p>
+<p>
+    在动森联机过的玩家应该很容易回想起这种痛苦的感受，任天堂的联机服务十分不稳定，很容易掉线，而一旦有一人因为网络不好掉线，会引起当前房间内全员断开服务器回档，也就是玩家们说的“炸岛”，或是“炸房了”。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/e4a2b317db3d61455d87559e85caf3f1.jpeg_mw680water" width="1080" height="608"></p>
+<p>
+    来来回回试了四五次，每一位宾客进场，都会全员播一次动画，好不容易人到齐都快要开始了，又突然炸房了。其中一位北京联通用户是网络最差的，大家试了很多排列组合，让他先上岛，或者是最后上，但都行不通，最后只好让所有人都用上了加速器。</p>
+<p>
+    但小陈最担心的还是耽误大家的时间，一位朋友原计划九点钟要开会，一边和动森婚礼小队开着腾讯会议，一边开着工作上的微信语音，结果工作会议结束了，登岛还没结束。</p>
+<p>
+    就这样，婚礼开始时间从八点一直拖到了十点。有做文案的朋友只好出来打圆场：“十点好，十点就是十全十美了。”
+</p>
+<p>
+    <br>
+</p>
+<p style="text-align: center;"><span class="r-triangle">
+    3</span></p>
+<p>
+    虽然是在游戏里举行的婚礼，但小陈在婚礼开始前感受到了明显的紧张，因为向来不正经的朋友们突然变得严肃了起来。</p>
+<p>
+    为了恶作剧，小陈在游戏里拿起了斧头，结果立刻被朋友们制止，要求她换成捧花，因为“不吉利”。等到和大家合完影，婚礼即将开场，小陈突然角色自己是不是该换个发型颜色，或者是改改眼睛神态，变得紧张起来，那一刻游戏带来的真实感，似乎与现实中的婚礼没什么差别。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/793b9507facfc4ea2c80e80bd47a46f2.jpeg_mw680water" width="1080" height="608"></p>
+<p>
+    誓词是朋友为了他们量身定制的，有些不正经，但小陈特别喜欢，文案里写到了她的小猫咪“大魔王三喜”，写到了自己最喜欢的游戏《空洞骑士》，写进了5月4日这个特殊的星战日，在她看来，这就是她对爱情的全部理解：</p>
+<blockquote class="js_blockquote_wrap" data-type="2" data-url="" data-author-name="" data-content-utf8-length="180" data-source-title="">
+    <p>
+        
+            
+                
+                    鉴于系统判定
+                
+            
+        
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    小陈与fdz亲密度已达99.99%
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    解锁【大魔王三喜的祝福】
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    可转职成为【永久的伙伴】
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <br>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    请问小陈女士！
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    你是否愿意
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    和fdz先生成为永久的伙伴
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    无论奇才与手残
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    一起闯深巢跳白宫直到通关？
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <br>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    请问fdz先生！
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    你是否愿意
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    和小陈女士成为永久的伙伴
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    无论奇才与手残
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    一起闯深巢跳白宫直到通关？
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <br>
+    </p>
+    <p>
+        <span>
+            
+                <span>
+                    May happiness be with you！
+                </span>
+            
+        </span>
+    </p>
+    <p>
+        <span>
+            
+                
+                    May the Force be with you！</span></p></blockquote>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9101/285934d7a56386558e30ca1232ee5b2d.jpeg_mw680water" width="1080" height="608"></p>
+<p>
+    没有采集卡，婚礼只能15秒15秒地录屏，最后没留下太多的影像资料，只留下了几张数量不多的截图。但小陈并没觉得有丝毫遗憾，在语音里，朋友们一边开玩笑一边为她送上祝福，没有繁琐的婚礼流程，轻松热闹，还有让人有些许感动，“如果是在海南举办婚礼，那我最想要的体验大概也就是这样了。”小陈告诉我。
+</p>
+<p>
+    <br>
+</p>
+<p style="text-align: center;"><b><span class="r-triangle">
+    4</span></b></p>
+<p>
+    婚礼结束以后，小陈在朋友圈分享了自己的经历，有些同事不太能理解，觉得“有点儿戏”，问她“是不是真的要结婚？”，第二天起床，豆瓣发的动态却遇到了好多不认识网友的转发，送来了祝福。</p>
+<p>
+    在游戏里结婚这件事，他们并没打算告诉双方父母，如果家长不问起来，也不打算做过多解释。虽然男友饭店仔成长在一个“父母会背着他一起玩坦克大战”的家庭，但从小到大，小陈听大人说过最多的话总是“打游戏不能当饭吃”。感到意外的是，一向反对小陈打游戏的妈妈给这条朋友圈点了个赞。</p>
+<p>
+    决定在动森里结婚的另一个原因，来自于和饭店仔也算是因为Switch交流结缘，而她对于《空洞骑士》的感情也一部分因为它是爱情的见证。</p>
+<p>
+    很多朋友听说小陈喜欢《空洞骑士》，告诉她“好像不太适合你这种休闲玩家”，只有饭店仔给她鼓励，让她“试试，有耐心就能过”，也陪着她找攻略“上网课”，小陈才发现自己真的能打下来。</p>
+<p>
+    婚礼结束以后，饭店仔答应小陈打通空洞，至少也要打完三螳螂。三螳螂是游戏前期最具特色的Boss之一，以极有规律的攻击方式和激昂的音乐出名，会以三只螳螂同时攻击的姿态战斗，来考验玩家的耐心和勇气。</p>
+<p>
+    在小陈眼里，结婚就好像打三螳螂，用足够的耐心和生活和爱情磨合，继而走向一个新的开始。</p>
+<p>
+    最后，我想就用小陈自己的讲述作结：</p>
+<blockquote class="js_blockquote_wrap" data-type="2" data-url="" data-author-name="" data-content-utf8-length="92" data-source-title="">以后的日子可能会更难，但你也变强了一些。生活比空洞温柔的部分是，你现在有了伙伴，未来可以并肩作战了。即便未来依然失败有时胜利有时，但你不会孤独了，做夫妻很无聊，做永久的伙伴更浪漫。</blockquote><p class="picbox">
+</p>]]></description>
+<pubDate>Mon, 09 May 2022 10:45:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 哈莉葵因</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9101</guid>
+</item>
+<item>
+<title><![CDATA[​不是愚人节玩笑：EVE和微软Excel宣布合作了]]></title>
+<category><![CDATA[趣闻]]></category>
+<link>https://www.yystv.cn/p/9100</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p><b>EVE（Excel VS Excel）。</b></p></blockquote>
+<p>
+    由冰岛CCP Games开发的《星战前夜》（EVE Online），有着引人入胜的世界观和规模盛大的太空战斗，也一直被部分玩家戏谑地称作“太空中的电子表格模拟器”。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/78b74434073c3cb8193780a8a196e3c5.png_mw680water" width="863" height="192" class="" alt="最早出处是2009年Gamespot网站上的一条玩家评论" title="最早出处是2009年Gamespot网站上的一条玩家评论"><span class="picinfo">最早出处是2009年Gamespot网站上的一条玩家评论</span></p>
+<p>
+    这个外号其实也算贴切，因为数据的计算与处理在游戏中至关重要。</p>
+<p>
+    EVE有一套独立的经济系统，从物资到飞船，大多数物品均有一个能用游戏内货币ISK衡量的价值，且一旦损失就无可挽回。无论是个人还是玩家团体，随着对游戏理解的深入，他们最终都会用到一些外部工具或电子表格，实时跟踪市场价格，计算伤害输出，衡量交战双方的经济损失。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/66d9b7ed6d60429b83fe87bb50c17f3b.png_mw680water" width="675" height="380" class="" alt="台前" title="台前"><span class="picinfo">台前</span></p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/860f9e84ebb9dd9d164c25b06ce3bd47.png_mw680water" width="916" height="814" class="" alt="幕后" title="幕后"><span class="picinfo">幕后</span></p>
+<p>
+    不难想象，当EVE这个“电子表格模拟器”与正儿八经的电子表格处理软件宣布合作时，会有多少玩家鼓起掌来。</p>
+<p>
+    在今年5月6日的EVE粉丝节（EVE Fanfest）会上，EVE的创意总监Bergur Finnbogason出面进行了一次主题演讲，演讲中他算是正式承认了玩家间流传的外号。</p>
+<p>
+    当时他正在向在场的粉丝们汇报游戏内的各项经济数据，最后提到，他展示的图形化数据均由CCP的数据科学家Larrikin创作，他的成果“真的让EVE听起来像‘太空中的电子表格’”。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/9a71a7bf4006b9d2f9be27e86f2cc532.png_mw680water" width="1080" height="608" class="" alt="官方用于监控游戏资产的月度图表，之一" title="官方用于监控游戏资产的月度图表，之一"><span class="picinfo">官方用于监控游戏资产的月度图表，之一</span></p>
+<p>
+    顺水推舟，Finnbogason立即揭露了与微软Excel软件的合作企划。当他放出了一张看起来就很夸张的、绿油油的联动图片时，不止底下的观众笑了，他本人也忍不住笑场。但他立刻澄清，这不是愚人节玩笑：</p>
+<p>
+    “我没有撒谎，我们真的联系了微软，然后他们说，‘哦，我的天，我们爱EVE！’”</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/11d85bb9dc9d16ea1f2afdfaa1a4596d.png_mw680water" width="1080" height="496"></p>
+<p>
+    根据Finnbogason的说法与CCP官方的新闻稿所述，EVE会在Excel中添加JavaScript应用程序接口（API），玩家能够直接在Excel里注册账号，再从游戏中无缝导出游戏数据。Excel将帮助玩家列明和计算从利润率到战斗策略的所有内容，让游戏的“日常”操作更易于执行。</p>
+<p>
+    建立这些数据跟踪系统的人力与物力成本，可能并非小型玩家团体所能承受的。为了在休闲玩家与硬核玩家之间创造一种“资源的公平分配”，引入功能相对完善的Excel支援，能够大大简化所有人处理数据的过程。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/834c330073182d1236b4cab26dbb9840.png_mw680water" width="1080" height="615" class="" alt="官方展示的一个框架原型" title="官方展示的一个框架原型"><span class="picinfo">官方展示的一个框架原型</span></p>
+<p>
+    Finnbogason的演示赢得了在场观众的热烈欢呼，但演示的内容仍然处于“早期阶段”，更为详细和具体的内容将在今年晚些时候公布。</p>
+<p>
+    值得一提的是，这次联动并不是EVE将游戏“电子表格”化的首次尝试。2020年10月，EVE在测试服务器中新增了一项功能，允许玩家从屏幕上移除所有的3D渲染效果，只留下文本与用户界面。在多达数千人的超大型战斗中，这个功能可以有效降低玩家的硬件负载，防止出现掉帧和延迟的情况。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9100/8bf93a9f2d6867fbb8bc4e3fb5ee432b.png_mw680water" width="965" height="528"></p>
+<p>
+    虽然开发商CCP Games指出，这一功能是为“最极端的情况”准备的，但EVE里永远不缺少“极端情况”。或许对于EVE的核心玩家而言，不断跃动的数字带来的战争代入感与成就感，可能远胜过华丽的实机战斗画面吧。</p><p class="picbox">
+</p>]]></description>
+<pubDate>Mon, 09 May 2022 10:20:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 照月</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9100</guid>
+</item>
+<item>
+<title><![CDATA[怎么假怎么来：实不相瞒，这种叛逆像素元宇宙我可以！]]></title>
+<link>https://www.yystv.cn/p/9036</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p>务必让大家梦回RPG大师，实现让大家在像素风世界里打工。</p></blockquote><p>距离去年11月扎克伯克宣布元宇宙，已经过了将近半年，这半年里，各家都对元宇宙衍生了不同自己的理解。<br></p><p>在第一赛道的微软和Meta，对元宇宙的定义是头戴设备里的沉浸式体验。而跟风选手们的选择就很多了，除了某大厂没有完工的2.2评分的游戏大厅，还有沙盒游戏，NFT，教育……</p><div class="picbox"><img src="https://alioss.yystv.cn/news/6ca7b12c4c31f88035a3124ffb492719.png_mw680water" data-="" data-id="644668od" alt="Meta看好VR在办公场景的潜力，推出了Infinite Office、Horizon Workrooms等应用" class="" title="Meta看好VR在办公场景的潜力，推出了Infinite Office、Horizon Workrooms等应用" width="1296" height="770"><span class="picinfo">Meta看好VR在办公场景的潜力，推出了Infinite Office、Horizon Workrooms等应用</span></div><p>说实话，这半年的元宇宙热度，导致了不少相关从业者都对元宇宙有了不同程度的PTSD，一说到元宇宙，脑子里只有“赛博朋克”、“夜之城”、“数字人”、“机械美瞳”、“无人驾驶”、<strike>“吹牛皮”</strike>这种概念了。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/657f7b4bc93d284e1d0458d45ecf61a9.jpeg_mw680water" data-="" data-id="252899rt" alt="" width="1024" height="576"></div><p>但有一点是公认的：没有点追求真实的3D建模，都不配说是“新元人”。</p><p>不过最近有家公司，也做了一个远程办公的元宇宙应用：其应用非常之叛逆，不仅脱离3D建模，还极尽复古之能事，画面怎么假怎么来，再接上一些现代化的视频功能，务必让大家梦回RPG大师，实现让大家在像素风世界里打工。</p><p>难以置信的是，他们是非常认真的在开发这款软件，还有不少人，也是真的在用。</p><div align="center"><h2><b><span><span class="r-triangle">画风超可爱：用于现实里的远程协作</span></span></b></h2><div><br></div></div><p>简单来说，这款名为Gather Town是个2D的在线会议应用，画风非常萌，你可以根据需要，创建自己的场景。</p><p>以一个外网网友的使用感受为例，她和她的同事们创建了一个线上网络办公室，有喷水池，有会议室，有游戏区——都是2D的。</p><p>这些场景化的物品，创作者都可以通过应用提供的内建工具打造，当修建好之后，拥有专属密码的同事们便能加入，化身游戏<span>（原谅我用游戏这个词）</span>中的小分身。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/4ac884b5c48f72ae4e05a2d0911a65fc.png_mw680water" data-="" data-id="585740xi" alt="" width="608" height="810"></div><p>第一个功能，该网友首先给大家展示了作为一款办公应用——Gather town——提供的一些基础服务，<b>可以分享各种文件及数据。</b></p><div class="picbox"><img src="https://alioss.yystv.cn/news/5490fe2687e873311b1d8873ac21c649.png_mw680water" data-="" data-id="64203pu" alt="" width="1168" height="704"></div><p>只需要点击特定物品，你可以上传不同的内容，word文档，音频视频，以及日历。</p><p>接着这个网友展示了如何和办公室的其他人进行交互，在应用里碰见她的线上同事时，她和同事们的视频界面将会打开，然后大家就可以相互打招呼，对话完毕离开后，声音和画面也会随之飘走。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/f500ee90123de3b32662ed29c17cb5ae.jpeg_mw680water" data-="" data-id="462994nr" alt="" width="1036" height="696"></div><p>这表明在应用里，视频功能不会无时不刻地开启，用户需要靠近彼此才能连线。</p><p>这样的设定很好的保证了隐私性。唯一的遗憾，可能是茶水间八卦，比现实世界的刺激性降低，毕竟八卦对象一旦飘过来，你的界面就会出现他的一张大脸。</p><p>接着她选择“跟随”这位同事，然后在视频里展示了内置的环境工具。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/85c973f37d87e06cde048c82c0751102.jpeg_mw680water" data-="" data-id="898072ya" alt="" width="1048" height="686"></div><p>他们溜到了游戏中创建的锦鲤护城河办公区，点评了在真实的办公室根本没有这种东西，并且欣赏了几秒钟的壮丽景观后，才开始演示开会功能。</p><p>他们进入了特定的会议区域，以此保证会议的隐私性，既不会打扰别人，也不会被别人打扰。Gather内置的视频系统，可以管理视频冲突问题，同时在会议区可以共同观赏PPT或者视频。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/2896b392119105613cc47f3d570a9683.png_mw680water" data-="" data-id="640339cc" alt="" width="1016" height="666"></div><p>最后，她开完会后，走到游戏天台上的特殊方块，开启播报功能。</p><p>当她进行发言，所有人不仅能听见她的声音，看见对方的脸，还能看见在游戏的大家都站在哪里，并对演讲做出回应，和真实的演讲体验非常契合。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/4eca75964427d91f2bb522a908327144.png_mw680water" data-="" data-id="944900jf" alt="" width="1046" height="646"></div><p>最后她在视频的结尾说，“十分怀念和大家一起工作的日子，以及这种社区的感觉”。</p><div align="center"><h2><b><span><span class="r-triangle">除了上班，你还可以干很多事</span></span></b></h2></div><p>开发商对此款软件的定义，是“相聚即是缘”。</p><p>主要是希望帮助大家在疫情期间，即使相隔万里，也能身若比邻。所以除了可以开会办公，其余功能还包括写白板，在特定区域一起玩游戏，如你画我猜，俄罗斯方块等。场景也不局限于办公室，还可以自行创办自习室、酒吧、甚至是小屋子来庆祝生日。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/58f1fdb42f3e606386369730eee4240b.png_mw680water" data-="" data-id="451187cf" alt="" width="600" height="388"></div><p>作为一款小应用，能介绍的功能也就到此为止了。</p><p>说实话，这款应用算不上什么跨时代的产品。不过，令人感觉难得的是，在这个元宇宙元年里，它撇去了浮华的泡沫，回归了用科技关怀人文，展示了怎样做到“用科技加强人与人连接”的一种场景。</p><p>再简单一些，它成功做到了用一个小产品，演示什么是真正的元宇宙场景。</p><p>也许对笔者这样的老人而言，那些光怪陆离的霓虹灯，侵入我们的世界太久了。这款小产品，给了一种新的可能性：让不那么爱高端炫酷的人群，在未来的小世界里，有一席喘息之地。</p>]]></description>
+<pubDate>Sun, 08 May 2022 18:30:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by </source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9036</guid>
+</item>
+<item>
+<title><![CDATA[【社长聊街机】在海外惨遭和谐的神秘角色！]]></title>
+<category><![CDATA[游戏文化/科普]]></category>
+<category><![CDATA[趣闻]]></category>
+<link>https://www.taptap.com/video/2624880/embed</link>
+<description><![CDATA[<p>近些年来的游戏领域中，各个IP之间的联动越来越频繁，不少玩家们也乐于看到这种“关公战秦琼”的场面出现。早在上世纪的90年代，这样的联动其实就已经出现了，当年的“漫威vs卡普空”系列给不少玩家留下了印象。但是在该系列的第二部作品中，有一位有着特殊身份的恶搞角色。而这名角色也给CAPCOM带来了不小的麻烦，今天我们就来聊聊它的故事。</p>]]></description>
+<pubDate>Sun, 08 May 2022 10:00:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 社长</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9102</guid>
+</item>
+<item>
+<title><![CDATA[【社长jing了！Vol.155】作为水管工，带把扳手踢足球很合理吧]]></title>
+<category><![CDATA[社长惊了]]></category>
+<category><![CDATA[趣闻]]></category>
+<link>https://www.yystv.cn/p/9098</link>
+<description><![CDATA[<p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/f66484b525356bcfd231f66685779f75.jpg_mw680water" width="750" height="1573" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/8d5bc8518238c85a59128525a587ded2.jpg_mw680water" width="750" height="1892" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/84e1946a5e35f9858a596209e62b6f65.jpg_mw680water" width="1500" height="4872" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/23bcc2bf9df535bf6ddda6ea3339eea6.jpg_mw680water" width="1452" height="4535" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/536a4c47ceece9dd99317b59eb22d744.jpg_mw680water" width="1500" height="3778" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/71e87cf37211eac887a081134c70efdd.jpg_mw680water" width="1500" height="3766" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/c291ec2fbf9fb62af9ccd7b6b33c9446.jpg_mw680water" width="1500" height="2964" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/c0f0ef91a84605e355824ca2e103739f.jpg_mw680water" width="1500" height="3424" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/d2893cdf51ad86c818878bd807fce6a0.jpg_mw680water" width="1500" height="6663" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/45bd3a3ddbbcd6bd6c1d933ade4b07f4.jpg_mw680water" width="1500" height="4436" title="" alt=""></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9098/b6f5d4634649bf317b982754758a2729.jpg_mw680water" width="750" height="1231" title="" alt=""></p><p class="picbox"><a href="https://www.yystv.cn/drawlist" target="_blank" title="阅读原文">阅读原文</a><br></p>]]></description>
+<pubDate>Sat, 07 May 2022 17:00:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by HHH</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9098</guid>
+</item>
+<item>
+<title><![CDATA[【白夜谈】“这年头谁还玩填字游戏啊”]]></title>
+<category><![CDATA[白夜谈]]></category>
+<category><![CDATA[趣闻]]></category>
+<category><![CDATA[游戏文化/科普]]></category>
+<link>https://www.yystv.cn/p/9095</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p><b>如果任天堂真的还记得《立体绘图方块》系列，说不定在这个填字游戏都重新流行起来的年头，数织游戏也能吸引到更多新人入坑。</b></p></blockquote><p>当吊扇还挂在酷热的大学宿舍天花板上，嘎吱嘎吱地为我送来一丝凉意时，就有个室友总爱在路过我位置、瞥见我屏幕时说上一句：“这年头谁还玩填字游戏啊”。
+
+</p><p>
+    类似的话我听过不少，“这有啥好玩的”“就这么不想跟我们开黑吗”等等。但事实上，我在大学时从没玩过填字游戏，大部分时间里他们看到的都是另一个游戏：数织（Picross）。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/190be385f969c37eb7c16e1d6082c4e6.jpg_mw680water" width="585" height="502" title="" alt=""></p>
+
+<p>
+    数织也被称为绘图方块、逻辑绘图，是一个很经典的益智游戏，根据两侧数字大小和断续推理判断哪些位置需要涂黑，从横竖两组谜面里得到唯一的解，用数字织出一幅图案。可以理解为地雷数标在坐标轴上的扫雷，但没有扫雷那么大的不确定性。
+
+</p>
+<p>
+
+</p>
+<p>
+    我很享受顺着藤一定能摸到瓜的感觉，努力必有成果的事生活中并不常有。更重要的是，处理数字和逻辑的似乎真的全靠另一半不常用的脑子，同时听播客或看视频也完全没影响，能更简单地把整个人切换到全力运作的畅快感中。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/87007d5603da1a3755895e4e9aefe1dc.gif_mw680" width="375" height="375" title="" alt=""></p>
+<p>
+    《Paint it back》是我逛遍手机、PC和NS等平台后，觉得手感最好的一款数织游戏，自然也是玩得最久的。当我和很多朋友谈起数织时，他们都很难理解为什么“这种游戏”也会有手感一说。</p>
+<p>
+    除了涂色时的音效和动画，不少细枝末节的设置也影响着游戏体验。</p>
+<p>
+    例如当完成一个数字的涂色后，有的游戏会自动给数字打上标记，但有的不会，甚至会把自动标记数字设为影响星级的难度选项。这在我看来，就像老头环里拾取东西时，改为需要先下马、读条打开尸体、再手动拖到背包里一样，麻烦且没必要。</p>
+<p>
+    数织本身的规则逻辑非常简单清晰，所以细微的设置也会在重复过程中被放大。据我观察，Steam上的数织版本多是独立开发者的练手之作，很少有作者想着细细打磨做得更好。但也正因如此，只要下过功夫就能让人感到个中差距，《Paint
+    it back》就在保证手感的情况下还加入了串起玩法的剧情，其实它一点也不精彩，但依然让我感觉游戏又完整了一分。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/fb55ecb8e57e4ae1b29ff987dc8ca92d.jpg_mw680water" width="948" height="532" title="一个把美术馆丢失的藏品一一画回来的故事" alt="一个把美术馆丢失的藏品一一画回来的故事" class=""><span class="picinfo">一个把美术馆丢失的藏品一一画回来的故事</span></p>
+<p>
+    <v:shape>
+        <v:imagedata>
+        </v:imagedata>
+    </v:shape>
+    <o:p>
+    </o:p>
+</p>
+<p>只不过，就算在原有规则上做得再完善，让人眼前一亮的依然只会是率先打破规则的那一个。任天堂的《立体绘图方块》就是让我念念不忘的这样一款游戏。<br></p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/5000cba11b067616af453b3a0eda315e.jpg_mw680water" width="1280" height="720" title="" alt=""></p>
+<p>
+    它在传统数织的规则上，把二维坐标系拓展成了三维，让数字编织的像素画升级成了立体像素模型。</p>
+<p>
+    这并非任天堂首创，但之前的尝试都是照搬原版规则升级3D，三维数织指数级增长的难度，以及眼花缭乱的数字坐标都让游戏毫无可玩性。而《立体绘图方块》配合着DS的双屏和数控笔，用改变字体等更灵活的规则表现形式，以一个更显玲珑的姿态获得了玩家的青睐，也成为了不少人的数织启蒙。可惜的是，该系列在3DS的《立体绘图方块2》后，就和很多老游戏一样完全失去了音讯。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/19fd6f3a25f89ce828f915888accc1d9.jpg_mw680water" width="300" height="450" title="" alt=""></p>
+<p>
+    除了3D数织外，任天堂其实也做过传统2D数织。前不久SFC游戏加入NS上的官方模拟器时，就加入了曾经的《马力欧数织》系列。但和NS上许多第三方发行的数织一样，没有数控笔帮助的操作繁琐无比，始终让我难以适应，最后只能乖乖跑回PC端用鼠标玩。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/ecda2c9e737575b126394c6c734f0ffc.jpg_mw680water" width="480" height="360" title="" alt=""></p>
+<p>
+    不过最让我惊讶的，还是任天堂居然能在出SFC模拟器时想起这个人气平平的数织游戏，又让我对《立体绘图方块》的续作燃起了不太现实的希望。</p>
+<p>
+    <v:shape>
+        <v:imagedata>
+        </v:imagedata>
+    </v:shape>
+    <o:p>
+    </o:p>
+</p>
+<p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/63257f782ac90140fe38290154826f83.jpg_mw680water" width="541" height="876" title="Reddit网友自制的3代封面" alt="Reddit网友自制的3代封面"><span class="picinfo">Reddit网友自制的3代封面</span></p>
+<p>
+    特别是一想到曾随着纸质报纸衰败的真正填字游戏，前不久才靠着结合了社交属性的《Wordle》在欧美大火，迎来了没人预料到的第二春。</p>
+<p>
+    <v:shape>
+        <v:imagedata>
+        </v:imagedata>
+    </v:shape>
+    <o:p>
+    </o:p>
+</p>
+<p class="picbox"><img src="https://alioss.yystv.cn/doc/9095/dd32bec43d3741f77f2c726a5d5bf150.png_mw680water" width="502" height="533" title="Wordle是一款“一天只能猜6次”的网页填字游戏" alt="Wordle是一款“一天只能猜6次”的网页填字游戏"><span class="picinfo">Wordle是一款“一天只能猜6次”的网页填字游戏</span></p>
+<p>
+    如果任天堂真的还记得《立体绘图方块》系列，说不定在这个填字游戏都重新流行起来的年头，数织游戏也能吸引到更多新人入坑。不求成为第二个《Wordle》，只要不再有人莫名其妙地来一句“这年头谁还玩填字游戏啊”就好。
+    <o:p>
+    </o:p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>]]></description>
+<pubDate>Sat, 07 May 2022 16:40:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 藻起藻睡</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9095</guid>
+</item>
+<item>
+<title><![CDATA[因为纹路像丁丁上的血管，士力架被“政治正确”了？]]></title>
+<category><![CDATA[趣闻]]></category>
+<link>https://www.yystv.cn/p/9091</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p><b>削弱士力架。</b></p></blockquote><p>
+    当谈起“最喜欢的巧克力零食”这个话题，人们给出的答案大多数是五花八门的——毕竟每个人的口味天差地别。
+    <br>
+</p>
+<p>
+    但如果你问的是“印象最深刻的巧克力零食是什么”，那答案恐怕会出奇的一致：
+</p>
+<p>
+    <strong>
+        士力架。
+    </strong>
+</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/d478a84242ab36b4b9ff2bfdcb85db2a.jpeg_mw680water" width="350" height="350">
+</p>
+<p>
+</p>
+<p>
+    关于这种热量爆炸，但美味管饱的巧克力棒，几乎每个人都或多或少有些难以忘怀的回忆，无论是它魔性的广告，还是“横扫饥饿”的洗脑slogan，都让这款零食深深植入消费者们的脑海。
+</p>
+<p>
+    但关于士力架，也有很多小秘密仍不被大众知晓。例如，它在1930年就已经诞生；“士力架”这个名字来源一匹马……
+</p>
+<p>
+    <strong>
+        以及，它的外形一直被人们认为像生殖器。
+    </strong>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/92cd4f3f64bd6a292686d691c8b0e332.jpeg_mw680water" width="1080" height="604"></p>
+<p>
+    这显然是一个“看过就忘不掉”的冷知识。而关于这个话题，就在不久前，还出现了一次震惊全网的“士力架削弱”闹剧……</p>
+<p>
+</p>
+<p class="picbox"><br></p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/172995bde4648c7bb3d3c8be86d8ab87.png_mw680water" width="60" height="60"></p>
+<p>
+    士力架是一款由美国玛氏公司制造，最早诞生于1930年的巧克力棒。它如今已经是全球范围内，最知名的零食之一，其年销售额已超过20亿美元。</p>
+<p>
+    能在数十年间变得如此畅销，士力架特殊的口感一直是最为重要的原因：作为一款巧克力棒，它的口感十分丰富——不仅富有嚼劲，吃起来“拉丝”，还不失酥脆，同时带着巧克力的浓郁。</p>
+<p>
+    而这种极具层次感的口味，则源自于其复杂的的制作方式：它以花生、焦糖和牛轧糖做芯，最外层再裹上一层巧克力。</p>
+<p>
+    简单来说，就是大量卡路里裹着卡路里，再外浇一层巨量卡路里。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/aebcdc643ed77b61162823deac87addf.gif_mw680" width="300" height="288">
+</p>
+<p>
+</p>
+<p>
+    也是因为这种“堆砌美味”的制作方式，导致士力架很难像一般巧克力一样做的方方整整，而是表面凹凸不平，总是有一层纹路。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/ebbdc644192e2d4dac53f87443a1d3a2.jpeg_mw680water" width="480" height="189">
+</p>
+<p>
+</p>
+<p>
+    <span>
+        <strong mpa-from-tpl="t" mpa-is-content="t">
+            据网络知情人士称，这是因为风干巧克力产生的涟漪效应。</strong></span></p>
+<p>
+    对于爱好甜食的消费者们来说，这其实不算个事，因为零食只要好吃就行，外在并不重要……</p>
+<p>
+    <strong>
+        直到一个人站出来说“士力架长得像生殖器”。</strong></p>
+<p>
+    或者说，上面的纹路让它长得像生殖器。</p>
+<p>
+    这是一个自十年间前就出现，但人们一致避而不谈的话题：士力架上面的纹路，总能让人联想到在充血状态下的男性生殖器。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/90a41320a1b7292b3db0e4751780036d.jpeg_mw680water" width="506" height="900">
+</p>
+<p>
+</p>
+<p>
+    他们甚至因此，给这些巧克力棒上的纹路赋了一个通俗易懂的名字：Dick Vein。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/f45c6da2d655933f04746bfbf28bc37d.png_mw680water" width="1080" height="571">
+</p>
+<p>
+</p>
+<p>
+    直译过来就是“几把静脉”。
+    <span>
+        <strong>
+            （下文将简称为【雕文】）</strong></span></p>
+<p>
+    而人们之所以选择对其避而不谈，一部分原因是：虽然士力架上有雕文这件事乍看之下比较离谱，但你如果仔细品味，会发现它很“洗脑”——意识到之后就很难忘掉。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/493d0b32a685f6b0cba341042ccbcfd7.jpeg_mw680water" width="1080" height="1439">
+</p>
+<p>
+</p>
+<p>
+    所以不少人听说这回事之后，都会强行压制自己的大脑，装作浑然不知的样子。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/810f4b0bf85ba708f871c5fe82fbb2d2.jpeg_mw680water" width="459" height="460">
+</p>
+<p>
+</p>
+<p>
+    但这也并不妨碍一群人用这个做各种怪图。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/1285eb39edfa4c1474deab6078f29772.jpeg_mw680water" width="639" height="264">
+</p>
+<p>
+</p>
+<p>
+    毕竟全人类的想象能力，总是在关于“性”的方面上能做到无比跃进。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/5e3e4c9dae97b2b8ff931e544a87678b.png_mw680water" width="1080" height="1288">
+</p>
+<p>
+</p>
+<p>
+    所以，除了时不时就有一小撮人站出来，向尚未察觉的人们散播这一邪恶知识，以拉所有人下水以外。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/6b7aea37ae7a919383c001a42ba911f8.png_mw680water" width="1080" height="527">
+</p>
+<p>
+</p>
+<p>
+    大部分人都还是和士力架及其雕文相处良好，甚至逐渐坦然接受这个无端联想。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/13764e714b680ed1b168b53b43df1e52.png_mw680water" width="1058" height="1170">
+</p>
+<p>
+</p>
+<p>
+    直到一个新闻的出现，这幅和平的景象才被打破了。</p>
+<p>
+</p>
+<p>
+    <br mpa-from-tpl="t">
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/c4f195d70aca8118c58fe0d696912ef0.png_mw680water" width="60" height="60"></p>
+<p>
+    就在不久前，一位博主转发了一张新闻的截图，上面写着“士力架正式宣布要移除雕文”。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/2dffb98a6418f5ba6ae42800ebf9198c.png_mw680water" width="1080" height="1113">
+</p>
+<p>
+</p>
+<p>
+    她配文：
+    <span>
+        “这不可能吧！”
+    </span>
+    。</p>
+<p>
+    看到这条新闻的网友们，也大多是同一个反应。</p>
+<p>
+    人们先是不可置信，纷纷表示不相信“雕文”就这样没有了。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/9f4be0bffde5c4157447452a6826b128.png_mw680water" width="1080" height="174">
+</p>
+<p>
+</p>
+<p>
+    伴随着讶异的心情，这条推文顿时得到了数万转发，大伙集体陷入了混乱。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/3db1ff5d4458992d693cc5d4401f1ffc.png_mw680water" width="1080" height="213">
+</p>
+<p>
+</p>
+<p>
+    随后这位博主又发布了一张光洁版的士力架图片，表示自己看到新闻以后买了一根士力架确认了一下，结果发现果然雕文遭到了削弱。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/23e5c864ee95ff42a9bbe8310ed9f604.png_mw680water" width="1080" height="1072" class="" alt="“我想一个人静静”" title="“我想一个人静静”"><span class="picinfo">“我想一个人静静”</span></p>
+<p>
+    在这之后，网上又传出了关于“士力架移除雕文”的新闻截图。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/23b9123b9df2929547ff9f144c3b84eb.jpeg_mw680water" width="1080" height="808">
+</p>
+<p>
+</p>
+<p>
+    甚至还有网站上的新闻表示，玛氏公司发表声明称：“……一些消费者告诉我们，我们的士力架糖果棒上的纹理涂层容易引起不好的联想……为此，我们决定用一个更光滑的巧克力涂层代替如今的。”</p>
+<p>
+    在这些佐证之下，网友们开始逐渐变得绝望，欧美地区的推特，开始充斥着网友们的哀嚎。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/2b16950faa4573e2916ba237e7421fae.jpeg_mw680water" width="828" height="781">
+</p>
+<p>
+</p>
+<p>
+    人类总是如此，失去了才懂得珍惜。年少不知雕文珍贵的人们，此时此刻才幡然醒悟，突然明白自己离不开它。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/f6fbf2bf3a9728fd9e17fb74173f6709.png_mw680water" width="1080" height="172">
+</p>
+<p>
+</p>
+<p>
+    更不乏有人表示自己的灵魂已随着雕文一起去了。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/97a14c9aec35364bc636f9fe8233ecea.png_mw680water" width="1080" height="213">
+</p>
+<p>
+</p>
+<p>
+    在此前，人们一直试图避而不谈，羞于提起的雕文，在离去之后才被众人摆在台面上。</p>
+<p>
+    消费者们开始质问起官方，为何出次昏招。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/a03d6800eb879f4b1c8e57dbb916c7ab.png_mw680water" width="1080" height="175">
+</p>
+<p>
+</p>
+<p>
+    雕文很快成为了欧美社交媒体上的热门话题，相关推特的点赞量甚至达到数十万之多。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/fe58f6f71b767027dc12cb95d9034d61.png_mw680water" width="1080" height="1486" class="" alt="《死去之后，世界开始爱我》" title="《死去之后，世界开始爱我》"><span class="picinfo">《死去之后，世界开始爱我》</span></p>
+<p>
+    愤怒的网友们，开始翻找出自己以前的存货，呼吁官方留下这美丽的纹路。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/9646ab198489afabe89ba5c377ef310d.png_mw680water" width="1058" height="1170">
+</p>
+<p>
+</p>
+<p>
+    人们开始奔赴向超市，试图屯下一些尚未修改版的士力架。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/92fbb5ed05a5aab9605557b1a0e5ced2.png_mw680water" width="1080" height="1147">
+</p>
+<p>
+</p>
+<p>
+    拆开包装后，发现手里的士力架还如往常一样的人们，则会对上面美丽的雕文感到爱不释手，放下往日与它的隔阂。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/50ef4335e3baec5bc2ae6460add829bd.png_mw680water" width="1080" height="1147">
+</p>
+<p>
+</p>
+<p>
+    也是在这时，大伙们才隐隐感觉有点不对：似乎新版光滑士力架还没出现在市场上？</p>
+<p>
+    是的，这的确是假新闻。</p>
+<p>
+    在互联网陷入沸腾之后，士力架官方则悠然出面，发了公告表示：“回应一下网上的争议——雕文还在。”</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/75d24f1b40f3c313bdf47b6b4791fb9c.png_mw680water" width="1080" height="1635">
+</p>
+<p>
+</p>
+<p>
+    这条公告，揽获了数万点赞转发，和无数句“我放心了”的评论。</p>
+<p>
+    而后，该假新闻的始作俑者——最初发布新闻截图的博主，则公开道歉并承认，这只不过她抱着“诶，就是玩”的心态而转发的假消息，所发的图文都是恶搞作品，而自己并没有想到会引起如此大的反响。</p>
+<p>
+    就此，一场闹剧收场，但又没完全结束。</p>
+<p>
+</p>
+<p class="picbox"><br></p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/446c2d0d8c3c65ec6f2e358b344b67b7.png_mw680water" width="60" height="60"></p>
+<p>
+    闹剧落幕之后，人们才开始意识到自己对雕文的重视与爱，这些情感虽然难以启齿，但毕竟存在着。</p>
+<p>
+    也是这时，一位不愿透露姓名的食品科学家在网站thetakeout的采访下，解释了“人们舍不得雕文”的原因。</p>
+<p>
+    最主要的，还是心理因素：如今的人们已经对士力架无比熟悉，突然看到一个光滑版的士力架，会有一种“认知失调”的感觉，“当你改变一个标志性品牌的某些东西时，消费者会对它非常敏感。”</p>
+<p>
+    其次则是“人们担心取消雕文会影响口味”。如果士力架真的要移除雕文，那其制作方式及原料必定会发生改变，那其口感也会注定受到影响。</p>
+<p>
+    总而言之就是——人们不愿一些已经融入进自己生活和认知中的事物发生改变。
+</p>
+<p>
+    当然，这些原因可能还不够解决一部分疑惑。
+    <strong>
+        比如，为何这么多人能被这么离谱的新闻骗过。</strong></p>
+<p>
+    而答案则是“类似的事情早已发生过”。</p>
+<p>
+    就在今年初，和士力架一样同为玛氏公司生产的M&amp;M豆就经历了一次形象“削弱”——</p>
+<p>
+    同作为全球知名的零食，M&amp;M豆也有着自己标志性的特征：六种不同颜色的M&amp;M豆形象。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/71cc26a6de109b21d3e6cc8a425dbd25.png_mw680water" width="1080" height="361" class="" alt="旧形象" title="旧形象"><span class="picinfo">旧形象</span></p>
+<p>
+    六种颜色，六种迥异的性格和特征，这些巧克力豆的形象，随着M&amp;M豆零食的发展也逐渐被消费者们熟知。</p>
+<p>
+    直到今年1月初，玛氏集团所属的M&amp;M豆官方宣布，将更新M&amp;M豆的品牌战略：“公司将致力于打造人人都有归属感，社会具有包容性的世界”。</p>
+<p>
+    而首要措施，就是把M&amp;M豆的形象更改的更“具有包容性”。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/40dd23a9f4c57b256e0ee1497d67b3f0.png_mw680water" width="1080" height="361" class="" alt="新形象" title="新形象"><span class="picinfo">新形象</span></p>
+<p>
+    在最新版的M&amp;M的形象中，每颗豆的特征都进行了一些或多或少的修改，变动程度几乎可以说微乎其微。</p>
+<p>
+    除了绿豆。</p>
+<p>
+    绿豆作为M&amp;M中唯二的“女性”豆类之一，此前一直是品牌里象征“性感”的角色，其最出众的标注，就是她脚上的一双高筒靴。</p>
+<p>
+    但在最新版的形象中，这双高筒靴被替换成了运动鞋。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/3712f75dfcb4adfda277548775fc1df1.png_mw680water" width="1080" height="672">
+</p>
+<p>
+</p>
+<p>
+    官方对此的说辞，则是“为了更好体现绿豆是个坚强的女性，有着自主的权力和性格——这比漂亮的高筒靴更重要”。</p>
+<p>
+    除此之外，官方还另外强调要将这些M&amp;M去性别化，不再对他们使用性别代称。</p>
+<p>
+    这很显然就是玛氏公司为了顺应多元向运动而诞生的举措，在如今的欧美社会中，类似有关“政治正确”的改动并不少见。</p>
+<p>
+    但M&amp;M豆的修改，并没有得到所有消费者们的赞同。无论人们对‘多元化’支持与否，一部分人已经开始对这种有“矫枉过正”嫌疑的宣传方式心生厌倦——拜托，这些角色只不过是糖豆而已。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/03d1c985de663e0ccf219113ad0d0bd0.png_mw680water" width="1080" height="321">
+</p>
+<p>
+</p>
+<p>
+    网上甚至出现了“让性感绿M&amp;M回归”的请愿。人们开始用讽刺的语气提问“那什么时候能出残疾人/肥胖人士/跨性别M&amp;M豆？”</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/8610d4965d2ba76839867488daecc29b.png_mw680water" width="1080" height="364">
+</p>
+<p>
+</p>
+<p>
+    而M&amp;M豆的修改，引发了诸如此类的大量讨论，并作为话题延续至今。</p>
+<p>
+</p>
+<p class="picbox">
+    <img src="https://alioss.yystv.cn/doc/9091/6d8d5ca2ef3a1bd3ff193a6f6a2620f4.jpeg_mw680water" width="600" height="582">
+</p>
+<p>
+</p>
+<p>
+    也是在这种情况下，“削弱士力架”的假新闻传出，彻底让本已是“惊弓之鸟”的人们失去了判断力，这才导致了一场荒唐闹剧。</p>
+<p>
+    这让一些网友开始发出这样的感叹：“这世道如此荒谬，以至于这么虚假的新闻，我们却无法理智分辨了。”</p><p class="picbox">
+</p>]]></description>
+<pubDate>Sat, 07 May 2022 10:50:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by 地球人研究报告</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9091</guid>
+</item>
+<item>
+<title><![CDATA[【白夜谈】放低预期就很难失望]]></title>
+<category><![CDATA[白夜谈]]></category>
+<category><![CDATA[趣闻]]></category>
+<category><![CDATA[魔兽世界]]></category>
+<link>https://www.yystv.cn/p/9090</link>
+<description><![CDATA[<p>在4号凌晨的暴雪发布会之前，所有人已经知道了会有一个“魔兽IP”的新游戏存在，我们也得到了采访机会。</p><p>这次的保密工作非常严格，直到登陆进暴雪的ZOOM房间之前，关于这个新游戏，我和同事什么信息都不知道。</p><p>因为是魔兽IP，我第一时间觉得这大概是个MMORPG。同事谨慎地提醒我，游戏的定语是“魔兽”（Warcraft）而不是“魔兽世界”（World of Warcraft），这微妙的宣传措辞代表游戏大概率不是手机版WOW这种级别的东西。</p><p>然后我们又猜了MOBA和SLG，甚至魔兽版《公主链接》（听着好像就是《刀塔传奇》）。MOBA算是绝对不会犯错的类型，唯一的问题是做不做得出来。论坛上也有不少呼声是把WOW的小宠物对战拎出来做一个单独的游戏，这样虽然小品级了一点，但情怀值足够在线，听着也不错。</p><p>谢邀。最后我们看到的是《魔兽弧光大作战》。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/2679addfd27fa99b8cf74f0a008aa864.png_mw680water" width="1080" height="499"></p><p>一个以单人战役为主的卡牌+塔防+RTS。或者说得更简单点，如同大多数玩家看到以后的反应一样，像一个魔兽世界观下的《皇室战争》。</p><p>《皇室战争》虽然没成为吃鸡或者自走棋这种“显学”级别的新类型，但基于其基础玩法衍生的游戏不在少数。我在Steam上玩过一段时间的《随从大师》（还挺好玩），《哈利波特：魔法觉醒》底子上也是一样的类型。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/b39f05982304bbe747cef5bf28dceff4.jpeg_mw680water" width="1080" height="608" class="" alt="《随从大师》" title="《随从大师》"><span class="picinfo">《随从大师》</span></p><p>但像上面这张截图的《随从大师》，乍一看很难看出来和《皇室战争》有半点关联。而将魔兽人物完全卡通化的弧光大作战，怎么说呢，这个美术风格实在太Supercell了。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/7157dcbf5bb7019412329c06b7001503.png_mw680water" width="1080" height="607" class="" alt="宣传片的弹幕里很多人都提到了这点" title="宣传片的弹幕里很多人都提到了这点"><span class="picinfo">宣传片的弹幕里很多人都提到了这点</span></p><p>在封闭测试中，我对弧光大作战的感觉还不错——如果你事先期待过炉石的佣兵战纪，之后又被实际情况上了一课，那《魔兽弧光大作战》完全可以称之为“好玩”的游戏。</p><p>限于NDA要求，这里也放不了更多的试玩图片或者视频。总之游戏内容就是非常朴实的养卡、配卡（但是没有抽卡），找解题思路过关，关卡和BOSS设计还可以；PVP里的人在测试服来回就是几张熟面孔，大家都被压缩到1级公平竞技，对抗体验也还可以；Supercell式的随机经验包虽然有点不适，但玩起来也没怎么被队伍练度硬着卡过关，最后的付费体验估计也还可以。</p><p>目前测试阶段的弧光大作战，就是这么一个由很多“还可以”组成在一起的游戏，比我预想的最糟糕状况（这里没有暗示佣兵战纪）要好上不少。</p><p>但如果不是暴雪和魔兽的标签在，我很怀疑自己还有没有动力在2022年去体验一个主打PVE体验的《皇室战争》。当游戏编辑的时间越长，你就会越分不清自己是不是因为客观需要而说服大脑去玩，找很多个“还可以”出来。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/b452130f138e906dd87bac14db4b1b4f.png_mw680water" width="361" height="643"></p><p>不过这么一款产品后公布后，玩家社群的巨大负面声浪，似乎说明玩家们对目前的暴雪甚至还有着不低的产品预期——可能暴雪在宣发上最好的选择，就是不提前放消息说要搞什么“魔兽IP手游”，也不要弄“预告的预告”，而是将这个游戏作为一道小甜点直接发布。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/7f22306d8d50b70a1678b15fa6e4e077.jpeg_mw680water" width="1080" height="606"></p><p>或许在这一切看上去无法挽回之前，六年前的《守望先锋》是最后一次有机会Make Blizzard Great Again的船票，但因为宏观环境的变化和自身的开发运营问题，这个机会被暴雪错过了。</p><p>在看过OW2的Beta测试后，玩家也很难对这个“2”抱有太高的预期，经历过所谓风暴2.0的《风暴英雄》玩家（说的就是我自己）显然更能体会到这点，想在游戏内容不进行根本性迭代的情况下重回高位，需要很多很多的运气。</p><p>所以又回到《魔兽弧光大作战》——你会发现，这么多年过去，在这艘缝缝补补的大船里，垂垂老矣的《魔兽世界》还是暴雪最粗的那根顶梁柱，Warcraft还是它旗下最有价值的IP。</p><p>而在今天，当暴雪仿佛已经做不出自己曾经擅长的类型，开始在并不熟悉的领域跋涉时，很难不为它感到遗憾。</p><p>但愿微软值得相信。</p><p class="picbox"><img src="https://alioss.yystv.cn/doc/9090/09e61916ab5e78c4e0553f18ff2000a3.jpeg_mw680water" width="1080" height="1080" class="" alt="愿暴雪早日康复！  ——CaesarZX" title="愿暴雪早日康复！  ——CaesarZX"><span class="picinfo">愿暴雪早日康复！  ——CaesarZX</span></p>]]></description>
+<pubDate>Sat, 07 May 2022 10:00:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by Aria</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9090</guid>
+</item>
+<item>
+<title><![CDATA[《地球冒险》1989年开发者访谈]]></title>
+<category><![CDATA[文化]]></category>
+<link>https://www.yystv.cn/p/9088</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p>游戏里有超过三百个角色，几乎没有一个角色说同样的对白。</p></blockquote><div class="picbox"><img src="https://alioss.yystv.cn/news/85ed172ce4174ffbc985dd31e0cd66a9.png_mw680water" data-="" width="320" height="240" data-id="143103rb" alt="受访者：糸井重里——监督/策划" style="width: 320px; background-color: transparent;" class="" title="受访者：糸井重里——监督/策划"><span class="picinfo">受访者：糸井重里——监督/策划</span></div><p>《地球冒险》怀胎整整两年。我真是等不及了：到这个时候，我自己都想上手玩了。此外，我还想把游戏展示给自己的好朋友，让他们也玩玩。我之所以有这种感觉，是因为《地球冒险》的起点，就是我想做一款自己真正想玩的游戏。</p><p>曾经有一段时间，我玩红白机玩到了痴迷的程度，于是就开始考虑制作游戏这件事，“如果是我，这里会这么做”或“应该这么处理才对”。刚好在这段时间里，我因其他商务事宜造访了位于京都的任天堂。我心想，机会来了！绝对不能放过！随后就将自己创作的策划案带了过去。</p><p>其实造访任天堂的商务事宜并不重要，很快就谈完了，我心里焦虑万分，“什么时候展示我的策划案，什么时候展示我的策划案……”（笑）等到展示完毕，他们看起来很惊讶。我们聊了聊，宫本茂先生同意见我一面。但我毕竟是个门外汉，并不知道自己在做什么，向他展示自己的方案时，我说，“这地方很酷。”但他看起来好像没什么反应。我顿时感到心灰意冷。（笑）</p><p>宫本先生似乎并没有意识到我愿意为这个方案投入多少时间精力，他对我说，“我知道这个方案让你费了不少劲，但是……能不能重起炉灶，简化一点呢？”我接受了他的意见，但其他人似乎认为宫本先生是在变着法子对我说，“请停手吧。”（笑）因为这事，我渐渐不太愿意跟别人谈及自己在做的事。（笑）</p><p>“Mother”（母亲）这个标题是我之后才想到的。这款游戏的基本元素和我最初的策划案相差不大。建立开发团队花了一段时间……从任天堂为项目亮绿灯起，大约花了一个月。但从一开始，我就觉得整个团队对我都没什么信心。有传言说我只参加过两次开发会议，人们觉得对我来说，这游戏只是个形象工程，就像《北野武的挑战状》那样。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/4911c7c163decb8c29221e15de5b11c9.jpg_mw680water" data-="" width="620" height="804" data-id="139080iv" alt="《北野武的挑战状》" style="width: 620px; background-color: transparent;" class="" title="《北野武的挑战状》"><span class="picinfo">《北野武的挑战状》</span></div><p>然而自始至终，我对开发这款游戏都很上心。即便要像开发者那样熬夜，我也心甘情愿。无论需要什么知识，我都愿意学，说真的，不管多基础的工作，我都有足够的热情去做。</p><p>即便到了现在，可能仍然有人如此理解这个项目，“糸井以为他可以闯进这个行业，做一款游戏赚点快钱……”当时我还没能证明自己，没法对他们说，“不是这样”。幸好现在可以这样说了。</p><p>“Mother”这个标题有多种含义。“母船”（ぼせん）可能最为接近。如今以中世纪欧洲为背景的角色扮演游戏已经大行其道。但我对这段历史时期一无所知，说实话，我觉得其他人可能也差不多。看起来，他们的点子都来自《魔戒》（The Lord of the Rings）等知名作品。</p><p>所以我想，如果要创作一款游戏，写个现代背景的故事可能会更有趣一些。一个发生在身边的故事，让如今的孩子和如今的大人们聊天，再出发去进行各式各样的冒险。早些时候，我去芝加哥工作过一段时间，爱上了那里的房子和街道，在开发《地球冒险》时，许多灵感都来自那段经历。</p><p>至于《地球冒险》的主角，你既可以当他是个美国人，也可以当他是个日本人，关系不大。当然，有不少日本孩子会玩这款游戏，我猜他们会把主角当成日本人。你也可以在游戏开头给自己队伍中的所有人起名字，再在游戏中挨个遇到他们。玩游戏时，你没法随时更换队伍成员，剧本已经写好，所以成员会在过程中自然切换。成员的离开和加入，本身也是剧情的重要组成部分。</p><p>我在《地球冒险》的故事上花了大量精力。对白同样如此……游戏里有超过三百个角色，几乎没有一个角色说同样的对白。或许加起来只有三个人说了同样的话。即便只考虑对白，和其他角色扮演游戏相比，这也是个巨大的进化。我认为只玩这部分，玩家也能获得许多乐趣。战斗过程中，敌人的各种对白也非常细致，基于敌人种类和数量，他们会说不同的对白。开发《地球冒险》的过程，让我意识到“文本”的真正难度所在。</p><p>在《地球冒险》中，存在一种“PSI”，即“精神力量”（psycho power）或称“ESP”。这并不是“魔法”的代名词，在游戏领域被称为“ESP”，例如念动力、传送等等。如果算上不同级别的能力，游戏中共有大约五十种能力，当然也有些能力没什么用。</p><p>戴眼镜的男孩（Roid）和留着庞帕多发型的家伙（Teddy）无法使用ESP。那个男孩自然没法用ESP。主角会在一个演出现场遇到泰迪，也就是那个留着庞帕多发型的家伙。他是黑血党的头目，你可以简称他们“布拉布拉”（bura bura）党。（笑）他是个搞笑角色，就像高仓健电影里的鹤田浩二一样。（笑）游戏中还有一幕，有个女孩爱上了他，不过……还是留给你自己去体验吧。（笑）</p><p>配乐主要由任天堂的田中宏和负责，但一开始，我觉得他完全没法理解我。我不想要常见的电子游戏配乐。田中先生的技艺非常棒，在一次次制作小样的过程中，他渐渐理解了我，我们之间也建立起了一种信任。</p><p>音乐在《地球冒险》中扮演着至关重要的角色，可以用来影响玩家。设计这款游戏让我逐渐意识到这一点。你看不到音乐，因此很难在游戏中直接应用。但正因为你看不到音乐，只要使用得当，就能大幅拓展游戏世界，或是为其添加一层深度。制作《地球冒险》的过程中，我因这些可能性而感到无比兴奋，音乐也由此成为这款游戏的重要组成部分。</p><p>虽然谈不到受某部作品直接影响，但对我个人影响最大的作品绝对是《勇者斗恶龙Ⅲ》（Dragon Quest Ⅲ）。不过我心里很清楚，自己制作游戏的方式有所不同，因此这种冲击感也渐渐冷却下来。（笑）对我而言，想创造出拥有电影干的游戏……玩起来就像从音像店租来了一部好电影。如果一个白领打通了《地球冒险》，应该会伤感地说一声，“啊，就这么完了。”</p><p>我已经在构思《地球冒险2》（Mother 2/Earthbound）了。我有两个点子……目前正在考虑哪个更好——是做一个完全不同的故事好呢，还是做一个和初代接近的故事呢？或许应该交给已经玩过《地球冒险》的玩家来决定吧？</p><p>游戏里总有些套路，每个人都不得不忍受，对吧。例如NPC总会说同一句话，或者走到城镇图标上，就会进入城镇。迄今为止，我们都不得不习惯这些不够令人满意的设计。但我真的非常不喜欢这些套路，想证明游戏可以做到更好——这个行业还有发展空间。即使《地球冒险》没能成功，这也是我想进一步探索的方向。</p><p>我认为程序工程师想要在技术层面挑战自我，其实毫无意义，例如“哦，现在我们可以在队伍中加入十个角色了！”相对而言，我认为即便只有一个角色足够有趣，或是故事激动人心，就足够了。孩子们觉得上学和运动已经足够充实有趣，我希望他们也能这样看待游戏。</p><p style="text-align:right;"><span style="font-size: 100%;">翻译：<a href="https://weibo.cn/sinaurl?u=https://weibo.com/n/RED韵" target="_blank"></a><a href="https://weibo.com/n/RED韵" target="_blank" style="">@RED韵</a></span></p><p style="text-align:right;"><span style="font-size: 100%;">链接：<a href="https://weibo.cn/sinaurl?u=https://shmuplations.com/mother/?continueFlag=7353c17a2f8cc8771ca51a671629fd68" target="_blank" style="">原文</a></span></p>]]></description>
+<pubDate>Fri, 06 May 2022 16:15:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by </source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9088</guid>
+</item>
+<item>
+<title><![CDATA[天下怪人如牛毛，纽约地铁占一半]]></title>
+<category><![CDATA[文化]]></category>
+<link>https://www.yystv.cn/p/9083</link>
+<description><![CDATA[<blockquote class="doc-blockquote"><p><b><span style="font-size: 120%;">当乘客们把通勤工具变成了马戏团。</span></b></p></blockquote><p style="text-align:left;"><span style="text-align: left;">提起纽约，能想到很多关键词：美国梦、华尔街、爵士乐……</span><b style="text-align: left;">当然，其中也有不那么光彩的，比如说老鼠。</b><br></p><p style="text-align: left;">有都市怪谈说纽约的老鼠数量是常驻人口的五倍，在2014年的一项统计里，科学家们给出了一个更精确的数字——两百万只。</p><p style="text-align: left;">虽然没有传闻里那么猖獗，<b>但对于一个国际大都市而言，这些啮齿动物也构成了不大不小的问题。</b>城里的人们或许是习惯了它们的身影，当有老鼠大摇大摆地叼着披萨从旁边穿过时，有的人还会掏出手机，把小东西自力更生的景象记录下来。</p><p style="text-align: left;"></p><div class="picbox"><img src="https://alioss.yystv.cn/news/88c8a21e4f7f8f13509f485d8fe2f492.gif_mw680" data-="" data-id="456945vo" alt="披萨是纽约的招牌食物：城民的饮食喜好，也扩散到了老鼠身上" style="width: 360px; background-color: transparent;" class="" title="披萨是纽约的招牌食物：城民的饮食喜好，也扩散到了老鼠身上" width="360" height="360"><span class="picinfo">披萨是纽约的招牌食物：城民的饮食喜好，也扩散到了老鼠身上</span></div><span style="font-size: 100%;">这一幕发生在纽约的地铁站：老鼠招摇过市的场面，再加上背景中生锈的栏杆与包浆的地板，完美地构成了一副“大苹果城”地下交通系统的缩影。<b>由于悠久的使用年头、松垮的管理以及紧巴巴的经费，纽约的地铁一向以脏乱差著称。</b></span><div><span style="font-size: 100%;"><br></span></div><div><span style="font-size: 100%;">不知道是“自由”的乘客破坏了环境，还是糟糕的环境影响了乘客，在这里，总会有人放飞自我，一旦留意四周，便永远不缺乐子看。</span></div><div style="text-align:left;"><span style="font-size: 100%;"><br></span></div><div style="text-align:left;"><span style="font-size: 100%;">文艺氛围浓厚的纽约，吸引着许多艺术家前来追梦。</span><span style="font-size: 100%;">在成名前，他们通常过着清贫的日子，为了节省开支，用地铁通勤是其中大多数人的选择。</span><br></div><div><div class="picbox"><img src="https://alioss.yystv.cn/news/9819a4024bcd37905430a9b0b467f284.jpg_mw680water" data-="" data-id="261809rz" alt="" style="width: 600px; background-color: transparent;" width="605" height="454"></div></div><p>其中专精行为艺术的，在视觉效果上下足了功夫，硬生生地把地铁变成了秀场。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/479d6aa3bb4ef16c65b8068bb4450a85.gif_mw680" data-="" data-id="517193fi" alt="" style="width: 205px; background-color: transparent;" width="205" height="365"></div><p>艺术家们并不全是独行侠：当其中一群以高度一致的造型出现时，无论他们原本想借此表达什么，都无法将迎面而来的喜感抹除。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/fca939d8679c7f65b4e64a9761fe48ff.jpg_mw680water" data-="" data-id="760683zu" alt="" style="width: 600px; background-color: transparent;" width="605" height="401"></div><p>吉祥物也是地铁上的常客：不知道以它们的体型，要花多久才能从检票闸机穿过。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/04fd8772a9fb1e1cb2ce6d2dff7ab291.png_mw680water" data-="" data-id="890409wi" alt="" style="width: 340px; background-color: transparent;" width="817" height="1440"></div><p>脱离了工作情景，回到现实时，它们的形象将不可避免地与“中之人”产生冲突。一只伸出的手臂，就足以毁掉小朋友的童年幻想。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/48a1b414e1788f8ee1b03c15d0e56552.jpg_mw680water" data-="" data-id="320950vt" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>与上列人物相比，地铁里的Coser们给旁观者造成的冲击，便显得有些稀松平常：不可一世的黑暗尊主，坐地铁时也要把违禁品光剑乖乖收好。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/71bf01c1994a9a4ff950a1b0dce1d427.jpg_mw680water" data-="" data-id="777330ee" alt="" style="width: 449px; background-color: transparent;" width="605" height="807"></div><p>一个Coser只能当个乘客，两个Coser却足够上演一出好戏：同好相互间对上电波后，便产生了日常中的“梦幻联动”。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/17df82b700fbec2871e119eabbded2f4.jpg_mw680water" data-="" data-id="18219ki" alt="" style="width: 446px; background-color: transparent;" width="605" height="813"></div><p>一些Coser的条件得天独厚，他们不需要太多服装与道具，就能高度还原角色。在看到下面这一位后，总觉得车厢即将爆炸。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/2b74d53a229b0268527efd3093754f52.jpg_mw680water" data-="" data-id="359278rq" alt="" style="width: 477px; background-color: transparent;" width="605" height="760"></div><p>如果说上面那些人，只是在造型上暴露了自己的生计与爱好的话。那么在接下来的几张图里，每一个像素点都写满了迷惑。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/b772f1c9194690e42a84653626f8eef0.jpg_mw680water" data-="" data-id="708949oy" alt="" style="width: 446px; background-color: transparent;" width="605" height="813"></div><p>有的是蔬菜被切片后成了精。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/1666cb9bdbfaf3e25a32ad50eaf7dae4.jpg_mw680water" data-="" data-id="816799yr" alt="" style="width: 461px; background-color: transparent;" width="605" height="787"></div><p>也有的是违法作物化了魔。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/906745419d1018ccee2e76b5a5c97b89.jpg_mw680water" data-="" data-id="903623uy" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>有的让同行者觉得已在天堂。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/6e8adecae5b9399c0e5044284acfabae.jpg_mw680water" data-="" data-id="964166pd" alt="" style="width: 600px; background-color: transparent;" width="605" height="568"></div><p>也有的即将把拍照者拖入地狱。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/6ebf9e47a138b390662e988003244e8d.jpg_mw680water" data-="" data-id="54035im" alt="" style="width: 524px; background-color: transparent;" width="605" height="692"></div><p>有的在陆地上变身半人马。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/0826728dec3ea30d411fdd09a709e8ce.jpg_mw680water" data-="" data-id="267153io" alt="" style="width: 600px; background-color: transparent;" width="605" height="454"></div><p>也有的是从海里出来的美人鱼（反向）。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/fab19f16f77f42a44aabe017960fb13f.gif_mw680" data-="" data-id="334316gw" alt="" style="width: 262px; background-color: transparent;" width="262" height="328"></div><p>有人在发型上坚持自我。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/15cc58de86a45461f0a04560570e8850.gif_mw680" data-="" data-id="427974ij" alt="" style="width: 294px; background-color: transparent;" width="294" height="368"></div><p>也有人在发型上彰显品位。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/c0b1955b64da934c39ef7906868873b9.jpg_mw680water" data-="" data-id="483509kg" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>因以上诸位的存在，纽约的地下从不会缺少乐子。他们的造型令人惊奇，但真正的搞笑大师，凭借着巧合就能创造出笑点。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/ba7c20f5c047b8348963af782a74e2d8.jpg_mw680water" data-="" data-id="134049mu" alt="" style="width: 449px; background-color: transparent;" width="605" height="807"></div><p>奇装异服不受限制，归结于纽约地铁宽松的政策，对人如此，对宠物也是：只要猫猫狗狗们老实呆在任何容器里，就可以与主人同乘。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/8004cddf78c88c5163419028b8c143ce.jpg_mw680water" data-="" data-id="383990af" alt="" style="width: 453px; background-color: transparent;" width="605" height="800"></div><p>在规则面前，总会有人钻空子，其中一些试图在规则本身寻找突破口。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/31f9e29241a64615ff8c151a7dee5ded.jpg_mw680water" data-="" data-id="486136tr" alt="" style="width: 415px; background-color: transparent;" width="605" height="873"></div><p>另一些则将宠物精心打扮，来混淆视听。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/fe3c8d558ab15ff7e25a1432bf95a006.jpg_mw680water" data-="" data-id="517561vv" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>偶然间，乘客们还能一窥从女士胸口露出的咪咪。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/de397643940b5e3e7221a278dece3e44.jpg_mw680water" data-="" data-id="618098xa" alt="" style="width: 600px; background-color: transparent;" width="605" height="572"></div><p>猫与狗不是在地铁上能看到的全部动物种类，有些宠物能把方圆两米的人类纷纷吓退。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/118a814486fc111970daea15578c1fc4.jpg_mw680water" data-="" data-id="961632ws" alt="" style="width: 600px; background-color: transparent;" width="605" height="454"></div><p>还有的不需要地铁，因为它们会飞。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/2754f6b56a74fa8ce5ab7ceb695e978f.jpg_mw680water" data-="" data-id="189398af" alt="" style="width: 600px; background-color: transparent;" width="605" height="453"></div><p>那些没有宠物的乘客们，则用其他方式来打发地铁上的时光。在物欲横流的大都市里，有股无形的力量在背后促使着每个人，逼迫他们去过快节奏的生活，通勤中也不能浪费一分一秒。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/60e3eba94c0235b204bf861bd4b9ace3.jpg_mw680water" data-="" data-id="584460nu" alt="" style="width: 600px; background-color: transparent;" width="605" height="339"></div><p>哪怕是睡觉，也要睡出风采，睡出质量。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/8a112d078f961f0c0d963083ae0a67e8.jpg_mw680water" data-="" data-id="651165zb" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>一些匠人的职业精神，不会随着地铁的高速前行而被抛之脑后。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/12f5203f9752c1698eb349daa99f3d12.jpg_mw680water" data-="" data-id="131157lw" alt="" style="width: 460px; background-color: transparent;" width="605" height="788"></div><p>美食家们也不会因为时间与空间的限制，影响到自身与同伴一起干饭。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/5bfa59f71397475791bb16d9ac9b1324.jpg_mw680water" data-="" data-id="274119po" alt="" style="width: 483px; background-color: transparent;" width="605" height="750"></div><p>地铁上的扶手与栏杆，是野生体操选手们与自己较劲的绝佳设备。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/6b050ee04eaf4c9d33a860c191efbf7d.jpg_mw680water" data-="" data-id="525711tn" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><div class="picbox"><img src="https://alioss.yystv.cn/news/9a010e86712e4a539d4f18ab504be297.jpg_mw680water" data-="" data-id="664464op" alt="" style="width: 600px; background-color: transparent;" width="610" height="405"></div><p>另外一些聪明鬼，则懂得用各种工具，为自己短暂的旅程创造出更舒适的环境。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/86aa45e4c388be9a286592e80799896e.jpg_mw680water" data-="" data-id="766626fc" alt="" style="width: 531px; background-color: transparent;" width="605" height="683"></div><div class="picbox"><img src="https://alioss.yystv.cn/news/3b32cd08d832bbe71fc905873d3ff2e9.jpg_mw680water" data-="" data-id="796955yw" alt="" style="width: 600px; background-color: transparent;" width="605" height="605"></div><p>相比起以上这些迷惑行为，读书就要显得文静许多，然而纽约的部分阅读者手中印刷物的标题，不禁引人侧目。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/52de26e216d29c6872dfa6fcc3ae23dd.jpg_mw680water" data-="" data-id="499540yx" alt="" style="width: 536px; background-color: transparent;" width="605" height="676"></div><p>有的读者用书告诉人们，在大洋彼岸，PUA已经发展到了狗界。</p><div class="picbox"><img src="https://alioss.yystv.cn/news/a91254713f73721b6c17f70b1d4960fa.jpg_mw680water" data-="" data-id="680072md" alt="《成功狗士如何泡妞》" style="width: 600px; background-color: transparent;" class="" title="《成功狗士如何泡妞》" width="605" height="595"><span class="picinfo">《成功狗士如何泡妞》</span></div><p style="text-align: left;">下面这位显然是因为过于重视理论研究，而忽视了唾手可得的实践机会。</p><p style="text-align: left;"></p><div class="picbox"><img src="https://alioss.yystv.cn/news/705dfb126292703f033232eb0f9e250d.webp_mw680water" data-="" data-id="778079aw" alt="《如何在地铁上邂逅》" style="width: 600px; background-color: transparent;" class="" title="《如何在地铁上邂逅》" width="605" height="605"><span class="picinfo">《如何在地铁上邂逅》</span></div><span style="font-size: 100%;">Scott Rogowsky，一位脱口秀演员，显然是注意到了读书中潜藏的笑点。他拍摄了一系列在地铁上读假书的视频，请欣赏其中一部分杰作：<span style="font-size: 80%;"><br></span></span><div><div class="picbox"><img src="https://alioss.yystv.cn/news/6077532b2b98134f8fb23fa4eb368c10.jpg_mw680water" data-="" data-id="185563id" alt="《增大指南101——在家、办公室、通勤中都能照做》" style="width: 600px; background-color: transparent;" class="" title="《增大指南101——在家、办公室、通勤中都能照做》" width="880" height="495"><span class="picinfo">《增大指南101——在家、办公室、通勤中都能照做》</span></div></div><p style="text-align: center;"></p><div class="picbox"><img src="https://alioss.yystv.cn/news/b039a290f85323ebf33d0ed9a184463b.jpg_mw680water" data-="" data-id="277724dc" alt="《舔屁：深入浅出》" style="width: 600px; background-color: transparent;" class="" title="《舔屁：深入浅出》" width="880" height="561"><span class="picinfo">《舔屁：深入浅出》</span></div><p style="text-align: center;"></p><div class="picbox"><img src="https://alioss.yystv.cn/news/0623ec1f35f13c351c9456a38a1fd1b1.webp_mw680water" data-="" data-id="324909je" alt="《此书无黄三百张》" style="width: 600px; background-color: transparent;" class="" title="《此书无黄三百张》" width="721" height="380"><span class="picinfo">《此书无黄三百张》</span></div><p style="text-align: center;"></p><div class="picbox"><img src="https://alioss.yystv.cn/news/4c7243f2f1fd71c09a2e2c6dec7f17a5.webp_mw680water" data-="" data-id="384852dw" alt="《傻子都能学会的谋杀脱罪方法》" style="width: 600px; background-color: transparent;" class="" title="《傻子都能学会的谋杀脱罪方法》" width="721" height="422"><span class="picinfo">《傻子都能学会的谋杀脱罪方法》</span></div>像Scott一样，<b>无论是无心或有意，照片里面的怪人怪事总归为乘客们创造了许多欢乐（也可能是惊吓）。</b>他们不是地铁文化的全部组成部分：一些常年在地铁站里表演的街头艺人，以及举行“地铁结婚式”的新人们，和他们共同组成了亮丽的风景线。<div class="picbox"><img src="https://alioss.yystv.cn/news/5c43addf7e56812850b504b2af22eab7.webp_mw680water" data-="" data-id="660803jd" alt="在地铁上结婚已成为纽约的一项新传统" style="width: 600px; background-color: transparent;" class="" title="在地铁上结婚已成为纽约的一项新传统" width="1317" height="878"><span class="picinfo">在地铁上结婚已成为纽约的一项新传统</span></div><b>自由背后的代价就是混乱：</b>这里常常是犯罪滋生的温床，在今年4月12日，一起地铁上的枪击案中，有10人中弹，29人受伤。恶性事件发生后，民众对于地铁系统的脏乱与缺乏安保表示不满的声音达到了顶点。<p><br><b>加强卫生管理与防护，是纽约地铁历史性的必然。</b>也许未来的地铁上不会再有这么多奇人怪事，但他们曾经带来的乐子一定不会消失。<br></p>]]></description>
+<pubDate>Fri, 06 May 2022 11:30:00 +0800</pubDate>
+<source url="https://www.yystv.cn">游研社 by Magcat</source>
+<guid isPermaLink="true">https://www.yystv.cn/p/9083</guid>
+</item>
+</channel>
+</rss>

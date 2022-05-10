@@ -116,6 +116,7 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
 /// Returns:
 ///
 /// A string.
+#[allow(dead_code)]
 pub fn reader_get_sub_node_str<B: std::io::BufRead>(
     reader: &mut Reader<B>,
     bufs: &BufPool,

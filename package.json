@@ -31,12 +31,13 @@
     "evergreen-ui": "^6.9.9",
     "lodash-es": "^4.17.21",
     "lowdb": "^3.0.0",
+    "pkg": "link:wasm/pkg",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-redux": "^7.2.8",
     "react-toastify": "^8.2.0",
     "validator": "^13.7.0",
-    "wasm": "link:wasm\\pkg"
+    "wasm": "link:wasm/pkg"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
