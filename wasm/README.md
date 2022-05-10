@@ -19,3 +19,9 @@ from wasm_bindgen_test:
 - It takes **67ms** to process about **1600 items**, each of which is about **0.5kb** in size. (data/QIDIAN_RSS2.0.xml)
 
 
+
+Browser: `Firefox 100.0`
+Hardware: `CPU: i7-8750H` `Mem: 16G`
+
+![图片](https://user-images.githubusercontent.com/42728902/167526384-2fde6f5e-bbd1-450f-b22f-ce8995d869c9.png)
+
