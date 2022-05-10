@@ -28,12 +28,18 @@ pub struct RSSChannel {
     #[serde(rename = "webMaster")]
     web_master: Option<String>,
 
+    generator: Option<String>,
+
     #[serde(rename = "lastBuildDate")]
     last_build_date: Option<String>,
 
     ttl: Option<usize>,
 
+		image: Option<ChannelImage>,
+
     posts: Vec<ChannelItem>,
+
+    copyright: Option<String>,
 }
 
 impl FromXmlWithStr for RSSChannel {
@@ -80,13 +86,15 @@ impl FromXmlWithReader for RSSChannel {
         let mut web_master = None;
         let mut last_build_date = None;
         let mut ttl = None;
+				let mut image = None;
         let mut posts = Vec::<ChannelItem>::new();
+        let mut copyright = None;
+        let mut generator = None;
 
         reader.trim_text(true);
 
         let mut buf = bufs.pop();
 
-		
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref re)) => match reader.decode(re.name())? {
@@ -120,6 +128,10 @@ impl FromXmlWithReader for RSSChannel {
                                             TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
 
+                                    "generator" => {
+                                        generator = TextOrCData::from_xml_with_reader(bufs, reader)?
+                                    }
+
                                     "lastBuildDate" => {
                                         last_build_date =
                                             TextOrCData::from_xml_with_reader(bufs, reader)?
@@ -127,9 +139,15 @@ impl FromXmlWithReader for RSSChannel {
 
                                     "ttl" => ttl = NumberData::from_xml_with_reader(bufs, reader)?,
 
+																		"image" => image = Some(ChannelImage::from_xml_with_reader(bufs, reader)?),
+
                                     "item" => {
                                         let item = ChannelItem::from_xml_with_reader(bufs, reader)?;
                                         posts.push(item);
+                                    }
+
+                                    "copyright" => {
+                                        copyright = TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
 
                                     _ => {
@@ -165,10 +183,32 @@ impl FromXmlWithReader for RSSChannel {
             url,
             language,
             web_master,
+            generator,
             last_build_date,
             ttl,
+						image,
             posts,
+            copyright,
         })
+    }
+}
+
+impl FromStr for RSSChannel {
+    type Err = fast_xml::Error;
+
+    /// It takes a string, parses it as XML, and returns a `fast_xml::Result<RSSChannel>`
+    ///
+    /// Arguments:
+    ///
+    /// * `text`: The XML text to parse.
+    ///
+    /// Returns:
+    ///
+    /// A Result<RSSChannel, fast_xml::Error>
+    fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
+        let bufs = BufPool::new(16, 4096);
+
+        Self::from_xml_with_str(&bufs, text)
     }
 }
 
@@ -200,22 +240,34 @@ impl RSSChannel {
     }
 }
 
-impl FromStr for RSSChannel {
-    type Err = fast_xml::Error;
-
-    fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
-        let bufs = BufPool::new(16, 4096);
-
-        Self::from_xml_with_str(&bufs, text)
-    }
+#[wasm_bindgen]
+#[derive(Debug, Serialize)]
+#[serde(rename = "image")]
+pub struct ChannelImage {
+	url: Option<String>,
 }
 
-#[wasm_bindgen(js_name = getFeedMeta)]
-pub fn get_feed_meta(rss_text: &str) -> RSSChannel {
-    RSSChannel::from_str(rss_text).unwrap()
-}
+impl FromXmlWithReader for ChannelImage {
+	fn from_xml_with_reader<B: std::io::BufRead>(bufs: &BufPool, reader: &mut Reader<B>) -> fast_xml::Result<Self> {
+			let mut url = None;
 
-#[wasm_bindgen(js_name = getFeedJSON)]
-pub fn get_feed_json(rss_text: &str) -> JsValue {
-    get_feed_meta(rss_text).json()
+			let mut  buf = bufs.pop();
+
+			loop {
+				match reader.read_event(&mut buf) {
+					Ok(Event::Start(ref e)) => match reader.decode(e.name())? {
+						"url" => url = TextOrCData::from_xml_with_reader(bufs, reader)?,
+						_ => { SkipThisElement::from_xml_with_reader(bufs, reader)?; }
+					},
+					Ok(Event::End(_) | Event::Eof) => break,
+					Ok(_) => (),
+
+					Err(e) => return Err(e),
+				}
+			}
+
+			Ok(Self {
+				url
+			})
+	}
 }
