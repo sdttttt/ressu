@@ -23,6 +23,11 @@ pub struct RSSChannel {
 
     url: Option<String>,
 
+		language: Option<String>,
+		
+		#[serde(rename = "webMaster")]
+		web_master: Option<String>,
+
     posts: Vec<ChannelItem>,
 }
 
@@ -65,6 +70,8 @@ impl FromXmlWithReader for RSSChannel {
         let mut title = None;
         let mut description = None;
         let mut url = None;
+				let mut language = None;
+				let mut web_master = None;
         let mut posts = Vec::<ChannelItem>::new();
 
         reader.trim_text(true);
@@ -97,6 +104,14 @@ impl FromXmlWithReader for RSSChannel {
                                     "link" => {
                                         url = TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
+
+																		"language" => {
+																			language = TextOrCData::from_xml_with_reader(bufs, reader)?
+																		}
+
+																		"webMaster" => {
+																			web_master = TextOrCData::from_xml_with_reader(bufs, reader)?
+																		}
 
                                     "item" => {
                                         let item =
@@ -141,6 +156,8 @@ impl FromXmlWithReader for RSSChannel {
             title,
             description,
             url,
+						language,
+						web_master,
             posts,
         })
 	}

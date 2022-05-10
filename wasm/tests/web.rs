@@ -27,7 +27,8 @@ fn perf_now() -> f64 {
 
 fn record_parse_rss_perf_from_text(rss_text: &str) {
 	let start_time = perf_now();
-	RSSChannel::from_str(rss_text).unwrap();
+	let rss = RSSChannel::from_str(rss_text).unwrap();
+	console_log!("{:?}", rss);
   let end_time = perf_now();
   console_log!("Time: {}ms", end_time - start_time);
 }

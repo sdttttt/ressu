@@ -17,15 +17,19 @@ use crate::SkipThisElement;
 pub struct ChannelItem {
 	
     title: Option<String>,
-
 	
     description: Option<String>,
 
-	#[serde(rename = "pubDate")]
+		#[serde(rename = "pubDate")]
     pub_date: Option<String>,
 
+		guid: Option<String>,
 	
     link: Option<String>,
+
+		author: Option<String>,
+
+		category: Vec<String>,
 }
 
 impl FromXmlWithStr for ChannelItem {
@@ -66,7 +70,10 @@ impl FromXmlWithReader for ChannelItem {
         let mut title = None;
         let mut description = None;
         let mut pub_date = None;
+				let mut guid = None;
         let mut link = None;
+				let mut author = None;
+				let mut category = Vec::<String>::new();
 
         reader.trim_text(true);
         let mut buf = bufs.pop();
@@ -78,9 +85,20 @@ impl FromXmlWithReader for ChannelItem {
 
                     "pubDate" => pub_date =  TextOrCData::from_xml_with_reader(bufs, reader)?,
 
+										"guid" => guid = TextOrCData::from_xml_with_reader(bufs, reader)?,
+
                     "link" => link = TextOrCData::from_xml_with_reader(bufs, reader)?,
 
                     "description" => description =  TextOrCData::from_xml_with_reader(bufs, reader)?,
+
+										"author" => author = TextOrCData::from_xml_with_reader(bufs, reader)?,
+
+										"category" => {
+											let category_item = TextOrCData::from_xml_with_reader(bufs, reader)?;
+											if let Some(c) = category_item {
+												category.push(c);
+											}
+										},
 
                     _ => {
                         SkipThisElement::from_xml_with_reader(bufs, reader)?;
@@ -102,7 +120,10 @@ impl FromXmlWithReader for ChannelItem {
             title,
             description,
             pub_date,
+						guid,
             link,
+						author,
+						category
         })
 	}
 }
