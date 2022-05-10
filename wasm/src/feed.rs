@@ -95,8 +95,6 @@ impl FromXmlWithReader for RSSChannel {
                     "channel" => {
                         let mut cbuf = bufs.pop();
 
-                        let mut count = 0u64;
-
                         loop {
                             match reader.read_event(&mut cbuf) {
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
@@ -132,7 +130,6 @@ impl FromXmlWithReader for RSSChannel {
                                     "item" => {
                                         let item = ChannelItem::from_xml_with_reader(bufs, reader)?;
                                         posts.push(item);
-                                        count += 1;
                                     }
 
                                     _ => {
@@ -147,7 +144,7 @@ impl FromXmlWithReader for RSSChannel {
                             cbuf.clear()
                         }
 
-                        console_log!("item count: {}", count);
+                        console_log!("item count: {}", posts.len());
                     }
 
                     _ => (),
