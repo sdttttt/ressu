@@ -104,3 +104,15 @@ fn test_parse_yystv_rss_from_str() {
 	record_parse_rss_perf_from_text(include_str!("../data/YYSTV_RSS2.0.xml"));
 	console_log!("{}", "YYSTV");
 }
+
+#[wasm_bindgen_test]
+fn test_parse_wanggen_rss_from_str() {
+	record_parse_rss_perf_from_text(include_str!("../data/WANG_GEN_RSS2.0.xml"));
+	console_log!("{}", "YYSTV");
+}
+
+#[wasm_bindgen_test]
+fn test_parse_ai_rss_from_str() {
+	record_parse_rss_perf_from_text(include_str!("../data/AI_RSS2.0.xml"));
+	console_log!("{}", "YYSTV");
+}
