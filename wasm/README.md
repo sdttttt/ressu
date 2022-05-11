@@ -20,11 +20,4 @@ from wasm_bindgen_test:
 - It takes **16ms** to process about **100 items**, each of which is about **2.5kb** in size. (data/JUMP_PS5_ALL_RSS2.0.xml)
 - It takes **67ms** to process about **1600 items**, each of which is about **0.5kb** in size. (data/QIDIAN_RSS2.0.xml)
 
-
-### PC2
-
-Browser: `Firefox 100.0`
-Hardware: `CPU: i7-8750H` `Mem: 16G`
-
-![图片](https://user-images.githubusercontent.com/42728902/167526384-2fde6f5e-bbd1-450f-b22f-ce8995d869c9.png)
-
+> The above figures are from development mode, which are expected to release mode even better
