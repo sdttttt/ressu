@@ -1,29 +1,43 @@
-import { listen } from "@tauri-apps/api/event";
+import { Event, EventCallback, listen } from "@tauri-apps/api/event";
+import store from "@store/index"
+import { feedsDataLocalSync } from "@database/feeds";
+import { Feeds, RSSChannel } from "@store/typing";
+import { pullRSSChannelAsync } from "@store/feeds";
 
 export enum RessuEvent {
-	SyncLocal = "ressu://sync-local",
+	SyncFeedsToLocal = "ressu://sync-feeds-to-local",
 
-	PullAllRSS = "ressu://pull-all-rss"
+	PullAllRSSChannel = "ressu://pull-all-rss-channel"
 }
 
 const uninstallFnMap = {
-	[RessuEvent.SyncLocal]: () => {},
-	[RessuEvent.PullAllRSS]: () => {}
+	[RessuEvent.SyncFeedsToLocal]: () => {},
+	[RessuEvent.PullAllRSSChannel]: () => {}
 };
+
+const handleSyncFeedsToLocal: EventCallback<Feeds | undefined> = async ({ payload }: Event<Feeds | undefined>) => {
+	const feeds = payload ? payload : store.getState().feeds;
+	await feedsDataLocalSync(feeds);
+};
+
+const handlePullAllRSSChannel: EventCallback<RSSChannel[] | undefined> = async ({ payload }: Event<RSSChannel[] | undefined>) => {
+	const channels = payload ? payload : store.getState().feeds.channels;
+	await store.dispatch(pullRSSChannelAsync(channels));
+}
 
 /**
  * `install` is a function that returns a promise that resolves to a function that, when called, will
  * remove the event listener that was added to the `RessuEvent.SyncLocal` event.
  */
 export const install = async () => {
-	uninstallFnMap[RessuEvent.SyncLocal] = await listen(
-		RessuEvent.SyncLocal,
-		async () => {}
+	uninstallFnMap[RessuEvent.SyncFeedsToLocal] = await listen(
+		RessuEvent.SyncFeedsToLocal,
+		handleSyncFeedsToLocal
 	);
 
-	uninstallFnMap[RessuEvent.PullAllRSS] = await listen(
-		RessuEvent.PullAllRSS,
-		async () => {}
+	uninstallFnMap[RessuEvent.PullAllRSSChannel] = await listen(
+		RessuEvent.PullAllRSSChannel,
+		handlePullAllRSSChannel
 	);
 };
 

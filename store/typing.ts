@@ -33,7 +33,7 @@ export type RSSChannel = {
 		url?: string;
 	};
 
-	posts?: Post[];
+	posts: Post[];
 
 	copyright?: string;
 };
