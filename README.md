@@ -25,6 +25,7 @@ After WASM compile complete, need **reinstall node_modules** to found wasm libra
 
 - [x] RSS Parse.
 - [x] Local Storage.
+- [ ] Channel Data Sync.
 - [ ] UI Design.
 
 **Stage 2:**
