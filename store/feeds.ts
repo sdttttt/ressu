@@ -70,8 +70,13 @@ const feedsSlice = createSlice({
 	},
 
 	extraReducers: builder => {
-		builder.addCase(addRSSChannelAsync.fulfilled, (state, { payload }) => {
-			console.log(payload, state);
+		builder.addCase(addRSSChannelAsync.fulfilled, (state, { payload: channel }) => {
+			console.log(channel, state);
+			if (channel) {
+				state.channels.push(channel);
+			} else {
+				toast.error("无效的RSS订阅信息。");
+			}
 		});
 
 
