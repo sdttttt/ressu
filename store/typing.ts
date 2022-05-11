@@ -19,7 +19,23 @@ export type RSSChannel = {
 
 	description: string;
 
+	language?: string;
+
+	webMaster?: string;
+
+	generator?: string;
+
+	lastBuildDate?: string;
+
+	ttl?: number;
+
+	image?: {
+		url?: string;
+	};
+
 	posts?: Post[];
+
+	copyright?: string;
 };
 
 export type Post = {
@@ -27,10 +43,16 @@ export type Post = {
 
 	link: string;
 
+	guid: string;
+
 	// timestrap
 	pubDate: string;
 
 	descriptioin: string;
+
+	author?: string;
+
+	category: string[];
 
 	read?: boolean;
 };
