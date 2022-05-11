@@ -3,7 +3,7 @@ import { Low } from "lowdb";
 import { JSONFile } from "./adapters/TauriJSONFile";
 import { appDir, join } from "@tauri-apps/api/path";
 import { DATABASES_PATH, postFileName, POSTS_DB_DIR } from "./names";
-import { map } from "lodash-es";
+import { map, uniqWith, concat } from "lodash-es";
 
 type DayPostMap = {
 	[key: string]: Post[];
@@ -35,7 +35,12 @@ export async function postDataLocalSync(channel: RSSChannel) {
 
 	const writeFull = map(dayToPostMap, async (posts, dateKey) => {
 		const db = await getPostsDB(channel, dateKey);
-		db.data = posts;
+		db.read();
+		const mergeData = concat(db.data || [], posts);
+		db.data =
+			uniqWith(mergeData, (a, b) =>
+				a.guid === b.guid && a.title === b.title);
+				
 		await db.write();
 	});
 
