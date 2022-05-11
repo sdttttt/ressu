@@ -77,7 +77,10 @@ const feedsSlice = createSlice({
 			console.log(channel, state);
 			if (channel) {
 
-				if (state.channels.map(t => t.url).includes(channel.url)) return;
+				if (state.channels.map(t => t.url).includes(channel.url)) { 
+					toast.warning("该订阅源已存在");
+					return; 
+				}
 
 				state.channels.push(channel);
 				feedsDataLocalSync(state);
