@@ -209,7 +209,7 @@ impl FromStr for RSSChannel {
     ///
     /// A Result<RSSChannel, fast_xml::Error>
     fn from_str(text: &str) -> fast_xml::Result<RSSChannel> {
-        let bufs = BufPool::new(16, 4096);
+        let bufs = BufPool::new(16, 2048);
 
         Self::from_xml_with_str(&bufs, text)
     }
