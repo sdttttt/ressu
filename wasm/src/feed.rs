@@ -272,6 +272,7 @@ impl FromXmlWithReader for ChannelImage {
 
                 Err(e) => return Err(e),
             }
+            buf.clear();
         }
 
         Ok(Self { url })
