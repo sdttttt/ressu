@@ -33,6 +33,7 @@ After WASM compile complete, need **reinstall node_modules** to found wasm libra
 - [ ] Complete settings options. 
 - [ ] Dark mode.
 - [ ] Feed Group.
+- [ ] Layout mode.
 
 ## LICENSE
 
