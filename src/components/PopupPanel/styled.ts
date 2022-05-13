@@ -8,6 +8,19 @@ export const Frame = styled.div`
 	padding: 10px;
 `;
 
+export const ContainerShadow = styled.div<{
+	open: boolean;
+}>`
+	display: ${({ open }) => (open ? "block" : "none")};
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	background-color: white;
+	opacity: 0.6;
+	z-index: 5;
+	transition: all .3s;
+`;
+
 export const Container = styled.div<{
 	open: boolean;
 	borderColor?: string;

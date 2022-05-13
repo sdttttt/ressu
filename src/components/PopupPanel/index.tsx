@@ -1,5 +1,6 @@
 import { ReactNode, MouseEventHandler } from "react";
 import {
+	ContainerShadow,
 	Frame,
 	Container,
 	ConfirmDiv,
@@ -37,7 +38,7 @@ type PropsType = {
 	/**
 	 * cancel button click callback;
 	 */
-	onCancel?: MouseEventHandler<HTMLButtonElement>;
+	onCancel: () => void;
 
 	children?: ReactNode;
 };
@@ -70,12 +71,20 @@ export default (props: PropsType) => {
 	);
 
 	return (
-		<Container open={open} borderColor={"#DDD"}>
-			<HeaderBar></HeaderBar>
+		<>
+			<ContainerShadow
+				open={open}
+			onClick={() => 
+				onCancel()
+			}
+			/>
+			<Container open={open} borderColor={"#DDD"}>
+				<HeaderBar></HeaderBar>
 
-			<Frame>{children}</Frame>
+				<Frame>{children}</Frame>
 
-			{confirm ? <ConfirmBar /> : ""}
-		</Container>
+				{confirm ? <ConfirmBar /> : ""}
+			</Container>
+		</>
 	);
 };

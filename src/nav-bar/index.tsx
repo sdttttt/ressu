@@ -6,6 +6,7 @@ import isURL from "validator/es/lib/isURL";
 import { useDispatch } from "react-redux";
 import { addRSSChannelAsync } from "@store/feeds";
 import { toast } from "react-hot-toast";
+import { infoDelay } from "@/utils/noitce";
 
 export default function NavBar() {
 	const [additOpen, setAdditOpen] = useState(false);
@@ -24,10 +25,10 @@ export default function NavBar() {
 		console.log(url);
 		setAdditOpen(false);
 		if (isURL(url)) {
-			toast.success("添加：" + url);
+			infoDelay("添加：" + url);
 			dispatch(addRSSChannelAsync(url));
 		} else {
-			toast.success("Wow so easy!");
+			infoDelay("请输入有效的RSS订阅地址");
 		}
 	};
 

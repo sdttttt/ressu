@@ -38,6 +38,7 @@ const FeedAddit = (props: PropsType) => {
 				description="请输入需要添加的RSS订阅地址."
 				confirm
 				onConfirm={handleOnSubmit}
+				onCancel={handleOnClose}
 			>
 				<RessuInput
 					prefix={<FeedIcon />}
