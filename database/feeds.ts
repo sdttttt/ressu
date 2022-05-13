@@ -76,7 +76,8 @@ if (import.meta.vitest) {
 					description: "111",
 					posts: [{ title: "hellow", link: "hellow", pubDate: "", descriptioin: "1", guid: "hellow", category:[] }]
 				}
-			]
+			],
+			filterKeyword: ""
 		};
 
 		const realLocalData = clone(feeds);

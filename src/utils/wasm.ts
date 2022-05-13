@@ -1,6 +1,6 @@
 import { RSSChannel } from "@store/typing";
 import init, { getFeedMeta } from "wasm";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { fetchRSSText } from "./http";
 
 const wasmState = {

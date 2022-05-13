@@ -3,7 +3,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds, RSSChannel } from "./typing";
 import isURL from "validator/es/lib/isURL";
 import { parseRSSFromURL } from "@/utils/wasm";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast"
 import { remove as lodashRemove }  from "lodash-es"
 import { concat, uniqWith } from "lodash-es";
 
@@ -78,7 +78,7 @@ const feedsSlice = createSlice({
 			if (channel) {
 
 				if (state.channels.map(t => t.url).includes(channel.url)) { 
-					toast.warning("该订阅源已存在");
+					toast.error("该订阅源已存在");
 					return; 
 				}
 
@@ -118,6 +118,11 @@ const feedsSlice = createSlice({
 
 export const selectFeeds = (state: RessuStore) => state.feeds;
 
+/**
+ * It takes the state of the store and returns a filtered list of channels
+ * @param {RessuStore} state - RessuStore
+ * @returns A function that takes a state and returns a filtered array of channels.
+ */
 export const selectFeedsByKeyword = (state: RessuStore) => {
 	const { filterKeyword, channels } = state.feeds;
 	return channels.filter(ch => ch.title.includes(filterKeyword));
