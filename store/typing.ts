@@ -10,6 +10,7 @@ export type RessuStore = ReturnType<typeof store.getState>;
 
 export type Feeds = {
 	channels: RSSChannel[];
+	filterKeyword: string;
 };
 
 export type RSSChannel = {

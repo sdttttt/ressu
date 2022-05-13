@@ -1,15 +1,15 @@
-import { emit } from "@tauri-apps/api/event";
 import { feedsDataLocalGet, feedsDataLocalSync } from "@database/feeds";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds, RSSChannel } from "./typing";
 import isURL from "validator/es/lib/isURL";
 import { parseRSSFromURL } from "@/utils/wasm";
 import { toast } from "react-toastify";
-import { RessuEvent } from "@/listens";
+import { remove as lodashRemove }  from "lodash-es"
 import { concat, uniqWith } from "lodash-es";
 
 const initialState: Feeds = {
-	channels: []
+	channels: [],
+	filterKeyword: ""
 };
 
 /**
@@ -67,8 +67,8 @@ const feedsSlice = createSlice({
 
 		remove: (state: Feeds , url: PayloadAction<string>) => {
 			const { channels } = state;
-			state.channels = channels.filter(rss => rss.url != url.payload);
-		}
+			lodashRemove(channels, (ch: RSSChannel) => ch.url === url.payload);
+		},
 	},
 
 	extraReducers: builder => {
@@ -117,6 +117,12 @@ const feedsSlice = createSlice({
 });
 
 export const selectFeeds = (state: RessuStore) => state.feeds;
+
+export const selectFeedsByKeyword = (state: RessuStore) => {
+	const { filterKeyword, channels } = state.feeds;
+	return channels.filter(ch => ch.title.includes(filterKeyword));
+};
+
 export const selectChannels = (state: RessuStore) => state.feeds.channels;
 export const selectChannelLength = (state: RessuStore) =>
 	state.feeds.channels.length;
