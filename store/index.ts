@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import feeds from "./feeds";
-import message from "./message";
+import uiState from "./ui-state";
 import settings from "./settings";
 
 export default configureStore({
 	reducer: {
 		settings,
 		feeds,
-		message
+		"ui-state": uiState
 	}
 });

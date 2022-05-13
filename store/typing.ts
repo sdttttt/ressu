@@ -58,8 +58,26 @@ export type Post = {
 	read?: boolean;
 };
 
-export type Message = {
-	contents: string[];
+export type UIState = {
+	messages: string[];
+	statusBar: {
+		type: StatusBarType,
+		text: StatusBarText,
+	},
+	currentChannelIndex?: number;
+};
+
+export enum StatusBarType {
+	Buys,
+	Free,
+};
+
+export enum StatusBarText {
+	Free = "当前没有正在执行的任务",
+
+	PullChannel = "正在拉取频道",
+	
+	SyncLocal = "正在同步本地数据",
 };
 
 export type Settings = {};
