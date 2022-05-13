@@ -5,13 +5,13 @@ import { Pane, IconButton, PlusIcon, CogIcon } from "evergreen-ui";
 import isURL from "validator/es/lib/isURL";
 import { useDispatch } from "react-redux";
 import { addRSSChannelAsync } from "@store/feeds";
-import { toast } from "react-hot-toast";
 import { infoDelay } from "@/utils/noitce";
+import { AppDispath } from "@store/typing";
 
 export default function NavBar() {
 	const [additOpen, setAdditOpen] = useState(false);
 
-	const dispatch = useDispatch();
+	const dispatch = useDispatch<AppDispath>();
 
 	const handleOpenAddit = () => {
 		setAdditOpen(true);

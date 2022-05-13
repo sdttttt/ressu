@@ -8,6 +8,8 @@ export type StoreAction = {
 
 export type RessuStore = ReturnType<typeof store.getState>;
 
+export type AppDispath = typeof store.dispatch;
+
 export type Feeds = {
 	channels: RSSChannel[];
 	filterKeyword: string;

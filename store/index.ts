@@ -3,10 +3,12 @@ import feeds from "./feeds";
 import uiState from "./ui-state";
 import settings from "./settings";
 
-export default configureStore({
+const store =  configureStore({
 	reducer: {
 		settings,
 		feeds,
 		"ui-state": uiState
 	}
 });
+
+export default store;

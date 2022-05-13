@@ -25,8 +25,7 @@ const FeedAddit = (props: PropsType) => {
 	};
 
 	// URL变化
-	const handleChangeUrl = (e: ChangeEvent<HTMLInputElement>) => {
-		const url = e.target.value;
+	const handleChangeUrl = (url: string) => {
 		setURL(url);
 	};
 

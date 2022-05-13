@@ -2,18 +2,23 @@ import * as React from "react";
 import { InputContainer, InputPrefix, InInput } from "./styled";
 
 type PropsType = {
-	onChange?: React.ChangeEventHandler;
-	onInput?: React.FormEventHandler;
+	onChange?: (_: string) => void;
 	prefix?: React.ReactNode;
 };
 
 const RessuInput = (props: PropsType) => {
-	const { prefix, onChange, onInput } = props;
+	const { prefix, onChange } = props;
+
+	// URL变化
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		onChange ? onChange(value) : null;
+	};
 
 	return (
 		<InputContainer>
 			{prefix ? <InputPrefix>{prefix}</InputPrefix> : {}}
-			<InInput onChange={onChange} onInput={onInput}></InInput>
+			<InInput onChange={handleChange}></InInput>
 		</InputContainer>
 	);
 };

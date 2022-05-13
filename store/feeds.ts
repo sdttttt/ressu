@@ -69,6 +69,10 @@ const feedsSlice = createSlice({
 			const { channels } = state;
 			lodashRemove(channels, (ch: RSSChannel) => ch.url === url.payload);
 		},
+
+		keyword: (state: Feeds, { payload }: PayloadAction<string>) => {
+			state.filterKeyword = payload;
+		}
 	},
 
 	extraReducers: builder => {
@@ -132,6 +136,6 @@ export const selectChannels = (state: RessuStore) => state.feeds.channels;
 export const selectChannelLength = (state: RessuStore) =>
 	state.feeds.channels.length;
 
-export const { remove } = feedsSlice.actions;
+export const {initialize, remove, keyword } = feedsSlice.actions;
 
 export default feedsSlice.reducer;
