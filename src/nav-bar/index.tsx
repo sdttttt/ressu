@@ -19,9 +19,7 @@ export default function NavBar() {
 
 	const handleCloseAddit = () => {
 		setAdditOpen(false);
-	};
-
-	const handleSubmitAddit = (url: string) => {
+		const handleSubmitAddit = (url: string) => {
 		console.log(url);
 		setAdditOpen(false);
 		if (isURL(url)) {
