@@ -1,8 +1,9 @@
 import { Event, EventCallback, listen } from "@tauri-apps/api/event";
 import store from "@store/index"
 import { feedsDataLocalSync } from "@database/feeds";
-import { Feeds, RSSChannel } from "@store/typing";
+import { Feeds, RSSChannel, StatusBarText } from "@store/typing";
 import { pullRSSChannelAsync } from "@store/feeds";
+import { statusBarBuys, statusBarFree } from "@store/ui-state";
 
 export enum RessuEvent {
 	SyncFeedsToLocal = "ressu://sync-feeds-to-local",
@@ -16,13 +17,21 @@ const uninstallFnMap = {
 };
 
 const handleSyncFeedsToLocal: EventCallback<Feeds | undefined> = async ({ payload }: Event<Feeds | undefined>) => {
+	store.dispatch(statusBarBuys(StatusBarText.SyncLocal));
+	
 	const feeds = payload ? payload : store.getState().feeds;
 	await feedsDataLocalSync(feeds);
+	
+	store.dispatch(statusBarFree(StatusBarText.SyncLocal));
 };
 
 const handlePullAllRSSChannel: EventCallback<RSSChannel[] | undefined> = async ({ payload }: Event<RSSChannel[] | undefined>) => {
+	store.dispatch(statusBarBuys(StatusBarText.PullChannel));
+
 	const channels = payload ? payload : store.getState().feeds.channels;
 	await store.dispatch(pullRSSChannelAsync(channels));
+
+	store.dispatch(statusBarFree(StatusBarText.PullChannel));
 }
 
 /**
