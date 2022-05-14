@@ -19,7 +19,7 @@ export const addRSSChannelAsync = createAsyncThunk(
 	"channels/add",
 	async (url: string) => {
 		if (isURL(url)) {
-			return parseRSSFromURL(url);
+			return await parseRSSFromURL(url);
 		} else {
 			toast.error("URL格式错误");
 		}
@@ -42,9 +42,9 @@ export const pullRSSChannelAsync = createAsyncThunk(
 	}
 );
 
-export const initinalizeFeedsFromLocal = createAsyncThunk(
+export const initinalizeChannelsFromLocal = createAsyncThunk(
 	"channels/initFromLocal",
-	async (): Promise<Feeds> => {
+	async (): Promise<RSSChannel[]> => {
 		let feedsLocal = await feedsDataLocalGet();
 		console.log(feedsLocal);
 		if (feedsLocal === null) {
@@ -52,8 +52,8 @@ export const initinalizeFeedsFromLocal = createAsyncThunk(
 			await feedsDataLocalSync(initialState);
 			feedsLocal = initialState;
 		}
-
-		return feedsLocal;
+		console.log("init from = ", feedsLocal);
+		return feedsLocal.channels;
 	}
 );
 
@@ -77,7 +77,8 @@ const feedsSlice = createSlice({
 
 	extraReducers: builder => {
 
-		builder.addCase(addRSSChannelAsync.fulfilled, (state, { payload: channel }) => {
+
+		builder.addCase(addRSSChannelAsync.fulfilled, (state: Feeds, { payload: channel }) => {
 			console.log(channel, state);
 			if (channel) {
 
@@ -87,7 +88,6 @@ const feedsSlice = createSlice({
 				}
 
 				state.channels.push(channel);
-				feedsDataLocalSync(state);
 				return state;
 			} else {
 				toast.error("无效的RSS订阅信息。");
@@ -95,7 +95,7 @@ const feedsSlice = createSlice({
 		});
 
 
-		builder.addCase(pullRSSChannelAsync.fulfilled, (state, { payload: newCh }) => {
+		builder.addCase(pullRSSChannelAsync.fulfilled, (state: Feeds, { payload: newCh }) => {
 			const { channels } = state;
 			for (let x = 0; x < channels.length; x++) {
 				for (let y = 0; y < newCh.length; y++) {
@@ -112,9 +112,9 @@ const feedsSlice = createSlice({
 
 
 		builder.addCase(
-			initinalizeFeedsFromLocal.fulfilled,
-			(state, { payload }: PayloadAction<Feeds>) => {
-				state.channels = payload.channels;
+			initinalizeChannelsFromLocal.fulfilled,
+			(state, { payload }: PayloadAction<RSSChannel[]>) => {
+				state.channels = payload || [];
 			}
 		);
 	}

@@ -7,6 +7,8 @@ import { useDispatch } from "react-redux";
 import { addRSSChannelAsync } from "@store/feeds";
 import { infoDelay } from "@/utils/noitce";
 import { AppDispath } from "@store/typing";
+import { emit } from "@tauri-apps/api/event";
+import { RessuEvent } from "@/listens";
 
 export default function NavBar() {
 	const [additOpen, setAdditOpen] = useState(false);
@@ -20,12 +22,13 @@ export default function NavBar() {
 	const handleCloseAddit = () => {
 		setAdditOpen(false);
 	}
-		const handleSubmitAddit = (url: string) => {
+		const handleSubmitAddit = async (url: string) => {
 		console.log(url);
 		setAdditOpen(false);
 		if (isURL(url)) {
 			infoDelay("添加：" + url);
-			dispatch(addRSSChannelAsync(url));
+			await dispatch(addRSSChannelAsync(url));
+			emit(RessuEvent.SyncFeedsToLocal);
 		} else {
 			infoDelay("请输入有效的RSS订阅地址");
 		}

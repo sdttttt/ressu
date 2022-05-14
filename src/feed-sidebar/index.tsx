@@ -11,7 +11,7 @@ export default function FeedSidebar() {
 	const dispatch = useDispatch<AppDispath>();
 	const channels = useSelector(selectFeedsByKeyword);
 
-	const channelsJSX = channels.map(t => <div> {t.title} </div>);
+	const channelsJSX = channels.map(t => <div key={t.url}> {t.title} </div>);
 
 	const handleKeywordChange = (e: string) => {
 		dispatch(keyword(e));
