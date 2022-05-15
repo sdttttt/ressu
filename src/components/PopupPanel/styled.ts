@@ -41,7 +41,7 @@ export const Container = styled.div<{
 	left: ${() => computeFixedLeftDistanceFromPercent(35)};
 	min-width: 300px;
 	height: ${props => props.height || 200}px;
-	box-shadow: 1px 1px 10px #eee;
+	box-shadow: 0px 0px 0px #eee;
 	border: 1px ${props => props.borderColor || normalBorder} solid;
 	background-color: #fff;
 	border-radius: 4px;

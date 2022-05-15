@@ -35,9 +35,11 @@ const messageSlice = createSlice({
 	}
 });
 
-export const selectMessage = (store: RessuStore) => store["ui-state"];
-export const selectMessageLength = (store: RessuStore) =>
-	store["ui-state"].messages.length;
+export const selectMessage = (store: RessuStore) => store.uiState.messages;
+
+export const selectChannelIndex = (store: RessuStore) => store.uiState.currentChannelIndex;
+
+export const selectMessageLength = (store: RessuStore) => store.uiState.messages.length;
 
 export const { 
 	send, selectChannel,

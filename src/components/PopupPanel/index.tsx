@@ -8,7 +8,8 @@ import {
 	TitleH4,
 	DescriptionSpan
 } from "./styled";
-import { Button } from "evergreen-ui";
+import { Button, Overlay } from "evergreen-ui";
+
 type PropsType = {
 	/**
 	 * popup display.
@@ -72,12 +73,12 @@ export default (props: PropsType) => {
 
 	return (
 		<>
-			<ContainerShadow
-				open={open}
-			onClick={() => 
-				onCancel()
-			}
-			/>
+			<Overlay isShown={open} onBeforeClose={() => {
+				onCancel();
+				return true;
+			}}>
+				{}
+			</Overlay>
 			<Container open={open} borderColor={"#DDD"}>
 				<HeaderBar></HeaderBar>
 

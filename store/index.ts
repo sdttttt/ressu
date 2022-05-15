@@ -7,7 +7,7 @@ const store =  configureStore({
 	reducer: {
 		settings,
 		feeds,
-		"ui-state": uiState
+		uiState,
 	}
 });
 

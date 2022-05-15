@@ -51,7 +51,7 @@ export type Post = {
 	// timestrap
 	pubDate: string;
 
-	descriptioin: string;
+	description: string;
 
 	author?: string;
 

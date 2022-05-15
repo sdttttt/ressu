@@ -1,27 +1,46 @@
 import * as React from "react";
-import RessuInput from "@/components/RessuInput";
-import { SearchIcon } from "evergreen-ui";
-import { keyword, selectFeedsByKeyword } from "@store/feeds";
+import { SearchInput } from "evergreen-ui";
+import { keyword, selectFeedsByKeyword,  } from "@store/feeds";
+import { selectChannel } from "@store/ui-state"
 import { useSelector } from "react-redux";
-import { SidebarContainer } from "./styled";
-import { useDispatch } from "react-redux"
+import {
+	SidebarContainer,
+	SearchInputContainer,
+	ChannelItem,
+	ChannelItemsContainer
+} from "./styled";
+import { useDispatch } from "react-redux";
 import { AppDispath } from "@store/typing";
 
 export default function FeedSidebar() {
 	const dispatch = useDispatch<AppDispath>();
 	const channels = useSelector(selectFeedsByKeyword);
 
-	const channelsJSX = channels.map(t => <div key={t.url}> {t.title} </div>);
+	const channelsJSX = channels.map((t, i) => (
+		<ChannelItem key={t.url} onClick={() => handleChannelItemSelectChange(i)}> {t.title} </ChannelItem>
+	));
 
 	const handleKeywordChange = (e: string) => {
 		dispatch(keyword(e));
+	};
+
+	const handleChannelItemSelectChange = (index: number) => {
+		dispatch(selectChannel(index));
 	}
 
 	return (
 		<SidebarContainer>
-			<RessuInput onChange={handleKeywordChange}  prefix={<SearchIcon />}></RessuInput>
+			<SearchInputContainer>
+				<SearchInput
+					onChange={(e: { target: { value: string } }) =>
+						handleKeywordChange(e.target.value)
+					}
+				></SearchInput>
+			</SearchInputContainer>
 
-			{channels.length === 0 ? <h3> 暂无订阅源 </h3> : channelsJSX}
+			<ChannelItemsContainer>
+				{channels.length === 0 ? <p> 暂无订阅源 </p> : channelsJSX}
+			</ChannelItemsContainer>
 		</SidebarContainer>
 	);
 }

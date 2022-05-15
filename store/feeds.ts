@@ -3,8 +3,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RessuStore, Feeds, RSSChannel } from "./typing";
 import isURL from "validator/es/lib/isURL";
 import { parseRSSFromURL } from "@/utils/wasm";
-import { toast } from "react-hot-toast"
-import { remove as lodashRemove }  from "lodash-es"
+import { toast } from "react-hot-toast";
+import { remove as lodashRemove } from "lodash-es";
 import { concat, uniqWith } from "lodash-es";
 
 const initialState: Feeds = {
@@ -31,12 +31,13 @@ export const addRSSChannelAsync = createAsyncThunk(
  */
 export const pullRSSChannelAsync = createAsyncThunk(
 	"channels/pull",
-	async (channels: RSSChannel[]): Promise<(RSSChannel|undefined)[]> => {
-		const promiseResults: Promise<RSSChannel|undefined>[] = channels
-		.map(async (ch): Promise<RSSChannel|undefined> => {
-			const result = await parseRSSFromURL(ch.url);
-			return result;
-		});
+	async (channels: RSSChannel[]): Promise<(RSSChannel | undefined)[]> => {
+		const promiseResults: Promise<RSSChannel | undefined>[] = channels.map(
+			async (ch): Promise<RSSChannel | undefined> => {
+				const result = await parseRSSFromURL(ch.url);
+				return result;
+			}
+		);
 
 		return await Promise.all(promiseResults);
 	}
@@ -65,7 +66,7 @@ const feedsSlice = createSlice({
 			state.channels = payload.channels;
 		},
 
-		remove: (state: Feeds , url: PayloadAction<string>) => {
+		remove: (state: Feeds, url: PayloadAction<string>) => {
 			const { channels } = state;
 			lodashRemove(channels, (ch: RSSChannel) => ch.url === url.payload);
 		},
@@ -76,40 +77,44 @@ const feedsSlice = createSlice({
 	},
 
 	extraReducers: builder => {
+		builder.addCase(
+			addRSSChannelAsync.fulfilled,
+			(state: Feeds, { payload: channel }) => {
+				console.log(channel, state);
+				if (channel) {
+					if (state.channels.map(t => t.url).includes(channel.url)) {
+						toast.error("该订阅源已存在");
+						return;
+					}
 
-
-		builder.addCase(addRSSChannelAsync.fulfilled, (state: Feeds, { payload: channel }) => {
-			console.log(channel, state);
-			if (channel) {
-
-				if (state.channels.map(t => t.url).includes(channel.url)) { 
-					toast.error("该订阅源已存在");
-					return; 
+					state.channels.push(channel);
+					return state;
+				} else {
+					toast.error("无效的RSS订阅信息。");
 				}
-
-				state.channels.push(channel);
-				return state;
-			} else {
-				toast.error("无效的RSS订阅信息。");
 			}
-		});
+		);
 
-
-		builder.addCase(pullRSSChannelAsync.fulfilled, (state: Feeds, { payload: newCh }) => {
-			const { channels } = state;
-			for (let x = 0; x < channels.length; x++) {
-				for (let y = 0; y < newCh.length; y++) {
-					if (newCh[y] === undefined) continue;
-					if (newCh[y]!.url === channels[x].url) {
-						channels[x].posts = concat(newCh[y]!.posts, channels[x].posts);
-						channels[x].posts = uniqWith(channels[x].posts, (a, b) => a.guid === b.guid && a.title === b.title );
+		builder.addCase(
+			pullRSSChannelAsync.fulfilled,
+			(state: Feeds, { payload: newCh }) => {
+				const { channels } = state;
+				for (let x = 0; x < channels.length; x++) {
+					for (let y = 0; y < newCh.length; y++) {
+						if (newCh[y] === undefined) continue;
+						if (newCh[y]!.url === channels[x].url) {
+							channels[x].posts = concat(newCh[y]!.posts, channels[x].posts);
+							channels[x].posts = uniqWith(
+								channels[x].posts,
+								(a, b) => a.guid === b.guid && a.title === b.title
+							);
+						}
 					}
 				}
+				state.channels = channels;
+				return state;
 			}
-			state.channels = channels;
-			return state;
-		});
-
+		);
 
 		builder.addCase(
 			initinalizeChannelsFromLocal.fulfilled,
@@ -129,13 +134,28 @@ export const selectFeeds = (state: RessuStore) => state.feeds;
  */
 export const selectFeedsByKeyword = (state: RessuStore) => {
 	const { filterKeyword, channels } = state.feeds;
-	return channels.filter(ch => ch.title.includes(filterKeyword));
+	return channels.filter(ch =>
+		ch.title
+			.toLocaleLowerCase()
+			.trim()
+			.includes(filterKeyword.toLocaleLowerCase().trim())
+	);
 };
 
 export const selectChannels = (state: RessuStore) => state.feeds.channels;
+
+export const selectChannelByIndex = (index: number) => (state: RessuStore) => state.feeds.channels[index];
+
+export const selectChannelPostsByIndex = (index: number | undefined) => (state: RessuStore) => {
+	if (!index || isNaN(index)) {
+		return [];
+	}
+	return state.feeds.channels[index!].posts
+};
+
 export const selectChannelLength = (state: RessuStore) =>
 	state.feeds.channels.length;
 
-export const {initialize, remove, keyword } = feedsSlice.actions;
+export const { initialize, remove, keyword } = feedsSlice.actions;
 
 export default feedsSlice.reducer;
