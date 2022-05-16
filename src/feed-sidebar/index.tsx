@@ -1,13 +1,18 @@
 import * as React from "react";
-import { SearchInput } from "evergreen-ui";
-import { keyword, selectFeedsByKeyword } from "@store/feeds";
-import { selectChannel } from "@store/ui-state";
+import { SearchInput, Icon } from "evergreen-ui";
 import { useSelector } from "react-redux";
+
+import { keyword, selectFeedsByKeyword } from "@store/feeds";
+import { selectChannel, selectChannelIndex } from "@store/ui-state";
 import {
 	SidebarContainer,
 	SearchInputContainer,
 	ChannelItem,
-	ChannelItemsContainer
+	ChannelItemsContainer,
+	ChannelItemText,
+	ChannelItemLoading,
+	rotateNinjaIcon,
+	ChannelItemSelectedBar
 } from "./styled";
 import { useDispatch } from "react-redux";
 import { AppDispath } from "@store/typing";
@@ -15,11 +20,23 @@ import { AppDispath } from "@store/typing";
 export default function FeedSidebar() {
 	const dispatch = useDispatch<AppDispath>();
 	const channels = useSelector(selectFeedsByKeyword);
+	const currentChannelIndex = useSelector(selectChannelIndex);
 
 	const channelsJSX = channels.map((t, i) => (
 		<ChannelItem key={t.url} onClick={() => handleChannelItemSelectChange(i)}>
-			{" "}
-			{t.title}{" "}
+			<ChannelItemSelectedBar
+				open={currentChannelIndex === i}
+			></ChannelItemSelectedBar>
+
+			<ChannelItemText selected={currentChannelIndex === i}>
+				{t.title}
+			</ChannelItemText>
+
+			{t.synced ? undefined : (
+				<ChannelItemLoading>
+					<Icon icon={rotateNinjaIcon} size={13} height={"100%"} />
+				</ChannelItemLoading>
+			)}
 		</ChannelItem>
 	));
 

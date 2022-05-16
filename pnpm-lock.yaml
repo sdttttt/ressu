@@ -40,6 +40,7 @@ specifiers:
   vite-plugin-banner: ^0.2.0
   vitest: ^0.10.0
   wasm: link:wasm\pkg
+  xss: ^1.0.11
 
 dependencies:
   '@emotion/react': registry.npmmirror.com/@emotion/react/11.9.0_0191d4f7d13d8e58ed45c49e4813c090
@@ -57,6 +58,7 @@ dependencies:
   react-redux: registry.npmmirror.com/react-redux/7.2.8_react-dom@17.0.2+react@17.0.2
   validator: registry.npmmirror.com/validator/13.7.0
   wasm: link:wasm/pkg
+  xss: registry.npmmirror.com/xss/1.0.11
 
 devDependencies:
   '@babel/core': registry.npmmirror.com/@babel/core/7.17.10
@@ -185,15 +187,6 @@ packages:
     resolution: {integrity: sha512-GryiOJmNcWbovBxTfZSF71V/mXbgcV3MewDe3kIMCLyIh5e7SKAeUZs+rMnJ8jkMolZ/4/VsdBmMrw3l+VdZ3w==}
     dev: true
 
-  /@tauri-apps/cli-win32-x64-msvc/1.0.0-rc.10:
-    resolution: {integrity: sha512-mijSjeQGBGh6rvpkrqsSiTB4vwGprAXoDCmnIxliZ1Md4GgLMh8jzIug1UKAUmmIW1nOaQ9C9xu4wQXyoRqWHg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-    requiresBuild: true
-    dev: true
-    optional: true
-
   /ansi-styles/3.2.1:
     resolution: {integrity: sha512-VT0ZI6kZRdTh8YyJw3SMbYm/u+NqfsAxEpWO0Pf9sq8/e94WxxOpPKx9FR1FlyCtOVDNOQ+8ntlqFxiRc+r5qA==}
     engines: {node: '>=4'}
@@ -236,14 +229,6 @@ packages:
     resolution: {integrity: sha1-G2HAViGQqN/2rjuyzwIAyhMLhtQ=}
     engines: {node: '>=0.8.0'}
     dev: true
-
-  /fsevents/2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-    requiresBuild: true
-    dev: true
-    optional: true
 
   /globals/11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -950,6 +935,17 @@ packages:
     dev: true
     optional: true
 
+  registry.npmmirror.com/@tauri-apps/cli-win32-x64-msvc/1.0.0-rc.10:
+    resolution: {integrity: sha512-mijSjeQGBGh6rvpkrqsSiTB4vwGprAXoDCmnIxliZ1Md4GgLMh8jzIug1UKAUmmIW1nOaQ9C9xu4wQXyoRqWHg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@tauri-apps/cli-win32-x64-msvc/-/cli-win32-x64-msvc-1.0.0-rc.10.tgz}
+    name: '@tauri-apps/cli-win32-x64-msvc'
+    version: 1.0.0-rc.10
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   registry.npmmirror.com/@tauri-apps/cli/1.0.0-rc.10:
     resolution: {integrity: sha512-njDei3F3mlnotnujUF0jWteZC39RCm6JNAxZpzTFvWKFI/650DoA9hHTMa6onbazVgmOWdrbMHYWU/xBC/jUTw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@tauri-apps/cli/-/cli-1.0.0-rc.10.tgz}
     name: '@tauri-apps/cli'
@@ -965,7 +961,7 @@ packages:
       '@tauri-apps/cli-linux-x64-gnu': registry.npmmirror.com/@tauri-apps/cli-linux-x64-gnu/1.0.0-rc.10
       '@tauri-apps/cli-linux-x64-musl': registry.npmmirror.com/@tauri-apps/cli-linux-x64-musl/1.0.0-rc.10
       '@tauri-apps/cli-win32-ia32-msvc': registry.npmmirror.com/@tauri-apps/cli-win32-ia32-msvc/1.0.0-rc.10
-      '@tauri-apps/cli-win32-x64-msvc': 1.0.0-rc.10
+      '@tauri-apps/cli-win32-x64-msvc': registry.npmmirror.com/@tauri-apps/cli-win32-x64-msvc/1.0.0-rc.10
     dev: true
 
   registry.npmmirror.com/@types/chai-subset/1.3.3:
@@ -1378,7 +1374,7 @@ packages:
       normalize-path: registry.npmmirror.com/normalize-path/3.0.0
       readdirp: registry.npmmirror.com/readdirp/3.6.0
     optionalDependencies:
-      fsevents: 2.3.2
+      fsevents: registry.npmmirror.com/fsevents/2.3.2
     dev: true
 
   registry.npmmirror.com/classnames/2.3.1:
@@ -1432,6 +1428,12 @@ packages:
     dependencies:
       delayed-stream: registry.npmmirror.com/delayed-stream/1.0.0
     dev: true
+
+  registry.npmmirror.com/commander/2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/commander/-/commander-2.20.3.tgz}
+    name: commander
+    version: 2.20.3
+    dev: false
 
   registry.npmmirror.com/compute-scroll-into-view/1.0.17:
     resolution: {integrity: sha512-j4dx+Fb0URmzbwwMUrhqWM2BEWHdFGx+qZ9qqASHRPqvTYdqvWnHg0H1hIbcyLnvgnoNAVMlwkepyqM3DaIFUg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/compute-scroll-into-view/-/compute-scroll-into-view-1.0.17.tgz}
@@ -1521,6 +1523,12 @@ packages:
     name: css.escape
     version: 1.5.1
     dev: true
+
+  registry.npmmirror.com/cssfilter/0.0.10:
+    resolution: {integrity: sha512-FAaLDaplstoRsDR8XGYH51znUN0UY7nMc6Z9/fvE8EXGwvJE9hu7W2vHwx1+bd6gCYnln9nLbzxFTrcO9YQDZw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/cssfilter/-/cssfilter-0.0.10.tgz}
+    name: cssfilter
+    version: 0.0.10
+    dev: false
 
   registry.npmmirror.com/csstype/3.0.11:
     resolution: {integrity: sha512-sa6P2wJ+CAbgyy4KFssIb/JNMLxFvKF1pCYCSXS8ZMuqZnMsrxqI2E5sPyoTpxoPU/gVZMzr2zjOfg8GIZOMsw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/csstype/-/csstype-3.0.11.tgz}
@@ -3432,6 +3440,17 @@ packages:
     name: wrappy
     version: 1.0.2
     dev: true
+
+  registry.npmmirror.com/xss/1.0.11:
+    resolution: {integrity: sha512-EimjrjThZeK2MO7WKR9mN5ZC1CSqivSl55wvUK5EtU6acf0rzEE1pN+9ZDrFXJ82BRp3JL38pPE6S4o/rpp1zQ==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/xss/-/xss-1.0.11.tgz}
+    name: xss
+    version: 1.0.11
+    engines: {node: '>= 0.10.0'}
+    hasBin: true
+    dependencies:
+      commander: registry.npmmirror.com/commander/2.20.3
+      cssfilter: registry.npmmirror.com/cssfilter/0.0.10
+    dev: false
 
   registry.npmmirror.com/y18n/5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/y18n/-/y18n-5.0.8.tgz}

@@ -6,6 +6,7 @@ import { parseRSSFromURL } from "@/utils/wasm";
 import { toast } from "react-hot-toast";
 import { remove as lodashRemove } from "lodash-es";
 import { concat, uniqWith } from "lodash-es";
+import { doubleArrayLoopCall } from "@/utils";
 
 const initialState: Feeds = {
 	channels: [],
@@ -31,7 +32,8 @@ export const addRSSChannelAsync = createAsyncThunk(
  */
 export const pullRSSChannelAsync = createAsyncThunk(
 	"channels/pull",
-	async (channels: RSSChannel[]): Promise<(RSSChannel | undefined)[]> => {
+	async (channels: RSSChannel[], { dispatch }): Promise<(RSSChannel | undefined)[]> => {
+		dispatch(syncMark);
 		const promiseResults: Promise<RSSChannel | undefined>[] = channels.map(
 			async (ch): Promise<RSSChannel | undefined> => {
 				const result = await parseRSSFromURL(ch.atomLink);
@@ -73,6 +75,16 @@ const feedsSlice = createSlice({
 
 		keyword: (state: Feeds, { payload }: PayloadAction<string>) => {
 			state.filterKeyword = payload;
+		},
+
+		syncMark: (state: Feeds, { payload }: PayloadAction<RSSChannel[]>) => {
+			const { channels } = state;
+			doubleArrayLoopCall(channels, payload, (a, b) => {
+				if (a.atomLink === b.atomLink) {
+					console.log("sync mark = " + a.atomLink);
+					a.synced = false;
+				}
+			})
 		}
 	},
 
@@ -99,18 +111,19 @@ const feedsSlice = createSlice({
 			pullRSSChannelAsync.fulfilled,
 			(state: Feeds, { payload: newCh }) => {
 				const { channels } = state;
-				for (let x = 0; x < channels.length; x++) {
-					for (let y = 0; y < newCh.length; y++) {
-						if (newCh[y] === undefined) continue;
-						if (newCh[y]!.atomLink === channels[x].atomLink) {
-							channels[x].posts = concat(newCh[y]!.posts, channels[x].posts);
-							channels[x].posts = uniqWith(
-								channels[x].posts,
-								(a, b) => a.guid === b.guid && a.title === b.title
-							);
-						}
+				doubleArrayLoopCall<RSSChannel | undefined>(channels, newCh, (a, b) => {
+					if (b === undefined) return;
+					if (b!.atomLink === a!.atomLink) {
+						a!.posts = concat(b!.posts, a!.posts);
+						a!.posts = uniqWith(
+							a!.posts,
+							(a, b) => a.guid === b.guid && a.title === b.title
+						);
+						console.log("posts = ", a?.atomLink, a?.posts);
+						a!.synced = true;
 					}
-				}
+				});
+
 				state.channels = channels;
 				return state;
 			}
@@ -144,18 +157,20 @@ export const selectFeedsByKeyword = (state: RessuStore) => {
 
 export const selectChannels = (state: RessuStore) => state.feeds.channels;
 
-export const selectChannelByIndex = (index: number) => (state: RessuStore) => state.feeds.channels[index];
+export const selectChannelByIndex = (index: number) => (state: RessuStore) =>
+	state.feeds.channels[index];
 
-export const selectChannelPostsByIndex = (index: number | undefined) => (state: RessuStore) => {
-	if (index === undefined || isNaN(index)) {
-		return [];
-	}
-	return state.feeds.channels[index!].posts
-};
+export const selectChannelPostsByIndex =
+	(index: number | undefined) => (state: RessuStore) => {
+		if (index === undefined || isNaN(index)) {
+			return [];
+		}
+		return state.feeds.channels[index!].posts;
+	};
 
 export const selectChannelLength = (state: RessuStore) =>
 	state.feeds.channels.length;
 
-export const { initialize, remove, keyword } = feedsSlice.actions;
+export const { initialize, remove, keyword, syncMark } = feedsSlice.actions;
 
 export default feedsSlice.reducer;

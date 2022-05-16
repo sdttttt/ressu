@@ -40,6 +40,8 @@ export type RSSChannel = {
 
 	posts: Post[];
 
+	synced: boolean,
+
 	copyright?: string;
 };
 

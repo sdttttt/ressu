@@ -20,7 +20,7 @@ export async function feedsDataLocalSync(data: Feeds) {
 		result.posts = [];
 		return result;
 	});
-
+	realLocalData.filterKeyword = "";
 	feedDB.data = realLocalData;
 	console.log("Sync Feeds Data:", realLocalData);
 	return await feedDB.write();
@@ -75,7 +75,8 @@ if (import.meta.vitest) {
 					url: "1.1.1",
 					description: "111",
 					atomLink: "111.1",
-					posts: [{ title: "hellow", link: "hellow", pubDate: "", description: "1", guid: "hellow", category:[] }]
+					posts: [{ title: "hellow", link: "hellow", pubDate: "", description: "1", guid: "hellow", category:[] }],
+					synced: false,
 				}
 			],
 			filterKeyword: ""

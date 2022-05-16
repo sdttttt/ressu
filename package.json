@@ -37,7 +37,8 @@
     "react-hot-toast": "^2.2.0",
     "react-redux": "^7.2.8",
     "validator": "^13.7.0",
-    "wasm": "link:wasm\\pkg"
+    "wasm": "link:wasm\\pkg",
+    "xss": "^1.0.11"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
