@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
-use crate::utils::{NumberData, TextOrCData};
+use crate::utils::{NumberData, TextOrCData, parse_atom_link, AtomLink};
 use crate::{constants::*, utils::attrs_get_str};
 use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
@@ -22,6 +22,9 @@ pub struct RSSChannel {
     description: Option<String>,
 
     url: Option<String>,
+
+	#[serde(rename = "atomLink")]
+	atom_link: Option<String>,
 
     language: Option<String>,
 
@@ -82,6 +85,7 @@ impl FromXmlWithReader for RSSChannel {
         let mut title = None;
         let mut description = None;
         let mut url = None;
+		let mut atom_link = None;
         let mut language = None;
         let mut web_master = None;
         let mut last_build_date = None;
@@ -97,7 +101,7 @@ impl FromXmlWithReader for RSSChannel {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref re)) => match reader.decode(re.name())? {
+                Ok(Event::Start(ref re)) => match reader.decode(re.local_name())? {
                     "rss" => version = attrs_get_str(&reader, re.attributes(), "version")?,
 
                     "channel" => {
@@ -105,7 +109,21 @@ impl FromXmlWithReader for RSSChannel {
 
                         loop {
                             match reader.read_event(&mut cbuf) {
-                                Ok(Event::Start(ref ce)) => match reader.decode(ce.name())? {
+
+								Ok(Event::Empty(ref ce)) => match reader.decode(ce.local_name())? {
+								
+									"link" => {
+										match parse_atom_link(reader, ce.attributes())? {
+											Some(AtomLink::Alternate(link)) => url = Some(link),
+											Some(AtomLink::Source(link)) => atom_link = Some(link),
+											_ => {}
+										}
+									}
+									
+									_ => ()
+								}
+
+                                Ok(Event::Start(ref ce)) => match reader.decode(ce.local_name())? {
                                     "title" => {
                                         title = TextOrCData::from_xml_with_reader(bufs, reader)?
                                     }
@@ -116,7 +134,16 @@ impl FromXmlWithReader for RSSChannel {
                                     }
 
                                     "link" => {
-                                        url = TextOrCData::from_xml_with_reader(bufs, reader)?
+                                        match TextOrCData::from_xml_with_reader(bufs, reader)? {
+											Some(s) => url = Some(s),
+											None => {
+												match parse_atom_link(reader, ce.attributes())? {
+													Some(AtomLink::Source(e)) => atom_link = Some(e),
+													Some(AtomLink::Alternate(e)) => url = Some(e),
+													_ => (),
+												}
+											}
+										};
                                     }
 
                                     "language" => {
@@ -184,6 +211,7 @@ impl FromXmlWithReader for RSSChannel {
             title,
             description,
             url,
+			atom_link,
             language,
             web_master,
             generator,
@@ -261,7 +289,7 @@ impl FromXmlWithReader for ChannelImage {
 
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Start(ref e)) => match reader.decode(e.name())? {
+                Ok(Event::Start(ref e)) => match reader.decode(e.local_name())? {
                     "url" => url = TextOrCData::from_xml_with_reader(bufs, reader)?,
                     _ => {
                         SkipThisElement::from_xml_with_reader(bufs, reader)?;

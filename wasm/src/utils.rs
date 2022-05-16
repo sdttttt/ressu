@@ -16,6 +16,15 @@ macro_rules! console_log  {
 pub type TextOrCData = Option<String>;
 pub type NumberData = Option<usize>;
 
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum AtomLink<'a> {
+    Alternate(String),
+    Source(String),
+    Hub(String),
+    Other(String, Cow<'a, str>),
+}
+
 impl FromXmlWithReader for TextOrCData {
     /// It reads the next event from the reader, and if it's a text or CDATA event, it returns the text.
     /// Otherwise, it returns an empty string
@@ -94,6 +103,7 @@ impl FromXmlWithReader for NumberData {
 		}
 }
 
+
 ///
 /// from attributes get key str.
 /// It takes a `Reader` and `Attributes` and a `key` and returns a `Result` of an `Option` of a `String`
@@ -134,6 +144,52 @@ pub fn attrs_get_str<'a, B: std::io::BufRead>(
     Ok(value)
 }
 
+/// It takes a `Reader` and a `Attributes` object, and returns an `Option<AtomLink>`
+/// 
+/// Arguments:
+/// 
+/// * `reader`: &mut Reader<B>
+/// * `attributes`: Attributes<'a>
+/// 
+/// Returns:
+/// 
+/// A function that takes a Reader and Attributes and returns a Result of an Option of an AtomLink.
+pub fn parse_atom_link<'a, B: std::io::BufRead>(
+    reader: &mut Reader<B>,
+    attributes: Attributes<'a>,
+) -> fast_xml::Result<Option<AtomLink<'a>>> {
+
+    let mut href = None;
+    let mut rel = None;
+    for attribute in attributes {
+        let attribute = attribute?;
+        match reader.decode(attribute.key)? {
+            "href" => href = Some(attribute.unescape_and_decode_value(reader)?),
+            "rel" => {
+                rel = Some(reader.decode(if let Cow::Borrowed(s) = attribute.value {
+                    s
+                } else {
+                    unreachable!()
+                })?)
+            }
+			_ => (),
+        }
+    }
+
+    Ok(href.map(move |href| {
+        if let Some(rel) = rel {
+            match rel {
+                "alternate" => AtomLink::Alternate(href),
+                "self" => AtomLink::Source(href),
+                "hub" => AtomLink::Hub(href),
+                _ => AtomLink::Other(href, Cow::Borrowed(rel)),
+            }
+        } else {
+            AtomLink::Alternate(href)
+        }
+    }))
+}
+
 /// It reads the XML file from the current position to the end of the current tag, and returns the text
 /// between the current position and the end of the current tag
 ///
@@ -162,7 +218,7 @@ pub fn reader_get_sub_node_str<B: std::io::BufRead>(
     loop {
         match reader.read_event(&mut buf) {
             Ok(Event::End(ref e)) => {
-                if reader.decode(e.name())? == "item" {
+                if reader.decode(e.local_name())? == "item" {
                     break;
                 }
             }

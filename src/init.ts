@@ -1,9 +1,10 @@
 import { createDir } from "@tauri-apps/api/fs";
 import { appDir, join } from "@tauri-apps/api/path";
 import { DATABASES_PATH } from "@database/names";
-import { initinalizeChannelsFromLocal } from "@store/feeds";
+import { initinalizeChannelsFromLocal, pullRSSChannelAsync } from "@store/feeds";
 import store from "@store/index";
 import * as Listens from "./listens";
+import { emit } from "@tauri-apps/api/event";
 
 (async () => {
 	Listens.install();
@@ -13,4 +14,5 @@ import * as Listens from "./listens";
 	});
 
 	await store.dispatch(initinalizeChannelsFromLocal());
+	emit(Listens.RessuEvent.PullAllRSSChannel);
 })();
