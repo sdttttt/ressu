@@ -11,16 +11,16 @@ export function App() {
 				<NavBar></NavBar>
 			</NavbarContainer>
 
-			<Pane display="flex" padding={8}>
-				<Pane flex={1}>
+			<Pane display="flex" flexDirection={"row"} padding={8}>
+				<Pane flex={1} flexGrow={3} minWidth={320} >
 					<FeedSidebar></FeedSidebar>
 				</Pane>
 
-				<Pane flex={1}>
+				<Pane flex={1} flexGrow={4} minWidth={450}>
 					<FeedItems></FeedItems>
 				</Pane>
 
-				<Pane flex={2}>这里是内容栏</Pane>
+				<Pane flex={1} flexGrow={7}>这里是内容栏</Pane>
 			</Pane>
 		</>
 	);

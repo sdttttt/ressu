@@ -74,6 +74,7 @@ if (import.meta.vitest) {
 					title: "1",
 					url: "1.1.1",
 					description: "111",
+					atomLink: "111.1",
 					posts: [{ title: "hellow", link: "hellow", pubDate: "", description: "1", guid: "hellow", category:[] }]
 				}
 			],

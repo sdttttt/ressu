@@ -1,6 +1,5 @@
 import { ReactNode, MouseEventHandler } from "react";
 import {
-	ContainerShadow,
 	Frame,
 	Container,
 	ConfirmDiv,
@@ -73,12 +72,15 @@ export default (props: PropsType) => {
 
 	return (
 		<>
-			<Overlay isShown={open} onBeforeClose={() => {
-				onCancel();
-				return true;
-			}}>
-				{}
-			</Overlay>
+			<Overlay
+				isShown={open}
+				onBeforeClose={() => {
+					onCancel();
+					return true;
+				}}
+				children={""}
+			/>
+
 			<Container open={open} borderColor={"#DDD"}>
 				<HeaderBar></HeaderBar>
 

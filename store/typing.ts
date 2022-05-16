@@ -20,6 +20,8 @@ export type RSSChannel = {
 
 	url: string;
 
+	atomLink: string;
+
 	description: string;
 
 	language?: string;

@@ -34,7 +34,7 @@ export const pullRSSChannelAsync = createAsyncThunk(
 	async (channels: RSSChannel[]): Promise<(RSSChannel | undefined)[]> => {
 		const promiseResults: Promise<RSSChannel | undefined>[] = channels.map(
 			async (ch): Promise<RSSChannel | undefined> => {
-				const result = await parseRSSFromURL(ch.url);
+				const result = await parseRSSFromURL(ch.atomLink);
 				return result;
 			}
 		);
@@ -82,7 +82,7 @@ const feedsSlice = createSlice({
 			(state: Feeds, { payload: channel }) => {
 				console.log(channel, state);
 				if (channel) {
-					if (state.channels.map(t => t.url).includes(channel.url)) {
+					if (state.channels.map(t => t.atomLink).includes(channel.atomLink)) {
 						toast.error("该订阅源已存在");
 						return;
 					}
@@ -102,7 +102,7 @@ const feedsSlice = createSlice({
 				for (let x = 0; x < channels.length; x++) {
 					for (let y = 0; y < newCh.length; y++) {
 						if (newCh[y] === undefined) continue;
-						if (newCh[y]!.url === channels[x].url) {
+						if (newCh[y]!.atomLink === channels[x].atomLink) {
 							channels[x].posts = concat(newCh[y]!.posts, channels[x].posts);
 							channels[x].posts = uniqWith(
 								channels[x].posts,
@@ -147,7 +147,7 @@ export const selectChannels = (state: RessuStore) => state.feeds.channels;
 export const selectChannelByIndex = (index: number) => (state: RessuStore) => state.feeds.channels[index];
 
 export const selectChannelPostsByIndex = (index: number | undefined) => (state: RessuStore) => {
-	if (!index || isNaN(index)) {
+	if (index === undefined || isNaN(index)) {
 		return [];
 	}
 	return state.feeds.channels[index!].posts
