@@ -71,6 +71,7 @@ export type UIState = {
 		text: StatusBarText,
 	},
 	currentChannelIndex?: number;
+	currentPostIndex?: number;
 };
 
 export enum StatusBarType {

@@ -16,14 +16,15 @@ export const PostItemContainer = styled.div`
 	}
 `;
 
-export const PostItem = styled.div`
+export const PostItem = styled.div<{ selected: boolean }>`
 	width: 100%;
 	padding-top: 15px;
 	padding-left: 15px;
 	padding-bottom: 10px;
 	padding-right: 15px;
-
 	border-radius: 6px;
+
+	${ ({ selected }) => selected ? "color: #3366ff;": "" }
 
 	&:hover {
 		color: #3366ff;

@@ -34,3 +34,17 @@ export const urlRoot = (url: string) => {
 	const urlParts = url.split("/");
 	return urlParts[0] + "//" + urlParts[2];
 }
+
+
+export const formatDateFromStr = (dateStr: string) => {
+	const date = new Date(dateStr);
+
+	const year = date.getFullYear();
+	const month = date.getMonth() + 1;
+	const day = date.getDate();
+
+	const hover = date.getHours();
+	const minute = date.getMinutes();
+
+	return `${year}-${month}-${day} ${hover}:${minute}`;
+}
