@@ -8,11 +8,11 @@ export const PostItemContainer = styled.div`
 	padding-right: 10px;
 
 	overflow: hidden;
-	padding-right: 5px;
+	padding-right: 15px;
 
 	&:hover {
 		overflow-y: scroll;
-		padding-right: 0px;
+		padding-right: 10px;
 	}
 `;
 

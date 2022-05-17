@@ -47,6 +47,17 @@ export const selectChannelIndex = (store: RessuStore) => store.uiState.currentCh
 
 export const selectPostIndex = (store: RessuStore) => store.uiState.currentPostIndex;
 
+export const selectPostData = (store: RessuStore) => {
+	const { currentChannelIndex, currentPostIndex } = store.uiState;
+	const { channels } = store.feeds;
+	
+	if (currentChannelIndex === undefined || currentPostIndex === undefined) {
+		return undefined;
+	}
+
+	return channels[currentChannelIndex].posts[currentPostIndex];
+};
+
 export const selectMessageLength = (store: RessuStore) => store.uiState.messages.length;
 
 export const { 

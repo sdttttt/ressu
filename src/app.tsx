@@ -2,6 +2,7 @@ import FeedSidebar from "./feed-sidebar/index";
 import FeedItems from "./feed-items/index";
 import { Pane } from "evergreen-ui";
 import { AppContainer } from "./app.styled";
+import PostView from "@/post-view/index";
 
 export function App() {
 	return (
@@ -15,7 +16,9 @@ export function App() {
 					<FeedItems></FeedItems>
 				</Pane>
 
-				<Pane flex={1} flexGrow={7}  height="100%">这里是内容栏</Pane>
+				<Pane flex={1} flexGrow={7}  height="100%">
+					<PostView></PostView>
+				</Pane>
 			</Pane>
 		</AppContainer>
 	);
