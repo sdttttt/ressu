@@ -4,6 +4,7 @@ import { RefreshIcon } from "evergreen-ui";
 export const SidebarContainer = styled.div`
 	height: 100%;
 	padding: 10px;
+	padding-right: 0px;
 	display: flex;
 	flex-direction: column;
 `;

@@ -32,6 +32,7 @@
     "lodash-es": "^4.17.21",
     "lowdb": "^3.0.0",
     "pkg": "link:wasm/pkg",
+    "re-resizable": "^6.9.9",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-hot-toast": "^2.2.0",

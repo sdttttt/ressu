@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
 import { navbarHeight } from "@/global.style";
-import { Pane } from "evergreen-ui";
+import { Resizable } from "re-resizable";
 
 export const AppContainer = styled.div`
 	position: fixed;
@@ -12,19 +12,20 @@ export const AppContainer = styled.div`
 
 export const FeedSidebarContainer = styled.div`
 	height: 100%;
-	width: 300px;
-	top: ${navbarHeight};
+	width: 30%;
 `;
+
 
 export const NavbarContainer = styled.div`
 	height: ${navbarHeight};
 	min-height: 44px;
 `;
 
-export const SidebarSplit = styled.div`
+export const SplitBorder = styled.div`
 	height: 100%;
 	width: 1px;
 	margin-right: 5px;
+	margin-left: 5px;
 	background-color: #E6E8F0;
 	transition: all .2s;
 `;
