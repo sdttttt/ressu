@@ -14,6 +14,13 @@ export const SearchInputContainer = styled.div`
 	padding-bottom: 10px;
 `;
 
+export const SidebarLabel = styled.div`
+	font-size: 14px;
+	font-weight: bold;
+	margin-top: 10px;
+	margin-bottom: 10px;
+`;
+
 export const ChannelItemsContainer = styled.div`
 	padding-top: 10px;
 	flex-direction: column;

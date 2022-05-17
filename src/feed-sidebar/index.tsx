@@ -1,5 +1,5 @@
 import * as React from "react";
-import { SearchInput, Icon } from "evergreen-ui";
+import { SearchInput, FeedIcon, Icon } from "evergreen-ui";
 import { useSelector } from "react-redux";
 
 import { keyword, selectFeedsByKeyword } from "@store/feeds";
@@ -13,7 +13,8 @@ import {
 	ChannelItemLoading,
 	rotateNinjaIcon,
 	ChannelItemSelectedBar,
-	ChannelItemIcon
+	ChannelItemIcon,
+	SidebarLabel
 } from "./styled";
 import { useDispatch } from "react-redux";
 import { AppDispath } from "@store/typing";
@@ -69,6 +70,10 @@ export default function FeedSidebar() {
 					}
 				></SearchInput>
 			</SearchInputContainer>
+
+			<SidebarLabel>
+				<Icon icon={FeedIcon} marginRight="3px" size={12}></Icon> 订阅源
+			</SidebarLabel>
 
 			<ChannelItemsContainer>
 				{channels.length === 0 ? <p> 暂无订阅源 </p> : channelsJSX}
