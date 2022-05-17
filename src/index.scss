@@ -10,6 +10,7 @@ body {
 	color: #444;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	overflow: hidden;
 }
 
 * {
@@ -27,4 +28,27 @@ body {
 
 .link {
 	color: #fff;
+}
+
+::-webkit-scrollbar {
+	/*滚动条整体样式*/
+	/*高宽分别对应横竖滚动条的尺寸*/
+	height: 50px;
+	width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+	/*滚动条里面小方块*/
+	border-radius: 5px;
+	background: #696f8c;
+}
+
+::-webkit-scrollbar-track {
+	/*滚动条里面轨道*/
+	border-radius: 5px;
+	background: #fff;
+}
+::-webkit-scrollbar-button{
+	width: 6px;
+	height: 6px;
 }

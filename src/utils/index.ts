@@ -24,3 +24,13 @@ export const doubleArrayLoopCall = <T> (arr1: T[], arr2:T[], func: (a: T, b: T) 
 	}
 }
 
+
+/**
+ * It takes a URL as a string and returns the root of the URL as a string.
+ * @param {string} url - The URL you want to get the root of.
+ * @returns The url root of the url passed in.
+ */
+export const urlRoot = (url: string) => {
+	const urlParts = url.split("/");
+	return urlParts[0] + "//" + urlParts[2];
+}

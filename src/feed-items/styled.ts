@@ -6,6 +6,14 @@ export const PostItemContainer = styled.div`
 	height: 100%;
 	flex-direction: column;
 	padding-right: 10px;
+
+	overflow: hidden;
+	padding-right: 5px;
+
+	&:hover {
+		overflow-y: scroll;
+		padding-right: 0px;
+	}
 `;
 
 export const PostItem = styled.div`

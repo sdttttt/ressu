@@ -12,10 +12,12 @@ import {
 	ChannelItemText,
 	ChannelItemLoading,
 	rotateNinjaIcon,
-	ChannelItemSelectedBar
+	ChannelItemSelectedBar,
+	ChannelItemIcon
 } from "./styled";
 import { useDispatch } from "react-redux";
 import { AppDispath } from "@store/typing";
+import { urlRoot } from "@/utils";
 
 export default function FeedSidebar() {
 	const dispatch = useDispatch<AppDispath>();
@@ -27,6 +29,14 @@ export default function FeedSidebar() {
 			<ChannelItemSelectedBar
 				open={currentChannelIndex === i}
 			></ChannelItemSelectedBar>
+
+			<ChannelItemIcon>
+				{
+					t?.image?.url ? 
+						<img src={t.image.url} width={"100%"} height={"100%"}></img>
+					: <img src={ urlRoot(t.url) + "/favicon.ico"}></img>
+				}
+			</ChannelItemIcon>
 
 			<ChannelItemText selected={currentChannelIndex === i}>
 				{t.title}

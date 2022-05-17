@@ -1,8 +1,12 @@
 import styled from "@emotion/styled";
-import { bodyHeight, navbarHeight } from "@/global.style";
+import { navbarHeight } from "@/global.style";
 
-export const Main = styled.div`
-	height: ${bodyHeight};
+export const AppContainer = styled.div`
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
 `;
 
 export const FeedSidebarContainer = styled.div`

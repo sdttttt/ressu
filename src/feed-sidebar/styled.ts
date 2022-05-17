@@ -1,7 +1,8 @@
 import styled from "@emotion/styled";
-import { SocialMediaIcon } from "evergreen-ui";
+import { RefreshIcon } from "evergreen-ui";
 
 export const SidebarContainer = styled.div`
+	height: 100%;
 	padding: 10px;
 	display: flex;
 	flex-direction: column;
@@ -30,44 +31,51 @@ export const ChannelItem = styled.div`
 	text-align: left;
 	padding-bottom: 8px;
 	border-radius: 6px;
+	transition: all .3s;
 
 	&:hover {
 		color: #3366ff;
 		background-color: #f3f6ff;
+		transition: all .3s;
 	}
 `;
 
 export const ChannelItemText = styled.div<{selected: boolean}>`
 	font-size: 13px;
 	transition: all .5s;
-	${({ selected }) => selected ? "font-weight: bold;": "" }
+	${({ selected }) => selected ? "color: #3366ff;": "" }
 `;
 
-export const ChannelItemIcon = styled.div``;
+export const ChannelItemIcon = styled.div`
+	width: 16px;
+	height: 16px;
+
+	margin-right: 10px;
+`;
 
 export const ChannelItemLoading = styled.div`
 	height: 100%;
 	flex-shrink: 0;
 	text-align: end;
 	flex-grow: 1;
-	padding-top: 1px;
+	padding-top: 3px;
 `;
 
 export const ChannelItemSelectedBar = styled.div<{ open: boolean }>`
 	border-radius: 6px;
 	background-color: #5C85FF;
-	width: 6px;
+	width: 3px;
 	margin-right: 10px;
 	transition: all .1s;
 	opacity: ${({open}) => open ? 1 : 0};
 `;
 
-export const rotateNinjaIcon = styled(SocialMediaIcon)`
+export const rotateNinjaIcon = styled(RefreshIcon)`
 	animation:fadenum 5s linear infinite;
 
 	@keyframes fadenum {
 		100% {
-			transform: rotate(-720deg);
+			transform: rotate(720deg);
 		}
 	}
 `;

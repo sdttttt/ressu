@@ -37,10 +37,11 @@ export async function postDataLocalSync(channel: RSSChannel) {
 		const db = await getPostsDB(channel, dateKey);
 		db.read();
 		const mergeData = concat(db.data || [], posts);
-		db.data =
-			uniqWith(mergeData, (a, b) =>
-				a.guid === b.guid && a.title === b.title);
-				
+		db.data = uniqWith(
+			mergeData,
+			(a, b) => a.guid === b.guid && a.title === b.title
+		);
+
 		await db.write();
 	});
 
