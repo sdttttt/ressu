@@ -53,7 +53,6 @@ export default function NavBar() {
 			<FeedAddit
 				open={additOpen}
 				onClose={handleCloseAddit}
-				onSubmit={handleSubmitAddit}
 			></FeedAddit>
 		</NavbarContainer>
 	);

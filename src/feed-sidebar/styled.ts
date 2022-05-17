@@ -9,10 +9,13 @@ export const SidebarContainer = styled.div`
 	flex-direction: column;
 `;
 
-export const SearchInputContainer = styled.div`
+export const TopContainer = styled.div`
 	padding-top: 0px;
 	width: 100%;
 	padding-bottom: 10px;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
 `;
 
 export const SidebarLabel = styled.div`
@@ -66,7 +69,8 @@ export const ChannelItemLoading = styled.div`
 	flex-shrink: 0;
 	text-align: end;
 	flex-grow: 1;
-	padding-top: 3px;
+	padding-top: 2.5px;
+	padding-left: 10px;
 `;
 
 export const ChannelItemSelectedBar = styled.div<{ open: boolean }>`

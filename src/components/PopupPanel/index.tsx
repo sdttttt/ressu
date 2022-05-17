@@ -5,7 +5,8 @@ import {
 	ConfirmDiv,
 	HeaderDiv,
 	TitleH4,
-	DescriptionSpan
+	DescriptionSpan,
+	ContainerShadow
 } from "./styled";
 import { Button, Overlay } from "evergreen-ui";
 
@@ -72,14 +73,7 @@ export default (props: PropsType) => {
 
 	return (
 		<>
-			<Overlay
-				isShown={open}
-				onBeforeClose={() => {
-					onCancel();
-					return true;
-				}}
-				children={""}
-			/>
+			<ContainerShadow open={open}></ContainerShadow>
 
 			<Container open={open} borderColor={"#DDD"}>
 				<HeaderBar></HeaderBar>

@@ -11,13 +11,16 @@ export const Frame = styled.div`
 export const ContainerShadow = styled.div<{
 	open: boolean;
 }>`
-	display: ${({ open }) => (open ? "block" : "none")};
 	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
 	width: 100%;
 	height: 100%;
-	background-color: white;
-	opacity: 0.6;
-	z-index: 5;
+	background-color: black;
+	opacity: ${({ open }) => (open ? "0.6" : "0")};
+	z-index: ${({ open }) => (open ? "5" : "-1")};
 	transition: all .3s;
 `;
 

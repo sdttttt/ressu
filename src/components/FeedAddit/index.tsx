@@ -1,18 +1,23 @@
-import { ChangeEvent, useState } from "react";
+import { useState } from "react";
 import PopupPanel from "@/components/PopupPanel";
 import RessuInput from "@/components/RessuInput";
 import { FeedIcon } from "evergreen-ui";
+import { useAppDispatch } from "@store/index";
+import { addRSSChannelAsync } from "@store/feeds";
+import { emit } from "@tauri-apps/api/event";
+import { RessuEvent } from "@/listens";
 
 type PropsType = {
 	open: boolean;
 	onClose: () => void;
-	onSubmit: (url: string) => void;
 };
 
 const FeedAddit = (props: PropsType) => {
-	const { open, onClose, onSubmit } = props;
+	const { open, onClose } = props;
 
 	const [url, setURL] = useState("");
+
+	const dispatch = useAppDispatch();
 
 	// 关闭后置空
 	const handleOnClose = () => {
@@ -20,8 +25,10 @@ const FeedAddit = (props: PropsType) => {
 		setURL("");
 	};
 
-	const handleOnSubmit = () => {
-		onSubmit(url);
+	const handleOnSubmit =  async () => {
+		onClose();
+		await dispatch(addRSSChannelAsync(url));
+		emit(RessuEvent.SyncFeedsToLocal);
 	};
 
 	// URL变化

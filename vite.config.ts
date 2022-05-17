@@ -26,25 +26,6 @@ export default defineConfig({
 	build: {
 		minify: !isDev(),
 		sourcemap: isDev() ? "inline" : false,
-
-		rollupOptions: {
-			output: {
-				manualChunks(id) {
-					if (id.includes("node_modules")) {
-
-						if (id.includes("lodash-es")) {
-							return "lodash-es";
-						}
-
-						if (id.includes("evergreen-ui")) {
-							return "evergreen-ui";
-						}
-
-						return "vendor";
-					}
-				}
-			}
-		}
 	},
 	resolve: {
 		alias: {

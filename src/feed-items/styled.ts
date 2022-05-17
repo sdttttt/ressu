@@ -23,7 +23,7 @@ export const PostItem = styled.div<{ selected: boolean }>`
 	padding-bottom: 10px;
 	padding-right: 15px;
 	border-radius: 6px;
-
+	transition: all .3s;
 	${ ({ selected }) => selected ? "color: #3366ff;": "" }
 
 	&:hover {
