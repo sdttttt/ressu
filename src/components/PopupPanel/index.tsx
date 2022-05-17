@@ -73,7 +73,7 @@ export default (props: PropsType) => {
 
 	return (
 		<>
-			<ContainerShadow open={open}></ContainerShadow>
+			<ContainerShadow open={open} onClick={onCancel}></ContainerShadow>
 
 			<Container open={open} borderColor={"#DDD"}>
 				<HeaderBar></HeaderBar>

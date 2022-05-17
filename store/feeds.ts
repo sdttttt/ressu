@@ -33,7 +33,7 @@ export const addRSSChannelAsync = createAsyncThunk(
 export const pullRSSChannelAsync = createAsyncThunk(
 	"channels/pull",
 	async (channels: RSSChannel[], { dispatch }): Promise<(RSSChannel | undefined)[]> => {
-		dispatch(syncMark);
+		dispatch(syncMark(channels));
 		const promiseResults: Promise<RSSChannel | undefined>[] = channels.map(
 			async (ch): Promise<RSSChannel | undefined> => {
 				const result = await parseRSSFromURL(ch.atomLink);
@@ -154,6 +154,11 @@ export const selectFeedsByKeyword = (state: RessuStore) => {
 			.includes(filterKeyword.toLocaleLowerCase().trim())
 	);
 };
+
+export const selectHasSync = (state: RessuStore) => {
+	const { channels } = state.feeds;
+	return channels.some(ch => !ch.synced);
+}
 
 export const selectChannels = (state: RessuStore) => state.feeds.channels;
 

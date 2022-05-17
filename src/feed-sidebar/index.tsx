@@ -13,7 +13,7 @@ import {
 } from "evergreen-ui";
 import { useSelector } from "react-redux";
 
-import { keyword, selectFeedsByKeyword } from "@store/feeds";
+import { keyword, selectFeedsByKeyword, selectHasSync } from "@store/feeds";
 import { selectChannel, selectChannelIndex } from "@store/ui-state";
 import {
 	SidebarContainer,
@@ -30,6 +30,8 @@ import { useDispatch } from "react-redux";
 import { AppDispath } from "@store/typing";
 import { urlRoot } from "@/utils";
 import FeedAddit from "@/components/FeedAddit";
+import { emit } from "@tauri-apps/api/event";
+import { RessuEvent } from "@/listens";
 
 export default function FeedSidebar() {
 	const [additOpen, setAdditOpen] = React.useState(false);
@@ -44,6 +46,8 @@ export default function FeedSidebar() {
 	const dispatch = useDispatch<AppDispath>();
 	const channels = useSelector(selectFeedsByKeyword);
 	const currentChannelIndex = useSelector(selectChannelIndex);
+
+	const hasSync = useSelector(selectHasSync);
 
 	const channelsJSX = channels.map((t, i) => (
 		<ChannelItem key={t.url} onClick={() => handleChannelItemSelectChange(i)}>
@@ -115,7 +119,7 @@ export default function FeedSidebar() {
 					justifyContent="end"
 				>
 					<IconButton icon={PlusIcon} onClick={() => handleOpenAddit()} appearance="minimal" />
-					<IconButton icon={RefreshIcon} appearance="minimal" />
+					<IconButton icon={RefreshIcon} onClick={() => emit(RessuEvent.PullAllRSSChannel)} appearance="minimal" disabled={hasSync} />
 				</Pane>
 			</TopContainer>
 
