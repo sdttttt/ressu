@@ -1,17 +1,17 @@
 use std::str::FromStr;
 
 use fast_xml::{events::Event, Reader};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::buf::BufPool;
 use crate::item::ChannelItem;
-use crate::utils::{NumberData, TextOrCData, parse_atom_link, AtomLink};
+use crate::utils::{parse_atom_link, AtomLink, NumberData, TextOrCData};
 use crate::{constants::*, utils::attrs_get_str};
 use crate::{FromXmlWithReader, FromXmlWithStr, SkipThisElement};
 
 #[wasm_bindgen]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "rss")]
 pub struct RSSChannel {
     #[serde(skip)]
@@ -23,8 +23,8 @@ pub struct RSSChannel {
 
     url: Option<String>,
 
-	#[serde(rename = "atomLink")]
-	atom_link: Option<String>,
+    #[serde(rename = "atomLink")]
+    atom_link: Option<String>,
 
     language: Option<String>,
 
@@ -85,7 +85,7 @@ impl FromXmlWithReader for RSSChannel {
         let mut title = None;
         let mut description = None;
         let mut url = None;
-		let mut atom_link = None;
+        let mut atom_link = None;
         let mut language = None;
         let mut web_master = None;
         let mut last_build_date = None;
@@ -109,19 +109,15 @@ impl FromXmlWithReader for RSSChannel {
 
                         loop {
                             match reader.read_event(&mut cbuf) {
+                                Ok(Event::Empty(ref ce)) => match reader.decode(ce.local_name())? {
+                                    "link" => match parse_atom_link(reader, ce.attributes())? {
+                                        Some(AtomLink::Alternate(link)) => url = Some(link),
+                                        Some(AtomLink::Source(link)) => atom_link = Some(link),
+                                        _ => {}
+                                    },
 
-								Ok(Event::Empty(ref ce)) => match reader.decode(ce.local_name())? {
-								
-									"link" => {
-										match parse_atom_link(reader, ce.attributes())? {
-											Some(AtomLink::Alternate(link)) => url = Some(link),
-											Some(AtomLink::Source(link)) => atom_link = Some(link),
-											_ => {}
-										}
-									}
-									
-									_ => ()
-								}
+                                    _ => (),
+                                },
 
                                 Ok(Event::Start(ref ce)) => match reader.decode(ce.local_name())? {
                                     "title" => {
@@ -135,15 +131,17 @@ impl FromXmlWithReader for RSSChannel {
 
                                     "link" => {
                                         match TextOrCData::from_xml_with_reader(bufs, reader)? {
-											Some(s) => url = Some(s),
-											None => {
-												match parse_atom_link(reader, ce.attributes())? {
-													Some(AtomLink::Source(e)) => atom_link = Some(e),
-													Some(AtomLink::Alternate(e)) => url = Some(e),
-													_ => (),
-												}
-											}
-										};
+                                            Some(s) => url = Some(s),
+                                            None => {
+                                                match parse_atom_link(reader, ce.attributes())? {
+                                                    Some(AtomLink::Source(e)) => {
+                                                        atom_link = Some(e)
+                                                    }
+                                                    Some(AtomLink::Alternate(e)) => url = Some(e),
+                                                    _ => (),
+                                                }
+                                            }
+                                        };
                                     }
 
                                     "language" => {
@@ -211,7 +209,7 @@ impl FromXmlWithReader for RSSChannel {
             title,
             description,
             url,
-			atom_link,
+            atom_link,
             language,
             web_master,
             generator,
@@ -257,7 +255,7 @@ impl RSSChannel {
 
     #[wasm_bindgen]
     pub fn json(&self) -> JsValue {
-        JsValue::from_serde(self).unwrap()
+        serde_wasm_bindgen::to_value(&self).unwrap()
     }
 
     #[wasm_bindgen(js_name = postsLen)]
@@ -267,12 +265,12 @@ impl RSSChannel {
 
     #[wasm_bindgen(js_name = posts)]
     pub fn posts(&self) -> JsValue {
-        JsValue::from_serde(&self.posts).unwrap()
+        serde_wasm_bindgen::to_value(&self.posts).unwrap()
     }
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "image")]
 pub struct ChannelImage {
     url: Option<String>,
