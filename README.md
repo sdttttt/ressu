@@ -6,6 +6,9 @@
 
 > 主要面向 Windows，其次是 Linux 与 macOS。
 
+
+<img width="2009" height="1370" alt="图片" src="https://github.com/user-attachments/assets/b3f799c9-6a9b-425b-a331-37f197d797ff" />
+
 ## 技术栈
 
 | 层       | 选择                                                         |
