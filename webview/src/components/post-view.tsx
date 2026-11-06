@@ -69,7 +69,7 @@ export default function PostView() {
               <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1">
                   <h1 class="text-lg leading-snug font-semibold">{post().title}</h1>
-                  <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted-foreground">
                     <span class="tabular-nums">{formatDateTime(post().publishedAt)}</span>
                     <Show when={post().author}>
                       <Separator orientation="vertical" class="h-3" />
@@ -81,7 +81,7 @@ export default function PostView() {
                           <Separator orientation="vertical" class="h-3" />
                           <Badge
                             variant="outline"
-                            class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[10px] font-normal"
+                            class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[0.625rem] font-normal"
                           >
                             <span class="truncate">{feed().title}</span>
                           </Badge>

@@ -71,6 +71,13 @@ const (
 	ThemeDark   = "dark"
 )
 
+// FontSize values of Prefs.FontSize.
+const (
+	FontSizeSmall  = "small"
+	FontSizeMedium = "medium"
+	FontSizeLarge  = "large"
+)
+
 // Values of Prefs.OpenLinks.
 const (
 	OpenLinksBrowser = "browser"
@@ -83,6 +90,7 @@ const DefaultPostsPerFeed = 500
 // Prefs are the user's preferences, kept in the settings bucket.
 type Prefs struct {
 	Theme          string `json:"theme"`
+	FontSize       string `json:"fontSize"`
 	RefreshOnStart bool   `json:"refreshOnStart"`
 	MarkReadOnOpen bool   `json:"markReadOnOpen"`
 	OpenLinks      string `json:"openLinks"`
@@ -94,6 +102,7 @@ type Prefs struct {
 func DefaultPrefs() Prefs {
 	return Prefs{
 		Theme:          ThemeSystem,
+		FontSize:       FontSizeSmall,
 		RefreshOnStart: true,
 		MarkReadOnOpen: true,
 		OpenLinks:      OpenLinksBrowser,
@@ -108,6 +117,11 @@ func (p *Prefs) Normalize() {
 	case ThemeSystem, ThemeLight, ThemeDark:
 	default:
 		p.Theme = ThemeSystem
+	}
+	switch p.FontSize {
+	case FontSizeSmall, FontSizeMedium, FontSizeLarge:
+	default:
+		p.FontSize = FontSizeSmall
 	}
 	if p.OpenLinks != OpenLinksWindow {
 		p.OpenLinks = OpenLinksBrowser

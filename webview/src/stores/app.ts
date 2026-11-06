@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 import { toast } from "solid-sonner";
 
 import { externalHref } from "~/lib/sanitize";
-import { applyTheme } from "~/lib/theme";
+import { applyFontSize, applyTheme } from "~/lib/theme";
 import {
   Feeds,
   Posts,
@@ -41,6 +41,7 @@ type State = {
 
 const defaultPrefs: Prefs = {
   theme: "system",
+  fontSize: "small",
   refreshOnStart: true,
   markReadOnOpen: true,
   openLinks: "browser",
@@ -125,6 +126,7 @@ export async function start(): Promise<void> {
     ]);
     setState({ feeds, prefs, dataDir, ready: true });
     applyTheme(prefs.theme);
+    applyFontSize(prefs.fontSize);
 
     const first = feeds[0];
     if (first) await selectFeed(first.id);
@@ -332,6 +334,7 @@ export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
     const prefs = await Settings.update({ ...state.prefs, ...patch });
     setState("prefs", prefs);
     if (patch.theme !== undefined) applyTheme(prefs.theme);
+    if (patch.fontSize !== undefined) applyFontSize(prefs.fontSize);
     if (patch.postsPerFeed !== undefined && state.current.feedId !== null) {
       await loadPosts(0);
     }

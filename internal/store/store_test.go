@@ -301,11 +301,14 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 }
 
 func TestPrefsNormalize(t *testing.T) {
-	p := Prefs{Theme: "sepia", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
+	p := Prefs{Theme: "sepia", FontSize: "huge", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
 	p.Normalize()
 
 	if p.Theme != ThemeSystem {
 		t.Errorf("theme = %q", p.Theme)
+	}
+	if p.FontSize != FontSizeSmall {
+		t.Errorf("font size = %q", p.FontSize)
 	}
 	if p.OpenLinks != OpenLinksBrowser {
 		t.Errorf("open links = %q", p.OpenLinks)

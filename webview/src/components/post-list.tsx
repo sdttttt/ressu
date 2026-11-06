@@ -41,12 +41,12 @@ export default function PostList() {
               <div class="flex items-center gap-1">
                 <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-semibold">{feed().title}</div>
-                  <div class="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <div class="mt-1 flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
                     <span class="tabular-nums">{app.postTotal} 篇</span>
                     <Separator orientation="vertical" class="h-3" />
                     <Badge
                       variant="secondary"
-                      class="h-4 rounded-full px-1.5 py-0 text-[10px] font-medium tabular-nums"
+                      class="h-4 rounded-full px-1.5 py-0 text-[0.625rem] font-medium tabular-nums"
                     >
                       {app.postUnread} 未读
                     </Badge>
@@ -64,10 +64,10 @@ export default function PostList() {
                   }
                   aria-label="筛选文章"
                 >
-                  <ToggleGroupItem value="unread" size="sm" class="h-7 px-2 text-[11px]">
+                  <ToggleGroupItem value="unread" size="sm" class="h-7 px-2 text-[0.6875rem]">
                     未读
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="starred" size="sm" class="h-7 px-2 text-[11px]">
+                  <ToggleGroupItem value="starred" size="sm" class="h-7 px-2 text-[0.6875rem]">
                     星标
                   </ToggleGroupItem>
                 </ToggleGroup>
@@ -144,7 +144,7 @@ function PostRow(props: { post: PostSummary }) {
         <button type="button" class="min-w-0 flex-1 text-left" onClick={open}>
           <div
             class={cn(
-              "line-clamp-2 text-[13px] leading-snug",
+              "line-clamp-2 text-[0.8125rem] leading-snug",
               props.post.read ? "text-muted-foreground" : "font-semibold",
             )}
           >
@@ -152,12 +152,12 @@ function PostRow(props: { post: PostSummary }) {
           </div>
 
           <Show when={props.post.summary}>
-            <p class="mt-1 line-clamp-3 text-[11px] leading-relaxed text-muted-foreground">
+            <p class="mt-1 line-clamp-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
               {props.post.summary}
             </p>
           </Show>
 
-          <div class="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
+          <div class="mt-1.5 flex items-center gap-2 text-[0.625rem] text-muted-foreground tabular-nums">
             <span>{formatPostDate(props.post.publishedAt)}</span>
             <Show when={props.post.author}>
               <span class="max-w-32 truncate">{props.post.author}</span>

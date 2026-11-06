@@ -50,10 +50,10 @@ export default function FeedSidebar() {
     <aside class="flex h-full min-h-0 flex-col bg-background">
       <div class="flex items-center gap-1 px-3 pt-2 pb-1">
         <div class="flex min-w-0 flex-1 items-center gap-1.5">
-          <span class="truncate text-[13px] font-semibold">订阅源</span>
+          <span class="truncate text-[0.8125rem] font-semibold">订阅源</span>
           <Badge
             variant="outline"
-            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[10px] tabular-nums"
+            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[0.625rem] tabular-nums"
           >
             {app.feeds.length}
           </Badge>
@@ -125,7 +125,7 @@ function FeedRow(props: { feed: Feed }) {
   return (
     <div
       class={cn(
-        "group relative flex items-center gap-1 rounded-md pr-1 pl-1 text-[13px] transition-colors hover:bg-accent/70",
+        "group relative flex items-center gap-1 rounded-md pr-1 pl-1 text-[0.8125rem] transition-colors hover:bg-accent/70",
         selected() && "bg-accent",
       )}
     >
@@ -156,7 +156,7 @@ function FeedRow(props: { feed: Feed }) {
         <Show when={props.feed.unread > 0}>
           <Badge
             variant="secondary"
-            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums"
+            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[0.625rem] font-semibold tabular-nums"
           >
             {props.feed.unread > 99 ? "99+" : props.feed.unread}
           </Badge>

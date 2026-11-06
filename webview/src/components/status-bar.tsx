@@ -10,7 +10,7 @@ import { app, currentFeed, totalUnread } from "~/stores/app";
 
 export default function StatusBar() {
   return (
-    <footer class="flex h-7 shrink-0 items-center gap-2 border-t bg-background px-3 text-[11px] text-muted-foreground">
+    <footer class="flex h-7 shrink-0 items-center gap-2 border-t bg-background px-3 text-[0.6875rem] text-muted-foreground">
       <Show
         when={app.sync.active}
         fallback={
@@ -19,7 +19,7 @@ export default function StatusBar() {
             <Separator orientation="vertical" class="h-3" />
             <Badge
               variant="secondary"
-              class="h-4 rounded-full px-1.5 py-0 text-[10px] font-medium tabular-nums"
+              class="h-4 rounded-full px-1.5 py-0 text-[0.625rem] font-medium tabular-nums"
             >
               {totalUnread()} 未读
             </Badge>
@@ -41,7 +41,7 @@ export default function StatusBar() {
             as={Button}
             variant="ghost"
             size="sm"
-            class="h-5 px-1.5 text-[10px] font-normal text-error"
+            class="h-5 px-1.5 text-[0.625rem] font-normal text-error"
           >
             刷新失败
           </TooltipTrigger>

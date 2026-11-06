@@ -29,6 +29,12 @@ const themes = [
   { value: "dark", label: "深色" },
 ];
 
+const fontSizes = [
+  { value: "small", label: "小" },
+  { value: "medium", label: "中" },
+  { value: "large", label: "大" },
+];
+
 const linkTargets = [
   { value: "browser", label: "系统浏览器" },
   { value: "window", label: "应用内新窗口" },
@@ -50,26 +56,48 @@ export default function SettingsDialog() {
         </DialogHeader>
 
         <section class="space-y-2">
-          <h3 class="text-[11px] font-medium text-muted-foreground">外观</h3>
-          <RadioGroup
-            value={app.prefs.theme}
-            onChange={(theme) => theme && void updatePrefs({ theme })}
-            class="gap-2"
-          >
-            <For each={themes}>
-              {(theme) => (
-                <RadioGroupItem value={theme.value} class="gap-2">
-                  <RadioGroupItemLabel class="font-normal">{theme.label}</RadioGroupItemLabel>
-                </RadioGroupItem>
-              )}
-            </For>
-          </RadioGroup>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">外观</h3>
+          <div class="space-y-2">
+            <Label class="text-sm font-normal">界面字体大小</Label>
+            <RadioGroup
+              value={app.prefs.fontSize}
+              onChange={(fontSize) => fontSize && void updatePrefs({ fontSize })}
+              class="gap-2"
+            >
+              <For each={fontSizes}>
+                {(size) => (
+                  <RadioGroupItem value={size.value} class="gap-2">
+                    <RadioGroupItemLabel class="font-normal">{size.label}</RadioGroupItemLabel>
+                  </RadioGroupItem>
+                )}
+              </For>
+            </RadioGroup>
+          </div>
+
+          <Separator />
+
+          <div class="space-y-2">
+            <Label class="text-sm font-normal">主题</Label>
+            <RadioGroup
+              value={app.prefs.theme}
+              onChange={(theme) => theme && void updatePrefs({ theme })}
+              class="gap-2"
+            >
+              <For each={themes}>
+                {(theme) => (
+                  <RadioGroupItem value={theme.value} class="gap-2">
+                    <RadioGroupItemLabel class="font-normal">{theme.label}</RadioGroupItemLabel>
+                  </RadioGroupItem>
+                )}
+              </For>
+            </RadioGroup>
+          </div>
         </section>
 
         <Separator />
 
         <section class="space-y-3">
-          <h3 class="text-[11px] font-medium text-muted-foreground">阅读</h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">阅读</h3>
 
           <Switch
             class="flex items-center justify-between gap-4"
@@ -118,7 +146,7 @@ export default function SettingsDialog() {
         <Separator />
 
         <section class="space-y-2">
-          <h3 class="text-[11px] font-medium text-muted-foreground">链接</h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">链接</h3>
           <RadioGroup
             value={app.prefs.openLinks}
             onChange={(openLinks) => openLinks && void updatePrefs({ openLinks })}
@@ -137,10 +165,10 @@ export default function SettingsDialog() {
         <Separator />
 
         <section class="space-y-2">
-          <h3 class="text-[11px] font-medium text-muted-foreground">数据</h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">数据</h3>
           <Label class="text-xs font-normal text-muted-foreground">数据目录</Label>
           <div class="flex items-start gap-2">
-            <code class="min-w-0 flex-1 rounded-md bg-muted px-2 py-1.5 text-[11px] break-all">
+            <code class="min-w-0 flex-1 rounded-md bg-muted px-2 py-1.5 text-[0.6875rem] break-all">
               {app.dataDir || "…"}
             </code>
             <Button

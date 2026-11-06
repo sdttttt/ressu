@@ -74,6 +74,7 @@ const post: Post = {
 
 const prefs: Prefs = {
   theme: "system",
+  fontSize: "small",
   refreshOnStart: true,
   markReadOnOpen: true,
   openLinks: "browser",

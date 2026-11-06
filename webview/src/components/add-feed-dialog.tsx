@@ -81,7 +81,7 @@ export default function AddFeedDialog() {
               订阅地址
             </TextFieldLabel>
             <TextFieldInput type="url" autofocus placeholder="https://example.com/feed.xml" />
-            <TextFieldDescription class="text-[11px]">
+            <TextFieldDescription class="text-[0.6875rem]">
               支持 RSS 0.9x / 1.0 / 2.0、Atom 与 JSON Feed。
             </TextFieldDescription>
           </TextField>
