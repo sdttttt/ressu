@@ -6,9 +6,7 @@
 
 [![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/ressu)
 
-
 <img width="2009" height="1370" alt="图片" src="https://github.com/user-attachments/assets/b3f799c9-6a9b-425b-a331-37f197d797ff" />
-
 
 ## 功能
 
@@ -38,7 +36,6 @@ bun run dev        # mygo dev：编译并启动应用，同时启动 Vite 热更
 
 前端源码与构建配置都在 `webview/`，但所有脚本仍在仓库根目录执行（Vite 的 root 指回 `webview/`）。
 
-
 ## LICENSE
 
-See [LICENSE](LICENSE).
+See [LICENSE](LICENSE) (0BSD).

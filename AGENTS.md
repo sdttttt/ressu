@@ -16,7 +16,7 @@ Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程�
 | 工具链 | Bun（锁文件 `bun.lock`）、TypeScript 7、oxlint、oxfmt、Vitest 5         |
 | 存储   | MyGO 用户数据目录下的 bbolt 数据库（`ressu.db`）                        |
 | 平台   | 以 Windows 为主；Linux 与 macOS 也支持，并在 CI 里打包                  |
-| 许可证 | Unlicense（公有领域）                                                   |
+| 许可证 | 0BSD                                                                    |
 
 仓库里没有 `pyproject.toml`，也没有 `Cargo.toml`。真正相关的两个清单是 `package.json`（前端脚本与依赖）和 `go.mod`（`module github.com/sdttttt/ressu`）。
 

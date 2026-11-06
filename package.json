@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "license": "Unlicense",
+  "license": "0BSD",
   "scripts": {
     "dev": "mygo dev",
     "build": "mygo build",
