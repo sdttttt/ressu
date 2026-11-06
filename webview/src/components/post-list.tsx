@@ -100,7 +100,9 @@ export default function PostList() {
                     />
                   }
                 >
-                  <For each={app.posts}>{(post) => <PostRow post={post} />}</For>
+                  <div class="space-y-1">
+                    <For each={app.posts}>{(post) => <PostRow post={post} />}</For>
+                  </div>
 
                   <Show when={app.posts.length < app.postTotal}>
                     <Button
