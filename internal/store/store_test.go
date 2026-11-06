@@ -307,7 +307,7 @@ func TestPrefsNormalize(t *testing.T) {
 	if p.Theme != ThemeSystem {
 		t.Errorf("theme = %q", p.Theme)
 	}
-	if p.FontSize != FontSizeSmall {
+	if p.FontSize != FontSizeMedium {
 		t.Errorf("font size = %q", p.FontSize)
 	}
 	if p.OpenLinks != OpenLinksBrowser {

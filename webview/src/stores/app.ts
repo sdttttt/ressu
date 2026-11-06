@@ -41,7 +41,7 @@ type State = {
 
 const defaultPrefs: Prefs = {
   theme: "system",
-  fontSize: "small",
+  fontSize: "medium",
   refreshOnStart: true,
   markReadOnOpen: true,
   openLinks: "browser",

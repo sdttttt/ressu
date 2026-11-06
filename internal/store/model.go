@@ -102,7 +102,7 @@ type Prefs struct {
 func DefaultPrefs() Prefs {
 	return Prefs{
 		Theme:          ThemeSystem,
-		FontSize:       FontSizeSmall,
+		FontSize:       FontSizeMedium,
 		RefreshOnStart: true,
 		MarkReadOnOpen: true,
 		OpenLinks:      OpenLinksBrowser,
@@ -121,7 +121,7 @@ func (p *Prefs) Normalize() {
 	switch p.FontSize {
 	case FontSizeSmall, FontSizeMedium, FontSizeLarge:
 	default:
-		p.FontSize = FontSizeSmall
+		p.FontSize = FontSizeMedium
 	}
 	if p.OpenLinks != OpenLinksWindow {
 		p.OpenLinks = OpenLinksBrowser
