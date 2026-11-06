@@ -21,16 +21,22 @@ type Entry = "next" | "prev" | "enter";
 
 /**
  * Mount-time animation for an article layer, played through the Web
- * Animations API. The CSS classes on the layer already describe the same
- * motion for engines that replay mount animations reliably; calling
- * `el.animate()` on mount guarantees playback everywhere (WebKit can skip
- * class-driven animations when the element mounts and starts in the same
- * frame). Keeping both is harmless: the API animation composites over the
- * class animation while it runs.
+ * Animations API. The layer also carries CSS animation classes describing the
+ * same motion, but the two must never run at once: WebKit composes concurrent
+ * animations on the same property by letting the CSS one win, which cancels
+ * the slide and makes the swap look instant (or blank mid-flight). So the
+ * API play cancels the CSS animations on the element; the classes stay only
+ * as documentation of the motion and a fallback if `animate` is missing.
  */
 function playEntry(ref: HTMLDivElement, layer: Entry | "base"): void {
   if (layer === "base") return;
   if (typeof ref.animate !== "function") return; // non-browser environment (tests)
+  // Kill any CSS animation before it can start: the ref callback runs before
+  // Solid applies the classes, so cancelling via getAnimations() would race
+  // and WebKit would let the CSS animation win the composite. An inline
+  // `animation: none` beats the classes at any timing and does not touch
+  // WAAPI animations.
+  ref.style.animation = "none";
   const frames =
     layer === "enter"
       ? [
@@ -40,7 +46,10 @@ function playEntry(ref: HTMLDivElement, layer: Entry | "base"): void {
       : layer === "next"
         ? [{ transform: "translateY(-100%)" }, { transform: "translateY(0)" }]
         : [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }];
-  ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
+  const api = ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
+  for (const css of ref.getAnimations()) {
+    if (css !== api) css.cancel();
+  }
 }
 
 function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
