@@ -1,5 +1,5 @@
 import { ExternalLink, MailOpen, Newspaper, Star } from "lucide-solid";
-import { Show, batch, createEffect, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
 import { EmptyState } from "~/components/empty-state";
@@ -16,41 +16,68 @@ import { app, currentFeed, openLink, setOpenPostRead, toggleStar } from "~/store
 /** How long the incoming article takes to cover the previous one, in milliseconds. */
 const COVER_MS = 300;
 
-/** How the current article entered the screen. */
-type Entry = "next" | "prev" | "enter";
+/** How an article layer entered the screen; "base" layers sit still underneath. */
+type LayerKind = "base" | "enter" | "next" | "prev";
+
+type Layer = {
+  /** The covered article keeps rendering until the slide is done. */
+  kind: LayerKind;
+  post: Post;
+};
 
 /**
- * Mount-time animation for an article layer, played through the Web
- * Animations API. The layer also carries CSS animation classes describing the
- * same motion, but the two must never run at once: WebKit composes concurrent
- * animations on the same property by letting the CSS one win, which cancels
- * the slide and makes the swap look instant (or blank mid-flight). So the
- * API play cancels the CSS animations on the element; the classes stay only
- * as documentation of the motion and a fallback if `animate` is missing.
+ * One snapshot per swap, written by the effect below. Holding plain copies —
+ * never the store proxy — matters: `setState("post", ...)` merges into the
+ * same store node in place, so a held proxy would silently turn into the next
+ * article mid-animation.
  */
-function playEntry(ref: HTMLDivElement, layer: Entry | "base"): void {
-  if (layer === "base") return;
-  if (typeof ref.animate !== "function") return; // non-browser environment (tests)
-  // Kill any CSS animation before it can start: the ref callback runs before
-  // Solid applies the classes, so cancelling via getAnimations() would race
-  // and WebKit would let the CSS animation win the composite. An inline
-  // `animation: none` beats the classes at any timing and does not touch
-  // WAAPI animations.
-  ref.style.animation = "none";
-  const frames =
-    layer === "enter"
-      ? [
-          { opacity: "0", transform: "translateY(24px)" },
-          { opacity: "1", transform: "translateY(0)" },
-        ]
-      : layer === "next"
-        ? [{ transform: "translateY(-100%)" }, { transform: "translateY(0)" }]
-        : [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }];
-  const api = ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
-  for (const css of ref.getAnimations()) {
-    if (css !== api) css.cancel();
-  }
+const [layers, setLayers] = createStore<{ items: Layer[] }>({ items: [] });
+
+let dropTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** How the new article should cover the old one, based on list order. */
+function coverDirection(from: Post, to: Post): "next" | "prev" {
+  const indexAt = (guid: string) => app.posts.findIndex((post) => post.guid === guid);
+  const fromIndex = indexAt(from.guid);
+  const toIndex = indexAt(to.guid);
+  if (fromIndex === -1 || toIndex === -1) return "next";
+  return toIndex > fromIndex ? "next" : "prev";
 }
+
+createEffect(() => {
+  const latest = app.post;
+  const visible = layers.items;
+
+  if (!latest) {
+    if (visible.length > 0) {
+      setLayers({ items: [] });
+    }
+    clearTimeout(dropTimer);
+    return;
+  }
+
+  const current = visible[visible.length - 1];
+  // Same article: refresh the top snapshot in place (star/read toggles) and
+  // never restart the animation.
+  if (current?.post.guid === latest.guid) {
+    setLayers("items", visible.length - 1, "post", reconcile({ ...latest }, { key: "guid" }));
+    return;
+  }
+
+  const kind: LayerKind = current ? coverDirection(current.post, latest) : "enter";
+  const next: Layer[] = [{ kind, post: { ...latest } }];
+  // The article being covered freezes as a plain "base" copy underneath and
+  // is dropped by the timer once the slide has finished.
+  if (current) next.unshift({ kind: "base", post: { ...current.post } });
+  setLayers({ items: next });
+
+  clearTimeout(dropTimer);
+  dropTimer = setTimeout(() => {
+    setLayers("items", (items) => items.filter((layer) => layer.kind !== "base"));
+  }, COVER_MS);
+});
+
+onCleanup(() => clearTimeout(dropTimer));
 
 function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
   const target = event.target as HTMLElement | null;
@@ -63,99 +90,8 @@ function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
   void openLink(href);
 }
 
-/** How the new article should cover the old one, based on list order. */
-function coverDirection(from: Post | null, to: Post): "next" | "prev" {
-  const indexAt = (guid: string) => app.posts.findIndex((post) => post.guid === guid);
-  const fromIndex = from ? indexAt(from.guid) : -1;
-  const toIndex = indexAt(to.guid);
-  if (fromIndex === -1 || toIndex === -1) return "next";
-  return toIndex > fromIndex ? "next" : "prev";
-}
-
-/**
- * Holds the articles on screen one step behind the store: when another post is
- * opened, the old one stays perfectly still and the new one slides over it
- * like a sheet of paper — from above when reading further down the list, from
- * below when going back up. The first article just fades in, since there is
- * nothing to cover. The covered article is dropped once the slide is done.
- * Star and read toggles on the open post update in place and never restart
- * the cover.
- */
-function createArticleFade(): {
-  current: () => string;
-  leaving: () => string;
-  entry: () => Entry;
-  post: () => Post | null;
-  leavingPost: () => Post | null;
-} {
-  const [current, setCurrent] = createSignal("");
-  const [leaving, setLeaving] = createSignal("");
-  const [entry, setEntry] = createSignal<Entry>("enter");
-  // Field-level reactive snapshots: plain signals would either hold a store
-  // proxy (which `setState` merges in place, silently mutating between runs)
-  // or restart this effect with every fresh copy written into it.
-  const [snap, setSnap] = createStore<{ post: Post | null; leavingPost: Post | null }>({
-    post: null,
-    leavingPost: null,
-  });
-  let dropTimer: ReturnType<typeof setTimeout> | undefined;
-
-  createEffect(() => {
-    const latest = app.post;
-
-    if (!latest) {
-      if (current()) {
-        batch(() => {
-          setCurrent("");
-          setLeaving("");
-          setEntry("enter");
-          setSnap({ post: null, leavingPost: null });
-        });
-      }
-      return;
-    }
-    if (!current() || latest.guid === current()) {
-      setSnap("post", reconcile({ ...latest }));
-      setCurrent(latest.guid);
-      return;
-    }
-
-    // untrack: the effect writes what it reads here, so a tracked read would
-    // rerun it forever.
-    const outgoing = untrack(() => snap.post);
-    const hasCover = Boolean(outgoing);
-    batch(() => {
-      setSnap({
-        post: { ...latest },
-        leavingPost: outgoing ? { ...outgoing } : null,
-      });
-      // current must move to the new guid in the same batch: it keys the
-      // incoming layer's Show. Leaving it stale would swap the layer's
-      // content in place now (no rebuild) and then rebuild it when the drop
-      // timer fires — replaying the slide a second time.
-      setCurrent(latest.guid);
-      setLeaving(outgoing?.guid ?? "");
-      setEntry(hasCover ? coverDirection(outgoing, latest) : "enter");
-    });
-    clearTimeout(dropTimer);
-    dropTimer = setTimeout(() => setLeaving(""), COVER_MS);
-  });
-
-  onCleanup(() => clearTimeout(dropTimer));
-
-  return {
-    current,
-    leaving,
-    entry,
-    post: () => snap.post,
-    leavingPost: () => snap.leavingPost,
-  };
-}
-
 export default function PostView() {
   let articleRef: HTMLElement | undefined;
-
-  const fade = createArticleFade();
 
   const bindArticle = (element: HTMLElement) => {
     articleRef = element;
@@ -173,7 +109,7 @@ export default function PostView() {
   return (
     <article ref={bindArticle} class="flex h-full min-h-0 flex-col bg-background">
       <Show
-        when={fade.current()}
+        when={layers.items.length > 0}
         fallback={
           <Show
             when={app.loadingPost}
@@ -199,24 +135,49 @@ export default function PostView() {
           {/* Keyed by guid: the covered article stays perfectly still
               underneath, and the incoming one slides over it like a sheet of
               paper, from above or below depending on which way the reader
-              moved in the list. */}
-          <Show keyed when={fade.leaving()}>
-            {(guid) => <ArticleLayer key={guid} layer="base" post={fade.leavingPost} />}
-          </Show>
-          <Show keyed when={fade.current()}>
-            {(guid) => <ArticleLayer key={guid} layer={fade.entry()} post={fade.post} />}
-          </Show>
+              moved in the list. Dropping the base entry from the array only
+              removes that layer; the incoming one is never rebuilt, so its
+              entry animation cannot replay. */}
+          <For each={layers.items}>
+            {(layer) => <ArticleLayer layer={layer.kind} post={layer.post} />}
+          </For>
         </div>
       </Show>
     </article>
   );
 }
 
-function ArticleLayer(props: { key: string; layer: Entry | "base"; post: () => Post | null }) {
-  // The key is unused in markup, but ties the layer instance to its guid so a
-  // swap replaces the element instead of updating it in place.
-  void props.key;
+/**
+ * Mount-time animation for an article layer, played through the Web
+ * Animations API. The layer also carries CSS animation classes describing the
+ * same motion, but the two must never run at once: WebKit composes concurrent
+ * animations on the same property by letting the CSS one win, which cancels
+ * the slide and makes the swap look instant (or blank mid-flight). So the
+ * API play cancels the CSS animations on the element; the classes stay only
+ * as documentation of the motion and a fallback if `animate` is missing.
+ */
+function playEntry(ref: HTMLDivElement, layer: LayerKind): void {
+  if (layer === "base") return;
+  if (typeof ref.animate !== "function") return; // non-browser environment (tests)
+  // Kill any CSS animation before it can start: the ref callback runs before
+  // Solid applies the classes, so cancelling via getAnimations() would race
+  // and WebKit would let the CSS animation win the composite. An inline
+  // `animation: none` beats the classes at any timing and does not touch
+  // WAAPI animations.
+  ref.style.animation = "none";
+  const frames =
+    layer === "enter"
+      ? [
+          { opacity: "0", transform: "translateY(24px)" },
+          { opacity: "1", transform: "translateY(0)" },
+        ]
+      : layer === "next"
+        ? [{ transform: "translateY(-100%)" }, { transform: "translateY(0)" }]
+        : [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }];
+  ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
+}
 
+function ArticleLayer(props: { layer: LayerKind; post: Post }) {
   const bindLayer = (el: HTMLDivElement) => playEntry(el, props.layer);
 
   return (
@@ -237,10 +198,10 @@ function ArticleLayer(props: { key: string; layer: Entry | "base"; post: () => P
       <header class="border-b px-6 py-4">
         <div class="flex items-start gap-3">
           <div class="min-w-0 flex-1">
-            <h1 class="text-lg leading-snug font-semibold">{props.post()?.title}</h1>
+            <h1 class="text-lg leading-snug font-semibold">{props.post.title}</h1>
             <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted-foreground">
-              <span class="tabular-nums">{formatDateTime(props.post()?.publishedAt ?? "")}</span>
-              <Show when={props.post()?.author}>
+              <span class="tabular-nums">{formatDateTime(props.post.publishedAt)}</span>
+              <Show when={props.post.author}>
                 {(author) => (
                   <>
                     <Separator orientation="vertical" class="h-3" />
@@ -266,30 +227,21 @@ function ArticleLayer(props: { key: string; layer: Entry | "base"; post: () => P
 
           <div class="flex shrink-0 items-center gap-0.5">
             <IconButton
-              label={props.post()?.starred ? "取消星标" : "加星标"}
-              onClick={() => {
-                const guid = props.post()?.guid;
-                if (guid) void toggleStar(guid);
-              }}
+              label={props.post.starred ? "取消星标" : "加星标"}
+              onClick={() => void toggleStar(props.post.guid)}
             >
-              <Star class={cn("size-4", props.post()?.starred && "fill-current text-warning")} />
+              <Star class={cn("size-4", props.post.starred && "fill-current text-warning")} />
             </IconButton>
             <IconButton
-              label={props.post()?.read ? "标记为未读" : "标记为已读"}
-              onClick={() => {
-                const post = props.post();
-                if (post) void setOpenPostRead(!post.read);
-              }}
+              label={props.post.read ? "标记为未读" : "标记为已读"}
+              onClick={() => void setOpenPostRead(!props.post.read)}
             >
               <MailOpen class="size-4" />
             </IconButton>
             <IconButton
               label="在浏览器中打开原文"
-              disabled={!props.post()?.url}
-              onClick={() => {
-                const url = props.post()?.url;
-                if (url) void openLink(url);
-              }}
+              disabled={!props.post.url}
+              onClick={() => void openLink(props.post.url)}
             >
               <ExternalLink class="size-4" />
             </IconButton>
@@ -301,10 +253,7 @@ function ArticleLayer(props: { key: string; layer: Entry | "base"; post: () => P
         <div
           class="post-body mx-auto max-w-3xl"
           // The HTML is cleaned by DOMPurify before it reaches the DOM.
-          innerHTML={sanitizeHTML(
-            props.post()?.content || props.post()?.summary || "",
-            props.post()?.url ?? "",
-          )}
+          innerHTML={sanitizeHTML(props.post.content || props.post.summary, props.post.url)}
         />
       </div>
     </div>
