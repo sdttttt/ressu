@@ -30,7 +30,7 @@ function activeFilters(): string[] {
 
 export default function PostList() {
   return (
-    <section class="flex h-full min-h-0 flex-col border-r bg-background">
+    <section class="flex h-full min-h-0 flex-col bg-background">
       <Show
         when={currentFeed()}
         fallback={<EmptyState icon={<FileText class="size-10" />} title="选择一个订阅源" />}
