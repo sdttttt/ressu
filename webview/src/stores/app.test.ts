@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Feed, Post, PostSummary, Prefs } from "~/mygo";
+import type { Feed, Post, PostSummary, Prefs, SyncState } from "~/mygo";
 
 vi.mock("solid-sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -236,6 +236,44 @@ describe("removeFeed", () => {
     expect(app.app.feeds).toHaveLength(0);
     expect(app.app.posts).toHaveLength(0);
     expect(app.app.current.feedId).toBeNull();
+  });
+});
+
+describe("applySync", () => {
+  it("ends the sync state after the last feed", async () => {
+    const { app } = await setup();
+    await app.start();
+
+    const active = (done: number, error?: string): SyncState => ({
+      active: true,
+      done,
+      total: 2,
+      feedId: 1,
+      feed: "A 站",
+      ...(error ? { error } : {}),
+    });
+    app.applySync(active(0));
+    app.applySync(active(1, "服务器错误"));
+    expect(app.app.sync.active).toBe(true);
+    expect(app.app.syncErrors).toEqual(["A 站：服务器错误"]);
+
+    app.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
+    expect(app.app.sync.active).toBe(false);
+    expect(app.app.sync.done).toBe(2);
+    expect(app.app.sync.total).toBe(2);
+    expect(app.app.syncErrors).toEqual([]);
+  });
+
+  it("resets a sync that is already active", async () => {
+    const { app } = await setup();
+    await app.start();
+
+    app.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
+    // A second refresh cannot run while the first one does, so the state the
+    // page holds must recover when Go announces a new run.
+    app.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
+    app.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
+    expect(app.app.sync.active).toBe(false);
   });
 });
 

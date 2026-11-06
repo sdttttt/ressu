@@ -58,7 +58,7 @@ const [state, setState] = createStore<State>({
   post: null,
   dataDir: "",
   prefs: defaultPrefs,
-  sync: idleSync,
+  sync: { ...idleSync },
   syncErrors: [],
   ready: false,
   loadingPosts: false,
@@ -404,7 +404,7 @@ export function applySync(event: SyncState): void {
     return;
   }
 
-  setState("sync", { ...idleSync, done: event.total, total: event.total });
+  setState("sync", { ...idleSync, done: event.total, total: event.total, error: undefined });
   if (state.syncErrors.length > 0) {
     toast.error(`${state.syncErrors.length} 个订阅源刷新失败，详情见状态栏`);
     setState("syncErrors", []);
