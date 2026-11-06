@@ -1,8 +1,8 @@
 # Ressu
 
-一个免费的现代 **RSS 阅读器**，桌面端用 [MyGO](https://github.com/egoist/mygo)（纯 Go、无 cgo、系统 WebView），前端用 SolidJS。
+一个免费的现代 **RSS 阅读器**，桌面端用 [MyGO](https://github.com/egoist/mygo)（纯 Go、无 cgo、WebView），前端用 SolidJS。
 
-![build](https://github.com/sdttttt/ressu/actions/workflows/ci.yml/badge.svg)
+[![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/ressu)
 
 > 主要面向 Windows，其次是 Linux 与 macOS。
 
