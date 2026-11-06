@@ -19,6 +19,30 @@ const COVER_MS = 300;
 /** How the current article entered the screen. */
 type Entry = "next" | "prev" | "enter";
 
+/**
+ * Mount-time animation for an article layer, played through the Web
+ * Animations API. The CSS classes on the layer already describe the same
+ * motion for engines that replay mount animations reliably; calling
+ * `el.animate()` on mount guarantees playback everywhere (WebKit can skip
+ * class-driven animations when the element mounts and starts in the same
+ * frame). Keeping both is harmless: the API animation composites over the
+ * class animation while it runs.
+ */
+function playEntry(ref: HTMLDivElement, layer: Entry | "base"): void {
+  if (layer === "base") return;
+  if (typeof ref.animate !== "function") return; // non-browser environment (tests)
+  const frames =
+    layer === "enter"
+      ? [
+          { opacity: "0", transform: "translateY(24px)" },
+          { opacity: "1", transform: "translateY(0)" },
+        ]
+      : layer === "next"
+        ? [{ transform: "translateY(-100%)" }, { transform: "translateY(0)" }]
+        : [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }];
+  ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
+}
+
 function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
   const target = event.target as HTMLElement | null;
   const anchor = target?.closest("a");
@@ -179,8 +203,11 @@ function ArticleLayer(props: { key: string; layer: Entry | "base"; post: () => P
   // swap replaces the element instead of updating it in place.
   void props.key;
 
+  const bindLayer = (el: HTMLDivElement) => playEntry(el, props.layer);
+
   return (
     <div
+      ref={bindLayer}
       data-layer={props.layer}
       class={cn(
         "flex min-h-0 flex-1 flex-col",
