@@ -8,7 +8,7 @@
     "correctness": "error",
     "suspicious": "warn"
   },
-  "ignorePatterns": ["dist", "build", ".mygo", "src/mygo.ts"],
+  "ignorePatterns": ["webview/dist", "build", ".mygo", "webview/src/mygo.ts"],
   "rules": {
     "eslint/no-console": "off",
     "typescript/no-explicit-any": "warn",
@@ -16,14 +16,14 @@
   },
   "overrides": [
     {
-      "files": ["src/components/ui/**"],
+      "files": ["webview/src/components/ui/**"],
       "rules": {
         "jsx-a11y/label-has-associated-control": "off",
         "import/no-named-as-default-member": "off"
       }
     },
     {
-      "files": ["**/*.test.{ts,tsx}", "test/**"],
+      "files": ["**/*.test.{ts,tsx}", "webview/test/**"],
       "rules": {
         "vitest/require-mock-type-parameters": "off"
       }

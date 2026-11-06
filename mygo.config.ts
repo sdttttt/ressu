@@ -9,7 +9,7 @@ export default defineConfig({
   devUrl: "http://localhost:5173",
   devCommand: "bun run dev:web",
   buildCommand: "bun run build:web",
-  frontendDist: "dist",
-  bindings: "src/mygo.ts",
+  frontendDist: "webview/dist",
+  bindings: "webview/src/mygo.ts",
   out: "build",
 });

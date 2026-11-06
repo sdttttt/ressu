@@ -2,8 +2,15 @@
   "printWidth": 100,
   "sortImports": true,
   "sortTailwindcss": {
-    "stylesheet": "src/index.css",
+    "stylesheet": "webview/src/index.css",
     "functions": ["cn", "cva"]
   },
-  "ignorePatterns": ["dist", "build", ".mygo", "src/mygo.ts", "bun.lock", "package.json"]
+  "ignorePatterns": [
+    "webview/dist",
+    "build",
+    ".mygo",
+    "webview/src/mygo.ts",
+    "bun.lock",
+    "package.json"
+  ]
 }

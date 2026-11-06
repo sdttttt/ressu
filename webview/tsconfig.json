@@ -22,5 +22,5 @@
       "~/*": ["./src/*"]
     }
   },
-  "include": ["src", "test", "vite.config.ts", "vitest.config.ts", "mygo.config.ts"]
+  "include": ["src", "test", "vite.config.ts", "vitest.config.ts", "../mygo.config.ts"]
 }

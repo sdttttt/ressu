@@ -28,18 +28,20 @@ bun install
 bun run dev        # mygo dev：编译并启动应用，同时启动 Vite 热更新
 ```
 
+前端源码与构建配置都在 `webview/`，但所有脚本仍在仓库根目录执行（Vite 的 root 指回 `webview/`）。
+
 常用脚本：
 
-| 命令               | 作用                                                      |
-| ------------------ | --------------------------------------------------------- |
-| `bun run dev`      | 启动应用（Go + Vite）                                     |
-| `bun run dev:web`  | 只启动 Vite，在普通浏览器里调布局（此时读不到数据）       |
-| `bun run generate` | 重新生成 `src/mygo.ts`（`mygo dev`/`build` 会自动生成）   |
-| `bun run check`    | `tsc --noEmit` + `oxlint` + `oxfmt --check`               |
-| `bun run fmt`      | 用 oxfmt 格式化（含 import 与 Tailwind 类名排序）         |
-| `bun run test`     | Vitest（jsdom + @solidjs/testing-library）                |
-| `go test ./...`    | Go 单测与集成测试（本地 httptest 服务器跑完整的抓取流程） |
-| `bun run build`    | 打包应用，产物在 `build/<os>-<arch>/`                     |
+| 命令               | 作用                                                                 |
+| ------------------ | -------------------------------------------------------------------- |
+| `bun run dev`      | 启动应用（Go + Vite）                                                |
+| `bun run dev:web`  | 只启动 Vite，在普通浏览器里调布局（此时读不到数据）                  |
+| `bun run generate` | 重新生成 `webview/src/mygo.ts`（`mygo dev`/`build` 会自动生成）      |
+| `bun run check`    | `tsc -p webview/tsconfig.json --noEmit` + `oxlint` + `oxfmt --check` |
+| `bun run fmt`      | 用 oxfmt 格式化（含 import 与 Tailwind 类名排序）                    |
+| `bun run test`     | Vitest（jsdom + @solidjs/testing-library）                           |
+| `go test ./...`    | Go 单测与集成测试（本地 httptest 服务器跑完整的抓取流程）            |
+| `bun run build`    | 打包应用，产物在 `build/<os>-<arch>/`                                |
 
 ## 目录结构
 
@@ -49,13 +51,19 @@ internal/
   rss/                  抓取（ETag / If-Modified-Since）与解析
   store/                JSON 持久化：feeds.json、posts/<id>.json、settings.json
   service/              暴露给前端的服务与事件（Feeds / Posts / Settings）
-src/
-  mygo.ts               由 Go 生成的类型化客户端（git 忽略）
-  app.tsx               三栏布局与启动流程
-  stores/               应用状态、事件订阅
-  components/           侧栏、文章列表、阅读视图、设置、对话框
-  components/ui/        solid-ui 组件（shadcn 风格的源码内联）
-  lib/                  日期格式、HTML 清洗、主题
+webview/                前端源码与构建配置（独立的源代码目录）
+  index.html            Vite 入口
+  vite.config.ts        Solid + Tailwind 插件，root 指向 webview/
+  vitest.config.ts      测试配置
+  src/
+    mygo.ts             由 Go 生成的类型化客户端（git 忽略）
+    app.tsx             三栏布局与启动流程
+    stores/             应用状态、事件订阅
+    components/         侧栏、文章列表、阅读视图、设置、对话框
+    components/ui/      solid-ui 组件（shadcn 风格的源码内联）
+    lib/                日期格式、HTML 清洗、主题
+  test/setup.ts         Vitest 的 jsdom 垫片
+  public/               Vite 公共资源
 resources/icon.png      应用图标
 ```
 

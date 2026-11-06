@@ -1,8 +1,8 @@
 node_modules
-dist
+webview/dist
 build
 .mygo
-src/mygo.ts
+webview/src/mygo.ts
 coverage
 *.log
 .DS_Store

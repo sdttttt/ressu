@@ -8,16 +8,16 @@
     "dev": "mygo dev",
     "build": "mygo build",
     "generate": "mygo generate",
-    "dev:web": "vite",
-    "build:web": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "dev:web": "vite --config webview/vite.config.ts",
+    "build:web": "tsc -p webview/tsconfig.json --noEmit && vite build --config webview/vite.config.ts",
+    "preview": "vite preview --config webview/vite.config.ts",
+    "typecheck": "tsc -p webview/tsconfig.json --noEmit",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "check": "bun run typecheck && bun run lint && bun run fmt:check",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --config webview/vitest.config.ts",
+    "test:watch": "vitest --config webview/vitest.config.ts"
   },
   "dependencies": {
     "@corvu/resizable": "^0.2.5",
