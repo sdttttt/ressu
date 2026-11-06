@@ -129,6 +129,11 @@ function createArticleFade(): {
         post: { ...latest },
         leavingPost: outgoing ? { ...outgoing } : null,
       });
+      // current must move to the new guid in the same batch: it keys the
+      // incoming layer's Show. Leaving it stale would swap the layer's
+      // content in place now (no rebuild) and then rebuild it when the drop
+      // timer fires — replaying the slide a second time.
+      setCurrent(latest.guid);
       setLeaving(outgoing?.guid ?? "");
       setEntry(hasCover ? coverDirection(outgoing, latest) : "enter");
     });

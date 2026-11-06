@@ -77,10 +77,14 @@ describe("PostView cover transition", () => {
 
     expect(container.textContent).toContain("文章 guid-1");
     expect(container.textContent).toContain("文章 guid-2");
+    const cover = container.querySelector("[data-layer='next']");
+    expect(cover).toBeTruthy();
 
-    // 300ms 后 base 层被移除
+    // 300ms 后 base 层被移除;incoming 层必须是同一个 DOM 节点 —— 重建它会
+    // 把滑入动画重播一遍,看起来就像连续覆盖了两次
     await new Promise((r) => setTimeout(r, 350));
     expect(layers(container)).toEqual(["next"]);
+    expect(container.querySelector("[data-layer='next']")).toBe(cover);
     expect(container.textContent).not.toContain("文章 guid-1");
   });
 });
