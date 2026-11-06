@@ -15,7 +15,7 @@
 | 前端     | SolidJS 1.9 + solid-ui（Kobalte）+ Tailwind CSS 4 + Vite 8   |
 | 状态     | Solid store（不再需要 Redux）                                |
 | 工具链   | Bun、oxlint、oxfmt、Vitest、TypeScript                       |
-| 存储     | 用户数据目录下的 JSON 文件                                   |
+| 存储     | 用户数据目录下的 bbolt 数据库（`ressu.db`）                  |
 
 抓取、解析、去重、存储全部在 Go 侧完成，页面通过 `mygo generate` 生成的类型化客户端调用，刷新进度用类型化事件回推。
 
@@ -49,7 +49,7 @@ bun run dev        # mygo dev：编译并启动应用，同时启动 Vite 热更
 main.go                 应用入口：绑定服务、菜单、窗口、启动刷新
 internal/
   rss/                  抓取（ETag / If-Modified-Since）与解析
-  store/                JSON 持久化：feeds.json、posts/<id>.json、settings.json
+  store/                bbolt 持久化：订阅源、文章、偏好都放在 ressu.db
   service/              暴露给前端的服务与事件（Feeds / Posts / Settings）
 webview/                前端源码与构建配置（独立的源代码目录）
   index.html            Vite 入口
@@ -72,12 +72,11 @@ resources/icon.png      应用图标
 `Ressu` 的 Go 侧把数据写在系统的用户数据目录（Windows 上是
 `%AppData%\Ressu`），设置 → 数据 里可以直接打开该目录：
 
-- `feeds.json`：订阅源与未读数
-- `posts/<订阅源 id>.json`：该订阅源的文章（默认每源保留 500 篇，可在设置里调整）
-- `settings.json`：主题、启动刷新、打开链接方式、面板宽度等
+- `ressu.db`：bbolt 数据库，含订阅源与未读数（`feeds` 桶）、文章（`posts` 桶，每个订阅源
+  一个嵌套桶，默认每源保留 500 篇，可在设置里调整）、偏好（`settings` 桶）
 - `window-state.json`：窗口位置与大小
 
-写入使用「临时文件 + 重命名」，不会留下半个文件。
+数据库由 bbolt 负责事务与崩溃恢复，写入不会留下半个文件。同一时间只能有一个实例打开它。
 
 ## 功能
 

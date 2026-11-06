@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程持有：它抓取并解析订阅源、按 GUID 去重、把文章以 JSON 存到用户数据目录，再通过 MyGO 绑定把数据交给 SolidJS 页面。页面只负责渲染，自己从不为了订阅数据访问网络。
+Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程持有：它抓取并解析订阅源、按 GUID 去重、把文章存进用户数据目录下的 bbolt 数据库，再通过 MyGO 绑定把数据交给 SolidJS 页面。页面只负责渲染，自己从不为了订阅数据访问网络。
 
 本文件说明仓库如何构建、组织和改动。面向用户的中文介绍在 `README.md`。
 
@@ -14,7 +14,7 @@ Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程�
 | 打包   | Vite 8 + `vite-plugin-solid`，构建目标 `es2022`                         |
 | 状态   | 单个 Solid store（`webview/src/stores/app.ts`），没有 Redux，也没有路由 |
 | 工具链 | Bun（锁文件 `bun.lock`）、TypeScript 7、oxlint、oxfmt、Vitest 5         |
-| 存储   | MyGO 用户数据目录下的 JSON 文件                                         |
+| 存储   | MyGO 用户数据目录下的 bbolt 数据库（`ressu.db`）                        |
 | 平台   | 以 Windows 为主；Linux 与 macOS 也支持，并在 CI 里打包                  |
 | 许可证 | Unlicense（公有领域）                                                   |
 
@@ -28,8 +28,8 @@ internal/                   Go internal/ 规则下的后端包（外部不可导
   rss/                      HTTP 抓取（ETag/If-Modified-Since）与订阅源解析
     fetch.go, parse.go      Fetch/ValidateURL、Parse/Meta/Item、plainText/truncate
     testdata/               rss2.xml、atom.xml、jsonfeed.json、broken.xml 测试夹具
-  store/                    JSON 持久化与内存缓存
-    store.go, model.go, files.go
+  store/                    bbolt 持久化，订阅源与偏好缓存在内存
+    store.go, model.go
   service/                  暴露给页面的 API 与类型化事件
     feeds.go, posts.go, settings.go, events.go
 webview/                    前端源码与构建配置（独立的源代码目录）
@@ -149,25 +149,29 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
   `{feedId, unreadOnly, starredOnly, search, offset, limit}`，返回摘要加 `total` 和
   `unread`。界面每页 100 条（`PAGE_SIZE`），服务默认 100、上限 500。`search` 在 Go 里
   已实现，但当前界面始终传 `""`。
-- 未读数由文章推导，存在 `Feed.Unread` 上，并在每次保存某订阅源的文章时重算。
+- 未读数由文章推导，存在 `Feed.Unread` 上：合并文章时重算，单条已读/取消已读时增减，
+  全部已读时清零。
 
 持久化（`internal/store`）：
 
-| 文件                  | 内容                                                        |
-| --------------------- | ----------------------------------------------------------- |
-| `feeds.json`          | 订阅源及其频道元数据、ETag/Last-Modified、未读数            |
-| `posts/<feedId>.json` | 单个订阅源的文章，按时间倒序，裁剪到 `postsPerFeed`         |
-| `settings.json`       | `Prefs`：主题、启动刷新、打开即已读、链接打开方式、面板宽度 |
-| `window-state.json`   | 窗口几何信息，由 MyGO 依据 `StateKey` 写入，不是本仓库代码  |
+数据库是用户数据目录下的 `ressu.db`（bbolt，单文件）：
 
-- 三个应用文件都带 `{"version": 1, ...}`（`store.go` 里的 `schemaVersion`）。没有迁移
-  代码；结构变化时请升版本并写迁移。
-- `writeJSON` 在同目录写临时文件、fsync、关闭后重命名，因此崩溃不会留下半个文件。
-  `readJSON` 容忍文件缺失或为空。
-- `Store` 用一把互斥锁串行化状态访问，出参都做克隆（`slices.Clone`），并按订阅源缓存
-  文章到 map。它假设只有一个进程。
+| 桶         | 键                  | 值                                                          |
+| ---------- | ------------------- | ----------------------------------------------------------- |
+| `feeds`    | 8 字节大端订阅源 id | 整个 `Feed` 的 JSON：频道元数据、ETag/Last-Modified、未读数 |
+| `posts`    | 订阅源 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                               |
+| `settings` | `prefs`             | 整个 `Prefs` 的 JSON                                        |
+
+`window-state.json` 仍由 MyGO 依据 `StateKey` 写在同一个目录，不是本仓库代码。
+
+- `Store` 把订阅源和偏好缓存在内存（数量小、读频繁），文章每次从数据库读；一把互斥锁串行化
+  写操作。出参都做克隆（`slices.Clone`），内部值不会被调用方改到。
+- 只有一个进程能用数据库：bbolt 的文件锁会让第二个实例在打开时超时报错。
+- 没有版本键，也没有迁移代码。改结构时要自己兼容旧记录，或加一个版本键并写迁移。
 - `MergePosts` 按 GUID 刷新已存在的条目但保留 `read`、`starred`、`fetchedAt`；按
   `publishedAt` 倒序；裁剪到 `prefs.PostsPerFeed`（默认 500，允许 50–2000）并重算未读。
+  它在一个事务里重写该订阅源的整个文章桶，单条已读/星标只写那一条。
+- `AddFeed` 用「最大 id + 1」，删除最高 id 的订阅源后该 id 会被复用。
 - `Prefs.Normalize` 替换越界值；未知主题回落到 `system`，`openLinks` 不是 `window` 就
   变成 `browser`。前端在 `webview/src/stores/app.ts` 的 `defaultPrefs` 里复制了一份默认值——
   新增偏好时两处都要改。
@@ -262,8 +266,8 @@ TypeScript / Solid：
 
 - Go：`go test ./...`。三个包都有测试。`rss` 是表驱动的，夹具在
   `internal/rss/testdata/`（RSS 2.0、Atom、JSON Feed、坏 XML），覆盖
-  `plainText`/`ValidateURL`；`store` 覆盖文件读写、默认值、重复拒绝、合并语义、裁剪、
-  全部已读、删除、重开与原子写入；`service` 用 `httptest` 服务器跑完整的
+  `plainText`/`ValidateURL`；`store` 覆盖数据库读写、默认值、重复拒绝、合并语义、裁剪、
+  全部已读、删除与重开；`service` 用 `httptest` 服务器跑完整的
   添加 -> 刷新 -> 304 -> 新增条目 -> 标记已读 -> 筛选流程，另有失败、分页与搜索的用例。
   测试夹具中英混排是有意为之。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试用 `vi.mock` 和固定
@@ -303,8 +307,9 @@ TypeScript / Solid：
   href 直接交给 shell 或窗口。
 - 订阅源地址在服务端校验（`rss.ValidateURL`）：只接受绝对的 `http`/`https`，因此
   `file://`、`javascript:` 和相对地址都会被拒。抓取有 30s 超时与 16 MiB 体积上限。
-- 数据是本地未加密的 JSON：订阅、完整正文、已读与星标状态、偏好、窗口几何信息。设置
-  对话框会展示数据目录并可在文件管理器中打开。删除订阅源会删掉它的 `posts/<id>.json`。
+- 数据是本地未加密的数据库（`ressu.db`）：订阅、完整正文、已读与星标状态、偏好，外加
+  MyGO 的 `window-state.json`。设置对话框会展示数据目录并可在文件管理器中打开。删除订阅源
+  会删掉它在 `posts` 桶里的嵌套桶。
 - 没有账号、同步、遥测或统计。文章引用的远程资源与订阅源图标由 WebView 直接从对方服务器
   加载，因此那些服务器能看到请求；这是除抓取订阅源之外唯一的出站流量。
 - `mygo build` 会把前端内嵌并从 `mygo://localhost` 提供；页面没有

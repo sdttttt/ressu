@@ -17,19 +17,23 @@ func openTemp(t *testing.T) *Store {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { s.Close() })
 	return s
 }
 
-func TestOpenCreatesFiles(t *testing.T) {
+func TestOpenCreatesDatabase(t *testing.T) {
 	dir := t.TempDir()
 	s, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"feeds.json", "settings.json", "posts"} {
-		if _, err := os.Stat(filepath.Join(dir, path)); err != nil {
-			t.Errorf("%s: %v", path, err)
-		}
+	defer s.Close()
+
+	if _, err := os.Stat(filepath.Join(dir, dbFileName)); err != nil {
+		t.Errorf("%s: %v", dbFileName, err)
+	}
+	if got := s.Dir(); got != dir {
+		t.Errorf("dir = %q, want %q", got, dir)
 	}
 	if got := s.Prefs().PostsPerFeed; got != DefaultPostsPerFeed {
 		t.Errorf("posts per feed = %d", got)
@@ -225,15 +229,15 @@ func TestRemoveFeedDeletesPosts(t *testing.T) {
 	if _, err := s.Feed(feed.ID); !errors.Is(err, ErrNotFound) {
 		t.Errorf("feed error = %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(s.Dir(), "posts", "1.json")); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("posts file should be gone: %v", err)
+	if _, err := s.Post(feed.ID, "a"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("post error = %v", err)
 	}
 	if len(s.Feeds()) != 0 {
 		t.Error("feeds should be empty")
 	}
 }
 
-func TestPrefsSurviveReopen(t *testing.T) {
+func TestEverythingSurvivesReopen(t *testing.T) {
 	dir := t.TempDir()
 	s, err := Open(dir)
 	if err != nil {
@@ -246,6 +250,12 @@ func TestPrefsSurviveReopen(t *testing.T) {
 	if _, err := s.MergePosts(feed.ID, []Post{{GUID: "a", Title: "One", PublishedAt: base}}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := s.UpdatePost(feed.ID, "a", func(post *Post) {
+		post.Read = true
+		post.Starred = true
+	}); err != nil {
+		t.Fatal(err)
+	}
 	prefs := s.Prefs()
 	prefs.Theme = ThemeDark
 	prefs.PostsPerFeed = 100
@@ -253,11 +263,15 @@ func TestPrefsSurviveReopen(t *testing.T) {
 	if err := s.SetPrefs(prefs); err != nil {
 		t.Fatal(err)
 	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	reopened, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer reopened.Close()
 
 	got := reopened.Prefs()
 	if got.Theme != ThemeDark || got.PostsPerFeed != 100 {
@@ -269,14 +283,20 @@ func TestPrefsSurviveReopen(t *testing.T) {
 
 	feeds := reopened.Feeds()
 	if len(feeds) != 1 || feeds[0].Title != "A" {
-		t.Errorf("feeds = %+v", feeds)
+		t.Fatalf("feeds = %+v", feeds)
+	}
+	if feeds[0].Unread != 0 {
+		t.Errorf("unread = %d", feeds[0].Unread)
 	}
 	posts, err := reopened.Posts(feeds[0].ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(posts) != 1 || posts[0].Title != "One" {
-		t.Errorf("posts = %+v", posts)
+		t.Fatalf("posts = %+v", posts)
+	}
+	if !posts[0].Read || !posts[0].Starred {
+		t.Errorf("flags = read:%v starred:%v", posts[0].Read, posts[0].Starred)
 	}
 }
 
@@ -295,35 +315,5 @@ func TestPrefsNormalize(t *testing.T) {
 	}
 	if len(p.PaneSizes) != 2 {
 		t.Errorf("pane sizes = %v", p.PaneSizes)
-	}
-}
-
-func TestWriteJSONReplacesFile(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "data.json")
-
-	if err := writeJSON(path, map[string]int{"a": 1}); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeJSON(path, map[string]int{"b": 2}); err != nil {
-		t.Fatal(err)
-	}
-
-	got, found, err := readJSON[map[string]int](path)
-	if err != nil || !found {
-		t.Fatalf("read: found=%v err=%v", found, err)
-	}
-	if _, ok := got["a"]; ok {
-		t.Error("the old content should be gone")
-	}
-	if got["b"] != 2 {
-		t.Errorf("data = %v", got)
-	}
-
-	entries, err := os.ReadDir(filepath.Dir(path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 1 {
-		t.Errorf("temporary files left behind: %v", entries)
 	}
 }

@@ -34,6 +34,16 @@ func itemXML(guid, title string) string {
 </item>`, title, guid, guid, title)
 }
 
+func openStore(t *testing.T) *store.Store {
+	t.Helper()
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	return st
+}
+
 func TestAddRefreshAndRead(t *testing.T) {
 	var body atomic.Value
 	body.Store(feedXML(itemXML("a", "第一篇"), itemXML("b", "第二篇")))
@@ -54,10 +64,7 @@ func TestAddRefreshAndRead(t *testing.T) {
 	}))
 	defer server.Close()
 
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
+	st := openStore(t)
 	feeds := NewFeeds(st)
 	posts := NewPosts(st)
 
@@ -166,10 +173,7 @@ func TestAddRejectsWhatIsNotAFeed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
+	st := openStore(t)
 	feeds := NewFeeds(st)
 
 	if _, err := feeds.Add(context.Background(), server.URL); err == nil {
@@ -190,10 +194,7 @@ func TestAddRejectsDuplicates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
+	st := openStore(t)
 	feeds := NewFeeds(st)
 
 	if _, err := feeds.Add(context.Background(), server.URL); err != nil {
@@ -215,10 +216,7 @@ func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
+	st := openStore(t)
 	feeds := NewFeeds(st)
 
 	feed, err := feeds.Add(context.Background(), server.URL)
@@ -252,10 +250,7 @@ func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 }
 
 func TestPostsListPagesAndSearches(t *testing.T) {
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
+	st := openStore(t)
 	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
 	if err != nil {
 		t.Fatal(err)

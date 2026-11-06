@@ -1,6 +1,6 @@
 // Ressu is a desktop RSS reader: the Go side fetches and parses feeds, keeps
-// them in JSON files under the user data directory, and serves them to the
-// Solid frontend through MyGo bindings.
+// them in a bbolt database under the user data directory, and serves them to
+// the Solid frontend through MyGo bindings.
 package main
 
 import (
@@ -25,6 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer st.Close()
 
 	feeds := service.NewFeeds(st)
 	mygo.Bind(feeds, service.NewPosts(st), service.NewSettings(st))

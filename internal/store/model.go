@@ -1,5 +1,5 @@
-// Package store keeps feeds, posts and preferences in JSON files under the
-// application's user data directory.
+// Package store keeps feeds, posts and preferences in a bbolt database under
+// the application's user data directory.
 package store
 
 import "time"
@@ -80,7 +80,7 @@ const (
 // DefaultPostsPerFeed bounds the posts kept for a feed.
 const DefaultPostsPerFeed = 500
 
-// Prefs are the user's preferences, kept in settings.json.
+// Prefs are the user's preferences, kept in the settings bucket.
 type Prefs struct {
 	Theme          string `json:"theme"`
 	RefreshOnStart bool   `json:"refreshOnStart"`

@@ -1,20 +1,24 @@
 package store
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"sync"
 	"time"
+
+	bolt "go.etcd.io/bbolt"
 )
 
 const (
-	feedsFileName    = "feeds.json"
-	settingsFileName = "settings.json"
-	postsDirName     = "posts"
-	schemaVersion    = 1
+	dbFileName     = "ressu.db"
+	feedsBucket    = "feeds"
+	postsBucket    = "posts"
+	settingsBucket = "settings"
+	prefsKey       = "prefs"
 )
 
 // Errors of the store.
@@ -23,94 +27,113 @@ var (
 	ErrDuplicate = errors.New("this feed is already subscribed")
 )
 
-type feedsFile struct {
-	Version int    `json:"version"`
-	Feeds   []Feed `json:"feeds"`
-}
-
-type postsFile struct {
-	Version int    `json:"version"`
-	Posts   []Post `json:"posts"`
-}
-
-type settingsFile struct {
-	Version int   `json:"version"`
-	Prefs   Prefs `json:"prefs"`
-}
-
-// Store holds the subscriptions and preferences, and the posts of each feed
-// once they are needed. Every method is safe for concurrent use.
+// Store keeps the subscriptions and the preferences in memory, and the posts
+// of every feed in a bbolt database. Every method is safe for concurrent use.
 type Store struct {
-	dir string
+	db *bolt.DB
 
 	mu    sync.Mutex
 	feeds []Feed
 	prefs Prefs
-	posts map[int64][]Post
 }
 
-// Open loads the store in dir, creating the directory and its default settings
-// when they are missing.
+// Open opens the database in dir, creating it with the default preferences
+// when it is missing.
 func Open(dir string) (*Store, error) {
-	if err := os.MkdirAll(filepath.Join(dir, postsDirName), 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-
-	s := &Store{dir: dir, prefs: DefaultPrefs(), posts: map[int64][]Post{}}
-
-	feeds, hasFeeds, err := readJSON[feedsFile](s.feedsPath())
+	db, err := bolt.Open(filepath.Join(dir, dbFileName), 0o600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
 		return nil, err
 	}
-	if hasFeeds {
-		s.feeds = feeds.Feeds
-	}
 
-	settings, hasSettings, err := readJSON[settingsFile](s.settingsPath())
-	if err != nil {
+	s := &Store{db: db, prefs: DefaultPrefs()}
+	if err := db.Update(s.init); err != nil {
+		db.Close()
 		return nil, err
-	}
-	if hasSettings {
-		s.prefs = settings.Prefs
-	}
-	s.prefs.Normalize()
-
-	if !hasFeeds {
-		if err := s.saveFeeds(); err != nil {
-			return nil, err
-		}
-	}
-	if !hasSettings {
-		if err := s.saveSettings(); err != nil {
-			return nil, err
-		}
 	}
 	return s, nil
 }
 
-// Dir returns the directory holding the store's files.
+// init creates the buckets and loads the subscriptions and preferences.
+func (s *Store) init(tx *bolt.Tx) error {
+	feeds, err := tx.CreateBucketIfNotExists([]byte(feedsBucket))
+	if err != nil {
+		return err
+	}
+	if _, err := tx.CreateBucketIfNotExists([]byte(postsBucket)); err != nil {
+		return err
+	}
+	settings, err := tx.CreateBucketIfNotExists([]byte(settingsBucket))
+	if err != nil {
+		return err
+	}
+
+	if err := feeds.ForEach(func(_, value []byte) error {
+		var f Feed
+		if err := json.Unmarshal(value, &f); err != nil {
+			return err
+		}
+		s.feeds = append(s.feeds, f)
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if _, err := get(settings, []byte(prefsKey), &s.prefs); err != nil {
+		return err
+	}
+	s.prefs.Normalize()
+	return put(settings, []byte(prefsKey), s.prefs)
+}
+
+// Close closes the database.
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
+// Dir returns the directory holding the database.
 func (s *Store) Dir() string {
-	return s.dir
+	return filepath.Dir(s.db.Path())
 }
 
-func (s *Store) feedsPath() string {
-	return filepath.Join(s.dir, feedsFileName)
+// feedKey encodes a feed id: big-endian bytes keep the keys in id order.
+func feedKey(id int64) []byte {
+	var key [8]byte
+	binary.BigEndian.PutUint64(key[:], uint64(id))
+	return key[:]
 }
 
-func (s *Store) settingsPath() string {
-	return filepath.Join(s.dir, settingsFileName)
+func put(b *bolt.Bucket, key []byte, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return b.Put(key, data)
 }
 
-func (s *Store) postsPath(feedID int64) string {
-	return filepath.Join(s.dir, postsDirName, strconv.FormatInt(feedID, 10)+".json")
+func get(b *bolt.Bucket, key []byte, v any) (found bool, err error) {
+	data := b.Get(key)
+	if data == nil {
+		return false, nil
+	}
+	return true, json.Unmarshal(data, v)
 }
 
-func (s *Store) saveFeeds() error {
-	return writeJSON(s.feedsPath(), feedsFile{Version: schemaVersion, Feeds: s.feeds})
+func (s *Store) putFeed(tx *bolt.Tx, f Feed) error {
+	return put(tx.Bucket([]byte(feedsBucket)), feedKey(f.ID), f)
 }
 
-func (s *Store) saveSettings() error {
-	return writeJSON(s.settingsPath(), settingsFile{Version: schemaVersion, Prefs: s.prefs})
+// updateUnread stores n as the unread count of a feed.
+func (s *Store) updateUnread(tx *bolt.Tx, feedID int64, n int) error {
+	i := s.feedIndex(feedID)
+	if i < 0 {
+		return ErrNotFound
+	}
+	f := s.feeds[i]
+	f.Unread = n
+	return s.putFeed(tx, f)
 }
 
 func (s *Store) feedIndex(id int64) int {
@@ -168,10 +191,10 @@ func (s *Store) AddFeed(f Feed) (Feed, error) {
 	if f.CreatedAt.IsZero() {
 		f.CreatedAt = time.Now()
 	}
-	s.feeds = append(s.feeds, f)
-	if err := s.saveFeeds(); err != nil {
+	if err := s.db.Update(func(tx *bolt.Tx) error { return s.putFeed(tx, f) }); err != nil {
 		return Feed{}, err
 	}
+	s.feeds = append(s.feeds, f)
 	return f, nil
 }
 
@@ -184,8 +207,11 @@ func (s *Store) UpdateFeed(f Feed) error {
 	if i < 0 {
 		return ErrNotFound
 	}
+	if err := s.db.Update(func(tx *bolt.Tx) error { return s.putFeed(tx, f) }); err != nil {
+		return err
+	}
 	s.feeds[i] = f
-	return s.saveFeeds()
+	return nil
 }
 
 // RemoveFeed deletes a subscription and its posts.
@@ -197,12 +223,16 @@ func (s *Store) RemoveFeed(id int64) error {
 	if i < 0 {
 		return ErrNotFound
 	}
-	s.feeds = slices.Delete(s.feeds, i, i+1)
-	delete(s.posts, id)
-	if err := os.Remove(s.postsPath(id)); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		if err := deletePosts(tx, id); err != nil {
+			return err
+		}
+		return tx.Bucket([]byte(feedsBucket)).Delete(feedKey(id))
+	}); err != nil {
 		return err
 	}
-	return s.saveFeeds()
+	s.feeds = slices.Delete(s.feeds, i, i+1)
+	return nil
 }
 
 // Prefs returns the preferences.
@@ -220,51 +250,97 @@ func (s *Store) SetPrefs(p Prefs) error {
 	defer s.mu.Unlock()
 
 	p.Normalize()
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		return put(tx.Bucket([]byte(settingsBucket)), []byte(prefsKey), p)
+	}); err != nil {
+		return err
+	}
 	s.prefs = p
-	return s.saveSettings()
+	return nil
 }
 
 // Posts returns every post of a feed, newest first.
 func (s *Store) Posts(feedID int64) ([]Post, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.postsLocked(feedID)
+	var posts []Post
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		var err error
+		posts, err = readPosts(tx, feedID)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	slices.SortStableFunc(posts, byPublishedDesc)
+	return posts, nil
 }
 
 // Post returns one post of a feed.
 func (s *Store) Post(feedID int64, guid string) (Post, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	posts, err := s.postsLocked(feedID)
-	if err != nil {
+	var post Post
+	var found bool
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		b := feedPosts(tx, feedID)
+		if b == nil {
+			return nil
+		}
+		var err error
+		found, err = get(b, []byte(guid), &post)
+		return err
+	}); err != nil {
 		return Post{}, err
 	}
-	i := slices.IndexFunc(posts, func(p Post) bool { return p.GUID == guid })
-	if i < 0 {
+	if !found {
 		return Post{}, ErrNotFound
 	}
-	return posts[i], nil
+	return post, nil
 }
 
-// UpdatePost changes one post of a feed and saves the feed's posts.
+// UpdatePost changes one post of a feed.
 func (s *Store) UpdatePost(feedID int64, guid string, change func(*Post)) (Post, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	posts, err := s.postsLocked(feedID)
-	if err != nil {
-		return Post{}, err
-	}
-	i := slices.IndexFunc(posts, func(p Post) bool { return p.GUID == guid })
+	i := s.feedIndex(feedID)
 	if i < 0 {
 		return Post{}, ErrNotFound
 	}
-	change(&posts[i])
-	if err := s.savePostsLocked(feedID, posts); err != nil {
+
+	var updated Post
+	var unread int
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		b := feedPosts(tx, feedID)
+		if b == nil {
+			return ErrNotFound
+		}
+		var post Post
+		found, err := get(b, []byte(guid), &post)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return ErrNotFound
+		}
+
+		read := post.Read
+		change(&post)
+		if err := put(b, []byte(guid), post); err != nil {
+			return err
+		}
+
+		unread = s.feeds[i].Unread
+		switch {
+		case !read && post.Read:
+			unread--
+		case read && !post.Read:
+			unread++
+		}
+		unread = max(unread, 0)
+		updated = post
+		return s.updateUnread(tx, feedID, unread)
+	}); err != nil {
 		return Post{}, err
 	}
-	return posts[i], nil
+	s.feeds[i].Unread = unread
+	return updated, nil
 }
 
 // MarkAllRead marks every post of a feed as read, and returns how many changed.
@@ -272,23 +348,37 @@ func (s *Store) MarkAllRead(feedID int64) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	posts, err := s.postsLocked(feedID)
-	if err != nil {
-		return 0, err
+	i := s.feedIndex(feedID)
+	if i < 0 {
+		return 0, ErrNotFound
 	}
+
 	changed := 0
-	for i := range posts {
-		if !posts[i].Read {
-			posts[i].Read = true
-			changed++
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		posts, err := readPosts(tx, feedID)
+		if err != nil {
+			return err
 		}
+		for j := range posts {
+			if !posts[j].Read {
+				posts[j].Read = true
+				changed++
+			}
+		}
+		if changed == 0 {
+			return nil
+		}
+		if err := replacePosts(tx, feedID, posts); err != nil {
+			return err
+		}
+		return s.updateUnread(tx, feedID, 0)
+	}); err != nil {
+		return 0, err
 	}
 	if changed == 0 {
 		return 0, nil
 	}
-	if err := s.savePostsLocked(feedID, posts); err != nil {
-		return 0, err
-	}
+	s.feeds[i].Unread = 0
 	return changed, nil
 }
 
@@ -299,79 +389,108 @@ func (s *Store) MergePosts(feedID int64, incoming []Post) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	posts, err := s.postsLocked(feedID)
-	if err != nil {
-		return 0, err
-	}
-
-	index := make(map[string]int, len(posts))
-	for i, p := range posts {
-		index[p.GUID] = i
+	i := s.feedIndex(feedID)
+	if i < 0 {
+		return 0, ErrNotFound
 	}
 
 	added := 0
-	now := time.Now()
-	for _, p := range incoming {
-		p.FeedID = feedID
-		if i, ok := index[p.GUID]; ok {
-			kept := posts[i]
-			p.Read = kept.Read
-			p.Starred = kept.Starred
-			p.FetchedAt = kept.FetchedAt
-			posts[i] = p
-			continue
+	var unread int
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		posts, err := readPosts(tx, feedID)
+		if err != nil {
+			return err
 		}
-		p.FetchedAt = now
-		posts = append(posts, p)
-		added++
-	}
 
-	slices.SortStableFunc(posts, byPublishedDesc)
-	posts = s.trimPosts(posts)
-	if err := s.savePostsLocked(feedID, posts); err != nil {
+		index := make(map[string]int, len(posts))
+		for j, p := range posts {
+			index[p.GUID] = j
+		}
+
+		added = 0
+		now := time.Now()
+		for _, p := range incoming {
+			p.FeedID = feedID
+			if j, ok := index[p.GUID]; ok {
+				kept := posts[j]
+				p.Read = kept.Read
+				p.Starred = kept.Starred
+				p.FetchedAt = kept.FetchedAt
+				posts[j] = p
+				continue
+			}
+			p.FetchedAt = now
+			posts = append(posts, p)
+			index[p.GUID] = len(posts) - 1
+			added++
+		}
+
+		slices.SortStableFunc(posts, byPublishedDesc)
+		posts = s.trimPosts(posts)
+		if err := replacePosts(tx, feedID, posts); err != nil {
+			return err
+		}
+		unread = countUnread(posts)
+		return s.updateUnread(tx, feedID, unread)
+	}); err != nil {
 		return 0, err
 	}
+	s.feeds[i].Unread = unread
 	return added, nil
 }
 
-func (s *Store) postsLocked(feedID int64) ([]Post, error) {
-	if cached, ok := s.posts[feedID]; ok {
-		return slices.Clone(cached), nil
-	}
-
-	file, found, err := readJSON[postsFile](s.postsPath(feedID))
-	if err != nil {
-		return nil, err
-	}
-	posts := file.Posts
-	if !found {
-		posts = nil
-	}
-	slices.SortStableFunc(posts, byPublishedDesc)
-	s.posts[feedID] = posts
-	return slices.Clone(posts), nil
+// feedPosts returns the bucket holding the posts of a feed, or nil.
+func feedPosts(tx *bolt.Tx, feedID int64) *bolt.Bucket {
+	return tx.Bucket([]byte(postsBucket)).Bucket(feedKey(feedID))
 }
 
-// savePostsLocked writes a feed's posts, refreshes its unread count and saves
-// the subscriptions.
-func (s *Store) savePostsLocked(feedID int64, posts []Post) error {
-	if err := writeJSON(s.postsPath(feedID), postsFile{Version: schemaVersion, Posts: posts}); err != nil {
+// readPosts decodes every post of a feed.
+func readPosts(tx *bolt.Tx, feedID int64) ([]Post, error) {
+	b := feedPosts(tx, feedID)
+	if b == nil {
+		return nil, nil
+	}
+	var posts []Post
+	if err := b.ForEach(func(_, value []byte) error {
+		var p Post
+		if err := json.Unmarshal(value, &p); err != nil {
+			return err
+		}
+		posts = append(posts, p)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+// replacePosts writes the posts of a feed as a bucket keyed by GUID.
+func replacePosts(tx *bolt.Tx, feedID int64, posts []Post) error {
+	if err := deletePosts(tx, feedID); err != nil {
 		return err
 	}
-	s.posts[feedID] = posts
-
-	i := s.feedIndex(feedID)
-	if i < 0 {
-		return ErrNotFound
+	if len(posts) == 0 {
+		return nil
 	}
-	unread := 0
+	b, err := tx.Bucket([]byte(postsBucket)).CreateBucket(feedKey(feedID))
+	if err != nil {
+		return err
+	}
 	for _, p := range posts {
-		if !p.Read {
-			unread++
+		if err := put(b, []byte(p.GUID), p); err != nil {
+			return err
 		}
 	}
-	s.feeds[i].Unread = unread
-	return s.saveFeeds()
+	return nil
+}
+
+func deletePosts(tx *bolt.Tx, feedID int64) error {
+	parent := tx.Bucket([]byte(postsBucket))
+	key := feedKey(feedID)
+	if parent.Bucket(key) == nil {
+		return nil
+	}
+	return parent.DeleteBucket(key)
 }
 
 func (s *Store) trimPosts(posts []Post) []Post {
@@ -380,6 +499,16 @@ func (s *Store) trimPosts(posts []Post) []Post {
 		return posts
 	}
 	return posts[:limit]
+}
+
+func countUnread(posts []Post) int {
+	n := 0
+	for _, p := range posts {
+		if !p.Read {
+			n++
+		}
+	}
+	return n
 }
 
 func byPublishedDesc(a, b Post) int {
