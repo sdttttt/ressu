@@ -11,7 +11,7 @@ import { Resizable, ResizableHandle, ResizablePanel } from "~/components/ui/resi
 import { Skeleton } from "~/components/ui/skeleton";
 import { Toaster } from "~/components/ui/sonner";
 import { applyTheme, onSystemThemeChange } from "~/lib/theme";
-import { app, savePaneSizes, start } from "~/stores/app";
+import { app, openDialog, refreshAll, savePaneSizes, start } from "~/stores/app";
 import { subscribe } from "~/stores/events";
 
 export default function App() {
@@ -20,11 +20,15 @@ export default function App() {
     const stopThemeWatch = onSystemThemeChange(() => {
       if (app.prefs.theme === "system") applyTheme("system");
     });
+    // macOS keeps the system menu, which owns these shortcuts; the other
+    // platforms have no menu bar, so the page handles them.
+    const stopShortcuts = navigator.userAgent.includes("Mac") ? undefined : onShortcuts();
     void start();
 
     onCleanup(() => {
       unsubscribe();
       stopThemeWatch();
+      stopShortcuts?.();
     });
   });
 
@@ -60,6 +64,30 @@ export default function App() {
       <Toaster position="bottom-right" />
     </div>
   );
+}
+
+/** Runs the commands the menu bar used to own. Returns the unsubscribe function. */
+function onShortcuts(): () => void {
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+  switch (event.key) {
+    case "n":
+      event.preventDefault();
+      openDialog("addFeed");
+      break;
+    case "r":
+      event.preventDefault();
+      void refreshAll();
+      break;
+    case ",":
+      event.preventDefault();
+      openDialog("settings");
+      break;
+  }
 }
 
 function Splash() {

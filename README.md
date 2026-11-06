@@ -46,7 +46,7 @@ bun run dev        # mygo dev：编译并启动应用，同时启动 Vite 热更
 ## 目录结构
 
 ```
-main.go                 应用入口：绑定服务、菜单、窗口、启动刷新
+main.go                 应用入口：绑定服务、菜单（仅 macOS）、窗口、启动刷新
 internal/
   rss/                  抓取（ETag / If-Modified-Since）与解析
   store/                bbolt 持久化：订阅源、文章、偏好都放在 ressu.db

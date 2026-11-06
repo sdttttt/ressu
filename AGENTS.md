@@ -23,7 +23,9 @@ Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程�
 ## 目录结构
 
 ```
-main.go                     应用入口：打开存储、绑定服务、菜单、窗口、启动刷新
+main.go                     应用入口：打开存储、绑定服务、窗口、启动刷新
+menu_darwin.go              macOS：系统菜单及其命令
+menu_other.go               Windows/Linux：SetMenu(nil) 移除原生菜单栏
 internal/                   Go internal/ 规则下的后端包（外部不可导入）
   rss/                      HTTP 抓取（ETag/If-Modified-Since）与订阅源解析
     fetch.go, parse.go      Fetch/ValidateURL、Parse/Meta/Item、plainText/truncate
@@ -110,7 +112,8 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
 
 1. `mygo.App.SetName("Ressu")`，解析 `mygo.PathUserData`，`store.Open(dir)`。
 2. `mygo.Bind(service.NewFeeds(st), service.NewPosts(st), service.NewSettings(st))`。
-3. `WhenReady` 里：用 `mygo.Theme.SetSource` 应用保存的主题、安装原生菜单、打开主窗口
+3. `WhenReady` 里：用 `mygo.Theme.SetSource` 应用保存的主题、在 macOS 上安装系统菜单
+   （Windows/Linux 调用 `SetMenu(nil)` 移除原生菜单栏）、打开主窗口
    （1200x800，最小 900x600，`StateKey: "main"`，因此 MyGO 会写
    `window-state.json`）。窗口以 `Hidden` 创建，在 `OnReadyToShow` 里才 `Show`，所以不会
    出现空白窗口；5 秒内页面仍未就绪也会兜底显示。`refreshOnStart` 的刷新在这个回调里
@@ -129,9 +132,10 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
   reject。
 - 事件名用冒号分区：`sync:state`、`feeds:changed`、`posts:changed`、`ui:command`
   （声明在 `internal/service/events.go`）。
-- 原生菜单不直接拥有对话框：它广播 `ui:command` 字符串（`add-feed`、`refresh`、
-  `settings`，常量见 `service.Command*`），由 `webview/src/stores/events.ts` 打开对话框或执行
-  动作。快捷键：`CmdOrCtrl+N`、`CmdOrCtrl+R`、`CmdOrCtrl+,`。
+- 原生菜单只存在于 macOS，它不直接拥有对话框：它广播 `ui:command` 字符串（`add-feed`、
+  `refresh`、`settings`，常量见 `service.Command*`），由 `webview/src/stores/events.ts`
+  打开对话框或执行动作。Windows/Linux 没有菜单栏，页面在 `app.tsx` 里注册同样的
+  `Ctrl/Cmd+N`、`Ctrl/Cmd+R`、`Ctrl/Cmd+,` 快捷键。
 
 数据流：
 
@@ -223,6 +227,8 @@ Go：
 - 每个持久化/序列化字段都要有 camelCase 的 `json` tag。
 - 跟随标准库风格：`slices`、`min`/`max`、合适时用泛型、`for i := range n`。`gofmt`
   必须干净；改过的文件跑 `gofmt -w`。
+- 平台差异用 `//go:build` 构建标签拆到不同文件（如 `menu_darwin.go` / `menu_other.go`），
+  不要在代码里判断 `runtime.GOOS`。
 - `Store` 上的方法保持加锁，出参克隆切片。
 - 测试与被测代码同目录，命名为 `*_test.go`；不使用 mock 库——用 `t.TempDir()` 与
   `net/http/httptest`。
