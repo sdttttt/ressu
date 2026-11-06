@@ -112,7 +112,9 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
 2. `mygo.Bind(service.NewFeeds(st), service.NewPosts(st), service.NewSettings(st))`。
 3. `WhenReady` 里：用 `mygo.Theme.SetSource` 应用保存的主题、安装原生菜单、打开主窗口
    （1200x800，最小 900x600，`StateKey: "main"`，因此 MyGO 会写
-   `window-state.json`），若 `refreshOnStart` 为真则在 goroutine 里刷新全部订阅源。
+   `window-state.json`）。窗口以 `Hidden` 创建，在 `OnReadyToShow` 里才 `Show`，所以不会
+   出现空白窗口；5 秒内页面仍未就绪也会兜底显示。`refreshOnStart` 的刷新在这个回调里
+   启动，避免和首帧抢资源。
 4. `app.Run()` 阻塞；启动阶段的错误走 `log.Fatal`。
 
 绑定与事件：

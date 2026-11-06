@@ -6,6 +6,8 @@ package main
 import (
 	"context"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/egoist/mygo"
 
@@ -34,15 +36,16 @@ func main() {
 		prefs := st.Prefs()
 		service.ApplyTheme(prefs.Theme)
 		app.SetMenu(newMenu())
-		openWindow()
-
-		if prefs.RefreshOnStart {
+		openWindow(func() {
+			if !prefs.RefreshOnStart {
+				return
+			}
 			go func() {
 				if _, err := feeds.RefreshAll(context.Background()); err != nil {
 					log.Printf("refresh on start: %v", err)
 				}
 			}()
-		}
+		})
 	})
 
 	if err := app.Run(); err != nil {
@@ -50,8 +53,11 @@ func main() {
 	}
 }
 
-func openWindow() {
-	mygo.NewWindow(mygo.WindowOptions{
+// openWindow creates the main window hidden and shows it once the page has
+// painted, so startup shows a splash instead of a blank window. onReady runs
+// once the window is shown.
+func openWindow(onReady func()) {
+	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		URL:             "/",
 		Width:           1200,
@@ -59,8 +65,22 @@ func openWindow() {
 		MinWidth:        900,
 		MinHeight:       600,
 		StateKey:        "main",
+		Hidden:          true,
 		BackgroundColor: "light-dark(#ffffff, #101012)",
 	})
+
+	var once sync.Once
+	show := func() {
+		once.Do(func() {
+			win.Show()
+			onReady()
+		})
+	}
+
+	win.OnReadyToShow(show)
+	// A page that never becomes ready must not leave the app windowless.
+	timer := time.AfterFunc(5*time.Second, show)
+	win.OnClosed(func() { timer.Stop() })
 }
 
 // newMenu builds the menu bar. Its items send commands to the page, which owns
