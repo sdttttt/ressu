@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-solid";
 import { Show, createSignal } from "solid-js";
 
+import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
+import {
+  TextField,
+  TextFieldDescription,
+  TextFieldInput,
+  TextFieldLabel,
+} from "~/components/ui/text-field";
 import { addFeed, app, closeDialog, openDialog } from "~/stores/app";
 
 export default function AddFeedDialog() {
@@ -63,18 +69,27 @@ export default function AddFeedDialog() {
         </DialogHeader>
 
         <form class="space-y-3" onSubmit={submit}>
-          <Input
-            autofocus
+          <TextField
             value={feedURL()}
-            placeholder="https://example.com/feed.xml"
-            onInput={(event) => {
-              setFeedURL(event.currentTarget.value);
+            onChange={(value) => {
+              setFeedURL(value);
               setError("");
             }}
-          />
+            class="gap-1.5"
+          >
+            <TextFieldLabel class="text-xs font-normal text-muted-foreground">
+              订阅地址
+            </TextFieldLabel>
+            <TextFieldInput type="url" autofocus placeholder="https://example.com/feed.xml" />
+            <TextFieldDescription class="text-[11px]">
+              支持 RSS 0.9x / 1.0 / 2.0、Atom 与 JSON Feed。
+            </TextFieldDescription>
+          </TextField>
 
           <Show when={error()}>
-            <p class="text-xs text-error">{error()}</p>
+            <Alert variant="destructive" class="px-3 py-2">
+              <AlertDescription class="text-xs">{error()}</AlertDescription>
+            </Alert>
           </Show>
 
           <DialogFooter class="gap-2">

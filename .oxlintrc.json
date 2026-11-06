@@ -19,6 +19,7 @@
       "files": ["webview/src/components/ui/**"],
       "rules": {
         "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/heading-has-content": "off",
         "import/no-named-as-default-member": "off"
       }
     },

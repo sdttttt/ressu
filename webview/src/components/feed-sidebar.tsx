@@ -12,6 +12,14 @@ import {
 import { For, Show, createSignal } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
+import { IconButton } from "~/components/icon-button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -20,7 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { Input } from "~/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { cn } from "~/lib/utils";
 import type { Feed } from "~/mygo";
 import {
@@ -39,49 +48,50 @@ import {
 export default function FeedSidebar() {
   return (
     <aside class="flex h-full min-h-0 flex-col border-r bg-background">
-      <div class="flex items-center gap-1 px-2 py-2">
-        <div class="relative min-w-0 flex-1">
-          <Search class="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            class="h-8 pl-7 text-xs"
-            placeholder="搜索订阅源"
-            value={app.feedFilter}
-            onInput={(event) => setFeedFilter(event.currentTarget.value)}
-          />
+      <div class="flex items-center gap-1 px-3 pt-2 pb-1">
+        <div class="flex min-w-0 flex-1 items-center gap-1.5">
+          <span class="truncate text-[13px] font-semibold">订阅源</span>
+          <Badge
+            variant="outline"
+            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[10px] tabular-nums"
+          >
+            {app.feeds.length}
+          </Badge>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="size-8 shrink-0"
-          title="添加订阅源"
-          onClick={() => openDialog("addFeed")}
-        >
+
+        <Popover placement="bottom-end">
+          <PopoverTrigger
+            as={Button}
+            variant="ghost"
+            size="icon"
+            class="size-7 shrink-0"
+            aria-label="搜索订阅源"
+          >
+            <Search class="size-4" />
+          </PopoverTrigger>
+          <PopoverContent class="w-64 p-2">
+            <TextField value={app.feedFilter} onChange={setFeedFilter}>
+              <TextFieldInput autofocus placeholder="按名称或地址过滤" class="h-8 text-xs" />
+            </TextField>
+          </PopoverContent>
+        </Popover>
+
+        <IconButton label="添加订阅源" class="size-7" onClick={() => openDialog("addFeed")}>
           <Plus class="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="size-8 shrink-0"
-          title="刷新全部"
+        </IconButton>
+
+        <IconButton
+          label="刷新全部"
+          class="size-7"
           disabled={app.sync.active}
           onClick={() => void refreshAll()}
         >
           <RefreshCw class={cn("size-4", app.sync.active && "animate-spin")} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="size-8 shrink-0"
-          title="设置"
-          onClick={() => openDialog("settings")}
-        >
-          <SettingsIcon class="size-4" />
-        </Button>
-      </div>
+        </IconButton>
 
-      <div class="flex items-center justify-between px-3 pb-1 text-[11px] font-medium text-muted-foreground">
-        <span>订阅源</span>
-        <span>{app.feeds.length}</span>
+        <IconButton label="设置" class="size-7" onClick={() => openDialog("settings")}>
+          <SettingsIcon class="size-4" />
+        </IconButton>
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
@@ -110,6 +120,7 @@ export default function FeedSidebar() {
 function FeedRow(props: { feed: Feed }) {
   const selected = () => app.current.feedId === props.feed.id;
   const open = () => void selectFeed(props.feed.id);
+  const [confirming, setConfirming] = createSignal(false);
 
   return (
     <div
@@ -143,9 +154,12 @@ function FeedRow(props: { feed: Feed }) {
         </Show>
 
         <Show when={props.feed.unread > 0}>
-          <span class="shrink-0 rounded-full bg-primary/12 px-1.5 py-px text-[10px] font-semibold text-primary tabular-nums">
+          <Badge
+            variant="secondary"
+            class="h-4 shrink-0 rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums"
+          >
             {props.feed.unread > 99 ? "99+" : props.feed.unread}
-          </span>
+          </Badge>
         </Show>
       </button>
 
@@ -170,12 +184,35 @@ function FeedRow(props: { feed: Feed }) {
             标记全部已读
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => void removeFeed(props.feed.id)}>
+          <DropdownMenuItem onSelect={() => setConfirming(true)}>
             <Trash2 class="size-3.5" />
             取消订阅
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <AlertDialog open={confirming()} onOpenChange={setConfirming}>
+        <AlertDialogContent class="max-w-md">
+          <AlertDialogTitle>取消订阅「{props.feed.title}」？</AlertDialogTitle>
+          <AlertDialogDescription>
+            这个订阅源已保存的文章会一并删除，操作无法撤销。
+          </AlertDialogDescription>
+          <div class="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirming(false);
+                void removeFeed(props.feed.id);
+              }}
+            >
+              取消订阅
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

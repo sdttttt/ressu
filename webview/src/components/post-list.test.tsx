@@ -84,9 +84,9 @@ describe("PostList", () => {
 
   it("stars a post without opening it", async () => {
     const store = await import("~/stores/app");
-    const { getAllByTitle } = render(() => <PostList />);
+    const { getAllByRole } = render(() => <PostList />);
 
-    const [star] = getAllByTitle("加星标");
+    const [star] = getAllByRole("button", { name: "加星标" });
     fireEvent.click(star!);
 
     expect(store.toggleStar).toHaveBeenCalledWith("guid-1");

@@ -43,6 +43,7 @@ webview/                    前端源码与构建配置（独立的源代码目�
     mygo.ts                 生成的类型化客户端（已被 git 忽略；不要编辑）
     index.css               Tailwind 4 入口：主题变量、dark 变体、.post-body
     components/             feed-sidebar、post-list、post-view、*-dialog、status-bar、empty-state
+    components/icon-button.tsx  solid-ui Button + Tooltip 的图标按钮（aria-label 即可访问名）
     components/ui/          源码内联的 shadcn 风格原语（Kobalte/corvu + cva）
     lib/                    format.ts（zh-CN Intl）、sanitize.ts（DOMPurify）、theme.ts、utils.ts
     stores/                 app.ts（状态 + 动作）、events.ts（事件订阅）
@@ -232,6 +233,11 @@ TypeScript / Solid：
   `border-border`、`text-warning`、`bg-error`、`rounded-md` 等。不要写死颜色。Tailwind 4
   是 CSS-first 的：主题值在 `webview/src/index.css`（`@theme`）里，没有 `tailwind.config.js`。
 - 图标来自 `lucide-solid`；toast 来自 `solid-sonner`（`toast`）。
+- 界面控件一律用 `webview/src/components/ui/**` 里的 solid-ui 组件，不要再手写原生
+  `input`/`select`/复选框：输入用 `text-field`、数字用 `number-field`、单选用
+  `radio-group`、多选切换用 `toggle-group`、提示用 `tooltip`、计数用 `badge`、分隔用
+  `separator`。图标按钮统一用 `~/components/icon-button`（solid-ui `Button` + `Tooltip`，
+  `aria-label` 同时是提示文案与可访问名）。
 - `webview/src/components/ui/**` 是源码内联的 shadcn 风格组件。保持它的 API 稳定；
   `.oxlintrc.json` 已经在这里放宽了部分 a11y/import 规则。
 - 不要手改 `webview/src/mygo.ts`、`webview/dist/`、`build/`；重新生成或重新构建。

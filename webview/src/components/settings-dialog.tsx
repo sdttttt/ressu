@@ -9,7 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  NumberField,
+  NumberFieldDecrementTrigger,
+  NumberFieldGroup,
+  NumberFieldIncrementTrigger,
+  NumberFieldInput,
+  NumberFieldLabel,
+} from "~/components/ui/number-field";
+import { RadioGroup, RadioGroupItem, RadioGroupItemLabel } from "~/components/ui/radio-group";
+import { Separator } from "~/components/ui/separator";
 import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "~/components/ui/switch";
 import { app, closeDialog, openDataDir, openDialog, updatePrefs } from "~/stores/app";
 
@@ -23,14 +33,6 @@ const linkTargets = [
   { value: "browser", label: "系统浏览器" },
   { value: "window", label: "应用内新窗口" },
 ];
-
-function commitPostsPerFeed(raw: string): void {
-  const value = Number.parseInt(raw, 10);
-  if (Number.isNaN(value)) return;
-
-  const clamped = Math.min(Math.max(value, 50), 2000);
-  if (clamped !== app.prefs.postsPerFeed) void updatePrefs({ postsPerFeed: clamped });
-}
 
 export default function SettingsDialog() {
   return (
@@ -49,12 +51,22 @@ export default function SettingsDialog() {
 
         <section class="space-y-2">
           <h3 class="text-[11px] font-medium text-muted-foreground">外观</h3>
-          <ChoiceGroup
-            options={themes}
+          <RadioGroup
             value={app.prefs.theme}
-            onSelect={(theme) => void updatePrefs({ theme })}
-          />
+            onChange={(theme) => theme && void updatePrefs({ theme })}
+            class="gap-2"
+          >
+            <For each={themes}>
+              {(theme) => (
+                <RadioGroupItem value={theme.value} class="gap-2">
+                  <RadioGroupItemLabel class="font-normal">{theme.label}</RadioGroupItemLabel>
+                </RadioGroupItem>
+              )}
+            </For>
+          </RadioGroup>
         </section>
+
+        <Separator />
 
         <section class="space-y-3">
           <h3 class="text-[11px] font-medium text-muted-foreground">阅读</h3>
@@ -81,35 +93,52 @@ export default function SettingsDialog() {
             </SwitchControl>
           </Switch>
 
-          <div class="flex items-center justify-between gap-4">
-            <span id="posts-per-feed-label" class="text-sm">
-              每个订阅源保留的文章数
-            </span>
-            <Input
-              id="posts-per-feed"
-              aria-labelledby="posts-per-feed-label"
-              type="number"
-              min="50"
-              max="2000"
-              step="50"
-              class="h-8 w-24 text-right text-xs tabular-nums"
-              value={app.prefs.postsPerFeed}
-              onChange={(event) => commitPostsPerFeed(event.currentTarget.value)}
-            />
-          </div>
+          <NumberField
+            value={app.prefs.postsPerFeed}
+            minValue={50}
+            maxValue={2000}
+            step={50}
+            onRawValueChange={(value) => {
+              if (value !== app.prefs.postsPerFeed) void updatePrefs({ postsPerFeed: value });
+            }}
+          >
+            <div class="flex items-center justify-between gap-4">
+              <NumberFieldLabel class="text-sm font-normal">
+                每个订阅源保留的文章数
+              </NumberFieldLabel>
+              <NumberFieldGroup class="w-28">
+                <NumberFieldInput class="h-8 pr-6 text-right text-xs tabular-nums" />
+                <NumberFieldIncrementTrigger />
+                <NumberFieldDecrementTrigger />
+              </NumberFieldGroup>
+            </div>
+          </NumberField>
         </section>
+
+        <Separator />
 
         <section class="space-y-2">
           <h3 class="text-[11px] font-medium text-muted-foreground">链接</h3>
-          <ChoiceGroup
-            options={linkTargets}
+          <RadioGroup
             value={app.prefs.openLinks}
-            onSelect={(openLinks) => void updatePrefs({ openLinks })}
-          />
+            onChange={(openLinks) => openLinks && void updatePrefs({ openLinks })}
+            class="gap-2"
+          >
+            <For each={linkTargets}>
+              {(target) => (
+                <RadioGroupItem value={target.value} class="gap-2">
+                  <RadioGroupItemLabel class="font-normal">{target.label}</RadioGroupItemLabel>
+                </RadioGroupItem>
+              )}
+            </For>
+          </RadioGroup>
         </section>
+
+        <Separator />
 
         <section class="space-y-2">
           <h3 class="text-[11px] font-medium text-muted-foreground">数据</h3>
+          <Label class="text-xs font-normal text-muted-foreground">数据目录</Label>
           <div class="flex items-start gap-2">
             <code class="min-w-0 flex-1 rounded-md bg-muted px-2 py-1.5 text-[11px] break-all">
               {app.dataDir || "…"}
@@ -132,28 +161,5 @@ export default function SettingsDialog() {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ChoiceGroup(props: {
-  options: { value: string; label: string }[];
-  value: string;
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <div class="flex gap-1.5">
-      <For each={props.options}>
-        {(option) => (
-          <Button
-            variant={props.value === option.value ? "default" : "outline"}
-            size="sm"
-            class="h-8 flex-1 text-xs font-normal"
-            onClick={() => props.onSelect(option.value)}
-          >
-            {option.label}
-          </Button>
-        )}
-      </For>
-    </div>
   );
 }

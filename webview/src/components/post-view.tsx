@@ -2,7 +2,9 @@ import { ExternalLink, MailOpen, Newspaper, Star } from "lucide-solid";
 import { Show, onCleanup, onMount } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
-import { Button } from "~/components/ui/button";
+import { IconButton } from "~/components/icon-button";
+import { Badge } from "~/components/ui/badge";
+import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { formatDateTime } from "~/lib/format";
 import { sanitizeHTML } from "~/lib/sanitize";
@@ -67,46 +69,48 @@ export default function PostView() {
               <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1">
                   <h1 class="text-lg leading-snug font-semibold">{post().title}</h1>
-                  <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                     <span class="tabular-nums">{formatDateTime(post().publishedAt)}</span>
                     <Show when={post().author}>
+                      <Separator orientation="vertical" class="h-3" />
                       <span>{post().author}</span>
                     </Show>
                     <Show when={currentFeed()}>
-                      {(feed) => <span class="truncate">{feed().title}</span>}
+                      {(feed) => (
+                        <>
+                          <Separator orientation="vertical" class="h-3" />
+                          <Badge
+                            variant="outline"
+                            class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[10px] font-normal"
+                          >
+                            <span class="truncate">{feed().title}</span>
+                          </Badge>
+                        </>
+                      )}
                     </Show>
                   </div>
                 </div>
 
                 <div class="flex shrink-0 items-center gap-0.5">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    title={post().starred ? "取消星标" : "加星标"}
+                  <IconButton
+                    label={post().starred ? "取消星标" : "加星标"}
                     onClick={() => void toggleStar(post().guid)}
                   >
                     <Star class={cn("size-4", post().starred && "fill-current text-warning")} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    title={post().read ? "标记为未读" : "标记为已读"}
+                  </IconButton>
+                  <IconButton
+                    label={post().read ? "标记为未读" : "标记为已读"}
                     onClick={() => void setOpenPostRead(!post().read)}
                   >
                     <MailOpen class="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    title="在浏览器中打开原文"
+                  </IconButton>
+                  <IconButton
+                    label="在浏览器中打开原文"
                     disabled={!post().url}
                     onClick={() => void openLink(post().url)}
                   >
                     <ExternalLink class="size-4" />
-                  </Button>
+                  </IconButton>
                 </div>
               </div>
             </header>
