@@ -1,37 +1,24 @@
+import { fileURLToPath } from "node:url";
+
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import { join } from "path";
-import react from "@vitejs/plugin-react";
-import { visualizer } from "rollup-plugin-visualizer";
-import banner from "vite-plugin-banner";
+import solid from "vite-plugin-solid";
 
-function resolve(path: string) {
-	return join(__dirname, path);
-}
-
-function isDev() {
-	const mode = process.env.NODE_ENV || "development";
-	return mode === "development";
-}
-
-// https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [
-		react(),
-		visualizer(),
-		banner(`
-		@sdttttt: nothing.
-	`)
-	],
-	clearScreen: false,
-	build: {
-		minify: !isDev(),
-		sourcemap: isDev() ? "inline" : false,
-	},
-	resolve: {
-		alias: {
-			"@": resolve("src"),
-			"@store": resolve("store"),
-			"@database": resolve("database")
-		}
-	}
+  plugins: [solid(), tailwindcss()],
+  resolve: {
+    alias: {
+      "~": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  server: {
+    // The app loads this address during `mygo dev` (devUrl in mygo.config.ts).
+    port: 5173,
+    strictPort: true,
+    // The development app and the packaged builds are not the page's.
+    watch: { ignored: ["**/.mygo/**", "**/build/**"] },
+  },
+  build: {
+    target: "es2022",
+  },
 });

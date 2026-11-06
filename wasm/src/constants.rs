@@ -1,1 +1,0 @@
-pub const RSS_VERSION_AVAILABLE: &str = "2.0";

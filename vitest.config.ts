@@ -1,11 +1,20 @@
-/// <reference types="vitest" />
+import { fileURLToPath } from "node:url";
 
-import { defineConfig } from 'vitest/config'
+import solid from "vite-plugin-solid";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: {
-    // ...
-    includeSource: ['src/**/*.{js,ts}', 'store/**/*.{js,ts}', "database/*.{js,ts}"],
-    environment: "happy-dom"
+  plugins: [solid()],
+  resolve: {
+    alias: {
+      "~": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+    conditions: ["development", "browser"],
   },
-})
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    restoreMocks: true,
+  },
+});

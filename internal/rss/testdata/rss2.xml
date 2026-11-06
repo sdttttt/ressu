@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Example Feed</title>
+    <link>https://example.com/</link>
+    <description>A &lt;b&gt;sample&lt;/b&gt; feed</description>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 02 Oct 2024 13:00:00 GMT</lastBuildDate>
+    <image>
+      <url>https://example.com/icon.png</url>
+      <title>Example Feed</title>
+      <link>https://example.com/</link>
+    </image>
+    <atom:link href="https://example.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>First post</title>
+      <link>https://example.com/posts/1</link>
+      <guid isPermaLink="false">post-1</guid>
+      <pubDate>Wed, 02 Oct 2024 12:00:00 GMT</pubDate>
+      <description><![CDATA[<p>Hello <strong>world</strong>.</p><script>alert(1)</script>]]></description>
+      <author>writer@example.com (Jane Doe)</author>
+    </item>
+    <item>
+      <title>Second post</title>
+      <link>/posts/2</link>
+      <pubDate>Thu, 03 Oct 2024 09:30:00 GMT</pubDate>
+      <description>Plain text &amp; more</description>
+    </item>
+  </channel>
+</rss>

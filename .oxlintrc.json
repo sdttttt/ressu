@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "jsx-a11y", "vitest"],
+  "env": {
+    "browser": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "ignorePatterns": ["dist", "build", ".mygo", "src/mygo.ts"],
+  "rules": {
+    "eslint/no-console": "off",
+    "typescript/no-explicit-any": "warn",
+    "import/no-unassigned-import": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/components/ui/**"],
+      "rules": {
+        "jsx-a11y/label-has-associated-control": "off",
+        "import/no-named-as-default-member": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}", "test/**"],
+      "rules": {
+        "vitest/require-mock-type-parameters": "off"
+      }
+    }
+  ]
+}

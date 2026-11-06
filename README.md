@@ -1,45 +1,93 @@
 # Ressu
 
-[![build](https://github.com/sdttttt/ressu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/sdttttt/ressu/actions/workflows/build.yml)
+一个免费的现代 **RSS 阅读器**，桌面端用 [MyGO](https://github.com/egoist/mygo)（纯 Go、无 cgo、系统 WebView），前端用 SolidJS。
 
-This is a free, modern **RSS Reader**, built using React in WebView(Tauri).
+![build](https://github.com/sdttttt/ressu/actions/workflows/ci.yml/badge.svg)
 
+> 主要面向 Windows，其次是 Linux 与 macOS。
 
-> Ressu primary target is the Windows platform and then the Linux platform.
+## 技术栈
 
->  There will be no progress in the project for the time being. I am currently learning WPF.
+| 层       | 选择                                                         |
+| -------- | ------------------------------------------------------------ |
+| 桌面框架 | MyGO 0.7（WebView2 / WebKitGTK / WKWebView）                 |
+| 后端     | Go 1.27，`gofeed` 解析 RSS 0.9x / 1.0 / 2.0、Atom、JSON Feed |
+| 前端     | SolidJS 1.9 + solid-ui（Kobalte）+ Tailwind CSS 4 + Vite 8   |
+| 状态     | Solid store（不再需要 Redux）                                |
+| 工具链   | Bun、oxlint、oxfmt、Vitest、TypeScript                       |
+| 存储     | 用户数据目录下的 JSON 文件                                   |
 
-## Build
+抓取、解析、去重、存储全部在 Go 侧完成，页面通过 `mygo generate` 生成的类型化客户端调用，刷新进度用类型化事件回推。
 
-You need the following environment:
+## 开发
 
-- Rust
-- Node.js
-- pnpm (node package manager)
-- wasm-pack
+需要：Go 1.27+、Bun、以及系统 WebView（Windows 10 需 WebView2 Runtime，Windows 11 自带）。
 
-After WASM compile complete, need **reinstall node_modules** to found wasm library. It is imported as link in package.json.
+```sh
+bun install
+bun run dev        # mygo dev：编译并启动应用，同时启动 Vite 热更新
+```
 
-## TODO
+常用脚本：
 
-**Stage 1:**
+| 命令               | 作用                                                      |
+| ------------------ | --------------------------------------------------------- |
+| `bun run dev`      | 启动应用（Go + Vite）                                     |
+| `bun run dev:web`  | 只启动 Vite，在普通浏览器里调布局（此时读不到数据）       |
+| `bun run generate` | 重新生成 `src/mygo.ts`（`mygo dev`/`build` 会自动生成）   |
+| `bun run check`    | `tsc --noEmit` + `oxlint` + `oxfmt --check`               |
+| `bun run fmt`      | 用 oxfmt 格式化（含 import 与 Tailwind 类名排序）         |
+| `bun run test`     | Vitest（jsdom + @solidjs/testing-library）                |
+| `go test ./...`    | Go 单测与集成测试（本地 httptest 服务器跑完整的抓取流程） |
+| `bun run build`    | 打包应用，产物在 `build/<os>-<arch>/`                     |
 
-- [x] RSS Parse.
-- [x] Local storage Database.
-- [ ] Channel Data Sync.
-- [ ] UI Design.
+## 目录结构
 
-**Stage 2:**
+```
+main.go                 应用入口：绑定服务、菜单、窗口、启动刷新
+internal/
+  rss/                  抓取（ETag / If-Modified-Since）与解析
+  store/                JSON 持久化：feeds.json、posts/<id>.json、settings.json
+  service/              暴露给前端的服务与事件（Feeds / Posts / Settings）
+src/
+  mygo.ts               由 Go 生成的类型化客户端（git 忽略）
+  app.tsx               三栏布局与启动流程
+  stores/               应用状态、事件订阅
+  components/           侧栏、文章列表、阅读视图、设置、对话框
+  components/ui/        solid-ui 组件（shadcn 风格的源码内联）
+  lib/                  日期格式、HTML 清洗、主题
+resources/icon.png      应用图标
+```
 
-- [ ] Complete settings options. 
-- [ ] Dark mode.
-- [ ] Feed Group.
-- [ ] Layout mode.
+## 数据放在哪
+
+`Ressu` 的 Go 侧把数据写在系统的用户数据目录（Windows 上是
+`%AppData%\Ressu`），设置 → 数据 里可以直接打开该目录：
+
+- `feeds.json`：订阅源与未读数
+- `posts/<订阅源 id>.json`：该订阅源的文章（默认每源保留 500 篇，可在设置里调整）
+- `settings.json`：主题、启动刷新、打开链接方式、面板宽度等
+- `window-state.json`：窗口位置与大小
+
+写入使用「临时文件 + 重命名」，不会留下半个文件。
+
+## 功能
+
+- 订阅源：添加（RSS / Atom / JSON Feed）、取消订阅、搜索、右键菜单（刷新、全部已读、取消订阅）、未读徽标
+- 抓取：启动时刷新、手动刷新单个或全部（4 路并发），带 ETag 缓存与逐源错误提示
+- 阅读：三栏可拖拽布局、未读/星标筛选、打开即已读、标记未读、星标、正文 HTML 清洗后渲染
+- 设置：跟随系统/浅色/深色主题、启动刷新、打开链接方式（系统浏览器或应用内窗口）、每源保留条数、数据目录
+- 界面：暗色模式、同步进度状态栏、Toast 提示、键盘可达的列表项
+
+## 后续
+
+- 「全部文章」汇总视图
+- 订阅分组
+- 单栏 / 双栏布局模式
+- 全文搜索（FTS）
+- 自动更新
 
 ## LICENSE
 
 This is free and unencumbered software released into the public domain.
-
-Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means.
-
-The author disclaims copyright to this source code. use `UNLICENSE`.
+See [LICENSE](LICENSE).

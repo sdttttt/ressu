@@ -1,0 +1,9 @@
+{
+  "printWidth": 100,
+  "sortImports": true,
+  "sortTailwindcss": {
+    "stylesheet": "src/index.css",
+    "functions": ["cn", "cva"]
+  },
+  "ignorePatterns": ["dist", "build", ".mygo", "src/mygo.ts", "bun.lock", "package.json"]
+}

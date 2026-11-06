@@ -1,0 +1,264 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { Feed, Post, PostSummary, Prefs } from "~/mygo";
+
+vi.mock("solid-sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}));
+
+vi.mock("~/mygo", () => ({
+  Feeds: {
+    list: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    refresh: vi.fn(),
+    refreshAll: vi.fn(),
+  },
+  Posts: {
+    list: vi.fn(),
+    get: vi.fn(),
+    markRead: vi.fn(),
+    markAllRead: vi.fn(),
+    toggleStar: vi.fn(),
+  },
+  Settings: {
+    get: vi.fn(),
+    update: vi.fn(),
+    dataDir: vi.fn(),
+    openDataDir: vi.fn(),
+    openLink: vi.fn(),
+  },
+  events: {
+    feedsChanged: { on: vi.fn(() => () => {}) },
+    postsChanged: { on: vi.fn(() => () => {}) },
+    syncState: { on: vi.fn(() => () => {}) },
+    uiCommand: { on: vi.fn(() => () => {}) },
+  },
+}));
+
+const feedA: Feed = {
+  id: 1,
+  url: "https://a.example/feed",
+  title: "A 站",
+  siteUrl: "https://a.example/",
+  description: "",
+  iconUrl: "",
+  language: "zh",
+  etag: "",
+  lastModified: "",
+  lastFetchedAt: null,
+  lastError: "",
+  unread: 1,
+  createdAt: "2026-01-01T00:00:00Z",
+};
+
+const feedB: Feed = { ...feedA, id: 2, url: "https://b.example/feed", title: "B 站", unread: 0 };
+
+const summary: PostSummary = {
+  feedId: 1,
+  guid: "guid-1",
+  title: "第一篇文章",
+  url: "https://a.example/1",
+  author: "",
+  summary: "摘要",
+  publishedAt: "2026-01-02T00:00:00Z",
+  read: false,
+  starred: false,
+};
+
+const post: Post = {
+  ...summary,
+  content: "<p>正文</p>",
+  fetchedAt: "2026-01-02T00:00:00Z",
+};
+
+const prefs: Prefs = {
+  theme: "system",
+  refreshOnStart: true,
+  markReadOnOpen: true,
+  openLinks: "browser",
+  postsPerFeed: 500,
+  paneSizes: [18, 30],
+};
+
+beforeEach(() => {
+  vi.resetModules();
+  vi.clearAllMocks();
+});
+
+async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
+  const mygo = await import("~/mygo");
+  const app = await import("~/stores/app");
+
+  vi.mocked(mygo.Feeds.list).mockImplementation(async () =>
+    (options.feeds ?? [feedA, feedB]).map((feed) => ({ ...feed })),
+  );
+  vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs });
+  vi.mocked(mygo.Settings.update).mockImplementation(async (next) => next);
+  vi.mocked(mygo.Settings.dataDir).mockResolvedValue("C:/Users/me/AppData/Ressu");
+  vi.mocked(mygo.Posts.list).mockImplementation(async () => {
+    const posts = (options.posts ?? [summary]).map((item) => ({ ...item }));
+    return { posts, total: posts.length, unread: posts.filter((item) => !item.read).length };
+  });
+  vi.mocked(mygo.Posts.get).mockImplementation(async () => ({ ...post }));
+  vi.mocked(mygo.Posts.markRead).mockResolvedValue(undefined);
+
+  return { mygo, app };
+}
+
+describe("start", () => {
+  it("loads the feeds and opens the first one", async () => {
+    const { app } = await setup();
+
+    await app.start();
+
+    expect(app.app.ready).toBe(true);
+    expect(app.app.feeds).toHaveLength(2);
+    expect(app.app.current.feedId).toBe(1);
+    expect(app.app.posts).toHaveLength(1);
+    expect(app.app.dataDir).toBe("C:/Users/me/AppData/Ressu");
+  });
+
+  it("survives a failing store", async () => {
+    const { mygo, app } = await setup();
+    vi.mocked(mygo.Feeds.list).mockRejectedValue(new Error("boom"));
+
+    await app.start();
+
+    expect(app.app.ready).toBe(true);
+    expect(app.app.feeds).toHaveLength(0);
+  });
+});
+
+describe("selectPost", () => {
+  it("opens the post and marks it read", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+
+    await app.selectPost("guid-1");
+
+    expect(app.app.post?.guid).toBe("guid-1");
+    expect(mygo.Posts.markRead).toHaveBeenCalledWith(1, "guid-1", true);
+    expect(app.app.posts[0]?.read).toBe(true);
+    expect(app.app.postUnread).toBe(0);
+  });
+
+  it("leaves the post unread when the preferences say so", async () => {
+    const { mygo, app } = await setup();
+    vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs, markReadOnOpen: false });
+    await app.start();
+
+    await app.selectPost("guid-1");
+
+    expect(mygo.Posts.markRead).not.toHaveBeenCalled();
+    expect(app.app.posts[0]?.read).toBe(false);
+  });
+});
+
+describe("selectFeed", () => {
+  it("loads the posts of the feed it selects", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+
+    await app.selectFeed(2);
+
+    expect(app.app.current.feedId).toBe(2);
+    expect(mygo.Posts.list).toHaveBeenLastCalledWith({
+      feedId: 2,
+      unreadOnly: false,
+      starredOnly: false,
+      search: "",
+      offset: 0,
+      limit: app.PAGE_SIZE,
+    });
+  });
+});
+
+describe("setPostFilter", () => {
+  it("asks Go for the filtered posts", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+
+    await app.setPostFilter({ unreadOnly: true });
+
+    expect(app.app.unreadOnly).toBe(true);
+    expect(vi.mocked(mygo.Posts.list).mock.lastCall?.[0]).toMatchObject({ unreadOnly: true });
+  });
+});
+
+describe("addFeed", () => {
+  it("adds the feed and selects it", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    const added = { ...feedB, id: 3, title: "C 站" };
+    vi.mocked(mygo.Feeds.add).mockResolvedValue(added);
+
+    const ok = await app.addFeed("https://c.example/feed");
+
+    expect(ok).toBe(true);
+    expect(mygo.Feeds.add).toHaveBeenCalledWith("https://c.example/feed");
+    expect(app.app.feeds.map((feed) => feed.id)).toContain(3);
+    expect(app.app.current.feedId).toBe(3);
+  });
+
+  it("reports a duplicate without adding it", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.add).mockRejectedValue(new Error("该订阅源已经存在"));
+
+    const ok = await app.addFeed("https://a.example/feed");
+
+    expect(ok).toBe(false);
+    expect(app.app.feeds).toHaveLength(2);
+  });
+});
+
+describe("removeFeed", () => {
+  it("selects another feed once the current one is gone", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
+
+    await app.removeFeed(1);
+
+    expect(mygo.Feeds.remove).toHaveBeenCalledWith(1);
+    expect(app.app.feeds).toHaveLength(1);
+    expect(app.app.current.feedId).toBe(2);
+  });
+
+  it("clears the list when no feed is left", async () => {
+    const { mygo, app } = await setup({ feeds: [feedA] });
+    await app.start();
+    vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
+
+    await app.removeFeed(1);
+
+    expect(app.app.feeds).toHaveLength(0);
+    expect(app.app.posts).toHaveLength(0);
+    expect(app.app.current.feedId).toBeNull();
+  });
+});
+
+describe("replaceFeeds", () => {
+  it("moves the selection when its feed disappears", async () => {
+    const { app } = await setup();
+    await app.start();
+
+    app.replaceFeeds([feedB]);
+    await vi.waitFor(() => expect(app.app.current.feedId).toBe(2));
+  });
+});
+
+describe("updatePrefs", () => {
+  it("stores the preferences and keeps what Go returns", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Settings.update).mockResolvedValue({ ...prefs, theme: "dark" });
+
+    await app.updatePrefs({ theme: "dark" });
+
+    expect(mygo.Settings.update).toHaveBeenCalledWith({ ...prefs, theme: "dark" });
+    expect(app.app.prefs.theme).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+});
