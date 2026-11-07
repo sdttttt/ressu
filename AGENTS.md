@@ -224,11 +224,12 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
   `theme.ts`（`isDark` 与 `applyTheme`）和 `settings-dialog.tsx` 的选项列表。
 - 没有路由：只有一页，对话框由 `app.dialog` 驱动。
 - 文章 HTML 用 `innerHTML={sanitizeHTML(...)}` 渲染；见“安全”一节。
-- 「生成文章快照」（`webview/src/lib/snapshot.ts` 与 store 动作 `saveSnapshot`/`copySnapshot`）
-  先把文章渲染成固定浅色的离屏卡片，再让 MyGO 的 `Window.CapturePage()` 按滚动位置截取
-  可见页面；Go 侧 `Posts.CaptureSnapshot` 返回 PNG 切片，`Posts.SaveSnapshot` 和
-  `Posts.CopySnapshot` 负责裁剪拼接后保存或复制。正文先过 `sanitizeHTML`，图片仍由
-  WebView 正常加载。快照的浅色配色在 `index.css` 的 `.snapshot-card` 里实现。
+- 「生成文章快照」（`webview/src/lib/snapshot.ts` 与 store 动作 `captureSnapshot`）先把文章
+  渲染成固定浅色的离屏卡片，再让 MyGO 的 `Window.CapturePage()` 按滚动位置截取可见页面；
+  Go 侧 `Posts.CaptureSnapshot` 返回 PNG 切片，`Posts.StitchSnapshot` 拼接成完整 PNG。
+  `snapshot-dialog.tsx` 先展示预览，`Posts.SaveSnapshot` 和 `Posts.CopySnapshot` 只消费
+  这张成品图。正文先过 `sanitizeHTML`，图片仍由 WebView 正常加载。快照的浅色配色在
+  `index.css` 的 `.snapshot-card` 里实现。
 - `Intl.DateTimeFormat("zh-CN")` 放在 `webview/src/lib/format.ts`；日期函数接受可选的 `now`
   参数，让测试保持确定性。
 

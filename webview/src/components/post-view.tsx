@@ -1,4 +1,4 @@
-import { Camera, ExternalLink, MailOpen, Newspaper, Star } from "lucide-solid";
+import { Camera, ExternalLink, Loader2, MailOpen, Newspaper, Star } from "lucide-solid";
 import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
@@ -7,12 +7,6 @@ import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { formatDateTime } from "~/lib/format";
@@ -21,10 +15,9 @@ import { cn } from "~/lib/utils";
 import type { Post } from "~/mygo";
 import {
   app,
-  copySnapshot,
+  captureSnapshot,
   currentFeed,
   openLink,
-  saveSnapshot,
   setOpenPostRead,
   toggleStar,
 } from "~/stores/app";
@@ -242,27 +235,23 @@ function ArticleBody(props: { post: Post }) {
             >
               <ExternalLink class="size-4" />
             </IconButton>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                as={Button}
-                variant="ghost"
-                size="icon"
-                class="size-8 shrink-0"
-                title="生成文章快照"
-                aria-label="生成文章快照"
-                disabled={app.snapshotting || (!props.post.content && !props.post.summary)}
-              >
-                <Camera class="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onSelect={() => void saveSnapshot()}>
-                  保存为图片…
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void copySnapshot()}>
-                  复制到剪贴板
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-8 shrink-0"
+              title="生成文章快照"
+              aria-label="生成文章快照"
+              disabled={
+                app.snapshotting ||
+                app.snapshotAction !== null ||
+                (!props.post.content && !props.post.summary)
+              }
+              onClick={() => void captureSnapshot()}
+            >
+              <Show when={app.snapshotting} fallback={<Camera class="size-4" />}>
+                <Loader2 class="size-4 animate-spin" />
+              </Show>
+            </Button>
           </div>
         </div>
       </header>

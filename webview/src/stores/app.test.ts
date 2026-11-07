@@ -23,6 +23,7 @@ vi.mock("~/mygo", () => ({
     markAllRead: vi.fn(),
     toggleStar: vi.fn(),
     captureSnapshot: vi.fn(),
+    stitchSnapshot: vi.fn(),
     saveSnapshot: vi.fn(),
     copySnapshot: vi.fn(),
   },
@@ -458,7 +459,7 @@ describe("selectNeighbourFeed", () => {
 });
 
 describe("saveSnapshot", () => {
-  it("renders the open post and hands its tiles to Go", async () => {
+  it("stitches the open post and opens its preview", async () => {
     const { mygo, snapshot, toast, app } = await setup();
     await app.start();
     await app.selectPost("guid-1");
@@ -470,81 +471,35 @@ describe("saveSnapshot", () => {
       },
     ];
     vi.mocked(snapshot.generateSnapshot).mockResolvedValue(tiles);
-    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("C:/Users/me/第一篇文章.png");
+    vi.mocked(mygo.Posts.stitchSnapshot).mockResolvedValue("c3RpdGNoZWQ");
 
-    await app.saveSnapshot();
+    await app.captureSnapshot();
 
     expect(snapshot.generateSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ guid: "guid-1" }),
       "A 站",
     );
-    expect(mygo.Posts.saveSnapshot).toHaveBeenCalledWith("第一篇文章", tiles);
-    expect(toast.success).toHaveBeenCalled();
+    expect(mygo.Posts.stitchSnapshot).toHaveBeenCalledWith(tiles);
+    expect(app.app.snapshot).toEqual({
+      post: expect.objectContaining({ guid: "guid-1" }),
+      png: "c3RpdGNoZWQ",
+    });
     expect(app.app.snapshotting).toBe(false);
-  });
-
-  it("stays quiet when the save dialog is cancelled", async () => {
-    const { mygo, snapshot, toast, app } = await setup();
-    await app.start();
-    await app.selectPost("guid-1");
-    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
-    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("");
-
-    await app.saveSnapshot();
-
-    expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("reports a failing save", async () => {
+  it("reports stitching failures without opening a preview", async () => {
     const { mygo, snapshot, toast, app } = await setup();
     await app.start();
     await app.selectPost("guid-1");
     vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
-    vi.mocked(mygo.Posts.saveSnapshot).mockRejectedValue(new Error("disk full"));
+    vi.mocked(mygo.Posts.stitchSnapshot).mockRejectedValue(new Error("bad tiles"));
 
-    await app.saveSnapshot();
+    await app.captureSnapshot();
 
-    expect(toast.error).toHaveBeenCalledWith("无法保存快照：disk full");
+    expect(app.app.snapshot).toBeNull();
     expect(app.app.snapshotting).toBe(false);
-  });
-
-  it("does nothing without an open post", async () => {
-    const { mygo, snapshot, app } = await setup();
-    await app.start();
-
-    await app.saveSnapshot();
-
-    expect(snapshot.generateSnapshot).not.toHaveBeenCalled();
-    expect(mygo.Posts.saveSnapshot).not.toHaveBeenCalled();
-  });
-});
-
-describe("copySnapshot", () => {
-  it("copies the captured tiles through Go and says so", async () => {
-    const { mygo, snapshot, toast, app } = await setup();
-    await app.start();
-    await app.selectPost("guid-1");
-    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
-    vi.mocked(mygo.Posts.copySnapshot).mockResolvedValue(undefined);
-
-    await app.copySnapshot();
-
-    expect(mygo.Posts.copySnapshot).toHaveBeenCalledWith([]);
-    expect(toast.success).toHaveBeenCalled();
-  });
-
-  it("reports generation failures instead of calling Go", async () => {
-    const { mygo, snapshot, toast, app } = await setup();
-    await app.start();
-    await app.selectPost("guid-1");
-    vi.mocked(snapshot.generateSnapshot).mockRejectedValue(new Error("文章太长，无法生成一张快照"));
-
-    await app.copySnapshot();
-
-    expect(mygo.Posts.copySnapshot).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith("无法生成快照：文章太长，无法生成一张快照");
-    expect(app.app.snapshotting).toBe(false);
+    expect(toast.error).toHaveBeenCalledWith("无法生成快照：bad tiles");
   });
 
   it("does not start while another snapshot is running", async () => {
@@ -559,10 +514,103 @@ describe("copySnapshot", () => {
         }),
     );
 
-    const first = app.saveSnapshot();
-    await app.copySnapshot();
+    const first = app.captureSnapshot();
+    await app.captureSnapshot();
     expect(snapshot.generateSnapshot).toHaveBeenCalledTimes(1);
     release?.();
     await first;
+  });
+
+  async function preview(app: Awaited<ReturnType<typeof setup>>["app"]) {
+    const mygo = await import("~/mygo");
+    const snapshot = await import("~/lib/snapshot");
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
+    vi.mocked(mygo.Posts.stitchSnapshot).mockResolvedValue("c3RpdGNoZWQ");
+    await app.captureSnapshot();
+  }
+
+  it("hands the previewed PNG to Go and closes the preview", async () => {
+    const { mygo, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    await preview(app);
+    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("C:/Users/me/第一篇文章.png");
+
+    await app.saveSnapshot();
+
+    expect(mygo.Posts.saveSnapshot).toHaveBeenCalledWith("第一篇文章", "c3RpdGNoZWQ");
+    expect(toast.success).toHaveBeenCalledWith("快照已保存：C:/Users/me/第一篇文章.png");
+    expect(app.app.snapshot).toBeNull();
+    expect(app.app.snapshotAction).toBeNull();
+  });
+
+  it("keeps the preview open when the save dialog is cancelled", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    await preview(app);
+    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("");
+
+    await app.saveSnapshot();
+
+    expect(mygo.Posts.saveSnapshot).toHaveBeenCalledWith("第一篇文章", "c3RpdGNoZWQ");
+    expect(app.app.snapshot).not.toBeNull();
+    expect(app.app.snapshotAction).toBeNull();
+  });
+
+  it("reports a failing save and keeps the preview", async () => {
+    const { mygo, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    await preview(app);
+    vi.mocked(mygo.Posts.saveSnapshot).mockRejectedValue(new Error("disk full"));
+
+    await app.saveSnapshot();
+
+    expect(toast.error).toHaveBeenCalledWith("无法保存快照：disk full");
+    expect(app.app.snapshot).not.toBeNull();
+    expect(app.app.snapshotAction).toBeNull();
+  });
+
+  it("does nothing without a preview", async () => {
+    const { mygo, snapshot, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.saveSnapshot();
+
+    expect(snapshot.generateSnapshot).not.toHaveBeenCalled();
+    expect(mygo.Posts.saveSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+describe("copySnapshot", () => {
+  it("copies the previewed PNG through Go and closes the preview", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
+    vi.mocked(mygo.Posts.stitchSnapshot).mockResolvedValue("c3RpdGNoZWQ");
+    await app.captureSnapshot();
+    vi.mocked(mygo.Posts.copySnapshot).mockResolvedValue(undefined);
+
+    await app.copySnapshot();
+
+    expect(mygo.Posts.copySnapshot).toHaveBeenCalledWith("c3RpdGNoZWQ");
+    expect(toast.success).toHaveBeenCalled();
+    expect(app.app.snapshot).toBeNull();
+  });
+
+  it("reports generation failures instead of calling Go", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockRejectedValue(new Error("文章太长，无法生成一张快照"));
+
+    await app.captureSnapshot();
+
+    expect(mygo.Posts.copySnapshot).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith("无法生成快照：文章太长，无法生成一张快照");
+    expect(app.app.snapshotting).toBe(false);
   });
 });

@@ -59,11 +59,15 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request SnapshotCaptureRequ
 	return window.CapturePage()
 }
 
-// SaveSnapshot stitches the captures, shows a save dialog and writes the PNG
-// to the chosen path, which it returns. A cancelled dialog returns no path.
-func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, tiles []SnapshotTile) (string, error) {
-	data, err := stitchSnapshot(tiles, geometryOf(tiles))
-	if err != nil {
+// StitchSnapshot joins visible-page captures into one complete PNG.
+func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byte, error) {
+	return stitchSnapshot(tiles, geometryOf(tiles))
+}
+
+// SaveSnapshot shows a save dialog and writes a stitched snapshot to the
+// chosen path, which it returns. A cancelled dialog returns no path.
+func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) (string, error) {
+	if err := validateSnapshotImage(data); err != nil {
 		return "", err
 	}
 
@@ -85,10 +89,9 @@ func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, tiles []Snaps
 	return path, nil
 }
 
-// CopySnapshot stitches the captures and puts the PNG on the clipboard.
-func (p *Posts) CopySnapshot(ctx context.Context, tiles []SnapshotTile) error {
-	data, err := stitchSnapshot(tiles, geometryOf(tiles))
-	if err != nil {
+// CopySnapshot puts a stitched snapshot on the clipboard.
+func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
+	if err := validateSnapshotImage(data); err != nil {
 		return err
 	}
 	return mygo.Clipboard.WriteImage(data)
@@ -133,6 +136,27 @@ func geometryOf(tiles []SnapshotTile) SnapshotGeometry {
 		return SnapshotGeometry{}
 	}
 	return tiles[0].Geometry
+}
+
+// maxSnapshotImageBytes bounds a finished snapshot handed back by the page.
+const maxSnapshotImageBytes = 256 << 20
+
+// validateSnapshotImage rejects data the clipboard cannot reasonably accept.
+func validateSnapshotImage(data []byte) error {
+	if len(data) == 0 {
+		return fmt.Errorf("the snapshot is empty")
+	}
+	if len(data) > maxSnapshotImageBytes {
+		return fmt.Errorf("the snapshot is too large")
+	}
+	config, err := png.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("the snapshot is not a PNG image")
+	}
+	if config.Width > maxSnapshotSide || config.Height > maxSnapshotSide {
+		return fmt.Errorf("the snapshot is too large")
+	}
+	return nil
 }
 
 // stitchSnapshot crops each visible-page capture to the snapshot card and

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { fireEvent, render } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 
 import PostView from "~/components/post-view";
@@ -15,8 +15,7 @@ vi.mock("~/stores/app", async () => {
     openLink: vi.fn(),
     setOpenPostRead: vi.fn(),
     toggleStar: vi.fn(),
-    saveSnapshot: vi.fn(),
-    copySnapshot: vi.fn(),
+    captureSnapshot: vi.fn(),
     mockBridge,
   };
 });
@@ -119,38 +118,19 @@ describe("PostView cover transition", () => {
   });
 });
 
-describe("PostView snapshot menu", () => {
-  it("offers save and copy actions for the open article", async () => {
+describe("PostView snapshot trigger", () => {
+  it("starts capturing the open article", async () => {
     const store = await import("~/stores/app");
     const { container } = render(() => <PostView />);
     await closePost();
     await openPost("guid-1");
 
-    const trigger = container.querySelector('button[aria-label="生成文章快照"]');
-    expect(trigger).not.toBeNull();
-    fireEvent.pointerDown(trigger!);
-    const save = await screen.findByText("保存为图片…");
-    fireEvent.pointerUp(save);
+    fireEvent.click(container.querySelector('button[aria-label="生成文章快照"]')!);
 
-    expect(store.saveSnapshot).toHaveBeenCalledTimes(1);
-    expect(store.copySnapshot).not.toHaveBeenCalled();
+    expect(store.captureSnapshot).toHaveBeenCalledTimes(1);
   });
 
-  it("copies through the second menu item", async () => {
-    const store = await import("~/stores/app");
-    const { container } = render(() => <PostView />);
-    await closePost();
-    await openPost("guid-1");
-
-    fireEvent.pointerDown(container.querySelector('button[aria-label="生成文章快照"]')!);
-    const copy = await screen.findByText("复制到剪贴板");
-    fireEvent.pointerUp(copy);
-
-    expect(store.copySnapshot).toHaveBeenCalledTimes(1);
-    expect(store.saveSnapshot).not.toHaveBeenCalled();
-  });
-
-  it("disables the trigger while a snapshot is being generated", async () => {
+  it("disables the trigger while the snapshot pipeline is busy", async () => {
     const { container } = render(() => <PostView />);
     await closePost();
     await openPost("guid-1");

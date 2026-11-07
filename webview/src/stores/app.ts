@@ -12,7 +12,6 @@ import {
   type Post,
   type PostSummary,
   type Prefs,
-  type SnapshotTile,
   type SyncState,
 } from "~/mygo";
 
@@ -20,6 +19,13 @@ import {
 export const PAGE_SIZE = 100;
 
 export type DialogName = "addFeed" | "settings" | "help";
+
+type SnapshotAction = "copy" | "save";
+
+type Snapshot = {
+  post: Post;
+  png: string;
+};
 
 type State = {
   feeds: Feed[];
@@ -35,6 +41,8 @@ type State = {
   loadingPosts: boolean;
   loadingPost: boolean;
   snapshotting: boolean;
+  snapshot: Snapshot | null;
+  snapshotAction: SnapshotAction | null;
   feedFilter: string;
   unreadOnly: boolean;
   starredOnly: boolean;
@@ -68,6 +76,8 @@ const [state, setState] = createStore<State>({
   loadingPosts: false,
   loadingPost: false,
   snapshotting: false,
+  snapshot: null,
+  snapshotAction: null,
   feedFilter: "",
   unreadOnly: false,
   starredOnly: false,
@@ -142,6 +152,7 @@ export async function start(): Promise<void> {
 
 /** Selects a subscription and loads the first page of its posts. */
 export async function selectFeed(id: number): Promise<void> {
+  closeSnapshot();
   setState("current", { feedId: id, guid: null });
   setState("post", null);
   await loadPosts(0);
@@ -198,6 +209,7 @@ export async function selectPost(guid: string): Promise<void> {
   const feedId = state.current.feedId;
   if (feedId === null) return;
 
+  closeSnapshot();
   setState("current", "guid", guid);
   setState("loadingPost", true);
   try {
@@ -270,48 +282,63 @@ export async function toggleStar(guid: string): Promise<void> {
   }
 }
 
-/** Captures the open post's tiles, holding `snapshotting` while it runs.
- * Returns null when there is nothing to do or generation failed; the post is
- * captured with the tiles so a switched article cannot mix them. */
-async function withSnapshot(): Promise<{ post: Post; tiles: SnapshotTile[] } | null> {
+/** Captures the open post, stitches it and opens the preview dialog. */
+export async function captureSnapshot(): Promise<void> {
   const post = state.post;
-  if (!post || state.snapshotting) return null;
+  if (!post || state.snapshotting) return;
   const feedTitle = currentFeed()?.title ?? "";
 
-  setState("snapshotting", true);
+  setState({ snapshotting: true, snapshot: null, snapshotAction: null });
   try {
     const tiles = await generateSnapshot(post, feedTitle);
-    return { post, tiles };
+    const png = await Posts.stitchSnapshot(tiles);
+    setState({ snapshotting: false, snapshot: { post, png } });
   } catch (error) {
+    setState({ snapshotting: false, snapshot: null });
     toast.error(`无法生成快照：${messageOf(error)}`);
-    return null;
   } finally {
     setState("snapshotting", false);
   }
 }
 
-/** Saves the open post's snapshot as a PNG through a save dialog. */
+/** Closes the snapshot preview and releases its action state. */
+export function closeSnapshot(): void {
+  setState({ snapshot: null, snapshotAction: null });
+}
+
+/** Saves the previewed snapshot as a PNG through a save dialog. */
 export async function saveSnapshot(): Promise<void> {
-  const snapshot = await withSnapshot();
-  if (!snapshot) return;
+  const snapshot = state.snapshot;
+  if (!snapshot || state.snapshotAction) return;
+
+  setState("snapshotAction", "save");
   try {
-    const path = await Posts.saveSnapshot(snapshot.post.title, snapshot.tiles);
-    if (!path) return; // The dialog was cancelled; stay quiet.
-    toast.success(`快照已保存：${path}`);
+    const path = await Posts.saveSnapshot(snapshot.post.title, snapshot.png);
+    if (path) {
+      toast.success(`快照已保存：${path}`);
+      closeSnapshot();
+    }
   } catch (error) {
     toast.error(`无法保存快照：${messageOf(error)}`);
+  } finally {
+    setState("snapshotAction", null);
   }
 }
 
-/** Puts the open post's snapshot on the clipboard as a PNG. */
+/** Puts the previewed snapshot on the clipboard as a PNG. */
 export async function copySnapshot(): Promise<void> {
-  const snapshot = await withSnapshot();
-  if (!snapshot) return;
+  const snapshot = state.snapshot;
+  if (!snapshot || state.snapshotAction) return;
+
+  setState("snapshotAction", "copy");
   try {
-    await Posts.copySnapshot(snapshot.tiles);
+    await Posts.copySnapshot(snapshot.png);
     toast.success("快照已复制到剪贴板");
+    closeSnapshot();
   } catch (error) {
     toast.error(`无法复制快照：${messageOf(error)}`);
+  } finally {
+    setState("snapshotAction", null);
   }
 }
 

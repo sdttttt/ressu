@@ -20,6 +20,7 @@ const [store, setStore] = createStore({
   post: null as MockPost | null,
   loadingPost: false,
   snapshotting: false,
+  snapshotAction: null as "copy" | "save" | null,
   posts: [] as MockPost[],
 });
 

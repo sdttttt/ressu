@@ -158,3 +158,23 @@ func TestSnapshotFileName(t *testing.T) {
 		}
 	}
 }
+
+func TestSnapshotImageValidation(t *testing.T) {
+	posts := &Posts{}
+	broken := []byte("broken")
+	if err := posts.CopySnapshot(t.Context(), broken); err == nil {
+		t.Error("CopySnapshot(valid) should fail before the clipboard is used")
+	}
+	if _, err := posts.SaveSnapshot(t.Context(), "snapshot", broken); err == nil {
+		t.Error("SaveSnapshot(valid) should fail before a dialog is opened")
+	}
+
+	for name, data := range map[string][]byte{
+		"empty": nil,
+		"broken": []byte("broken"),
+	} {
+		if err := validateSnapshotImage(data); err == nil {
+			t.Errorf("validateSnapshotImage(%s) should fail", name)
+		}
+	}
+}
