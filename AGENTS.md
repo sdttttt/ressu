@@ -314,8 +314,10 @@ TypeScript / Solid：
   `linux/amd64`、`darwin/universal`：`bun run build -- -platform <target>`，然后把
   `build/` 作为 artifact 上传。Linux 会先安装 WebKitGTK/AppIndicator 相关包。macOS 的
   bundle 与 DMG 需要 macOS；Windows 构建还会产出 NSIS 安装包。
-- 发版时同时改 `package.json` 与 `mygo.config.ts` 里的版本号；tag 驱动打包。本仓库目前
-  还没有自动更新配置。
+- 版本号采用日期版本 `YY.M.N`：年份取后两位，月份用 `1` 到 `12` 且不补零，
+  `N` 是该月的版本计数并从 `1` 开始。发版时同时改 `package.json` 与
+  `mygo.config.ts` 里的版本号，并打 `vYY.M.N` 格式的 tag；CI 会在打包前校验
+  三者一致。本仓库目前还没有自动更新配置。
 
 ## 安全注意事项
 

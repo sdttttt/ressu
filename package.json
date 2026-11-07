@@ -1,7 +1,7 @@
 {
   "name": "ressu",
   "private": true,
-  "version": "0.1.0",
+  "version": "26.11.1",
   "type": "module",
   "license": "0BSD",
   "scripts": {
