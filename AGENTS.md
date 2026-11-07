@@ -64,7 +64,18 @@ webview/                   前端源码和独立构建配置
     components/            页面组件、对话框、图标按钮和内联 shadcn 风格原语
     components/ui/         Kobalte/corvu + cva 的 UI 原语
     lib/                   format、sanitize、snapshot、theme、commands、utils
-    stores/                app.ts（状态与动作）、events.ts（事件订阅）
+    stores/
+      app-state.ts         状态类型、默认值、Solid store、派生值
+      app.ts               供组件使用的统一导出层
+      feeds.ts             订阅源选择、添加、删除和刷新
+      posts.ts             文章分页、筛选、打开、已读和星标
+      snapshot-actions.ts  快照生成、预览、保存和复制
+      settings.ts          偏好、面板宽度、外链和数据目录
+      selection.ts         键盘选择、相邻订阅源和原文打开
+      sync-events.ts       刷新与文章变更事件的本地状态同步
+      lifecycle.ts         启动加载
+      ui.ts                对话框和订阅源过滤状态
+      events.ts            MyGO 事件订阅
     test/app-mock.ts       组件测试共用的 Solid store mock
   test/setup.ts            Vitest 的 jsdom 垫片与网络禁令
   public/favicon.svg
@@ -193,7 +204,8 @@ bun install
 - `Prefs.Normalize` 会替换越界值。未知主题回落 `system`，未知字号回落 `medium`，
   `openLinks` 不是 `window` 就变成 `browser`，`postsPerFeed` 限制在 50–2000，
   面板宽度不合规则恢复 `[18,30]`。
-- 前端 `defaultPrefs`（`webview/src/stores/app.ts`）复制了 Go 默认值；新增偏好时两处都要改。
+- 前端 `defaultPrefs`（`webview/src/stores/app-state.ts`）复制了 Go 默认值；新增偏好时两处
+  都要改。
 - `Post.Content` 是订阅源原始 HTML，`Post.Summary` 是截到 280 个字符的纯文本。HTML 只在
   渲染或生成快照时清洗。
 
@@ -211,9 +223,10 @@ bun install
 
 ## 前端结构与状态
 
-- `webview/src/stores/app.ts` 是唯一应用 store。组件读取导出的 `app`，修改时调用导出动作
-  （`start`、`selectFeed`、`loadPosts`、`selectPost`、`refreshAll`、`addFeed`、
-  `removeFeed`、`updatePrefs` 等）。
+- `webview/src/stores/app-state.ts` 持有唯一的 Solid store、状态类型、默认值和派生函数。
+  `webview/src/stores/app.ts` 只是统一导出层；动作按功能拆在 `feeds.ts`、`posts.ts`、
+  `snapshot-actions.ts`、`settings.ts`、`selection.ts`、`sync-events.ts`、`lifecycle.ts`
+  和 `ui.ts`。组件继续统一从 `~/stores/app` 导入，不要直接调用 `setAppState`。
 - 组件不直接调用 `~/mygo`；事件和快照模块除外，它们分别封装订阅和底层截图调用。
 - 派生值使用普通函数，如 `currentFeed()`、`visibleFeeds()`、`totalUnread()`、
   `isSyncingFeed(id)`，不要引入 memo。
@@ -296,11 +309,13 @@ bun install
 ## 常见改动路径
 
 - 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 加导出方法；需要时广播变更事件；运行
-  `bun run generate`；在 `stores/app.ts` 的动作中调用，处理错误和本地状态。
+  `bun run generate`；在对应的 `stores/feeds.ts`、`posts.ts` 或 `settings.ts` 动作中调用，
+  处理错误和本地状态，最后从 `stores/app.ts` 导出。
 - 新增事件：在 `internal/service/events.go` 用 `mygo.NewEvent[T]` 声明，在状态变化处广播，
   重新生成，并在 `stores/events.ts` 订阅。
-- 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端 `defaultPrefs`；
-  在 `settings-dialog.tsx` 加控件；若影响阅读则更新 store 动作和应用逻辑。
+- 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
+  `stores/app-state.ts` 里的 `defaultPrefs`；在 `settings-dialog.tsx` 加控件；若影响阅读则
+  更新 `stores/settings.ts`、相关功能模块和应用逻辑。
 - 新增快捷键：在 `lib/commands.ts` 的 `commands` 数组加一条，并确保 store 已提供对应动作。
 - 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、前端 `theme.ts`、设置对话框和安全测试。
 - 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。

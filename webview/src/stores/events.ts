@@ -1,5 +1,7 @@
 import { events } from "~/mygo";
-import { applySync, handlePostsChanged, openDialog, refreshAll, replaceFeeds } from "~/stores/app";
+import { refreshAll } from "~/stores/feeds";
+import { applySync, handlePostsChanged, replaceFeeds } from "~/stores/sync-events";
+import { openDialog } from "~/stores/ui";
 
 /** Follows the Go side's events. Returns the unsubscribe function. */
 export function subscribe(): () => void {
