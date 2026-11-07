@@ -72,6 +72,12 @@ const post: Post = {
   fetchedAt: "2026-01-02T00:00:00Z",
 };
 
+const twoPosts = (): PostSummary[] => [
+  summary,
+  { ...summary, guid: "guid-2", title: "第二篇文章", read: true },
+  { ...summary, guid: "guid-3", title: "第三篇文章" },
+];
+
 const prefs: Prefs = {
   theme: "system",
   fontSize: "small",
@@ -101,7 +107,10 @@ async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
     const posts = (options.posts ?? [summary]).map((item) => ({ ...item }));
     return { posts, total: posts.length, unread: posts.filter((item) => !item.read).length };
   });
-  vi.mocked(mygo.Posts.get).mockImplementation(async () => ({ ...post }));
+  vi.mocked(mygo.Posts.get).mockImplementation(async (_feedId: number, guid: string) => ({
+    ...post,
+    guid,
+  }));
   vi.mocked(mygo.Posts.markRead).mockResolvedValue(undefined);
 
   return { mygo, app };
@@ -299,5 +308,131 @@ describe("updatePrefs", () => {
     expect(mygo.Settings.update).toHaveBeenCalledWith({ ...prefs, theme: "dark" });
     expect(app.app.prefs.theme).toBe("dark");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+});
+
+describe("moveSelection", () => {
+  it("moves the selection down and opens the post", async () => {
+    const { mygo, app } = await setup({ posts: twoPosts() });
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.moveSelection(1);
+
+    expect(app.app.current.guid).toBe("guid-2");
+    expect(app.app.post?.guid).toBe("guid-2");
+    expect(mygo.Posts.get).toHaveBeenLastCalledWith(1, "guid-2");
+  });
+
+  it("stops at the ends of the list instead of wrapping", async () => {
+    const { app } = await setup({ posts: twoPosts() });
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.moveSelection(-1);
+
+    expect(app.app.current.guid).toBe("guid-1");
+
+    await app.selectPost("guid-3");
+    await app.moveSelection(1);
+
+    expect(app.app.current.guid).toBe("guid-3");
+  });
+
+  it("skips read posts when only unread ones are wanted", async () => {
+    const { mygo, app } = await setup({ posts: twoPosts() });
+    vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs, markReadOnOpen: false });
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.moveSelection(1, true);
+
+    expect(app.app.current.guid).toBe("guid-3");
+
+    await app.moveSelection(-1, true);
+
+    expect(app.app.current.guid).toBe("guid-1");
+  });
+
+  it("does nothing when there are no posts", async () => {
+    const { mygo, app } = await setup({ posts: [] });
+    await app.start();
+
+    await app.moveSelection(1);
+
+    expect(mygo.Posts.get).not.toHaveBeenCalled();
+    expect(app.app.current.guid).toBeNull();
+  });
+
+  it("starts at the first post when nothing is selected yet", async () => {
+    const { app } = await setup({ posts: twoPosts() });
+    await app.start();
+    app.app.current.guid = null;
+
+    await app.openSelectedPost();
+
+    expect(app.app.current.guid).toBe("guid-1");
+    expect(app.app.post?.guid).toBe("guid-1");
+  });
+});
+
+describe("toggleOpenPostRead", () => {
+  it("flips the read state of the open post", async () => {
+    const { mygo, app } = await setup();
+    vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs, markReadOnOpen: false });
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.toggleOpenPostRead();
+
+    expect(mygo.Posts.markRead).toHaveBeenCalledWith(1, "guid-1", true);
+    expect(app.app.post?.read).toBe(true);
+
+    await app.toggleOpenPostRead();
+
+    expect(mygo.Posts.markRead).toHaveBeenLastCalledWith(1, "guid-1", false);
+  });
+
+  it("does nothing when no post is open", async () => {
+    const { mygo, app } = await setup({ posts: [] });
+    await app.start();
+
+    await app.toggleOpenPostRead();
+
+    expect(mygo.Posts.markRead).not.toHaveBeenCalled();
+  });
+});
+
+describe("openSelectedPostInBrowser", () => {
+  it("opens the selected post's URL through Settings", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+
+    await app.openSelectedPostInBrowser();
+
+    expect(mygo.Settings.openLink).toHaveBeenCalledWith("https://a.example/1");
+  });
+});
+
+describe("selectNeighbourFeed", () => {
+  it("walks to the neighbouring feed and back", async () => {
+    const { app } = await setup();
+    await app.start();
+
+    await app.selectNeighbourFeed(1);
+    expect(app.app.current.feedId).toBe(2);
+
+    await app.selectNeighbourFeed(-1);
+    expect(app.app.current.feedId).toBe(1);
+  });
+
+  it("stops at the ends of the feed list", async () => {
+    const { app } = await setup({ feeds: [feedA] });
+    await app.start();
+
+    await app.selectNeighbourFeed(1);
+
+    expect(app.app.current.feedId).toBe(1);
   });
 });

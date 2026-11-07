@@ -6,12 +6,14 @@ import FeedSidebar from "~/components/feed-sidebar";
 import PostList from "~/components/post-list";
 import PostView from "~/components/post-view";
 import SettingsDialog from "~/components/settings-dialog";
+import ShortcutsDialog from "~/components/shortcuts-dialog";
 import StatusBar from "~/components/status-bar";
 import { Resizable, ResizableHandle, ResizablePanel } from "~/components/ui/resizable";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Toaster } from "~/components/ui/sonner";
+import { installShortcuts, isMac } from "~/lib/commands";
 import { applyTheme, onSystemThemeChange } from "~/lib/theme";
-import { app, openDialog, refreshAll, savePaneSizes, start } from "~/stores/app";
+import { app, savePaneSizes, start } from "~/stores/app";
 import { subscribe } from "~/stores/events";
 
 export default function App() {
@@ -20,9 +22,9 @@ export default function App() {
     const stopThemeWatch = onSystemThemeChange(() => {
       if (app.prefs.theme === "system") applyTheme("system");
     });
-    // macOS keeps the system menu, which owns these shortcuts; the other
-    // platforms have no menu bar, so the page handles them.
-    const stopShortcuts = navigator.userAgent.includes("Mac") ? undefined : onShortcuts();
+    // The system menu owns the mod-key shortcuts on macOS, so the page only
+    // registers the bare ones there; other platforms get both.
+    const stopShortcuts = installShortcuts({ skipMod: isMac });
     void start();
 
     onCleanup(() => {
@@ -61,33 +63,10 @@ export default function App() {
       <StatusBar />
       <AddFeedDialog />
       <SettingsDialog />
+      <ShortcutsDialog />
       <Toaster position="bottom-right" />
     </div>
   );
-}
-
-/** Runs the commands the menu bar used to own. Returns the unsubscribe function. */
-function onShortcuts(): () => void {
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}
-
-function onKeyDown(event: KeyboardEvent) {
-  if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
-  switch (event.key) {
-    case "n":
-      event.preventDefault();
-      openDialog("addFeed");
-      break;
-    case "r":
-      event.preventDefault();
-      void refreshAll();
-      break;
-    case ",":
-      event.preventDefault();
-      openDialog("settings");
-      break;
-  }
 }
 
 function Splash() {

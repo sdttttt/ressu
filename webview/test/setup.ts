@@ -25,6 +25,10 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+if (!Element.prototype.scrollBy) {
+  Element.prototype.scrollBy = () => {};
+}
+
 // The webview never talks to the network directly (data comes through the
 // MyGO bridge), and tests must not reach out either: make any accidental
 // attempt fail loudly instead of hanging or silently resolving.

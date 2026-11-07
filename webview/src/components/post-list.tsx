@@ -137,6 +137,7 @@ function PostRow(props: { post: PostSummary }) {
 
   return (
     <div
+      data-guid={props.post.guid}
       class={cn(
         "group relative rounded-md transition-[background-color,transform] duration-100 ease-out hover:bg-accent/60 active:scale-[0.98]",
         selected() && "bg-accent",

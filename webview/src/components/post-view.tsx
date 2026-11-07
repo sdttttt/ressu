@@ -231,7 +231,7 @@ function ArticleBody(props: { post: Post }) {
         </div>
       </header>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+      <div data-post-scroll class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div
           class="post-body"
           // The HTML is cleaned by DOMPurify before it reaches the DOM.

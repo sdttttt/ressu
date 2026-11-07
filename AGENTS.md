@@ -198,6 +198,11 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
 - `webview/src/stores/app.ts` 是一个 Solid store；读取时导入 `app`，修改时用导出的函数
   （`start`、`selectFeed`、`loadPosts`、`selectPost`、`refreshAll`、`addFeed`、
   `removeFeed`、`updatePrefs` 等）。组件从不直接调用 `~/mygo`（测试里 mock 它除外）。
+- 键盘快捷键由 `webview/src/lib/commands.ts` 的命令注册表驱动：每条命令声明绑定键、
+  分组、中文标签与动作，全局 keydown 分发器只处理这一份数据；帮助对话框
+  （`shortcuts-dialog.tsx`）直接遍历同一注册表渲染，所以键位与文案不会脱节。
+  新增快捷键时在 `commands` 数组加一条命令即可（需要的 store 动作先在 `app.ts` 里加好）。
+  macOS 上 mod 组合（⌘N/⌘R/⌘,）由系统菜单持有，页面只注册裸键。
 - 动作会捕获错误并用 `messageOf(error)` 弹中文 toast；只有调用方需要按成功与否分支时才
   返回布尔值（`addFeed`）。事件处理里的“发后不管”用 `void action()`。
 - 派生值是普通函数（`currentFeed()`、`visibleFeeds()`、`totalUnread()`、
