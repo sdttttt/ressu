@@ -6,6 +6,9 @@
 
 [![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/ressu)
 
+<img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
+
+
 ## 功能
 
 - 订阅源：添加（RSS / Atom / JSON Feed）、取消订阅、搜索、右键菜单（刷新、全部已读、取消订阅）、未读徽标
