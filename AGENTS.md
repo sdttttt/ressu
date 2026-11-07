@@ -1,354 +1,369 @@
 # AGENTS.md
 
-Ressu 是一个免费的桌面 RSS 阅读器。所有数据由一个 Go 进程持有：它抓取并解析订阅源、按 GUID 去重、把文章存进用户数据目录下的 bbolt 数据库，再通过 MyGO 绑定把数据交给 SolidJS 页面。页面只负责渲染，自己从不为了订阅数据访问网络。
+Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
+MyGO 绑定把数据交给 SolidJS 页面；页面只渲染本地状态。面向用户的中文介绍在 `README.md`。
 
-本文件说明仓库如何构建、组织和改动。面向用户的中文介绍在 `README.md`。
+本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
+的规则。
+
+## 快速约束
+
+- 包管理器固定为 Bun，锁文件是 `bun.lock`。不要引入 `package-lock.json` 或 `pnpm-lock.yaml`。
+- Go 代码、标识符、代码注释、文档注释和提交信息用英文；界面字符串、toast、README 和
+  `AGENTS.md` 用简体中文。
+- 提交遵循 Conventional Commits，例如 `feat: ...`、`fix(ui): ...`、`docs: ...`。破坏性
+  改动加 `!`。
+- WebView 前端不得直接访问网络（`fetch`、`XMLHttpRequest`、`WebSocket`、`EventSource`）。
+  新数据入口必须走 Go 绑定。
+- 不要手改生成物：`webview/src/mygo.ts`、`webview/dist/`、`build/`、`.mygo/`。
+- 只改与任务相关的代码。不要顺手修复无关失败，也不要在任务中新增 ESLint/Prettier 配置。
+- `gofmt` 必须干净；前端改完运行 `bun run fmt`。
 
 ## 技术栈
 
-| 层     | 选择                                                                    |
-| ------ | ----------------------------------------------------------------------- |
-| 外壳   | MyGO 0.7（`github.com/egoist/mygo`），Go，无 cgo，系统 WebView          |
-| 后端   | Go 1.27.3，`mmcdole/gofeed` 解析 RSS 0.9x/1.0/2.0、Atom、JSON Feed      |
-| 前端   | SolidJS 1.9，shadcn 风格的 Kobalte + corvu 原语，Tailwind CSS 4         |
-| 打包   | Vite 8 + `vite-plugin-solid`，构建目标 `es2022`                         |
-| 状态   | 单个 Solid store（`webview/src/stores/app.ts`），没有 Redux，也没有路由 |
-| 工具链 | Bun（锁文件 `bun.lock`）、TypeScript 7、oxlint、oxfmt、Vitest 5         |
-| 存储   | MyGO 用户数据目录下的 bbolt 数据库（`ressu.db`）                        |
-| 平台   | 以 Windows 为主；Linux 与 macOS 也支持，并在 CI 里打包                  |
-| 许可证 | 0BSD                                                                    |
+| 层     | 选择                                                                 |
+| ------ | -------------------------------------------------------------------- |
+| 外壳   | MyGO 0.8.1（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
+| 后端   | Go 1.27.3，`mmcdole/gofeed` 1.5，bbolt 1.5                           |
+| 前端   | SolidJS 1.9，Kobalte 0.13 + corvu，Tailwind CSS 4                    |
+| 构建   | Vite 8 + `vite-plugin-solid`，目标 `es2022`                          |
+| 状态   | 单个 Solid store；没有路由、Redux 或服务端渲染                       |
+| 工具链 | Bun、TypeScript 7、oxlint、oxfmt、Vitest 5                           |
+| 存储   | 用户数据目录下的 bbolt 单文件数据库 `ressu.db`                       |
+| 平台   | 以 Windows 为主，同时支持 Linux 与 macOS                             |
+| 许可证 | 0BSD                                                                 |
 
-仓库里没有 `pyproject.toml`，也没有 `Cargo.toml`。真正相关的两个清单是 `package.json`（前端脚本与依赖）和 `go.mod`（`module github.com/sdttttt/ressu`）。
+仓库没有 `Cargo.toml` 或 `pyproject.toml`。两个清单是 `package.json` 和 `go.mod`
+（`module github.com/sdttttt/ressu`）。
 
 ## 目录结构
 
-```
-main.go                     应用入口：打开存储、绑定服务、窗口、启动刷新
-menu_darwin.go              macOS：系统菜单及其命令
-menu_other.go               Windows/Linux：SetMenu(nil) 移除原生菜单栏
-internal/                   Go internal/ 规则下的后端包（外部不可导入）
-  rss/                      HTTP 抓取（ETag/If-Modified-Since）与订阅源解析
-    fetch.go, parse.go      Fetch/ValidateURL、Parse/Meta/Item、plainText/truncate
-    testdata/               rss2.xml、atom.xml、jsonfeed.json、broken.xml 测试夹具
-  store/                    bbolt 持久化，订阅源与偏好缓存在内存
+```text
+main.go                    应用入口：打开数据库、绑定服务、创建窗口、启动刷新
+menu_darwin.go             macOS 系统菜单；菜单项向页面广播 ui:command
+menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
+internal/
+  rss/                     HTTP 抓取与 RSS/Atom/JSON Feed 解析
+    fetch.go               ValidateURL、Fetch、ETag/If-Modified-Since、超时与体积上限
+    parse.go               Parse、Meta/Item、相对链接解析、plainText/truncate
+    testdata/              RSS 2.0、Atom、JSON Feed、坏 XML 夹具
+  store/                   bbolt 持久化、订阅与偏好缓存、未读计数
     store.go, model.go
-  service/                  暴露给页面的 API 与类型化事件
-    feeds.go, posts.go, settings.go, snapshot.go, events.go
-webview/                    前端源码与构建配置（独立的源代码目录）
-  index.html                Vite 入口（lang="zh-CN"，挂载 /src/main.tsx）
-  vite.config.ts            Solid + Tailwind 插件、`~` 别名、root 指回 webview/、5173 端口
-  vitest.config.ts          jsdom、setup 文件、`src/**/*.test.{ts,tsx}`
-  tsconfig.json             strict、noEmit、jsx preserve（solid-js）、路径 `~/*`
-  src/                      SolidJS 前端（别名 `~` 指向这里）
-    main.tsx                把 <App/> 渲染进 #root，先按系统主题上色
-    app.tsx                 三栏可拖拽布局、状态栏、对话框、toast
-    mygo.ts                 生成的类型化客户端（已被 git 忽略；不要编辑）
-    index.css               Tailwind 4 入口：主题变量、dark 变体、.post-body
-    components/             feed-sidebar、post-list、post-view、*-dialog、status-bar、empty-state
-    components/icon-button.tsx  solid-ui Button + Tooltip 的图标按钮（aria-label 即可访问名）
-    components/ui/          源码内联的 shadcn 风格原语（Kobalte/corvu + cva）
-    lib/                    format.ts（zh-CN Intl）、sanitize.ts（DOMPurify）、snapshot.ts（文章快照）、theme.ts、utils.ts
-    stores/                 app.ts（状态 + 动作）、events.ts（事件订阅）
-  test/setup.ts             Vitest 的 jsdom 垫片（matchMedia、ResizeObserver、scrollIntoView）
-  public/favicon.svg        Vite 公共资源
-  dist/                     前端构建输出（已被 git 忽略）
-resources/icon.png          MyGO 打包使用的应用图标
-mygo.config.ts              MyGO CLI 配置（name、slug、identifier、dev/build 命令、out）
-.oxlintrc.json              oxlint 插件/规则与忽略项
-.oxfmtrc.json               oxfmt：printWidth 100、import 排序、Tailwind 类名排序
-.github/workflows/ci.yml    ubuntu/windows 测试矩阵，v* tag 时打包
-build/                      构建产物（已被忽略）：Ressu.exe、安装包、图标
+  service/                 暴露给页面的服务、事件与后台行为
+    feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
+webview/                   前端源码和独立构建配置
+  index.html               Vite 入口，lang="zh-CN"
+  vite.config.ts           Solid + Tailwind 插件、~ 别名、root 指回 webview/、固定 5173
+  vitest.config.ts         jsdom、setup 文件、src/**/*.test.{ts,tsx}
+  tsconfig.json            strict、noEmit、jsx preserve、~/* 路径别名
+  src/
+    main.tsx               挂载 App，首帧前先按系统主题上色
+    app.tsx                三栏布局、对话框、状态栏与 toast
+    index.css              Tailwind 4 入口、主题 token、.post-body、.snapshot-*
+    mygo.ts                生成的类型化客户端；被 git 忽略，不要编辑
+    components/            页面组件、对话框、图标按钮和内联 shadcn 风格原语
+    components/ui/         Kobalte/corvu + cva 的 UI 原语
+    lib/                   format、sanitize、snapshot、theme、commands、utils
+    stores/                app.ts（状态与动作）、events.ts（事件订阅）
+    test/app-mock.ts       组件测试共用的 Solid store mock
+  test/setup.ts            Vitest 的 jsdom 垫片与网络禁令
+  public/favicon.svg
+resources/icon.png         MyGO 打包图标
+mygo.config.ts             MyGO CLI 配置
+.oxlintrc.json             oxlint 规则、插件和前端网络禁令
+.oxfmtrc.json              printWidth 100、import/Tailwind 类名排序
+.github/workflows/ci.yml   测试、打包与 GitHub Release
 ```
 
-`webview/dist/`、`build/`、`.mygo/`、`webview/src/mygo.ts` 都是生成物，已被 git 忽略。
+`build/`、`webview/dist/`、`.mygo/`、`webview/src/mygo.ts`、`coverage/` 和 `node_modules/`
+都是生成物或本地依赖，已被 git 忽略。
 
-## 构建与测试命令
+## 构建与测试
 
-首次安装用 `bun install`（包管理器是 Bun；不要引入 npm 或 pnpm 的锁文件）。
+首次安装：
 
-| 命令                 | 作用                                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `bun run dev`        | `mygo dev`：通过 `devCommand` 拉起 Vite，构建并启动 `.mygo/dev` 里的开发版应用                                                |
-| `bun run dev:web`    | 只跑 `http://localhost:5173` 的 Vite；可调布局，但调 Go 会失败（没有数据）                                                    |
-| `bun run generate`   | 依据 `mygo.Bind` 服务与 `mygo.NewEvent` 事件重新生成 `webview/src/mygo.ts`                                                    |
-| `bun run typecheck`  | `tsc -p webview/tsconfig.json --noEmit`                                                                                       |
-| `bun run lint`       | `oxlint`                                                                                                                      |
-| `bun run fmt`        | `oxfmt`（会写文件；排序 import 与 Tailwind 类名）                                                                             |
-| `bun run fmt:check`  | `oxfmt --check`                                                                                                               |
-| `bun run check`      | typecheck + lint + fmt:check；CI 的关卡，**不**跑测试                                                                         |
-| `bun run test`       | `vitest run`（jsdom + @solidjs/testing-library）                                                                              |
-| `bun run test:watch` | Vitest 监听模式                                                                                                               |
-| `go test ./...`      | Go 单测与集成测试（httptest 提供真实订阅源）                                                                                  |
-| `bun run build`      | `mygo build`：先 `tsc -p webview/tsconfig.json --noEmit && vite build --config webview/vite.config.ts`，再编译打包到 `build/` |
-| `bun run build:web`  | 只构建前端：类型检查后 `vite build` 输出到 `webview/dist/`                                                                    |
-| `bunx mygo vet`      | MyGO 自带的 Go vet + 原生 UI 生命周期检查；未接入脚本或 CI                                                                    |
-| `bunx mygo doctor`   | 检查开发环境是否就绪                                                                                                          |
+```sh
+bun install
+```
+
+| 命令                 | 作用                                                     |
+| -------------------- | -------------------------------------------------------- |
+| `bun run dev`        | `mygo dev`：启动 Vite，构建并运行 `.mygo/dev` 下的开发版 |
+| `bun run dev:web`    | 只启动 `http://localhost:5173` 的 Vite，没有 Go 数据     |
+| `bun run generate`   | 根据 Go 服务和事件重新生成 `webview/src/mygo.ts`         |
+| `bun run typecheck`  | `tsc -p webview/tsconfig.json --noEmit`                  |
+| `bun run lint`       | oxlint                                                   |
+| `bun run fmt`        | oxfmt，写入文件并排序 import/Tailwind 类名               |
+| `bun run fmt:check`  | 只检查格式                                               |
+| `bun run check`      | typecheck + lint + fmt:check；不跑测试                   |
+| `bun run test`       | Vitest（jsdom + `@solidjs/testing-library`）             |
+| `bun run test:watch` | Vitest 监听模式                                          |
+| `go test ./...`      | Go 单测与 httptest 集成测试                              |
+| `go vet ./...`       | Go 静态检查                                              |
+| `bun run build:web`  | 类型检查后构建前端到 `webview/dist/`                     |
+| `bun run build`      | `mygo build`：构建前端、编译并打包到 `build/`            |
+| `bunx mygo vet`      | MyGO 的 Go vet 与原生 UI 生命周期检查；未接入 CI         |
+| `bunx mygo doctor`   | 检查开发环境                                             |
 
 注意：
 
-- `webview/src/mygo.ts` 是生成物且被 git 忽略。全新克隆后要先 `bun run generate` 再
-  `bun run check`，否则类型检查会因模块缺失而失败。`mygo dev` 与 `mygo build`
-  会自己重新生成它。
-- `bun run build` 默认 `-platform windows/amd64`；CI 会显式传
-  `-platform windows/amd64`、`linux/amd64`、`darwin/universal`。产物落在
-  `build/<os>-<arch>/`（Windows 下是 `Ressu.exe`、
-  `ressu-setup-<version>-amd64.exe`、`icon.png`）。
-- `mygo dev` 监听 Go 代码变化并重建/重启开发版应用；前端改动交给 Vite。该终端里
-  `r` 重建、`c` 清屏、`q` 退出。
-- 环境要求：Go 1.27.3+（来自 `go.mod`）、Bun，以及系统 WebView（Windows 10
-  需要 WebView2 Runtime，Windows 11 自带）。Linux 需要 WebKitGTK 4.1；CI 会安装
-  `libwebkit2gtk-4.1-0`、`libayatana-appindicator3-1`（确切包名见
-  `.github/workflows/ci.yml`）。
-- 开发服务器端口固定为 5173（`strictPort`），必须与 `mygo.config.ts` 里的
-  `devUrl` 保持一致。
+- 全新克隆后要先 `bun run generate`，否则类型检查会因缺少 `webview/src/mygo.ts` 失败。
+  `mygo dev` 和 `mygo build` 会自动重新生成它。
+- 运行中的 `mygo dev` 可能与 `mygo generate` 冲突并导致生成超时；重新生成前先退出开发版。
+- Vite 端口固定为 5173（`strictPort`），必须与 `mygo.config.ts` 的 `devUrl` 一致。
+- `mygo dev` 监听 Go 改动并重建应用；前端热更新由 Vite 负责。开发终端里 `r` 重建、
+  `c` 清屏、`q` 退出。
+- `bun run build` 不传 `-platform` 时使用 MyGO 的默认目标；发布必须显式传入目标平台。CI
+  分别构建 `windows/amd64`、`linux/amd64`、`darwin/universal`。
+- 环境要求：Go 1.27.3+、Bun、系统 WebView。Windows 10 需要 WebView2 Runtime；
+  Linux 需要 WebKitGTK 4.1 与 AppIndicator 相关包。
 
-在本次检出上验证过（Windows、Go 1.27.3、Bun 1.4.4）：`go test ./...`、
-`bun run check`、`bun run test`（4 个文件 34 个用例）、`bun run build:web`、
-`gofmt -l .`（干净）、`go vet ./...` 与 `bunx mygo vet` 全部通过。
+## 启动与后台刷新
 
-## 运行时架构
+`main.go` 的启动顺序：
 
-启动流程（`main.go`）：
+1. `mygo.App.SetName("Ressu")`，解析 `mygo.PathUserData`，执行 `store.Open(dir)`。
+2. 绑定 `Feeds`、`Posts`、`Settings` 三个服务。
+3. 创建 `ForegroundRefresher` 并挂到应用激活/失活和窗口焦点事件。
+4. `WhenReady` 中应用保存的主题、安装菜单、创建主窗口；只有
+   `RefreshOnStart` 为真时才在窗口显示后异步刷新全部订阅源。
+5. `app.Run()` 阻塞；启动阶段错误走 `log.Fatal`。
 
-1. `mygo.App.SetName("Ressu")`，解析 `mygo.PathUserData`，`store.Open(dir)`。
-2. `mygo.Bind(service.NewFeeds(st), service.NewPosts(st), service.NewSettings(st))`。
-3. `WhenReady` 里：用 `mygo.Theme.SetSource` 应用保存的主题、在 macOS 上安装系统菜单
-   （Windows/Linux 调用 `SetMenu(nil)` 移除原生菜单栏）、打开主窗口
-   （1200x800，最小 900x600，`StateKey: "main"`，因此 MyGO 会写
-   `window-state.json`）。窗口以 `Hidden` 创建，在 `OnReadyToShow` 里才 `Show`，所以不会
-   出现空白窗口；5 秒内页面仍未就绪也会兜底显示。`refreshOnStart` 的刷新在这个回调里
-   启动，避免和首帧抢资源。
-4. `app.Run()` 阻塞；启动阶段的错误走 `log.Fatal`。
+主窗口为 1200x800，最小 900x600，`StateKey: "main"`，由 MyGO 写入
+`window-state.json`。窗口先以 `Hidden` 创建，在 `OnReadyToShow` 中显示；5 秒内页面仍未
+就绪也会兜底显示，避免空白窗口。
 
-绑定与事件：
+`internal/service/foreground.go` 记录应用是否真正离开前台。应用失活后再次激活时，会异步
+执行一次 `RefreshAll`；窗口失焦/聚焦只在应用本身失活/激活时作为兜底信号。`RefreshAll`
+自身是单飞：已有刷新时返回 `ErrRefreshing`。
 
-- 绑定服务上任何导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入，并在
-  TypeScript 中省略（`Feeds.Add(ctx, url)` 变成 `Feeds.add(url)`）。参数与返回值必须是
-  可 JSON 序列化的 struct/slice/string/number/bool/`time.Time`；可空字段用指针
-  （`*time.Time` -> `string | null`）。
-- `mygo generate` 写出 `webview/src/mygo.ts`：从 Go struct 复制的接口（JSON tag 转 camelCase、
-  保留文档注释）、调用 `call("Service.Method", ...)` 的 `Feeds`/`Posts`/`Settings`
-  对象，以及由 `mygo.NewEvent[T](name)` 生成的 `events.*`。调用失败时以 Go 错误文本
-  reject。
-- 事件名用冒号分区：`sync:state`、`feeds:changed`、`posts:changed`、`ui:command`
-  （声明在 `internal/service/events.go`）。
-- 原生菜单只存在于 macOS，它不直接拥有对话框：它广播 `ui:command` 字符串（`add-feed`、
-  `refresh`、`settings`，常量见 `service.Command*`），由 `webview/src/stores/events.ts`
-  打开对话框或执行动作。Windows/Linux 没有菜单栏，页面在 `app.tsx` 里注册同样的
-  `Ctrl/Cmd+N`、`Ctrl/Cmd+R`、`Ctrl/Cmd+,` 快捷键。
+## MyGO 绑定与事件
 
-数据流：
+- 服务上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入，TypeScript 中省略：
+  `Feeds.Add(ctx, url)` 生成 `Feeds.add(url)`。
+- 参数和返回值必须可 JSON 序列化。可空时间用 `*time.Time`，对应 TypeScript
+  `string | null`。
+- `mygo generate` 生成接口、`Feeds`/`Posts`/`Settings` 客户端和 `events.*`。生成文件里的
+  JSON tag 会转成 camelCase，并保留 Go 文档注释。
+- 事件名用冒号分区，声明在 `internal/service/events.go`：
+  `sync:state`、`feeds:changed`、`posts:changed`、`ui:command`。
+- `feeds:changed` 携带完整订阅列表和总未读数；`posts:changed` 只携带 feed id 和新文章数。
+- macOS 原生菜单只广播命令字符串（`add-feed`、`refresh`、`settings`），不直接拥有对话框。
+  页面通过 `webview/src/stores/events.ts` 打开对话框或执行动作。Windows/Linux 没有原生菜单栏。
+- 任何会改变订阅或未读状态的服务方法都应广播 `feeds:changed`（通常调用
+  `broadcastFeeds`）；多窗口依赖该事件保持一致。
 
-- 页面启动（`webview/src/app.tsx` 的 onMount -> `start()`）：订阅事件、监听系统主题，然后并行
-  加载 `Feeds.list()`、`Settings.get()`、`Settings.dataDir()`，应用主题，选中第一个
-  订阅源。选中订阅源会加载它第 0 页的文章。
-- 刷新：`refreshAll()` -> Go 的 `Feeds.RefreshAll`，单飞（`ErrRefreshing`），广播带
-  `active/total` 的 `sync:state`，并以信号量每次抓取 4 个订阅源
-  （`maxConcurrent = 4`）。成功的 `refreshOne` 会保存新的校验器和合并后的文章，并广播
-  `feeds:changed` 与 `posts:changed`；抓取失败只广播 `feeds:changed`。`RefreshAll`
-  在每个订阅源完成后广播一次 `sync:state`，最后再广播一次 `active: false`。
-- 304（`rss.ErrNotModified`）保留已存文章，只清除错误并更新 `lastFetchedAt`。失败则把
-  `lastError` 记在订阅源上，保留订阅源与文章，并在状态栏和 toast 里展示错误文本。
-- 任何写操作都会广播 `feeds:changed`（见 `broadcastFeeds`）；新增会改状态的服务方法也应
-  照做，这样多窗口才能保持一致。
-- 筛选在服务端完成：`Posts.List` 接收
-  `{feedId, unreadOnly, starredOnly, search, offset, limit}`，返回摘要加 `total` 和
-  `unread`。界面每页 100 条（`PAGE_SIZE`），服务默认 100、上限 500。`search` 在 Go 里
-  已实现，但当前界面始终传 `""`。
-- 未读数由文章推导，存在 `Feed.Unread` 上：合并文章时重算，单条已读/取消已读时增减，
-  全部已读时清零。
+## 订阅刷新流程
 
-持久化（`internal/store`）：
+- `Feeds.Add` 先校验绝对 `http`/`https` URL、检查重复，再立即抓取一次并保存频道元数据与
+  首批文章；成功后广播 `feeds:changed` 和 `posts:changed`。
+- `Feeds.RefreshAll` 用 `maxConcurrent = 4` 的信号量并发抓取，每个订阅完成后广播一次
+  `sync:state`，最后再广播 `active: false`。
+- `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`。304 映射为
+  `rss.ErrNotModified`：保留文章，只清除错误并更新 `lastFetchedAt`。
+- 抓取失败会把错误写入 `Feed.LastError`，保留订阅和已存文章，并广播
+  `feeds:changed`；页面在状态栏和 toast 中展示错误。
+- 成功抓取后调用 `store.MergePosts`，再刷新频道元数据、校验器和 `lastFetchedAt`。合并完成
+  后重新读取 Feed，因为未读数已经在事务中重算。
+- `Posts.List` 在服务端完成未读/星标筛选、搜索和分页。返回 `{posts,total,unread}`。
+  界面每页 100 条；服务默认 100、上限 500。搜索已实现，但当前界面始终传空字符串。
+- 未读数由文章推导并保存在 `Feed.Unread`：合并时重算，单条已读状态改变时增减，全部已读时清零。
 
-数据库是用户数据目录下的 `ressu.db`（bbolt，单文件）：
+## 持久化
 
-| 桶         | 键                  | 值                                                          |
-| ---------- | ------------------- | ----------------------------------------------------------- |
-| `feeds`    | 8 字节大端订阅源 id | 整个 `Feed` 的 JSON：频道元数据、ETag/Last-Modified、未读数 |
-| `posts`    | 订阅源 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                               |
-| `settings` | `prefs`             | 整个 `Prefs` 的 JSON                                        |
+数据库是用户数据目录下的 `ressu.db`（bbolt，单文件，文件模式 0600）：
 
-`window-state.json` 仍由 MyGO 依据 `StateKey` 写在同一个目录，不是本仓库代码。
+| 桶         | 键                | 值                                                      |
+| ---------- | ----------------- | ------------------------------------------------------- |
+| `feeds`    | 8 字节大端订阅 id | 整个 `Feed` 的 JSON：元数据、ETag/Last-Modified、未读数 |
+| `posts`    | 订阅 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                           |
+| `settings` | `prefs`           | 整个 `Prefs` 的 JSON                                    |
 
-- `Store` 把订阅源和偏好缓存在内存（数量小、读频繁），文章每次从数据库读；一把互斥锁串行化
-  写操作。出参都做克隆（`slices.Clone`），内部值不会被调用方改到。
-- 只有一个进程能用数据库：bbolt 的文件锁会让第二个实例在打开时超时报错。
-- 没有版本键，也没有迁移代码。改结构时要自己兼容旧记录，或加一个版本键并写迁移。
-- `MergePosts` 按 GUID 刷新已存在的条目但保留 `read`、`starred`、`fetchedAt`；按
-  `publishedAt` 倒序；裁剪到 `prefs.PostsPerFeed`（默认 500，允许 50–2000）并重算未读。
-  它在一个事务里重写该订阅源的整个文章桶，单条已读/星标只写那一条。
-- `AddFeed` 用「最大 id + 1」，删除最高 id 的订阅源后该 id 会被复用。
-- `Prefs.Normalize` 替换越界值；未知主题回落到 `system`，`openLinks` 不是 `window` 就
-  变成 `browser`。前端在 `webview/src/stores/app.ts` 的 `defaultPrefs` 里复制了一份默认值——
-  新增偏好时两处都要改。
-- 文章的 `content` 是订阅源原始 HTML；`summary` 是截到 280 个字符加省略号的纯文本。
-  HTML 只在渲染时清洗。
+`window-state.json` 由 MyGO 依据 `StateKey` 写在同一个用户数据目录，不是本仓库代码。
 
-订阅源抓取（`internal/rss`）：
+- `Store` 在内存缓存订阅和偏好，文章每次从数据库读取；一把互斥锁串行化写操作。返回的
+  slice 会克隆，调用方不能改到内部状态。
+- bbolt 的文件锁意味着同一数据目录只能有一个进程打开数据库；第二个实例会超时报错。
+- 没有 schema 版本键或迁移框架。修改持久化结构时必须兼容旧记录，或主动加入版本键和迁移。
+- `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
+  按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读。它在一个事务里重写该
+  订阅的整个文章桶。
+- `UpdatePost` 和 `MarkAllRead` 只写受影响的数据，并同步更新内存中的未读数。
+- `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
+- `Prefs.Normalize` 会替换越界值。未知主题回落 `system`，未知字号回落 `medium`，
+  `openLinks` 不是 `window` 就变成 `browser`，`postsPerFeed` 限制在 50–2000，
+  面板宽度不合规则恢复 `[18,30]`。
+- 前端 `defaultPrefs`（`webview/src/stores/app.ts`）复制了 Go 默认值；新增偏好时两处都要改。
+- `Post.Content` 是订阅源原始 HTML，`Post.Summary` 是截到 280 个字符的纯文本。HTML 只在
+  渲染或生成快照时清洗。
 
-- 只有绝对的 `http`/`https` 地址能通过 `ValidateURL`，其它一律返回 `ErrInvalidURL`。
-- `Fetch` 发送 `User-Agent: Ressu/0.1 (+https://github.com/sdttttt/ressu)`、偏向订阅源的
-  `Accept`，以及 `If-None-Match`/`If-Modified-Since`。请求超时 30s（`Timeout`），响应体
-  上限 16 MiB（`MaxBody`），304 映射为 `ErrNotModified`。
-- `Parse` 用链接补齐缺失的 GUID，再退回标题+日期；拒绝不是订阅源的页面；把相对链接按
-  订阅源地址解析为绝对地址；摘要统一成单行纯文本。
+## 订阅源抓取与解析
 
-前端：
+- `rss.ValidateURL` 只接受带 host 的绝对 `http`/`https` URL；`file:`、`javascript:` 和相对
+  地址都返回 `ErrInvalidURL`。
+- `rss.Fetch` 发送 `User-Agent: Ressu/0.1 (+https://github.com/sdttttt/ressu)`、偏向订阅源的
+  `Accept`，以及可用的 `If-None-Match`/`If-Modified-Since`。
+- 请求和读取 body 共享 30 秒超时；响应最多读取 16 MiB；非 200/304 状态直接报错。
+- `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
+  链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。
+- 频道和文章里的相对链接会按订阅源地址解析为绝对地址。摘要会去掉 HTML、折叠空白并截断。
+- 损坏 XML 或不是订阅源的页面返回错误，服务层把错误展示给用户。
 
-- `webview/src/stores/app.ts` 是一个 Solid store；读取时导入 `app`，修改时用导出的函数
+## 前端结构与状态
+
+- `webview/src/stores/app.ts` 是唯一应用 store。组件读取导出的 `app`，修改时调用导出动作
   （`start`、`selectFeed`、`loadPosts`、`selectPost`、`refreshAll`、`addFeed`、
-  `removeFeed`、`updatePrefs` 等）。组件从不直接调用 `~/mygo`（测试里 mock 它除外）。
-- 键盘快捷键由 `webview/src/lib/commands.ts` 的命令注册表驱动：每条命令声明绑定键、
-  分组、中文标签与动作，全局 keydown 分发器只处理这一份数据；帮助对话框
-  （`shortcuts-dialog.tsx`）直接遍历同一注册表渲染，所以键位与文案不会脱节。
-  新增快捷键时在 `commands` 数组加一条命令即可（需要的 store 动作先在 `app.ts` 里加好）。
-  macOS 上 mod 组合（⌘N/⌘R/⌘,）由系统菜单持有，页面只注册裸键。
-- 动作会捕获错误并用 `messageOf(error)` 弹中文 toast；只有调用方需要按成功与否分支时才
-  返回布尔值（`addFeed`）。事件处理里的“发后不管”用 `void action()`。
-- 派生值是普通函数（`currentFeed()`、`visibleFeeds()`、`totalUnread()`、
-  `isSyncingFeed(id)`），不是 memo。
-- 事件在 `App` 里通过 `webview/src/stores/events.ts` 的 `subscribe()` 只订阅一次；它返回的退订
-  函数用在 `onCleanup` 里。
-- 主题应用两次：Go 设置原生窗口外观（sepia 归入暗色外观），`webview/src/lib/theme.ts`
-  切换 `<html>` 上的 `dark` 与 `theme-sepia` 类（Tailwind 的 dark 变体是
-  `&:where(.dark, .dark *)`）。CSS 变量是 `webview/src/index.css` 里的
-  OKLCH 值，并使用 MyGO 提供的 `--mygo-accent` 与 `--mygo-text-scale`。
-  `sepia`（护眼）是第四个主题值：页面保持浅色结构（`foreground`、语义色、
-  `primary` 沿用浅色值），但整套中性色阶在 `.theme-sepia` 块里按褐色调重排，
-  保持"表面比背景暗一档"的相对明度关系（accent/muted/popover/border 都是
-  暖褐灰），保证悬停、按下、选中、悬浮层在这些表面上的协调。
-  运行时类名必须带 `theme-` 前缀：裸的 `sepia` 会撞上
-  Tailwind 的 sepia 滤镜工具类，给 `<html>` 整页加 `filter: sepia(100%)`，
-  把所有图片染成复古色。
-  新增主题要同时改 `store` 的主题常量与 `Normalize`、`service.ApplyTheme`、
-  `theme.ts`（`isDark` 与 `applyTheme`）和 `settings-dialog.tsx` 的选项列表。
-- 没有路由：只有一页，对话框由 `app.dialog` 驱动。
-- 文章 HTML 用 `innerHTML={sanitizeHTML(...)}` 渲染；见“安全”一节。
-- 「生成文章快照」（`webview/src/lib/snapshot.ts` 与 store 动作 `captureSnapshot`）先把文章
-  渲染成固定浅色的离屏卡片，再让 MyGO 的 `Window.CapturePage()` 按滚动位置截取可见页面；
-  Go 侧 `Posts.CaptureSnapshot` 返回 PNG 切片，`Posts.StitchSnapshot` 拼接成完整 PNG。
-  `snapshot-dialog.tsx` 先展示预览，`Posts.SaveSnapshot` 和 `Posts.CopySnapshot` 只消费
-  这张成品图。正文先过 `sanitizeHTML`，图片仍由 WebView 正常加载。快照的浅色配色在
-  `index.css` 的 `.snapshot-card` 里实现。
-- `Intl.DateTimeFormat("zh-CN")` 放在 `webview/src/lib/format.ts`；日期函数接受可选的 `now`
-  参数，让测试保持确定性。
+  `removeFeed`、`updatePrefs` 等）。
+- 组件不直接调用 `~/mygo`；事件和快照模块除外，它们分别封装订阅和底层截图调用。
+- 派生值使用普通函数，如 `currentFeed()`、`visibleFeeds()`、`totalUnread()`、
+  `isSyncingFeed(id)`，不要引入 memo。
+- store 动作用 `messageOf(error)` 弹中文 toast。只有调用方需要按成功与否分支时才返回布尔值
+  （例如 `addFeed`）；事件处理里的“发后不管”用 `void action()`。
+- 事件只在 `App` 的 `onMount` 中通过 `subscribe()` 订阅一次，并在 `onCleanup` 中退订。
+- 没有路由。普通对话框由 `app.dialog` 控制；快照预览使用独立的 `app.snapshot` 状态。
+- 三栏宽度保存在 `Prefs.PaneSizes`，拖拽停止 500ms 后由 `savePaneSizes` 写回。
+- 文章列表采用分页追加，筛选同时支持未读和星标。列表当前选中项保存在
+  `app.current.guid`。
+- `commands.ts` 是快捷键的唯一注册表：每条命令声明绑定、分组、中文标签和动作。帮助对话框
+  直接遍历同一数组，新增快捷键时也要同步 store 动作。macOS 的 mod 组合由原生菜单持有，
+  页面用 `installShortcuts({ skipMod: isMac })` 跳过重复注册。
+- 主题有两层：Go 的 `Settings.Update` 调用 `ApplyTheme` 设置原生命中外观；前端
+  `lib/theme.ts` 在 `<html>` 上切换 `dark` 和 `theme-sepia` 类。字号通过
+  `--app-text-scale` 缩放根字体。
+- `sepia` 运行时类名必须是 `theme-sepia`。裸 `sepia` 会撞上 Tailwind 的 sepia 滤镜，
+  给整页加 `filter: sepia(100%)` 并染掉所有图片。
+- 新增主题要同步 `store` 的主题常量与 `Normalize`、`service.ApplyTheme`、`theme.ts`
+  （`isDark`/`applyTheme`）和 `settings-dialog.tsx` 的选项。
+- 日期格式化集中在 `webview/src/lib/format.ts`，使用 `zh-CN` Intl；需要确定性的函数接受
+  可选 `now` 参数。
+
+## 文章快照
+
+快照不使用 snapdom、WASM 或第三方长图库，而是依赖系统 WebView 的原生截图能力：
+
+1. `webview/src/lib/snapshot.ts` 在页面中挂载固定 760px 宽、固定浅色的离屏
+   `.snapshot-card`。
+2. 写入正文前调用 `sanitizeHTML`；正文文本使用 `textContent`，只有清洗后的 HTML 进入
+   `innerHTML`。
+3. 先等待所有图片 `decode()` 完成（失败图片会被移除），再测量 `scrollHeight`。
+4. 按有重叠的滚动位置逐片调用 `Posts.CaptureSnapshot`；Go 通过 `Window.CapturePage()`
+   截取当前可见页面。
+5. `Posts.StitchSnapshot` 在 Go 中按第一张图的宽度推导缩放比例，裁剪卡片区域并拼接为
+   完整 PNG；最大 32 片、单边 16384px。
+6. store 把成品 PNG 放进 `app.snapshot`，`snapshot-dialog.tsx` 展示预览；
+   `Posts.SaveSnapshot` 或 `Posts.CopySnapshot` 只消费这张成品图。
+7. 保存成功后关闭预览；取消原生保存对话框或出错时保留预览。关闭预览会清空大图状态。
+
+快照的浅色变量和版式都在 `index.css` 的 `.snapshot-card` 中。不要用屏幕截图代替卡片截图；
+长文章必须按滚动分片拼接，避免只截到第一屏。
 
 ## 代码约定
 
-语言：代码注释、文档注释、标识符与提交信息用英文；面向用户的文案（界面字符串、toast、
-README、`lang="zh-CN"`）用简体中文。本文件（AGENTS.md）是例外，用中文书写。新界面文案
-保持中文，除非任务明确要求，不要引入 i18n 层。
+### Go
 
-Go：
-
-- 包的注释写在主文件上；每个导出标识符都要有文档注释，写成以该标识符开头的完整句子。
+- 包注释写在主文件；每个导出标识符都要有以自身名字开头的文档注释。
 - 哨兵错误是包级 `errors.New` 值（`store.ErrNotFound`、`store.ErrDuplicate`、
-  `rss.ErrNotModified`、`service.ErrRefreshing`）；用 `%w` 包装并带上文件上下文。错误
-  信息要短且用户可读，因为页面会把它们原样显示在中文 toast 里。
-- 每个持久化/序列化字段都要有 camelCase 的 `json` tag。
-- 跟随标准库风格：`slices`、`min`/`max`、合适时用泛型、`for i := range n`。`gofmt`
-  必须干净；改过的文件跑 `gofmt -w`。
-- 平台差异用 `//go:build` 构建标签拆到不同文件（如 `menu_darwin.go` / `menu_other.go`），
-  不要在代码里判断 `runtime.GOOS`。
-- `Store` 上的方法保持加锁，出参克隆切片。
-- 测试与被测代码同目录，命名为 `*_test.go`；不使用 mock 库——用 `t.TempDir()` 与
-  `net/http/httptest`。
+  `rss.ErrNotModified`、`rss.ErrInvalidURL`、`service.ErrRefreshing`）。需要上下文时用 `%w`
+  包装，错误文本要短且可直接展示在中文 toast 里。
+- 每个持久化或跨绑定字段都要有 camelCase `json` tag。
+- 跟随标准库风格：`slices`、`min`/`max`、泛型、`for i := range n`。改过的 Go 文件运行
+  `gofmt -w`。
+- 平台差异用 `//go:build` 拆文件（如 `menu_darwin.go` / `menu_other.go`），不要在代码里
+  判断 `runtime.GOOS`。
+- `Store` 方法保持加锁；返回切片时克隆。
+- Go 测试与被测代码同目录，命名为 `*_test.go`。不使用 mock 库，优先
+  `t.TempDir()`、`httptest` 和真实数据库。
 
-TypeScript / Solid：
+### TypeScript / Solid
 
-- 文件与目录用 kebab-case；组件用 PascalCase，放在 `webview/src/components/<name>.tsx` 并默认
-  导出。小的内部片段（`PostRow`、`FeedIcon`、`ChoiceGroup`）留在同一文件里，不导出。
-- 从 `~/*` 导入；oxfmt 会排序 import 和 Tailwind 类名，所以直接跑 `bun run fmt`，不要
-  手工对齐。
-- Props 用内联对象类型；类名覆盖通过 `class` 加 `cn(...)`。变体用 `cva`（参考
-  `components/ui/button.tsx`）。
-- 只用语义化 token：`bg-background`、`text-muted-foreground`、`bg-accent`、
-  `border-border`、`text-warning`、`bg-error`、`rounded-md` 等。不要写死颜色。Tailwind 4
-  是 CSS-first 的：主题值在 `webview/src/index.css`（`@theme`）里，没有 `tailwind.config.js`。
-- 图标来自 `lucide-solid`；toast 来自 `solid-sonner`（`toast`）。
-- 界面控件一律用 `webview/src/components/ui/**` 里的 solid-ui 组件，不要再手写原生
-  `input`/`select`/复选框：输入用 `text-field`、数字用 `number-field`、单选用
-  `radio-group`、多选切换用 `toggle-group`、提示用 `tooltip`、计数用 `badge`、分隔用
-  `separator`。图标按钮统一用 `~/components/icon-button`（solid-ui `Button` + `Tooltip`，
-  `aria-label` 同时是提示文案与可访问名）。
-- `webview/src/components/ui/**` 是源码内联的 shadcn 风格组件。保持它的 API 稳定；
-  `.oxlintrc.json` 已经在这里放宽了部分 a11y/import 规则。
-- 不要手改 `webview/src/mygo.ts`、`webview/dist/`、`build/`；重新生成或重新构建。
-- 不要新增 ESLint/Prettier 配置——lint 是 oxlint，格式化是 oxfmt。
+- 文件和目录用 kebab-case；组件文件用 `<name>.tsx`，组件名 PascalCase 并默认导出。仅在本文件
+  使用的小组件留在同一文件，不导出。
+- 从 `~/*` 导入。oxfmt 会排序 import 和 Tailwind 类名，直接运行 `bun run fmt`。
+- Props 用内联对象类型；类名覆盖用 `class` + `cn(...)`；变体用 `cva`
+  （参考 `components/ui/button.tsx`）。
+- 只用语义 token：`bg-background`、`text-muted-foreground`、`bg-accent`、
+  `border-border`、`text-warning`、`bg-error`、`rounded-md` 等。不要写死颜色。
+- Tailwind 4 是 CSS-first：主题值在 `webview/src/index.css` 的 `@theme`/变量中，没有
+  `tailwind.config.js`。
+- 图标来自 `lucide-solid`，toast 来自 `solid-sonner`。
+- 界面控件优先使用 `webview/src/components/ui/**`：输入用 `text-field`，数字用
+  `number-field`，单选/多选用 `radio-group`/`toggle-group`，开关用 `switch`，提示用
+  `tooltip`，计数用 `badge`，分隔用 `separator`。图标按钮用
+  `~/components/icon-button`，`aria-label` 同时作为提示和可访问名。
+- `webview/src/components/ui/**` 是源码内联的 shadcn 风格原语，保持 API 稳定。
+- 新增测试放在 `webview/src/**/*.test.{ts,tsx}` 旁边。
 
-提交遵循 Conventional Commits（`feat:`、`fix:`、`chore:`，可带作用域如 `feat(ui):`，
-破坏性改动加 `!`）。LF 行尾由 `.gitattributes` 强制。
+## 常见改动路径
 
-### 改动清单
-
-- 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 上加导出方法，广播它改动的状态，跑
-  `bun run generate`，然后在 `webview/src/stores/app.ts` 的 store 动作里调用它（错误弹 toast、
-  更新本地状态）。
-- 新增偏好：在 `store.Prefs` 加带 JSON tag 的字段、在 `DefaultPrefs` 加默认值、在
-  `Prefs.Normalize` 加范围限制、同步 `webview/src/stores/app.ts` 里的 `defaultPrefs`，并在
-  `settings-dialog.tsx` 加控件。
-- 新增事件：用 `mygo.NewEvent[T]` 声明，在状态变化处广播，重新生成，并在
-  `webview/src/stores/events.ts` 订阅。
-- 新增界面文案：中文、语义化颜色 token、`~` 导入、默认导出。
+- 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 加导出方法；需要时广播变更事件；运行
+  `bun run generate`；在 `stores/app.ts` 的动作中调用，处理错误和本地状态。
+- 新增事件：在 `internal/service/events.go` 用 `mygo.NewEvent[T]` 声明，在状态变化处广播，
+  重新生成，并在 `stores/events.ts` 订阅。
+- 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端 `defaultPrefs`；
+  在 `settings-dialog.tsx` 加控件；若影响阅读则更新 store 动作和应用逻辑。
+- 新增快捷键：在 `lib/commands.ts` 的 `commands` 数组加一条，并确保 store 已提供对应动作。
+- 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、前端 `theme.ts`、设置对话框和安全测试。
+- 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。
 
 ## 测试
 
-- Go：`go test ./...`。三个包都有测试。`rss` 是表驱动的，夹具在
-  `internal/rss/testdata/`（RSS 2.0、Atom、JSON Feed、坏 XML），覆盖
-  `plainText`/`ValidateURL`；`store` 覆盖数据库读写、默认值、重复拒绝、合并语义、裁剪、
-  全部已读、删除与重开；`service` 用 `httptest` 服务器跑完整的
-  添加 -> 刷新 -> 304 -> 新增条目 -> 标记已读 -> 筛选流程，另有失败、分页与搜索的用例。
-  测试夹具中英混排是有意为之。
-- 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试用 `vi.mock` 和固定
-  夹具 mock `~/mygo` 与/或 `~/stores/app`（mock 里用到的值用 `vi.hoisted` 提升）；
-  `restoreMocks: true` 已开启。新测试放在 `webview/src/**/*.test.{ts,tsx}` 旁边。组件测试使用
-  `@solidjs/testing-library` 的 `render`/`fireEvent`。
-- 没有 E2E 套件、没有覆盖率阈值、没有浏览器自动化。测试不得访问网络，也不应依赖打包好
-  的应用。
-- 即使全部通过，store/组件测试仍会向 stderr 打印
-  `You appear to have multiple instances of Solid`；它不会让测试失败。
+- Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `internal/rss/testdata/`；`store` 覆盖
+  数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除和重开；`service` 用 httptest 跑
+  添加、刷新、304、新增、标记已读、筛选、分页和搜索；`foreground` 覆盖回前台刷新和窗口焦点
+  兜底；`snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
+- 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
+  `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
+- `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。
+- 没有 E2E、浏览器自动化或覆盖率阈值。
+- 即使测试全过，store/组件测试仍可能向 stderr 打印
+  `You appear to have multiple instances of Solid`；这不是失败。
+
+提交前至少运行与改动相关的测试；涉及跨层行为时运行：
+
+```sh
+bun run check
+bun run test
+go test ./...
+go vet ./...
+```
+
+Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许本地监听，否则会出现
+`bind: operation not permitted`。
 
 ## CI 与发布
 
 `.github/workflows/ci.yml`：
 
-- `test` 任务在推送到 `master`/`develop` 与 `v*` tag、以及向 `master`/`develop` 提 PR
-  时运行。矩阵为 `ubuntu-latest` + `windows-latest`。步骤：
-  `bun install --frozen-lockfile`、`go test ./...`、`bun run generate`、
-  `bun run check`、`bun run test`、`bun run build:web`。
-- `package` 任务只在 `v*` tag 上运行，`needs: test`，矩阵为 `windows/amd64`、
-  `linux/amd64`、`darwin/universal`：`bun run build -- -platform <target>`，然后把
-  `build/` 作为 artifact 上传。Linux 会先安装 WebKitGTK/AppIndicator 相关包。macOS 的
-  bundle 与 DMG 需要 macOS；Windows 构建还会产出 NSIS 安装包。
-- 版本号采用日期版本 `YY.M.N`：年份取后两位，月份用 `1` 到 `12` 且不补零，
-  `N` 是该月的版本计数并从 `1` 开始。发版时同时改 `package.json` 与
-  `mygo.config.ts` 里的版本号，并打 `vYY.M.N` 格式的 tag；CI 会在打包前校验
-  三者一致。本仓库目前还没有自动更新配置。
+- `test` 在推送 `master`/`develop`、推送 `v*` tag 和向这两个分支提 PR 时运行，矩阵为
+  Ubuntu + Windows。步骤依次是 `bun install --frozen-lockfile`、`go test ./...`、
+  `bun run generate`、`bun run check`、`bun run test`、`bun run build:web`。
+- `release-version` 只对 `v*` tag 运行，校验 tag 符合 `vYY.M.N`，且与 `package.json`、
+  `mygo.config.ts` 的版本号一致。`M` 是 1–12 且不补零，`N` 从 1 开始。
+- `package` 依赖测试和版本校验，在 Windows、Linux、macOS 上分别构建
+  `windows/amd64`、`linux/amd64`、`darwin/universal`，上传 `build/`。
+- `release` 汇总 DMG、Windows setup EXE、DEB、tar.gz，生成 `SHA256SUMS`，再发布 GitHub
+  Release。tag 中含 `-` 时标记为预发布。
+- 发版时同时修改 `package.json` 与 `mygo.config.ts` 的版本号，并打对应 tag。
+- 目前没有自动更新配置；MyGO 更新签名密钥应通过环境变量提供，不要提交到仓库。
 
-## 安全注意事项
+## 安全
 
-- 订阅源内容不可信。任何以 HTML 渲染的内容都必须经过 `sanitizeHTML`
-  （`webview/src/lib/sanitize.ts`）：DOMPurify 的 HTML profile，并移除
+- 订阅源内容不可信。所有以 HTML 渲染的正文必须经过 `sanitizeHTML`
+  （`webview/src/lib/sanitize.ts`）：DOMPurify HTML profile，并禁用
   `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、`button` 以及
-  `style`/`srcset`/`onerror`/`onload`。它还会把链接重写为绝对地址并加
-  `target="_blank" rel="noopener noreferrer"`，把图片改成无固定尺寸的懒加载。`post-view.tsx`
-  里的 `innerHTML` 调用必须始终走这个函数。
-- 只有在 `externalHref()` 确认是 `http`/`https` 后才会打开链接。`Settings.OpenLink`
-  再按偏好调用系统浏览器（`mygo.Shell.OpenExternal`）或打开应用内窗口。永远不要把原始
-  href 直接交给 shell 或窗口。
-- 订阅源地址在服务端校验（`rss.ValidateURL`）：只接受绝对的 `http`/`https`，因此
-  `file://`、`javascript:` 和相对地址都会被拒。抓取有 30s 超时与 16 MiB 体积上限。
-- 数据是本地未加密的数据库（`ressu.db`）：订阅、完整正文、已读与星标状态、偏好，外加
-  MyGO 的 `window-state.json`。设置对话框会展示数据目录并可在文件管理器中打开。删除订阅源
-  会删掉它在 `posts` 桶里的嵌套桶。
-- 没有账号、同步、遥测或统计。文章引用的远程资源与订阅源图标由 WebView 直接从对方服务器
-  加载，因此那些服务器能看到请求；这是除抓取订阅源之外唯一的出站流量。
-- webview 端绝对禁止直接发起网络请求（`fetch`、`XMLHttpRequest`、`WebSocket`、
-  `EventSource`）。需要数据时一律加 Go 绑定再经 `~/mygo` 调用。这条禁令由两道关卡执行：
-  `.oxlintrc.json` 对 `webview/src/**` 的 `no-restricted-globals`（CI 的 lint 会失败），以及
-  `webview/test/setup.ts` 里把这几个 API stub 成抛错（测试内访问网络会立刻炸）。
-- `mygo build` 会把前端内嵌并从 `mygo://localhost` 提供；页面没有
-  Content-Security-Policy meta 标签，所以防 XSS 依赖内容清洗与 URL 校验，而不是 CSP。
-- 不要提交生成物或用户数据（`build/`、`webview/dist/`、`.mygo/`、`webview/src/mygo.ts` 已被忽略）。
-  不要把凭据写进 `mygo.config.ts` 或仓库；签名/更新密钥应放在环境变量里（MyGO 自动更新
-  用 `MYGO_UPDATER_PRIVATE_KEY`，本仓库尚未使用）。
+  `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
+  `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
+- `post-view.tsx` 和快照卡片里的 `innerHTML` 必须始终经过 `sanitizeHTML`。
+- 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`Settings.OpenLink`
+  再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
+- 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。
+- 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；设置对话框可打开数据目录。
+- 没有账号、同步、遥测或统计。除抓取订阅源外，WebView 会直接加载文章图片和订阅源图标，
+  对方服务器因此能看到请求。
+- webview 端禁止直接网络请求，由 `.oxlintrc.json` 的 `no-restricted-globals` 和
+  `webview/test/setup.ts` 的网络 stub 双重执行。需要远程数据时新增 Go 绑定。
+- `mygo build` 从 `mygo://localhost` 提供内嵌页面；页面没有 CSP meta 标签，因此 XSS 防护
+  依赖内容清洗和 URL 校验，而不是 CSP。
+- 快照保存路径来自原生保存对话框；文件名由文章标题清理生成，只写入用户选中的路径。
+  不要把快照上传到网络或写入订阅源可控的路径。
+- 不要提交凭据、用户数据或生成物。签名/更新密钥放在环境变量中。
