@@ -69,12 +69,16 @@ createEffect(() => {
 
   const kind: LayerKind = current ? coverDirection(current.post, latest) : "enter";
   const swap = ++swapId;
-  const next: Layer[] = [{ kind, post: { ...latest } }];
-  // The article being covered freezes as a plain "base" copy underneath. It is
-  // removed when the slide over it finishes (dropBase, called from playEntry);
-  // the timer only catches engines that never fire the finish event.
-  if (current) next.unshift({ kind: "base", post: { ...current.post }, swap });
-  setLayers({ items: next });
+  // The article being covered becomes the frozen "base" layer. Keeping its
+  // object (not cloning it) makes <For> reuse that layer's DOM node, so
+  // images already decoded and the scroll position survive the swap — a
+  // clone would re-render the article from scratch and flash mid-load.
+  const covered = current ?? undefined;
+  if (covered) {
+    setLayers("items", visible.length - 1, { kind: "base", swap });
+  }
+  const entering: Layer = { kind, post: { ...latest } };
+  setLayers("items", covered ? [visible[visible.length - 1], entering] : [entering]);
 
   clearTimeout(dropTimer);
   dropTimer = setTimeout(() => dropBase(swap), COVER_MS * 2 + 100);
