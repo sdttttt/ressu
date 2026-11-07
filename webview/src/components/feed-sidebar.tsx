@@ -1,6 +1,5 @@
 import {
   CheckCheck,
-  FileUp,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -35,7 +34,6 @@ import { cn } from "~/lib/utils";
 import type { Feed } from "~/mygo";
 import {
   app,
-  importOPML,
   isSyncingFeed,
   markAllRead,
   openDialog,
@@ -80,10 +78,6 @@ export default function FeedSidebar() {
 
         <IconButton label="添加订阅源" class="size-7" onClick={() => openDialog("addFeed")}>
           <Plus class="size-4" />
-        </IconButton>
-
-        <IconButton label="导入 OPML" class="size-7" onClick={() => void importOPML()}>
-          <FileUp class="size-4" />
         </IconButton>
 
         <IconButton

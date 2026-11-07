@@ -17,7 +17,7 @@ import {
   TextFieldInput,
   TextFieldLabel,
 } from "~/components/ui/text-field";
-import { addFeed, app, closeDialog, openDialog } from "~/stores/app";
+import { addFeed, app, closeDialog, importOPML, openDialog } from "~/stores/app";
 
 export default function AddFeedDialog() {
   const [feedURL, setFeedURL] = createSignal("");
@@ -93,6 +93,14 @@ export default function AddFeedDialog() {
           </Show>
 
           <DialogFooter class="gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              class="mr-auto text-xs text-muted-foreground"
+              onClick={() => void importOPML()}
+            >
+              从 OPML 导入
+            </Button>
             <Button type="button" variant="ghost" onClick={close}>
               取消
             </Button>
