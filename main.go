@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -31,6 +32,13 @@ func main() {
 
 	feeds := service.NewFeeds(st)
 	mygo.Bind(feeds, service.NewPosts(st), service.NewSettings(st))
+	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
+		if _, err := feeds.RefreshAll(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
+			log.Printf("refresh on foreground: %v", err)
+		}
+	})
+	app.OnDidResignActive(foreground.ResignActive)
+	app.OnDidBecomeActive(foreground.BecomeActive)
 
 	app.WhenReady(func() {
 		prefs := st.Prefs()
@@ -45,7 +53,7 @@ func main() {
 					log.Printf("refresh on start: %v", err)
 				}
 			}()
-		})
+		}, foreground, app.IsActive)
 	})
 
 	if err := app.Run(); err != nil {
@@ -56,7 +64,7 @@ func main() {
 // openWindow creates the main window hidden and shows it once the page has
 // painted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
-func openWindow(onReady func()) {
+func openWindow(onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) {
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		URL:             "/",
@@ -78,6 +86,8 @@ func openWindow(onReady func()) {
 	}
 
 	win.OnReadyToShow(show)
+	win.OnBlur(func() { foreground.WindowBlurred(isActive()) })
+	win.OnFocus(func() { foreground.WindowFocused(isActive()) })
 	// A page that never becomes ready must not leave the app windowless.
 	timer := time.AfterFunc(5*time.Second, show)
 	win.OnClosed(func() { timer.Stop() })

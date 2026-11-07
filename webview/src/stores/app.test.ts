@@ -250,6 +250,19 @@ describe("removeFeed", () => {
 });
 
 describe("applySync", () => {
+  it("updates the page when Go broadcasts a sync state", async () => {
+    const { mygo, app } = await setup();
+    const { subscribe } = await import("~/stores/events");
+    subscribe();
+    await app.start();
+
+    const listener = vi.mocked(mygo.events.syncState.on).mock.calls[0]?.[0];
+    expect(listener).toBeTypeOf("function");
+    listener!({ active: true, done: 1, total: 2, feedId: 1, feed: "A 站" });
+
+    expect(app.app.sync).toMatchObject({ active: true, done: 1, total: 2, feed: "A 站" });
+  });
+
   it("ends the sync state after the last feed", async () => {
     const { app } = await setup();
     await app.start();
