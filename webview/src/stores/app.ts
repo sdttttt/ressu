@@ -2,6 +2,7 @@ import { createStore } from "solid-js/store";
 import { toast } from "solid-sonner";
 
 import { externalHref } from "~/lib/sanitize";
+import { generateSnapshot } from "~/lib/snapshot";
 import { applyFontSize, applyTheme } from "~/lib/theme";
 import {
   Feeds,
@@ -11,6 +12,7 @@ import {
   type Post,
   type PostSummary,
   type Prefs,
+  type SnapshotTile,
   type SyncState,
 } from "~/mygo";
 
@@ -32,6 +34,7 @@ type State = {
   ready: boolean;
   loadingPosts: boolean;
   loadingPost: boolean;
+  snapshotting: boolean;
   feedFilter: string;
   unreadOnly: boolean;
   starredOnly: boolean;
@@ -64,6 +67,7 @@ const [state, setState] = createStore<State>({
   ready: false,
   loadingPosts: false,
   loadingPost: false,
+  snapshotting: false,
   feedFilter: "",
   unreadOnly: false,
   starredOnly: false,
@@ -263,6 +267,51 @@ export async function toggleStar(guid: string): Promise<void> {
     if (state.post?.guid === guid) setState("post", "starred", updated.starred);
   } catch (error) {
     toast.error(messageOf(error));
+  }
+}
+
+/** Captures the open post's tiles, holding `snapshotting` while it runs.
+ * Returns null when there is nothing to do or generation failed; the post is
+ * captured with the tiles so a switched article cannot mix them. */
+async function withSnapshot(): Promise<{ post: Post; tiles: SnapshotTile[] } | null> {
+  const post = state.post;
+  if (!post || state.snapshotting) return null;
+  const feedTitle = currentFeed()?.title ?? "";
+
+  setState("snapshotting", true);
+  try {
+    const tiles = await generateSnapshot(post, feedTitle);
+    return { post, tiles };
+  } catch (error) {
+    toast.error(`无法生成快照：${messageOf(error)}`);
+    return null;
+  } finally {
+    setState("snapshotting", false);
+  }
+}
+
+/** Saves the open post's snapshot as a PNG through a save dialog. */
+export async function saveSnapshot(): Promise<void> {
+  const snapshot = await withSnapshot();
+  if (!snapshot) return;
+  try {
+    const path = await Posts.saveSnapshot(snapshot.post.title, snapshot.tiles);
+    if (!path) return; // The dialog was cancelled; stay quiet.
+    toast.success(`快照已保存：${path}`);
+  } catch (error) {
+    toast.error(`无法保存快照：${messageOf(error)}`);
+  }
+}
+
+/** Puts the open post's snapshot on the clipboard as a PNG. */
+export async function copySnapshot(): Promise<void> {
+  const snapshot = await withSnapshot();
+  if (!snapshot) return;
+  try {
+    await Posts.copySnapshot(snapshot.tiles);
+    toast.success("快照已复制到剪贴板");
+  } catch (error) {
+    toast.error(`无法复制快照：${messageOf(error)}`);
   }
 }
 

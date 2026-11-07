@@ -6,6 +6,8 @@ vi.mock("solid-sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
+vi.mock("~/lib/snapshot", () => ({ generateSnapshot: vi.fn() }));
+
 vi.mock("~/mygo", () => ({
   Feeds: {
     list: vi.fn(),
@@ -20,6 +22,9 @@ vi.mock("~/mygo", () => ({
     markRead: vi.fn(),
     markAllRead: vi.fn(),
     toggleStar: vi.fn(),
+    captureSnapshot: vi.fn(),
+    saveSnapshot: vi.fn(),
+    copySnapshot: vi.fn(),
   },
   Settings: {
     get: vi.fn(),
@@ -95,6 +100,8 @@ beforeEach(() => {
 
 async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
   const mygo = await import("~/mygo");
+  const snapshot = await import("~/lib/snapshot");
+  const { toast } = await import("solid-sonner");
   const app = await import("~/stores/app");
 
   vi.mocked(mygo.Feeds.list).mockImplementation(async () =>
@@ -113,7 +120,7 @@ async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
   }));
   vi.mocked(mygo.Posts.markRead).mockResolvedValue(undefined);
 
-  return { mygo, app };
+  return { mygo, snapshot, toast, app };
 }
 
 describe("start", () => {
@@ -447,5 +454,115 @@ describe("selectNeighbourFeed", () => {
     await app.selectNeighbourFeed(1);
 
     expect(app.app.current.feedId).toBe(1);
+  });
+});
+
+describe("saveSnapshot", () => {
+  it("renders the open post and hands its tiles to Go", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    const tiles = [
+      {
+        offset: 0,
+        png: "cG5n",
+        geometry: { viewportWidth: 1000, viewportHeight: 800, cardWidth: 760, contentHeight: 1600 },
+      },
+    ];
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue(tiles);
+    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("C:/Users/me/第一篇文章.png");
+
+    await app.saveSnapshot();
+
+    expect(snapshot.generateSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ guid: "guid-1" }),
+      "A 站",
+    );
+    expect(mygo.Posts.saveSnapshot).toHaveBeenCalledWith("第一篇文章", tiles);
+    expect(toast.success).toHaveBeenCalled();
+    expect(app.app.snapshotting).toBe(false);
+  });
+
+  it("stays quiet when the save dialog is cancelled", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
+    vi.mocked(mygo.Posts.saveSnapshot).mockResolvedValue("");
+
+    await app.saveSnapshot();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("reports a failing save", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
+    vi.mocked(mygo.Posts.saveSnapshot).mockRejectedValue(new Error("disk full"));
+
+    await app.saveSnapshot();
+
+    expect(toast.error).toHaveBeenCalledWith("无法保存快照：disk full");
+    expect(app.app.snapshotting).toBe(false);
+  });
+
+  it("does nothing without an open post", async () => {
+    const { mygo, snapshot, app } = await setup();
+    await app.start();
+
+    await app.saveSnapshot();
+
+    expect(snapshot.generateSnapshot).not.toHaveBeenCalled();
+    expect(mygo.Posts.saveSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+describe("copySnapshot", () => {
+  it("copies the captured tiles through Go and says so", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockResolvedValue([]);
+    vi.mocked(mygo.Posts.copySnapshot).mockResolvedValue(undefined);
+
+    await app.copySnapshot();
+
+    expect(mygo.Posts.copySnapshot).toHaveBeenCalledWith([]);
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it("reports generation failures instead of calling Go", async () => {
+    const { mygo, snapshot, toast, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    vi.mocked(snapshot.generateSnapshot).mockRejectedValue(new Error("文章太长，无法生成一张快照"));
+
+    await app.copySnapshot();
+
+    expect(mygo.Posts.copySnapshot).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith("无法生成快照：文章太长，无法生成一张快照");
+    expect(app.app.snapshotting).toBe(false);
+  });
+
+  it("does not start while another snapshot is running", async () => {
+    const { snapshot, app } = await setup();
+    await app.start();
+    await app.selectPost("guid-1");
+    let release: (() => void) | undefined;
+    vi.mocked(snapshot.generateSnapshot).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        }),
+    );
+
+    const first = app.saveSnapshot();
+    await app.copySnapshot();
+    expect(snapshot.generateSnapshot).toHaveBeenCalledTimes(1);
+    release?.();
+    await first;
   });
 });

@@ -274,4 +274,93 @@
     padding: 0.4em 0.6em;
     text-align: left;
   }
+
+  /* The native-capture overlay covers the app so no input can change the
+     article mid-capture. Go crops away everything outside the scroller. */
+  .snapshot-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    pointer-events: auto;
+    --snapshot-background: oklch(0.995 0 0);
+  }
+
+  .snapshot-scroll {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    overflow-y: auto;
+    scroll-behavior: auto;
+    overscroll-behavior: none;
+    scrollbar-width: none;
+    background-color: var(--snapshot-background);
+  }
+
+  .snapshot-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* A shareable snapshot of one article: always light, whatever the reader
+     is showing. The custom properties pin the light palette the `.post-body`
+     rules above consume. */
+  .snapshot-card {
+    color-scheme: light;
+    --background: oklch(0.995 0 0);
+    --foreground: oklch(0.22 0.006 285);
+    --primary: var(--mygo-accent, oklch(0.55 0.19 264));
+    --primary-foreground: oklch(0.99 0 0);
+    --muted: oklch(0.96 0.002 285);
+    --muted-foreground: oklch(0.53 0.01 285);
+    --border: oklch(0.9 0.003 285);
+    --radius: 0.5rem;
+
+    width: 760px;
+    padding: 2.5rem 2.25rem;
+    background-color: var(--snapshot-background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .snapshot-card .snapshot-meta {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  .snapshot-card .snapshot-title {
+    margin: 0.4rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .snapshot-card .snapshot-author {
+    margin-top: 0.75rem;
+  }
+
+  .snapshot-card header {
+    margin-bottom: 1.75rem;
+  }
+
+  .snapshot-card footer {
+    margin-top: 2.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .snapshot-card .snapshot-source {
+    margin: 0;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+    color: var(--muted-foreground);
+  }
+
+  .snapshot-card .snapshot-credit {
+    margin: 0.4rem 0 0;
+    font-size: 0.72rem;
+    color: var(--muted-foreground);
+  }
 }

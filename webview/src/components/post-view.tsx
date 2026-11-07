@@ -1,4 +1,4 @@
-import { ExternalLink, MailOpen, Newspaper, Star } from "lucide-solid";
+import { Camera, ExternalLink, MailOpen, Newspaper, Star } from "lucide-solid";
 import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
@@ -6,13 +6,28 @@ import ArticleLayer, { type LayerKind } from "~/components/article-layer";
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { formatDateTime } from "~/lib/format";
 import { sanitizeHTML } from "~/lib/sanitize";
 import { cn } from "~/lib/utils";
 import type { Post } from "~/mygo";
-import { app, currentFeed, openLink, setOpenPostRead, toggleStar } from "~/stores/app";
+import {
+  app,
+  copySnapshot,
+  currentFeed,
+  openLink,
+  saveSnapshot,
+  setOpenPostRead,
+  toggleStar,
+} from "~/stores/app";
 
 /** How long the article pane keeps a swap's leftover layers around, in
  * milliseconds: twice the slide plus a frame of slack, for engines that
@@ -227,6 +242,27 @@ function ArticleBody(props: { post: Post }) {
             >
               <ExternalLink class="size-4" />
             </IconButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                as={Button}
+                variant="ghost"
+                size="icon"
+                class="size-8 shrink-0"
+                title="生成文章快照"
+                aria-label="生成文章快照"
+                disabled={app.snapshotting || (!props.post.content && !props.post.summary)}
+              >
+                <Camera class="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => void saveSnapshot()}>
+                  保存为图片…
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void copySnapshot()}>
+                  复制到剪贴板
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

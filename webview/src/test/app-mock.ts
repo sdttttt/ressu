@@ -19,6 +19,7 @@ export type MockPost = {
 const [store, setStore] = createStore({
   post: null as MockPost | null,
   loadingPost: false,
+  snapshotting: false,
   posts: [] as MockPost[],
 });
 
@@ -56,5 +57,9 @@ export const mockBridge = {
   /** Clears the open post; the component drops its layers in response. */
   clear() {
     setStore("post", null);
+  },
+  /** Flags a snapshot as running, the way the real store action does. */
+  setSnapshotting(value: boolean) {
+    setStore("snapshotting", value);
   },
 };

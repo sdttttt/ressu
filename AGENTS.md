@@ -33,7 +33,7 @@ internal/                   Go internal/ 规则下的后端包（外部不可导
   store/                    bbolt 持久化，订阅源与偏好缓存在内存
     store.go, model.go
   service/                  暴露给页面的 API 与类型化事件
-    feeds.go, posts.go, settings.go, events.go
+    feeds.go, posts.go, settings.go, snapshot.go, events.go
 webview/                    前端源码与构建配置（独立的源代码目录）
   index.html                Vite 入口（lang="zh-CN"，挂载 /src/main.tsx）
   vite.config.ts            Solid + Tailwind 插件、`~` 别名、root 指回 webview/、5173 端口
@@ -47,7 +47,7 @@ webview/                    前端源码与构建配置（独立的源代码目�
     components/             feed-sidebar、post-list、post-view、*-dialog、status-bar、empty-state
     components/icon-button.tsx  solid-ui Button + Tooltip 的图标按钮（aria-label 即可访问名）
     components/ui/          源码内联的 shadcn 风格原语（Kobalte/corvu + cva）
-    lib/                    format.ts（zh-CN Intl）、sanitize.ts（DOMPurify）、theme.ts、utils.ts
+    lib/                    format.ts（zh-CN Intl）、sanitize.ts（DOMPurify）、snapshot.ts（文章快照）、theme.ts、utils.ts
     stores/                 app.ts（状态 + 动作）、events.ts（事件订阅）
   test/setup.ts             Vitest 的 jsdom 垫片（matchMedia、ResizeObserver、scrollIntoView）
   public/favicon.svg        Vite 公共资源
@@ -224,6 +224,11 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
   `theme.ts`（`isDark` 与 `applyTheme`）和 `settings-dialog.tsx` 的选项列表。
 - 没有路由：只有一页，对话框由 `app.dialog` 驱动。
 - 文章 HTML 用 `innerHTML={sanitizeHTML(...)}` 渲染；见“安全”一节。
+- 「生成文章快照」（`webview/src/lib/snapshot.ts` 与 store 动作 `saveSnapshot`/`copySnapshot`）
+  先把文章渲染成固定浅色的离屏卡片，再让 MyGO 的 `Window.CapturePage()` 按滚动位置截取
+  可见页面；Go 侧 `Posts.CaptureSnapshot` 返回 PNG 切片，`Posts.SaveSnapshot` 和
+  `Posts.CopySnapshot` 负责裁剪拼接后保存或复制。正文先过 `sanitizeHTML`，图片仍由
+  WebView 正常加载。快照的浅色配色在 `index.css` 的 `.snapshot-card` 里实现。
 - `Intl.DateTimeFormat("zh-CN")` 放在 `webview/src/lib/format.ts`；日期函数接受可选的 `now`
   参数，让测试保持确定性。
 
