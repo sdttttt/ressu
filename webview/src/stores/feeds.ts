@@ -60,6 +60,28 @@ export async function addFeed(feedURL: string): Promise<boolean> {
   }
 }
 
+/** Imports subscriptions from an OPML file through a native file picker. */
+export async function importOPML(): Promise<void> {
+  try {
+    const summary = await Feeds.importOPML();
+    if (summary.imported + summary.skipped + summary.failed === 0) {
+      toast.info("没有选择文件");
+      return;
+    }
+    if (summary.failed > 0) {
+      toast.warning(
+        `${summary.imported} 个已导入，${summary.skipped} 个跳过，${summary.failed} 个失败`,
+      );
+    } else if (summary.skipped > 0) {
+      toast.info(`${summary.imported} 个已导入，${summary.skipped} 个已存在`);
+    } else {
+      toast.success(`已导入 ${summary.imported} 个订阅源`);
+    }
+  } catch (error) {
+    toast.error(messageOf(error));
+  }
+}
+
 /** Unsubscribes from a feed, selecting another one. */
 export async function removeFeed(id: number): Promise<void> {
   const wasCurrent = state.current.feedId === id;

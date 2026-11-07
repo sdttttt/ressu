@@ -6,7 +6,14 @@
 export { app, currentFeed, isSyncingFeed, totalUnread, visibleFeeds } from "~/stores/app-state";
 export type { DialogName } from "~/stores/app-state";
 export { messageOf } from "~/stores/errors";
-export { addFeed, refreshAll, refreshFeed, removeFeed, selectFeed } from "~/stores/feeds";
+export {
+  addFeed,
+  importOPML,
+  refreshAll,
+  refreshFeed,
+  removeFeed,
+  selectFeed,
+} from "~/stores/feeds";
 export { start } from "~/stores/lifecycle";
 export {
   loadMorePosts,

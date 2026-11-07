@@ -170,7 +170,7 @@ func TestSnapshotImageValidation(t *testing.T) {
 	}
 
 	for name, data := range map[string][]byte{
-		"empty": nil,
+		"empty":  nil,
 		"broken": []byte("broken"),
 	} {
 		if err := validateSnapshotImage(data); err == nil {
