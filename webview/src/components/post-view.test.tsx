@@ -8,30 +8,30 @@ const feed = { id: 1, title: "A 站" };
 // The mock store lives in the factory's module instance, which runs in the
 // same ESM graph as the component, so reactive writes propagate.
 vi.mock("~/stores/app", async () => {
-  const { mockStore, __mockBridge } = await import("~/test/app-mock");
+  const { mockStore, mockBridge } = await import("~/test/app-mock");
   return {
     app: mockStore,
     currentFeed: () => feed,
     openLink: vi.fn(),
     setOpenPostRead: vi.fn(),
     toggleStar: vi.fn(),
-    __mockBridge,
+    mockBridge,
   };
 });
 
-const { __mockBridge } = (await import("~/stores/app")) as unknown as {
-  __mockBridge: { open: (guid: string) => void; clear: () => void };
+const { mockBridge } = (await import("~/stores/app")) as unknown as {
+  mockBridge: { open: (guid: string) => void; clear: () => void };
 };
 
 async function openPost(guid: string) {
-  __mockBridge.open(guid);
+  mockBridge.open(guid);
   // 让 effect 链路完成;旧层在动画结束后移除,断言窗口在其之前
   await new Promise((r) => setTimeout(r, 40));
 }
 
 /** Resets the open post so each case starts from an empty pane. */
 async function closePost() {
-  __mockBridge.clear();
+  mockBridge.clear();
   await new Promise((r) => setTimeout(r, 40));
 }
 

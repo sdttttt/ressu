@@ -41,7 +41,7 @@ function make(guid: string): MockPost {
 
 export const mockStore = store;
 
-export const __mockBridge = {
+export const mockBridge = {
   open(guid: string) {
     // Fresh deep copies mirror the mygo bridge, where every call
     // deserializes new objects. Sharing raw objects between `post` and
