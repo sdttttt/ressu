@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="0.5" cy="0.38" r="0.8">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.6" stop-color="#F3F5F1"/>
+      <stop offset="1" stop-color="#E3E7DF"/>
+    </radialGradient>
+    <linearGradient id="skinGrad" x1="0" y1="-1" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#4C8A2B"/>
+      <stop offset="1" stop-color="#2C5B18"/>
+    </linearGradient>
+    <linearGradient id="fleshGrad" x1="0" y1="-1" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCEFA0"/>
+      <stop offset="1" stop-color="#B8D96A"/>
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0" y1="-1" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0F7C8"/>
+      <stop offset="1" stop-color="#D3E88F"/>
+    </linearGradient>
+    <radialGradient id="pitGrad" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#A97440"/>
+      <stop offset="0.55" stop-color="#8A5628"/>
+      <stop offset="1" stop-color="#5F3617"/>
+    </radialGradient>
+    <filter id="soft14" x="-60%" y="-300%" width="220%" height="700%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="soft10" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="soft6" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bgGrad)"/>
+
+  <!-- ground shadow -->
+  <ellipse cx="272" cy="420" rx="140" ry="24" fill="#5B6E3F" opacity="0.22" filter="url(#soft14)"/>
+
+  <g transform="translate(256 246) rotate(-26)">
+    <!-- skin -->
+    <path d="M 0 -196
+             C 56 -196 82 -122 98 -42
+             C 114 38 136 92 136 142
+             C 136 222 76 264 0 264
+             C -76 264 -136 222 -136 142
+             C -136 92 -114 38 -98 -42
+             C -82 -122 -56 -196 0 -196 Z"
+          fill="url(#skinGrad)"/>
+    <!-- skin rim light -->
+    <path d="M 0 -196 C 56 -196 82 -122 98 -42 C 114 38 136 92 136 142 C 136 222 76 264 0 264 C -76 264 -136 222 -136 142 C -136 92 -114 38 -98 -42 C -82 -122 -56 -196 0 -196 Z"
+          fill="none" stroke="#6FAE3F" stroke-width="5" opacity="0.55"/>
+
+    <!-- flesh -->
+    <path transform="scale(0.865)" d="M 0 -196
+             C 56 -196 82 -122 98 -42
+             C 114 38 136 92 136 142
+             C 136 222 76 264 0 264
+             C -76 264 -136 222 -136 142
+             C -136 92 -114 38 -98 -42
+             C -82 -122 -56 -196 0 -196 Z"
+          fill="url(#fleshGrad)"/>
+
+    <!-- inner flesh -->
+    <path transform="scale(0.63) translate(0 -12)" d="M 0 -196
+             C 56 -196 82 -122 98 -42
+             C 114 38 136 92 136 142
+             C 136 222 76 264 0 264
+             C -76 264 -136 222 -136 142
+             C -136 92 -114 38 -98 -42
+             C -82 -122 -56 -196 0 -196 Z"
+          fill="url(#innerGrad)"/>
+
+    <!-- flesh sheen -->
+    <ellipse cx="-42" cy="46" rx="30" ry="60" fill="#FFFFFF" opacity="0.28" filter="url(#soft10)"/>
+
+    <!-- pit shadow ring -->
+    <circle cx="8" cy="124" r="80" fill="#93B84E" opacity="0.5" filter="url(#soft6)"/>
+
+    <!-- pit -->
+    <circle cx="8" cy="124" r="71" fill="url(#pitGrad)"/>
+    <ellipse cx="-12" cy="98" rx="24" ry="15" fill="#E7B57E" opacity="0.6" filter="url(#soft6)"/>
+  </g>
+</svg>
