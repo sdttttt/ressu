@@ -80,9 +80,10 @@ describe("PostView cover transition", () => {
     const cover = container.querySelector("[data-layer='next']");
     expect(cover).toBeTruthy();
 
-    // 300ms 后 base 层被移除;incoming 层必须是同一个 DOM 节点 —— 重建它会
-    // 把滑入动画重播一遍,看起来就像连续覆盖了两次
-    await new Promise((r) => setTimeout(r, 350));
+    // base 层在滑入动画结束时移除(约 300ms);jsdom 没有 WAAPI,由兜底
+    // 定时器(COVER_MS*2+100)移除。incoming 层必须是同一个 DOM 节点 ——
+    // 重建它会把滑入动画重播一遍,看起来就像连续覆盖了两次
+    await new Promise((r) => setTimeout(r, 750));
     expect(layers(container)).toEqual(["next"]);
     expect(container.querySelector("[data-layer='next']")).toBe(cover);
     expect(container.textContent).not.toContain("文章 guid-1");
