@@ -186,35 +186,32 @@ function ArticleBody(props: { post: Post }) {
   return (
     <>
       <header class="border-b px-6 py-4">
-        <div class="flex items-start gap-3">
-          <div class="min-w-0 flex-1">
-            <h1 class="text-lg leading-snug font-semibold">{props.post.title}</h1>
-            <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted-foreground">
-              <span class="tabular-nums">{formatDateTime(props.post.publishedAt)}</span>
-              <Show when={props.post.author}>
-                {(author) => (
-                  <>
-                    <Separator orientation="vertical" class="h-3" />
-                    <span>{author()}</span>
-                  </>
-                )}
-              </Show>
-              <Show when={currentFeed()}>
-                {(feed) => (
-                  <>
-                    <Separator orientation="vertical" class="h-3" />
-                    <Badge
-                      variant="outline"
-                      class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[0.625rem] font-normal"
-                    >
-                      <span class="truncate">{feed().title}</span>
-                    </Badge>
-                  </>
-                )}
-              </Show>
-            </div>
+        <h1 class="text-lg leading-snug font-semibold">{props.post.title}</h1>
+        <div class="mt-1.5 flex items-center gap-3">
+          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted-foreground">
+            <span class="tabular-nums">{formatDateTime(props.post.publishedAt)}</span>
+            <Show when={props.post.author}>
+              {(author) => (
+                <>
+                  <Separator orientation="vertical" class="h-3" />
+                  <span>{author()}</span>
+                </>
+              )}
+            </Show>
+            <Show when={currentFeed()}>
+              {(feed) => (
+                <>
+                  <Separator orientation="vertical" class="h-3" />
+                  <Badge
+                    variant="outline"
+                    class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[0.625rem] font-normal"
+                  >
+                    <span class="truncate">{feed().title}</span>
+                  </Badge>
+                </>
+              )}
+            </Show>
           </div>
-
           <div class="flex shrink-0 items-center gap-0.5">
             <IconButton
               label={props.post.starred ? "取消星标" : "加星标"}
