@@ -36,10 +36,13 @@ const KIND_PINS: Record<Exclude<LayerKind, "base">, { opacity: string; transform
   "exit-up": { opacity: "1", transform: "translateY(0)" },
 };
 
-/** Positioning and (CSS fallback) entry classes per kind. */
+/** Positioning and (CSS fallback) entry classes per kind. Every kind must be
+ * absolutely positioned: the stack container clips its overflow, so a
+ * statically positioned layer would grow past the pane and leave its inner
+ * scroller unconstrained — the article's scrollbar would never appear. */
 const KIND_CLASS: Record<LayerKind, string> = {
   base: "pointer-events-none absolute inset-0 z-0",
-  enter: "animate-in duration-300 ease-out fade-in slide-in-from-bottom-6",
+  enter: "absolute inset-0 animate-in duration-300 ease-out fade-in slide-in-from-bottom-6",
   "cover-down":
     "absolute inset-0 z-10 animate-in bg-background duration-300 ease-out slide-in-from-top-full",
   "exit-up": "absolute inset-0 z-10 bg-background",

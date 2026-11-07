@@ -53,6 +53,17 @@ describe("PostView cover transition", () => {
     expect(layer!.className).toContain("slide-in-from-bottom-6");
   });
 
+  it("positions every layer absolutely so the article scroller is constrained", async () => {
+    const { container } = render(() => <PostView />);
+    await closePost();
+    await openPost("guid-1");
+
+    // A statically positioned layer grows past the clipped pane and its
+    // inner overflow-y-auto never scrolls.
+    const layer = container.querySelector("[data-layer='enter']");
+    expect(layer!.className).toContain("absolute inset-0");
+  });
+
   it("slides the current article up when opening a later post", async () => {
     const { container } = render(() => <PostView />);
     await closePost();
