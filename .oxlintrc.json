@@ -9,12 +9,31 @@
     "suspicious": "warn"
   },
   "ignorePatterns": ["webview/dist", "build", ".mygo", "webview/src/mygo.ts"],
-  "rules": {
-    "eslint/no-console": "off",
-    "typescript/no-explicit-any": "warn",
-    "import/no-unassigned-import": "off"
-  },
   "overrides": [
+    {
+      "files": ["webview/src/**"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "The webview never talks to the network directly. Route requests through a Go binding (internal/service) and call it via ~/mygo."
+          },
+          {
+            "name": "XMLHttpRequest",
+            "message": "The webview never talks to the network directly. Route requests through a Go binding (internal/service) and call it via ~/mygo."
+          },
+          {
+            "name": "WebSocket",
+            "message": "The webview never talks to the network directly. Route requests through a Go binding (internal/service) and call it via ~/mygo."
+          },
+          {
+            "name": "EventSource",
+            "message": "The webview never talks to the network directly. Route requests through a Go binding (internal/service) and call it via ~/mygo."
+          }
+        ]
+      }
+    },
     {
       "files": ["webview/src/components/ui/**"],
       "rules": {

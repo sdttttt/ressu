@@ -24,3 +24,13 @@ if (!globalThis.ResizeObserver) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// The webview never talks to the network directly (data comes through the
+// MyGO bridge), and tests must not reach out either: make any accidental
+// attempt fail loudly instead of hanging or silently resolving.
+for (const name of ["fetch", "XMLHttpRequest", "WebSocket", "EventSource"] as const) {
+  const owner = globalThis as unknown as Record<string, unknown>;
+  owner[name] = () => {
+    throw new Error(`network is banned in the webview: ${name} was called`);
+  };
+}

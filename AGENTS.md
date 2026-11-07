@@ -320,6 +320,10 @@ TypeScript / Solid：
   会删掉它在 `posts` 桶里的嵌套桶。
 - 没有账号、同步、遥测或统计。文章引用的远程资源与订阅源图标由 WebView 直接从对方服务器
   加载，因此那些服务器能看到请求；这是除抓取订阅源之外唯一的出站流量。
+- webview 端绝对禁止直接发起网络请求（`fetch`、`XMLHttpRequest`、`WebSocket`、
+  `EventSource`）。需要数据时一律加 Go 绑定再经 `~/mygo` 调用。这条禁令由两道关卡执行：
+  `.oxlintrc.json` 对 `webview/src/**` 的 `no-restricted-globals`（CI 的 lint 会失败），以及
+  `webview/test/setup.ts` 里把这几个 API stub 成抛错（测试内访问网络会立刻炸）。
 - `mygo build` 会把前端内嵌并从 `mygo://localhost` 提供；页面没有
   Content-Security-Policy meta 标签，所以防 XSS 依赖内容清洗与 URL 校验，而不是 CSP。
 - 不要提交生成物或用户数据（`build/`、`webview/dist/`、`.mygo/`、`webview/src/mygo.ts` 已被忽略）。
