@@ -20,6 +20,7 @@ import {
 } from "~/components/ui/number-field";
 import { RadioGroup, RadioGroupItem, RadioGroupItemLabel } from "~/components/ui/radio-group";
 import { Separator } from "~/components/ui/separator";
+import { Slider, SliderFill, SliderThumb, SliderTrack } from "~/components/ui/slider";
 import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "~/components/ui/switch";
 import { app, closeDialog, openDataDir, openDialog, updatePrefs } from "~/stores/app";
 
@@ -35,6 +36,17 @@ const fontSizes = [
   { value: "medium", label: "中" },
   { value: "large", label: "大" },
 ];
+
+const fontSizeIndex = () =>
+  Math.max(
+    0,
+    fontSizes.findIndex((size) => size.value === app.prefs.fontSize),
+  );
+
+function changeFontSize([index]: number[]): void {
+  const size = fontSizes[index];
+  if (size && size.value !== app.prefs.fontSize) void updatePrefs({ fontSize: size.value });
+}
 
 const linkTargets = [
   { value: "browser", label: "系统浏览器" },
@@ -59,20 +71,27 @@ export default function SettingsDialog() {
         <section class="space-y-2">
           <h3 class="text-[0.6875rem] font-medium text-muted-foreground">外观</h3>
           <div class="space-y-2">
-            <Label class="text-sm font-normal">界面字体大小</Label>
-            <RadioGroup
-              value={app.prefs.fontSize}
-              onChange={(fontSize) => fontSize && void updatePrefs({ fontSize })}
+            <div class="flex items-center justify-between gap-4">
+              <Label class="text-sm font-normal">界面字体大小</Label>
+              <span class="text-xs text-muted-foreground">{fontSizes[fontSizeIndex()]?.label}</span>
+            </div>
+            <Slider
+              value={[fontSizeIndex()]}
+              minValue={0}
+              maxValue={fontSizes.length - 1}
+              step={1}
+              getValueLabel={({ values }) => fontSizes[values[0]]?.label ?? ""}
+              onChange={changeFontSize}
               class="gap-2"
             >
-              <For each={fontSizes}>
-                {(size) => (
-                  <RadioGroupItem value={size.value} class="gap-2">
-                    <RadioGroupItemLabel class="font-normal">{size.label}</RadioGroupItemLabel>
-                  </RadioGroupItem>
-                )}
-              </For>
-            </RadioGroup>
+              <SliderTrack class="h-1.5 w-full">
+                <SliderFill />
+              </SliderTrack>
+              <SliderThumb class="top-[-7px]" />
+              <div class="flex w-full justify-between text-xs text-muted-foreground">
+                <For each={fontSizes}>{(size) => <span>{size.label}</span>}</For>
+              </div>
+            </Slider>
           </div>
 
           <Separator />
