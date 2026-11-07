@@ -187,7 +187,7 @@ function ArticleBody(props: { post: Post }) {
     <>
       <header class="border-b px-6 py-4">
         <h1 class="text-lg leading-snug font-semibold">{props.post.title}</h1>
-        <div class="mt-1.5 flex items-center gap-3">
+        <div class="mt-1.5 flex items-center gap-1">
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted-foreground">
             <span class="tabular-nums">{formatDateTime(props.post.publishedAt)}</span>
             <Show when={props.post.author}>
