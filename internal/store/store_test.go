@@ -301,7 +301,7 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 }
 
 func TestPrefsNormalize(t *testing.T) {
-	p := Prefs{Theme: "sepia", FontSize: "huge", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
+	p := Prefs{Theme: "solarized", FontSize: "huge", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
 	p.Normalize()
 
 	if p.Theme != ThemeSystem {

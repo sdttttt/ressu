@@ -27,6 +27,7 @@ const themes = [
   { value: "system", label: "跟随系统" },
   { value: "light", label: "浅色" },
   { value: "dark", label: "深色" },
+  { value: "sepia", label: "护眼" },
 ];
 
 const fontSizes = [

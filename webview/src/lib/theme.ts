@@ -1,11 +1,11 @@
-export type Theme = "system" | "light" | "dark";
+export type Theme = "system" | "light" | "dark" | "sepia";
 
 const darkQuery = "(prefers-color-scheme: dark)";
 
 /** Whether a theme asks for the dark appearance right now. */
 export function isDark(theme: string): boolean {
   if (theme === "dark") return true;
-  if (theme === "light") return false;
+  if (theme === "light" || theme === "sepia") return false;
   return window.matchMedia(darkQuery).matches;
 }
 
@@ -21,9 +21,13 @@ export function fontScale(fontSize: string): number {
   return fontScales[fontSize] ?? 1;
 }
 
-/** Applies a theme to the page, as the `dark` class its CSS keys on. */
+/** Applies a theme to the page, as the `dark` and `theme-sepia` classes its
+ * CSS keys on. The sepia class carries a `theme-` prefix on purpose: a bare
+ * `sepia` collides with Tailwind's sepia filter utility, which would put a
+ * page-wide `filter: sepia(100%)` on `<html>` and tint every image. */
 export function applyTheme(theme: string): void {
   document.documentElement.classList.toggle("dark", isDark(theme));
+  document.documentElement.classList.toggle("theme-sepia", theme === "sepia");
 }
 
 /** Applies the font size to the page, scaling the root font size with it. */

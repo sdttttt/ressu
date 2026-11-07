@@ -204,9 +204,19 @@ build/                      构建产物（已被忽略）：Ressu.exe、安装�
   `isSyncingFeed(id)`），不是 memo。
 - 事件在 `App` 里通过 `webview/src/stores/events.ts` 的 `subscribe()` 只订阅一次；它返回的退订
   函数用在 `onCleanup` 里。
-- 主题应用两次：Go 设置原生窗口外观，`webview/src/lib/theme.ts` 切换 `<html>` 上的 `dark` 类
-  （Tailwind 的 dark 变体是 `&:where(.dark, .dark *)`）。CSS 变量是 `webview/src/index.css` 里的
+- 主题应用两次：Go 设置原生窗口外观（sepia 归入暗色外观），`webview/src/lib/theme.ts`
+  切换 `<html>` 上的 `dark` 与 `theme-sepia` 类（Tailwind 的 dark 变体是
+  `&:where(.dark, .dark *)`）。CSS 变量是 `webview/src/index.css` 里的
   OKLCH 值，并使用 MyGO 提供的 `--mygo-accent` 与 `--mygo-text-scale`。
+  `sepia`（护眼）是第四个主题值：页面保持浅色结构（`foreground`、语义色、
+  `primary` 沿用浅色值），但整套中性色阶在 `.theme-sepia` 块里按褐色调重排，
+  保持"表面比背景暗一档"的相对明度关系（accent/muted/popover/border 都是
+  暖褐灰），保证悬停、按下、选中、悬浮层在这些表面上的协调。
+  运行时类名必须带 `theme-` 前缀：裸的 `sepia` 会撞上
+  Tailwind 的 sepia 滤镜工具类，给 `<html>` 整页加 `filter: sepia(100%)`，
+  把所有图片染成复古色。
+  新增主题要同时改 `store` 的主题常量与 `Normalize`、`service.ApplyTheme`、
+  `theme.ts`（`isDark` 与 `applyTheme`）和 `settings-dialog.tsx` 的选项列表。
 - 没有路由：只有一页，对话框由 `app.dialog` 驱动。
 - 文章 HTML 用 `innerHTML={sanitizeHTML(...)}` 渲染；见“安全”一节。
 - `Intl.DateTimeFormat("zh-CN")` 放在 `webview/src/lib/format.ts`；日期函数接受可选的 `now`

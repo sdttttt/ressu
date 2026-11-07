@@ -69,6 +69,7 @@ const (
 	ThemeSystem = "system"
 	ThemeLight  = "light"
 	ThemeDark   = "dark"
+	ThemeSepia  = "sepia"
 )
 
 // FontSize values of Prefs.FontSize.
@@ -114,7 +115,7 @@ func DefaultPrefs() Prefs {
 // Normalize replaces the values that are missing or out of range.
 func (p *Prefs) Normalize() {
 	switch p.Theme {
-	case ThemeSystem, ThemeLight, ThemeDark:
+	case ThemeSystem, ThemeLight, ThemeDark, ThemeSepia:
 	default:
 		p.Theme = ThemeSystem
 	}

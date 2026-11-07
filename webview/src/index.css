@@ -60,6 +60,29 @@
   --ring: oklch(0.55 0.01 285);
 }
 
+/* Sepia counts as the dark appearance natively, but the page keeps a light
+   structure over a warm, eye-friendly background. The whole neutral ramp is
+   re-tinted so surfaces, press states and borders keep the light theme's
+   relative steps (surfaces sit a touch darker than the background); the
+   semantic colors stay shared. The class name must not be a bare `sepia`:
+   that is a Tailwind filter utility and would tint the whole page. */
+.theme-sepia {
+  --background: oklch(0.86 0.025 80);
+  --foreground: oklch(0.24 0.02 70);
+  --popover: oklch(0.89 0.022 80);
+  --popover-foreground: oklch(0.24 0.02 70);
+  --secondary: oklch(0.82 0.025 80);
+  --secondary-foreground: oklch(0.28 0.02 70);
+  --muted: oklch(0.82 0.025 80);
+  --muted-foreground: oklch(0.44 0.022 70);
+  --accent: oklch(0.8 0.03 78);
+  --accent-foreground: oklch(0.26 0.02 70);
+  --border: oklch(0.77 0.02 78);
+  --input: oklch(0.77 0.02 78);
+  --ring: oklch(0.55 0.025 75);
+  --warning: oklch(0.66 0.13 65);
+}
+
 @theme {
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei",

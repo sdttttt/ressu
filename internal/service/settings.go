@@ -58,12 +58,14 @@ func (s *Settings) OpenLink(ctx context.Context, link string) error {
 }
 
 // ApplyTheme makes the app and its windows follow theme, one of "system",
-// "light" or "dark".
+// "light", "dark" or "sepia". Sepia counts as the dark appearance, so the
+// native chrome follows dark; the page itself keeps its light palette and
+// only paints a warm, eye-friendly background.
 func ApplyTheme(theme string) {
 	switch theme {
 	case store.ThemeLight:
 		mygo.Theme.SetSource(mygo.ThemeLight)
-	case store.ThemeDark:
+	case store.ThemeDark, store.ThemeSepia:
 		mygo.Theme.SetSource(mygo.ThemeDark)
 	default:
 		mygo.Theme.SetSource(mygo.ThemeSystem)
