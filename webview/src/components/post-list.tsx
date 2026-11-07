@@ -38,21 +38,18 @@ export default function PostList() {
         {(feed) => (
           <>
             <header class="border-b px-3 py-2">
-              <div class="flex items-center gap-1">
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-semibold">{feed().title}</div>
-                  <div class="mt-1 flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
-                    <span class="tabular-nums">{app.postTotal} 篇</span>
-                    <Separator orientation="vertical" class="h-3" />
-                    <Badge
-                      variant="secondary"
-                      class="h-4 rounded-full px-1.5 py-0 text-[0.625rem] font-medium tabular-nums"
-                    >
-                      {app.postUnread} 未读
-                    </Badge>
-                  </div>
+              <div class="truncate text-sm font-semibold">{feed().title}</div>
+              <div class="mt-1 flex items-center gap-2">
+                <div class="flex min-w-0 flex-1 items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
+                  <span class="tabular-nums">{app.postTotal} 篇</span>
+                  <Separator orientation="vertical" class="h-3" />
+                  <Badge
+                    variant="secondary"
+                    class="h-4 rounded-full px-1.5 py-0 text-[0.625rem] font-medium tabular-nums"
+                  >
+                    {app.postUnread} 未读
+                  </Badge>
                 </div>
-
                 <ToggleGroup
                   multiple
                   value={activeFilters()}
