@@ -142,46 +142,44 @@ function PostRow(props: { post: PostSummary }) {
         selected() && "bg-accent",
       )}
     >
-      <div class="flex items-start gap-2 px-2.5 py-2">
-        <button type="button" class="min-w-0 flex-1 text-left" onClick={open}>
-          <div
-            class={cn(
-              "line-clamp-2 text-[0.8125rem] leading-snug",
-              props.post.read ? "text-muted-foreground" : "font-semibold",
-            )}
-          >
-            {props.post.title}
-          </div>
-
-          <Show when={props.post.summary}>
-            <p class="mt-1 line-clamp-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
-              {props.post.summary}
-            </p>
-          </Show>
-
-          <div class="mt-1.5 flex items-center gap-2 text-[0.625rem] text-muted-foreground tabular-nums">
-            <span>{formatPostDate(props.post.publishedAt)}</span>
-            <Show when={props.post.author}>
-              <span class="max-w-32 truncate">{props.post.author}</span>
-            </Show>
-          </div>
-        </button>
-
-        <div class="flex shrink-0 flex-col items-center gap-1.5">
-          <Show when={!props.post.read}>
-            <span class="size-1.5 rounded-full bg-primary" />
-          </Show>
-          <IconButton
-            label={props.post.starred ? "取消星标" : "加星标"}
-            class={cn(
-              "size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100",
-              props.post.starred && "text-warning opacity-100",
-            )}
-            onClick={() => void toggleStar(props.post.guid)}
-          >
-            <Star class={cn("size-3.5", props.post.starred && "fill-current")} />
-          </IconButton>
+      <button type="button" class="w-full px-2.5 py-2 text-left" onClick={open}>
+        <div
+          class={cn(
+            "line-clamp-2 text-[0.8125rem] leading-snug",
+            props.post.read ? "text-muted-foreground" : "font-semibold",
+          )}
+        >
+          {props.post.title}
         </div>
+
+        <Show when={props.post.summary}>
+          <p class="mt-1 line-clamp-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
+            {props.post.summary}
+          </p>
+        </Show>
+
+        <div class="mt-1.5 flex items-center gap-2 pr-7 text-[0.625rem] text-muted-foreground tabular-nums">
+          <Show when={!props.post.read}>
+            <span class="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+          </Show>
+          <span>{formatPostDate(props.post.publishedAt)}</span>
+          <Show when={props.post.author}>
+            <span class="max-w-32 truncate">{props.post.author}</span>
+          </Show>
+        </div>
+      </button>
+
+      <div class="absolute right-1 bottom-1">
+        <IconButton
+          label={props.post.starred ? "取消星标" : "加星标"}
+          class={cn(
+            "pointer-events-none size-6 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
+            props.post.starred && "pointer-events-auto text-warning opacity-100",
+          )}
+          onClick={() => void toggleStar(props.post.guid)}
+        >
+          <Star class={cn("size-3.5", props.post.starred && "fill-current")} />
+        </IconButton>
       </div>
     </div>
   );
