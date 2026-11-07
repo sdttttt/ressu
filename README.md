@@ -1,13 +1,14 @@
 # Ressu
 
-一个现代的 **RSS 阅读器**，桌面端用 [MyGO](https://github.com/egoist/mygo)（纯 Go、无 cgo、WebView），前端用 solid.js + solid-ui 构建。
+一个简单易用，容易聚焦的 **RSS 阅读器**，使用 [MyGO](https://github.com/egoist/mygo) + solid.js 构建，基于Webview的显示效果。
 
 主要面向 Windows，其次是 macOS 与 Linux。
 
 [![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/ressu)
 
-<img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
+<img width="1290" height="889" alt="图片" src="https://github.com/user-attachments/assets/145c2dda-8e9e-4435-b09d-0731d80d9464" />
 
+<img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
 
 ## 功能
 
