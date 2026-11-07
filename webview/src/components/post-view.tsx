@@ -146,7 +146,7 @@ export default function PostView() {
               />
             }
           >
-            <div class="mx-auto w-full max-w-3xl space-y-3 px-6 py-6">
+            <div class="w-full space-y-3 px-6 py-6">
               <Skeleton class="h-6 w-2/3" />
               <Skeleton class="h-3 w-40" />
               <Skeleton class="mt-6 h-3 w-full" />
@@ -233,7 +233,7 @@ function ArticleBody(props: { post: Post }) {
 
       <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div
-          class="post-body mx-auto max-w-3xl"
+          class="post-body"
           // The HTML is cleaned by DOMPurify before it reaches the DOM.
           innerHTML={sanitizeHTML(props.post.content || props.post.summary, props.post.url)}
         />
