@@ -20,12 +20,18 @@ vi.mock("~/stores/app", async () => {
 });
 
 const { __mockBridge } = (await import("~/stores/app")) as unknown as {
-  __mockBridge: { open: (guid: string) => void };
+  __mockBridge: { open: (guid: string) => void; clear: () => void };
 };
 
 async function openPost(guid: string) {
   __mockBridge.open(guid);
-  // 让 effect 链路完成;覆盖层在 300ms 后移除,断言窗口在其之前
+  // 让 effect 链路完成;旧层在动画结束后移除,断言窗口在其之前
+  await new Promise((r) => setTimeout(r, 40));
+}
+
+/** Resets the open post so each case starts from an empty pane. */
+async function closePost() {
+  __mockBridge.clear();
   await new Promise((r) => setTimeout(r, 40));
 }
 
@@ -39,6 +45,7 @@ function layers(container: HTMLElement): (string | undefined)[] {
 describe("PostView cover transition", () => {
   it("mounts the first article with the enter animation", async () => {
     const { container } = render(() => <PostView />);
+    await closePost();
     await openPost("guid-1");
 
     expect(layers(container)).toEqual(["enter"]);
@@ -46,46 +53,51 @@ describe("PostView cover transition", () => {
     expect(layer!.className).toContain("slide-in-from-bottom-6");
   });
 
-  it("covers with a top-down sheet when opening a later post", async () => {
+  it("slides the current article up when opening a later post", async () => {
     const { container } = render(() => <PostView />);
+    await closePost();
     await openPost("guid-1");
-    await openPost("guid-3"); // 列表里更靠后 → next → 从上方盖下
+    const before = container.querySelector("[data-layer='enter']");
 
-    expect(layers(container)).toEqual(["base", "next"]);
-    expect(container.querySelector("[data-layer='next']")!.className).toContain(
-      "slide-in-from-top-full",
-    );
+    await openPost("guid-3"); // 列表里更靠后 → 当前文章向上滑走,露出下一篇
+
+    expect(layers(container)).toEqual(["exit-up", "enter"]);
     expect(container.textContent).toContain("文章 guid-1");
     expect(container.textContent).toContain("文章 guid-3");
+    // 旧层节点被复用:同一个 DOM 节点只是换了个角色
+    expect(container.querySelector("[data-layer='exit-up']")).toBe(before);
   });
 
-  it("covers with a bottom-up sheet when opening an earlier post", async () => {
+  it("sheets the previous article down from the top when going back", async () => {
     const { container } = render(() => <PostView />);
+    await closePost();
     await openPost("guid-3");
-    await openPost("guid-1"); // 往回看 → prev → 从下方盖上
+    await openPost("guid-1"); // 往回看 → 上一篇从上方盖下来
 
-    expect(layers(container)).toEqual(["base", "prev"]);
-    expect(container.querySelector("[data-layer='prev']")!.className).toContain(
-      "slide-in-from-bottom-full",
+    expect(layers(container)).toEqual(["base", "cover-down"]);
+    expect(container.querySelector("[data-layer='cover-down']")!.className).toContain(
+      "slide-in-from-top-full",
     );
   });
 
-  it("keeps the covered article in the DOM until the slide is done", async () => {
+  it("keeps the outgoing article in the DOM until the slide is done", async () => {
     const { container } = render(() => <PostView />);
+    await closePost();
     await openPost("guid-1");
+    const before = container.querySelector("[data-layer='enter']");
     await openPost("guid-2");
 
     expect(container.textContent).toContain("文章 guid-1");
     expect(container.textContent).toContain("文章 guid-2");
-    const cover = container.querySelector("[data-layer='next']");
-    expect(cover).toBeTruthy();
+    const outgoing = container.querySelector("[data-layer='exit-up']");
+    expect(outgoing).toBe(before);
 
-    // base 层在滑入动画结束时移除(约 300ms);jsdom 没有 WAAPI,由兜底
+    // 旧层在滑出动画结束时移除(约 300ms);jsdom 没有 WAAPI,由兜底
     // 定时器(COVER_MS*2+100)移除。incoming 层必须是同一个 DOM 节点 ——
-    // 重建它会把滑入动画重播一遍,看起来就像连续覆盖了两次
+    // 重建它会把入场动画重播一遍
     await new Promise((r) => setTimeout(r, 750));
-    expect(layers(container)).toEqual(["next"]);
-    expect(container.querySelector("[data-layer='next']")).toBe(cover);
+    expect(layers(container)).toEqual(["enter"]);
+    expect(container.querySelector("[data-layer='enter']")).not.toBe(before);
     expect(container.textContent).not.toContain("文章 guid-1");
   });
 });

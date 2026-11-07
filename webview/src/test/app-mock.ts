@@ -53,4 +53,8 @@ export const __mockBridge = {
     );
     setStore("post", { ...posts.find((p) => p.guid === guid)! });
   },
+  /** Clears the open post; the component drops its layers in response. */
+  clear() {
+    setStore("post", null);
+  },
 };

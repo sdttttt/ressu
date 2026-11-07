@@ -16,15 +16,16 @@ import { app, currentFeed, openLink, setOpenPostRead, toggleStar } from "~/store
 /** How long the incoming article takes to cover the previous one, in milliseconds. */
 const COVER_MS = 300;
 
-/** How an article layer entered the screen; "base" layers sit still underneath. */
-type LayerKind = "base" | "enter" | "next" | "prev";
+/** How an article layer behaves in the stack. */
+type LayerKind = "base" | "enter" | "cover-down" | "exit-up";
 
 type Layer = {
-  /** The covered article keeps rendering until the slide is done. */
   kind: LayerKind;
   post: Post;
-  /** Set on the base layer so its removal can wait for the slide's end. */
+  /** The swap this layer belongs to. */
   swap?: number;
+  /** Set on leftover layers a swap drops once its slide has finished. */
+  retire?: boolean;
 };
 
 /**
@@ -38,13 +39,16 @@ const [layers, setLayers] = createStore<{ items: Layer[] }>({ items: [] });
 let dropTimer: ReturnType<typeof setTimeout> | undefined;
 let swapId = 0;
 
-/** How the new article should cover the old one, based on list order. */
-function coverDirection(from: Post, to: Post): "next" | "prev" {
+/** How the swap should animate, based on list order. */
+function swapDirection(from: Post, to: Post): "cover-down" | "exit-up" {
   const indexAt = (guid: string) => app.posts.findIndex((post) => post.guid === guid);
   const fromIndex = indexAt(from.guid);
   const toIndex = indexAt(to.guid);
-  if (fromIndex === -1 || toIndex === -1) return "next";
-  return toIndex > fromIndex ? "next" : "prev";
+  if (fromIndex === -1 || toIndex === -1) return "cover-down";
+  // Moving earlier in the list: the previous article sheets down from the
+  // top. Moving later: the current article slides up and away, revealing the
+  // next one beneath it.
+  return toIndex > fromIndex ? "exit-up" : "cover-down";
 }
 
 createEffect(() => {
@@ -67,28 +71,36 @@ createEffect(() => {
     return;
   }
 
-  const kind: LayerKind = current ? coverDirection(current.post, latest) : "enter";
   const swap = ++swapId;
-  // The article being covered becomes the frozen "base" layer. Keeping its
-  // object (not cloning it) makes <For> reuse that layer's DOM node, so
-  // images already decoded and the scroll position survive the swap — a
-  // clone would re-render the article from scratch and flash mid-load.
+  // The article being replaced keeps its DOM node: the same reference makes
+  // <For> reuse it, so images and scroll position survive untouched. Its new
+  // kind decides the choreography: cover-down freezes it as the backdrop the
+  // previous article sheets over; exit-up turns it into the layer that
+  // slides away (that kind change also triggers its animation below).
   const covered = current ?? undefined;
+  const direction = covered ? swapDirection(covered.post, latest) : "enter";
+  const entering: Layer = {
+    kind: direction === "cover-down" ? "cover-down" : "enter",
+    post: { ...latest },
+    swap,
+  };
   if (covered) {
-    setLayers("items", visible.length - 1, { kind: "base", swap });
+    setLayers("items", visible.length - 1, {
+      kind: direction === "exit-up" ? "exit-up" : "base",
+      swap,
+      retire: true,
+    });
   }
-  const entering: Layer = { kind, post: { ...latest } };
-  setLayers("items", covered ? [visible[visible.length - 1], entering] : [entering]);
+  const stack: Layer[] = covered ? [visible[visible.length - 1], entering] : [entering];
+  setLayers("items", stack);
 
   clearTimeout(dropTimer);
-  dropTimer = setTimeout(() => dropBase(swap), COVER_MS * 2 + 100);
+  dropTimer = setTimeout(() => dropFinished(swap), COVER_MS * 2 + 100);
 });
 
-/** Removes the base layer of one swap, once its cover slide has finished. */
-function dropBase(swap: number): void {
-  setLayers("items", (items) =>
-    items.filter((layer) => layer.kind !== "base" || layer.swap !== swap),
-  );
+/** Drops the leftover layer of one swap once its slide has finished. */
+function dropFinished(swap: number): void {
+  setLayers("items", (items) => items.filter((layer) => !(layer.retire && layer.swap === swap)));
 }
 
 onCleanup(() => clearTimeout(dropTimer));
@@ -160,63 +172,81 @@ export default function PostView() {
 }
 
 /**
- * Mount-time animation for an article layer, played through the Web
- * Animations API on the frame after the layer enters the DOM. Starting it in
- * the render pass itself — the element is still detached there — leaves the
- * animation permanently pending (both WebKit and Chromium never give it a
- * start time), so the article would stay invisible or frozen: the reported
- * black pane. The layer also carries CSS animation classes describing the
- * same motion, but the two must never run at once: WebKit composes concurrent
- * animations on the same property by letting the CSS one win, which cancels
- * the slide and makes the swap look instant. So an inline `animation: none`
- * beats the classes at any timing; the classes stay only as documentation of
- * the motion and a fallback if `animate` is missing.
+ * Layer animation keyframes, keyed by kind. Entering rises 24px while
+ * fading in; cover-down sheets down over the old article from above; the
+ * exit-up layer slides up and away, revealing the incoming one beneath.
  */
-function playEntry(ref: HTMLDivElement, layer: LayerKind, swap?: number): void {
-  if (layer === "base") return;
-  // Kill any CSS animation before it can start; this does not touch WAAPI.
-  ref.style.animation = "none";
+const KIND_FRAMES: Record<Exclude<LayerKind, "base">, Keyframe[]> = {
+  enter: [
+    { opacity: "0", transform: "translateY(24px)" },
+    { opacity: "1", transform: "translateY(0)" },
+  ],
+  "cover-down": [
+    { opacity: "1", transform: "translateY(-100%)" },
+    { opacity: "1", transform: "translateY(0)" },
+  ],
+  "exit-up": [
+    { opacity: "1", transform: "translateY(0)" },
+    { opacity: "1", transform: "translateY(-100%)" },
+  ],
+};
+
+/** Static first-frame pins for kinds whose animation starts on a later frame. */
+const KIND_PINS: Record<Exclude<LayerKind, "base">, { opacity: string; transform: string }> = {
+  enter: { opacity: "0", transform: "translateY(24px)" },
+  "cover-down": { opacity: "1", transform: "translateY(-100%)" },
+  "exit-up": { opacity: "1", transform: "translateY(0)" },
+};
+
+/**
+ * Play a layer's animation for its current kind. Called from a reactive
+ * effect (below), so a reused DOM node re-animates when the swap flips its
+ * kind — that is how the exit-up slide runs on a node that mounted long
+ * before. As before, the animation must start only once the element is
+ * attached (a pending animation never starts otherwise), and the first
+ * frame is pinned inline until it takes over.
+ */
+function playKind(ref: HTMLDivElement, kind: LayerKind, swap: number | undefined): void {
+  if (kind === "base") return;
+  const frames = KIND_FRAMES[kind];
   if (typeof ref.animate !== "function") return; // non-browser environment (tests)
 
-  const frames =
-    layer === "enter"
-      ? [
-          { opacity: "0", transform: "translateY(24px)" },
-          { opacity: "1", transform: "translateY(0)" },
-        ]
-      : layer === "next"
-        ? [
-            { opacity: "1", transform: "translateY(-100%)" },
-            { opacity: "1", transform: "translateY(0)" },
-          ]
-        : [
-            { opacity: "1", transform: "translateY(100%)" },
-            { opacity: "1", transform: "translateY(0)" },
-          ];
-
-  // Pin the first keyframe until the animation takes over: the frame the
-  // layer spends in the DOM before the deferred `animate` runs must not show
-  // it fully slid in (that reads as a one-frame flash of the new article).
-  ref.style.opacity = frames[0].opacity;
-  ref.style.transform = frames[0].transform;
+  // Kill any CSS animation before it can start; this does not touch WAAPI.
+  ref.style.animation = "none";
+  // Pin the first keyframe until the animation takes over: the frame spent
+  // in the DOM before the deferred `animate` runs must not show the end
+  // state (that reads as a flash of the new article).
+  ref.style.opacity = KIND_PINS[kind].opacity;
+  ref.style.transform = KIND_PINS[kind].transform;
   requestAnimationFrame(() => {
     if (!ref.isConnected) return;
     ref.style.opacity = "";
     ref.style.transform = "";
     const animation = ref.animate(frames, { duration: COVER_MS, easing: "ease-out" });
-    // The slide is over: let the stack drop the frozen article underneath.
+    // The slide is over: let the stack drop what this swap left behind.
     // A rejection means the layer was replaced mid-flight; the newer swap
     // rebuilds the stack anyway.
     if (swap !== undefined)
       animation.finished.then(
-        () => dropBase(swap),
+        () => dropFinished(swap),
         () => {},
       );
   });
 }
 
 function ArticleLayer(props: { layer: Layer }) {
-  const bindLayer = (el: HTMLDivElement) => playEntry(el, props.layer.kind, props.layer.swap);
+  let ref: HTMLDivElement | undefined;
+  // The node is reused across swaps (the same layer object flips kind), so
+  // the animation tracks the kind reactively instead of running only on
+  // mount — that is what makes the exit-up slide play on a mounted node.
+  createEffect(() => {
+    const kind = props.layer.kind;
+    if (ref) playKind(ref, kind, props.layer.swap);
+  });
+  const bindLayer = (el: HTMLDivElement) => {
+    ref = el;
+    playKind(el, props.layer.kind, props.layer.swap);
+  };
 
   return (
     <div
@@ -227,10 +257,9 @@ function ArticleLayer(props: { layer: Layer }) {
         props.layer.kind === "base" && "pointer-events-none absolute inset-0 z-0",
         props.layer.kind === "enter" &&
           "animate-in duration-300 ease-out fade-in slide-in-from-bottom-6",
-        props.layer.kind === "next" &&
+        props.layer.kind === "cover-down" &&
           "absolute inset-0 z-10 animate-in bg-background duration-300 ease-out slide-in-from-top-full",
-        props.layer.kind === "prev" &&
-          "absolute inset-0 z-10 animate-in bg-background duration-300 ease-out slide-in-from-bottom-full",
+        props.layer.kind === "exit-up" && "absolute inset-0 z-10 bg-background",
       )}
     >
       <header class="border-b px-6 py-4">
