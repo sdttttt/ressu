@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -105,5 +106,50 @@ func TestImportOPMLContextCancelled(t *testing.T) {
 	summary, _ := feeds.importOPMLURLs(ctx, []string{"https://a.example/feed.xml"})
 	if summary.Failed != 1 {
 		t.Errorf("Failed = %d, want 1", summary.Failed)
+	}
+}
+
+func TestExportOPMLData(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(feedXML(itemXML("a", "第一篇"))))
+	}))
+	defer server.Close()
+
+	st := openStore(t)
+	feeds := NewFeeds(st)
+	if _, err := feeds.Add(t.Context(), server.URL); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	data, err := rss.ExportOPML(opmlFeeds(st.Feeds()))
+	if err != nil {
+		t.Fatalf("ExportOPML: %v", err)
+	}
+
+	var doc struct {
+		Body struct {
+			Outlines []struct {
+				Text        string `xml:"text,attr"`
+				XMLURL      string `xml:"xmlUrl,attr"`
+				HTMLURL     string `xml:"htmlUrl,attr"`
+				Description string `xml:"description,attr"`
+				Language    string `xml:"language,attr"`
+			} `xml:"outline"`
+		} `xml:"body"`
+	}
+	if err := xml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("Unmarshal export: %v", err)
+	}
+	outlines := doc.Body.Outlines
+	if len(outlines) != 1 {
+		t.Fatalf("outlines = %d, want 1", len(outlines))
+	}
+	outline := outlines[0]
+	if outline.Text != "测试源" ||
+		outline.XMLURL != server.URL ||
+		outline.HTMLURL != "https://example.com/" ||
+		outline.Description != "一个测试用的订阅源" ||
+		outline.Language != "" {
+		t.Errorf("outline = %+v, want metadata from %s", outline, server.URL)
 	}
 }

@@ -12,6 +12,8 @@ vi.mock("~/mygo", () => ({
   Feeds: {
     list: vi.fn(),
     add: vi.fn(),
+    exportOPML: vi.fn(),
+    importOPML: vi.fn(),
     remove: vi.fn(),
     refresh: vi.fn(),
     refreshAll: vi.fn(),
@@ -254,6 +256,39 @@ describe("removeFeed", () => {
     expect(app.app.feeds).toHaveLength(0);
     expect(app.app.posts).toHaveLength(0);
     expect(app.app.current.feedId).toBeNull();
+  });
+});
+
+describe("exportOPML", () => {
+  it("reports how many feeds were exported", async () => {
+    const { mygo, toast, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.exportOPML).mockResolvedValue("/tmp/ressu.opml");
+
+    await app.exportOPML();
+
+    expect(mygo.Feeds.exportOPML).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith("已导出 2 个订阅源");
+  });
+
+  it("does nothing when the save dialog is cancelled", async () => {
+    const { mygo, toast, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.exportOPML).mockResolvedValue("");
+
+    await app.exportOPML();
+
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("reports save failures", async () => {
+    const { mygo, toast, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.exportOPML).mockRejectedValue(new Error("cannot write"));
+
+    await app.exportOPML();
+
+    expect(toast.error).toHaveBeenCalledWith("cannot write");
   });
 });
 

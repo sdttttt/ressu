@@ -1,6 +1,7 @@
 package rss
 
 import (
+	"encoding/xml"
 	"reflect"
 	"strings"
 	"testing"
@@ -85,5 +86,87 @@ func TestReadOPML(t *testing.T) {
 	}
 	if len(urls) != 1 || urls[0] != "https://x.example/f.xml" {
 		t.Errorf("ReadOPML() = %v, want one matching URL", urls)
+	}
+}
+
+func TestExportOPML(t *testing.T) {
+	data, err := ExportOPML([]OPMLFeed{{
+		Title:       `A & "B"`,
+		URL:         "https://a.example/feed.xml?a=1&b=2",
+		SiteURL:     "https://a.example/",
+		Description: "新闻 & 评论",
+		Language:    "zh-CN",
+	}})
+	if err != nil {
+		t.Fatalf("ExportOPML() error = %v", err)
+	}
+
+	var doc struct {
+		Version string `xml:"version,attr"`
+		Body    struct {
+			Outlines []exportOutline `xml:"outline"`
+		} `xml:"body"`
+	}
+	if err := xml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("Unmarshal ExportOPML() = %v", err)
+	}
+	if doc.Version != "2.0" {
+		t.Errorf("version = %q, want 2.0", doc.Version)
+	}
+	want := exportOutline{
+		Type:        "rss",
+		Text:        `A & "B"`,
+		Title:       `A & "B"`,
+		XMLURL:      "https://a.example/feed.xml?a=1&b=2",
+		HTMLURL:     "https://a.example/",
+		Description: "新闻 & 评论",
+		Language:    "zh-CN",
+	}
+	if len(doc.Body.Outlines) != 1 || doc.Body.Outlines[0] != want {
+		t.Errorf("outlines = %+v, want one outline %+v", doc.Body.Outlines, want)
+	}
+	urls, err := ParseOPML(data)
+	if err != nil {
+		t.Fatalf("ParseOPML(export) error = %v", err)
+	}
+	if len(urls) != 1 || urls[0] != want.XMLURL {
+		t.Errorf("ParseOPML(export) = %v, want [%s]", urls, want.XMLURL)
+	}
+}
+
+func TestExportOPMLUsesURLWithoutTitle(t *testing.T) {
+	const feedURL = "https://a.example/feed.xml"
+	data, err := ExportOPML([]OPMLFeed{{URL: feedURL}})
+	if err != nil {
+		t.Fatalf("ExportOPML() error = %v", err)
+	}
+
+	var doc struct {
+		Body struct {
+			Outlines []exportOutline `xml:"outline"`
+		} `xml:"body"`
+	}
+	if err := xml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("Unmarshal ExportOPML() = %v", err)
+	}
+	if len(doc.Body.Outlines) != 1 {
+		t.Fatalf("outlines = %d, want 1", len(doc.Body.Outlines))
+	}
+	if got := doc.Body.Outlines[0]; got.Text != feedURL || got.Title != feedURL || got.XMLURL != feedURL {
+		t.Errorf("outline = %+v, want all names to be %q", got, feedURL)
+	}
+}
+
+func TestExportOPMLWithoutFeeds(t *testing.T) {
+	data, err := ExportOPML(nil)
+	if err != nil {
+		t.Fatalf("ExportOPML() error = %v", err)
+	}
+	urls, err := ParseOPML(data)
+	if err != nil {
+		t.Fatalf("ParseOPML(empty export) error = %v", err)
+	}
+	if len(urls) != 0 {
+		t.Errorf("ParseOPML(empty export) = %v, want none", urls)
 	}
 }

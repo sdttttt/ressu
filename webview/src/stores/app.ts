@@ -8,6 +8,7 @@ export type { DialogName } from "~/stores/app-state";
 export { messageOf } from "~/stores/errors";
 export {
   addFeed,
+  exportOPML,
   importOPML,
   refreshAll,
   refreshFeed,

@@ -22,7 +22,7 @@ import { RadioGroup, RadioGroupItem, RadioGroupItemLabel } from "~/components/ui
 import { Separator } from "~/components/ui/separator";
 import { Slider, SliderFill, SliderThumb, SliderTrack } from "~/components/ui/slider";
 import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "~/components/ui/switch";
-import { app, closeDialog, openDataDir, openDialog, updatePrefs } from "~/stores/app";
+import { app, closeDialog, exportOPML, openDataDir, openDialog, updatePrefs } from "~/stores/app";
 
 const themes = [
   { value: "system", label: "跟随系统" },
@@ -186,6 +186,17 @@ export default function SettingsDialog() {
 
         <section class="space-y-2">
           <h3 class="text-[0.6875rem] font-medium text-muted-foreground">数据</h3>
+          <div class="flex items-center justify-between gap-4">
+            <Label class="text-sm font-normal">订阅源备份</Label>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-8 shrink-0 text-xs"
+              onClick={() => void exportOPML()}
+            >
+              导出 OPML
+            </Button>
+          </div>
           <Label class="text-xs font-normal text-muted-foreground">数据目录</Label>
           <div class="flex items-start gap-2">
             <code class="min-w-0 flex-1 rounded-md bg-muted px-2 py-1.5 text-[0.6875rem] break-all">

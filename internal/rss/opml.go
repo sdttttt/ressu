@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // outline is one <outline> element of an OPML document. Nested outlines
@@ -60,4 +61,72 @@ func ReadOPML(r io.Reader) ([]string, error) {
 		return nil, fmt.Errorf("OPML file is larger than %d bytes", maxOPMLBytes)
 	}
 	return ParseOPML(data)
+}
+
+// OPMLFeed describes one subscription in an exported OPML document.
+type OPMLFeed struct {
+	Title       string
+	URL         string
+	SiteURL     string
+	Description string
+	Language    string
+}
+
+// exportOutline is one subscription outline in an OPML export.
+type exportOutline struct {
+	Type        string `xml:"type,attr"`
+	Text        string `xml:"text,attr"`
+	Title       string `xml:"title,attr,omitempty"`
+	XMLURL      string `xml:"xmlUrl,attr"`
+	HTMLURL     string `xml:"htmlUrl,attr,omitempty"`
+	Description string `xml:"description,attr,omitempty"`
+	Language    string `xml:"language,attr,omitempty"`
+}
+
+// exportOPML is the root of an exported OPML document.
+type exportOPML struct {
+	XMLName xml.Name `xml:"opml"`
+	Version string   `xml:"version,attr"`
+	Head    struct {
+		Title string `xml:"title"`
+	} `xml:"head"`
+	Body struct {
+		Outlines []exportOutline `xml:"outline"`
+	} `xml:"body"`
+}
+
+// ExportOPML encodes subscriptions as an OPML 2.0 document. Subscription
+// order is preserved, and a feed without a title uses its address as text.
+func ExportOPML(feeds []OPMLFeed) ([]byte, error) {
+	doc := exportOPML{Version: "2.0"}
+	doc.Head.Title = "Ressu subscriptions"
+	doc.Body.Outlines = make([]exportOutline, 0, len(feeds))
+	for _, feed := range feeds {
+		title := strings.TrimSpace(feed.Title)
+		feedURL := strings.TrimSpace(feed.URL)
+		if title == "" {
+			title = feedURL
+		}
+		doc.Body.Outlines = append(doc.Body.Outlines, exportOutline{
+			Type:        "rss",
+			Text:        title,
+			Title:       title,
+			XMLURL:      feedURL,
+			HTMLURL:     strings.TrimSpace(feed.SiteURL),
+			Description: feed.Description,
+			Language:    feed.Language,
+		})
+	}
+
+	var data bytes.Buffer
+	data.WriteString(xml.Header)
+	encoder := xml.NewEncoder(&data)
+	encoder.Indent("", "  ")
+	if err := encoder.Encode(doc); err != nil {
+		return nil, fmt.Errorf("encoding OPML: %w", err)
+	}
+	if err := encoder.Flush(); err != nil {
+		return nil, fmt.Errorf("encoding OPML: %w", err)
+	}
+	return data.Bytes(), nil
 }

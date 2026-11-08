@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/egoist/mygo"
@@ -47,6 +48,49 @@ func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
 	}
 
 	return f.importOPMLURLs(ctx, urls)
+}
+
+// ExportOPML shows a native save dialog and writes every subscription to the
+// chosen OPML file, whose path it returns. A cancelled dialog returns no path.
+func (f *Feeds) ExportOPML(ctx context.Context) (string, error) {
+	data, err := rss.ExportOPML(opmlFeeds(f.store.Feeds()))
+	if err != nil {
+		return "", err
+	}
+
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
+		Parent:      mygo.CallerWindow(ctx),
+		Title:       "导出 OPML 文件",
+		DefaultPath: "ressu-subscriptions.opml",
+		Filters: []mygo.FileFilter{
+			{Name: "OPML 订阅列表", Extensions: []string{"opml"}},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return "", fmt.Errorf("could not save the OPML file: %w", err)
+	}
+	return path, nil
+}
+
+// opmlFeeds converts stored subscriptions to OPML outlines.
+func opmlFeeds(feeds []store.Feed) []rss.OPMLFeed {
+	outlines := make([]rss.OPMLFeed, 0, len(feeds))
+	for _, feed := range feeds {
+		outlines = append(outlines, rss.OPMLFeed{
+			Title:       feed.Title,
+			URL:         feed.URL,
+			SiteURL:     feed.SiteURL,
+			Description: feed.Description,
+			Language:    feed.Language,
+		})
+	}
+	return outlines
 }
 
 // importOPMLURLs subscribes to every URL in the list, counting results.

@@ -69,6 +69,18 @@ export async function importOPML(): Promise<void> {
   }
 }
 
+/** Exports every subscription to an OPML file through a native save dialog. */
+export async function exportOPML(): Promise<void> {
+  try {
+    const path = await Feeds.exportOPML();
+    if (path) {
+      toast.success(`已导出 ${state.feeds.length} 个订阅源`);
+    }
+  } catch (error) {
+    toast.error(messageOf(error));
+  }
+}
+
 /** Unsubscribes from a feed, selecting another one. */
 export async function removeFeed(id: number): Promise<void> {
   const wasCurrent = state.current.feedId === id;
