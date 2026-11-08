@@ -688,3 +688,67 @@ describe("copySnapshot", () => {
     expect(app.app.snapshotting).toBe(false);
   });
 });
+
+describe("sidebar overlay", () => {
+  it("floats the sidebar and hides it without leaving the two-pane layout", async () => {
+    const { app } = await setup();
+    vi.useFakeTimers();
+
+    app.collapseSidebar();
+    vi.advanceTimersByTime(30);
+    expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
+
+    app.hideSidebar();
+    vi.advanceTimersByTime(200);
+    expect(app.app.sidebar).toEqual({ collapsed: true, visible: false });
+
+    app.showSidebar();
+    expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
+
+    app.expandSidebar();
+    expect(app.app.sidebar).toEqual({ collapsed: false, visible: false });
+    vi.useRealTimers();
+  });
+});
+
+describe("requestSidebar", () => {
+  it("delays reveal and throttles accidental re-entry", async () => {
+    const { app } = await setup();
+    vi.useFakeTimers();
+
+    app.requestSidebar();
+    expect(app.app.sidebar.visible).toBe(false);
+
+    vi.advanceTimersByTime(180);
+    expect(app.app.sidebar.visible).toBe(true);
+
+    app.hideSidebar();
+    vi.advanceTimersByTime(200);
+    expect(app.app.sidebar.visible).toBe(false);
+
+    app.requestSidebar();
+    vi.advanceTimersByTime(180);
+    expect(app.app.sidebar.visible).toBe(false);
+
+    vi.advanceTimersByTime(300);
+    expect(app.app.sidebar.visible).toBe(true);
+
+    vi.useRealTimers();
+  });
+});
+
+describe("savePaneSizes", () => {
+  it("converts two-pane sizes back into the full-app coordinate space", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.useFakeTimers();
+
+    app.savePaneSizes([0.5, 0.75], { sidebarCollapsed: true });
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(mygo.Settings.update).toHaveBeenCalledWith(
+      expect.objectContaining({ paneSizes: [18, 41] }),
+    );
+    vi.useRealTimers();
+  });
+});

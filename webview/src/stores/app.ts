@@ -48,4 +48,14 @@ export {
   saveSnapshot,
 } from "~/stores/snapshot-actions";
 export { applySync, handlePostsChanged, replaceFeeds } from "~/stores/sync-events";
-export { closeDialog, openDialog, setFeedFilter } from "~/stores/ui";
+export {
+  closeDialog,
+  collapseSidebar,
+  expandSidebar,
+  hideSidebar,
+  keepSidebar,
+  openDialog,
+  requestSidebar,
+  setFeedFilter,
+  showSidebar,
+} from "~/stores/ui";

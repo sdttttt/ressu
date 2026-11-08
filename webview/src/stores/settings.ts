@@ -24,12 +24,21 @@ export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
 
 let paneSizesTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Saves the widths of the panes once the user stops dragging. */
-export function savePaneSizes(sizes: number[]): void {
-  const [sidebar, list] = sizes;
-  if (sidebar === undefined || list === undefined) return;
+type PaneSizeOptions = { sidebarCollapsed?: boolean };
 
-  const paneSizes = [Math.round(sidebar * 100), Math.round(list * 100)];
+/** Saves the widths of the panes once the user stops dragging. */
+export function savePaneSizes(sizes: number[], options: PaneSizeOptions = {}): void {
+  const [first, second] = sizes;
+  if (first === undefined || second === undefined) return;
+
+  const sidebarPercent = options.sidebarCollapsed
+    ? state.prefs.paneSizes[0]
+    : Math.round(first * 100);
+  const listRatio = options.sidebarCollapsed ? Math.min(Math.max(first, 0.18), 0.55) : second;
+  const listPercent = options.sidebarCollapsed
+    ? Math.round(listRatio * (100 - sidebarPercent))
+    : Math.round(listRatio * 100);
+  const paneSizes = [sidebarPercent, listPercent];
   const [wasSidebar, wasList] = state.prefs.paneSizes;
   if (paneSizes[0] === wasSidebar && paneSizes[1] === wasList) return;
 

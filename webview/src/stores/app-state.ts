@@ -32,6 +32,7 @@ type AppState = {
   starredOnly: boolean;
   current: { feedId: number | null; postFeedId: number | null; guid: string | null };
   dialog: Record<DialogName, boolean>;
+  sidebar: { collapsed: boolean; visible: boolean };
 };
 
 const defaultPrefs: Prefs = {
@@ -68,6 +69,7 @@ const [state, setState] = createStore<AppState>({
   starredOnly: false,
   current: { feedId: null, postFeedId: null, guid: null },
   dialog: { addFeed: false, settings: false, help: false },
+  sidebar: { collapsed: false, visible: false },
 });
 
 /** The app's state. Read it in components; change it through app actions. */

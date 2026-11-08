@@ -14,8 +14,23 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Toaster } from "~/components/ui/sonner";
 import { installShortcuts, isMac } from "~/lib/commands";
 import { applyTheme, onSystemThemeChange } from "~/lib/theme";
-import { app, savePaneSizes, start } from "~/stores/app";
+import { app, hideSidebar, keepSidebar, requestSidebar, savePaneSizes, start } from "~/stores/app";
 import { subscribe } from "~/stores/events";
+
+function collapsedPaneSizes(): [number, number] {
+  const [sidebar, list] = app.prefs.paneSizes;
+  const listSize = Math.min(Math.max(list / (100 - sidebar), 0.18), 0.55);
+  return [listSize, 1 - listSize];
+}
+
+function dockedPaneSizes(): [number, number, number] {
+  const sidebar = Math.min(Math.max(app.prefs.paneSizes[0] / 100, 0.12), 0.4);
+  const list = Math.min(
+    Math.max(app.prefs.paneSizes[1] / 100, 0.18),
+    Math.min(0.55, 1 - sidebar - 0.25),
+  );
+  return [sidebar, list, 1 - sidebar - list];
+}
 
 export default function App() {
   onMount(() => {
@@ -38,27 +53,72 @@ export default function App() {
   return (
     <div class="flex h-full flex-col bg-background text-foreground">
       <Show when={app.ready} fallback={<Splash />}>
-        <Resizable
-          class="flex min-h-0 flex-1"
-          initialSizes={app.prefs.paneSizes.map((size) => size / 100)}
-          onSizesChange={savePaneSizes}
-        >
-          <ResizablePanel initialSize={app.prefs.paneSizes[0] / 100} minSize={0.12} maxSize={0.4}>
-            <FeedSidebar />
-          </ResizablePanel>
+        <div class="relative min-h-0 flex-1">
+          <Show
+            when={!app.sidebar.collapsed}
+            fallback={
+              <Resizable
+                class="flex h-full"
+                initialSizes={collapsedPaneSizes()}
+                onSizesChange={(sizes) => savePaneSizes(sizes, { sidebarCollapsed: true })}
+              >
+                <ResizablePanel initialSize={collapsedPaneSizes()[0]} minSize={0.18} maxSize={0.55}>
+                  <PostList />
+                </ResizablePanel>
 
-          <ResizableHandle />
+                <ResizableHandle />
 
-          <ResizablePanel initialSize={app.prefs.paneSizes[1] / 100} minSize={0.18} maxSize={0.55}>
-            <PostList />
-          </ResizablePanel>
+                <ResizablePanel initialSize={collapsedPaneSizes()[1]} minSize={0.25}>
+                  <PostView />
+                </ResizablePanel>
+              </Resizable>
+            }
+          >
+            <Resizable
+              class="flex h-full"
+              initialSizes={dockedPaneSizes()}
+              onSizesChange={savePaneSizes}
+            >
+              <ResizablePanel initialSize={dockedPaneSizes()[0]} minSize={0.12} maxSize={0.4}>
+                <FeedSidebar />
+              </ResizablePanel>
 
-          <ResizableHandle />
+              <ResizableHandle />
 
-          <ResizablePanel minSize={0.25}>
-            <PostView />
-          </ResizablePanel>
-        </Resizable>
+              <ResizablePanel initialSize={dockedPaneSizes()[1]} minSize={0.18} maxSize={0.55}>
+                <PostList />
+              </ResizablePanel>
+
+              <ResizableHandle />
+
+              <ResizablePanel initialSize={dockedPaneSizes()[2]} minSize={0.25}>
+                <PostView />
+              </ResizablePanel>
+            </Resizable>
+          </Show>
+
+          <Show when={app.sidebar.collapsed}>
+            <div
+              class="floating-sidebar absolute top-2 bottom-2 left-2 z-40 w-80 max-w-[calc(100%-1rem)] overflow-hidden rounded-xl border bg-background shadow-lg"
+              data-visible={app.sidebar.visible ? "true" : "false"}
+              onMouseEnter={keepSidebar}
+              onMouseLeave={hideSidebar}
+            >
+              <FeedSidebar />
+            </div>
+          </Show>
+
+          <Show when={app.sidebar.collapsed}>
+            <button
+              type="button"
+              class="absolute inset-y-0 left-0 z-40 w-2 cursor-pointer opacity-0"
+              aria-label="显示订阅源"
+              onFocus={requestSidebar}
+              onMouseEnter={requestSidebar}
+              onMouseLeave={hideSidebar}
+            />
+          </Show>
+        </div>
       </Show>
 
       <StatusBar />

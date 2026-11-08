@@ -1,5 +1,7 @@
 import {
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -34,6 +36,8 @@ import { cn } from "~/lib/utils";
 import type { Feed } from "~/mygo";
 import {
   app,
+  collapseSidebar,
+  expandSidebar,
   isSyncingFeed,
   markAllRead,
   openDialog,
@@ -47,7 +51,7 @@ import {
 
 export default function FeedSidebar() {
   return (
-    <aside class="flex h-full min-h-0 flex-col bg-background">
+    <aside class="flex h-full min-h-0 w-full flex-col bg-background">
       <div class="flex items-center gap-1 px-3 pt-2 pb-1">
         <div class="flex min-w-0 flex-1 items-center gap-1.5">
           <span class="truncate text-[0.8125rem] font-semibold">订阅源</span>
@@ -58,6 +62,14 @@ export default function FeedSidebar() {
             {app.feeds.length}
           </Badge>
         </div>
+
+        <IconButton
+          label={app.sidebar.collapsed ? "恢复三栏布局" : "浮动显示订阅源"}
+          class="size-7 shrink-0"
+          onClick={() => (app.sidebar.collapsed ? expandSidebar() : collapseSidebar())}
+        >
+          {app.sidebar.collapsed ? <ChevronRight class="size-4" /> : <ChevronLeft class="size-4" />}
+        </IconButton>
 
         <Popover placement="bottom-end">
           <PopoverTrigger
