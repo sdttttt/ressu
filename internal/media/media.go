@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/sdttttt/ressu/internal/logging"
 )
 
 // Scheme is the local protocol used by rewritten article images.
@@ -183,6 +185,12 @@ func (c *Cache) load() error {
 func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	started := time.Now()
 	status, cause := c.serveHTTP(writer, request, started)
+	logging.Debug("media image request",
+		"operation", "media.serveHTTP",
+		"cacheKey", strings.TrimPrefix(request.URL.Path, "/i/"),
+		"status", status,
+		"elapsedMs", time.Since(started).Milliseconds(),
+	)
 	if status == http.StatusServiceUnavailable && request.Context().Err() == nil &&
 		c.reportFailure(strings.TrimPrefix(request.URL.Path, "/i/"), started) {
 		args := []any{

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+
+	"github.com/sdttttt/ressu/internal/logging"
 )
 
 // LocalURL maps one public image address to its stable local protocol URL. It
@@ -38,7 +40,8 @@ func (c *Cache) RewriteHTML(markup, baseURL string) string {
 			"operation", "media.rewriteHTML", "reason", "no document body")
 		return ""
 	}
-	rewriteImages(body, baseURL, c)
+	stats := rewriteStats{}
+	rewriteImages(body, baseURL, c, &stats)
 
 	var output strings.Builder
 	for child := body.FirstChild; child != nil; child = child.NextSibling {
@@ -48,11 +51,21 @@ func (c *Cache) RewriteHTML(markup, baseURL string) string {
 			return ""
 		}
 	}
+	logging.Debug("article images rewritten",
+		"operation", "media.rewriteHTML",
+		"mappedImages", stats.mapped,
+		"unmappedImages", stats.unmapped,
+	)
 	return output.String()
 }
 
+type rewriteStats struct {
+	mapped   int
+	unmapped int
+}
+
 // rewriteImages walks one cleaned article fragment and maps every img source.
-func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
+func rewriteImages(node *html.Node, baseURL string, cache *Cache, stats *rewriteStats) {
 	if node.Type == html.ElementNode && strings.EqualFold(node.Data, "img") {
 		if src := attribute(node, "src"); src != nil {
 			if scheme, _, err := splitScheme(src.Val); err == nil &&
@@ -62,14 +75,16 @@ func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
 			source := absolute(baseURL, src.Val)
 			if local, ok := cache.LocalURL(source); ok {
 				src.Val = local
+				stats.mapped++
 			} else {
 				removeAttribute(node, "src")
+				stats.unmapped++
 			}
 		}
 		removeAttribute(node, "srcset")
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		rewriteImages(child, baseURL, cache)
+		rewriteImages(child, baseURL, cache, stats)
 	}
 }
 

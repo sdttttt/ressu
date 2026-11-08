@@ -56,7 +56,7 @@ func Open(dir string, options Options) (*File, error) {
 	}
 	level := options.Level
 	if level == nil {
-		level = slog.LevelInfo
+		level = defaultLevel
 	}
 	logger := slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level}))
 	return &File{file: file, logger: logger, path: path}, nil
