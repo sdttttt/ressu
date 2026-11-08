@@ -6,11 +6,18 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 const (
 	// FileName is the active log file in the user data directory.
 	FileName = "ressu.log"
+
+	// maxBackupGenerations is the number of rotated logs kept in addition to
+	// the active file, for five logs in total.
+	maxBackupGenerations = 4
 
 	// rotatedFileName stores the previous active log.
 	rotatedFileName = FileName + ".1"
@@ -36,7 +43,7 @@ type File struct {
 }
 
 // Open creates the log directory and appends to its local log file. A file at
-// MaxBytes is rotated by replacing the previous backup.
+// MaxBytes is rotated, keeping the active log and four backups.
 func Open(dir string, options Options) (*File, error) {
 	if options.MaxBytes == 0 {
 		options.MaxBytes = defaultMaxBytes
@@ -46,6 +53,9 @@ func Open(dir string, options Options) (*File, error) {
 	}
 
 	path := filepath.Join(dir, FileName)
+	if err := pruneBackups(path); err != nil {
+		return nil, err
+	}
 	if err := rotate(path, options.MaxBytes); err != nil {
 		return nil, err
 	}
@@ -85,7 +95,8 @@ func (f *File) Close() error {
 	return err
 }
 
-// rotate moves an oversized active log to the single backup slot.
+// rotate moves an oversized active log to the oldest backup slot, shifting
+// existing backups toward it.
 func rotate(path string, maxBytes int64) error {
 	if maxBytes < 0 {
 		return nil
@@ -101,12 +112,51 @@ func rotate(path string, maxBytes int64) error {
 		return nil
 	}
 
-	backup := path + ".1"
-	if err := os.Remove(backup); err != nil && !os.IsNotExist(err) {
+	oldest := fmt.Sprintf("%s.%d", path, maxBackupGenerations)
+	if err := os.Remove(oldest); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("could not replace the old log: %w", err)
 	}
-	if err := os.Rename(path, backup); err != nil {
+	for generation := maxBackupGenerations - 1; generation >= 1; generation-- {
+		from := fmt.Sprintf("%s.%d", path, generation)
+		to := fmt.Sprintf("%s.%d", path, generation+1)
+		if err := os.Rename(from, to); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("could not shift the old logs: %w", err)
+		}
+	}
+	if err := os.Rename(path, path+".1"); err != nil {
 		return fmt.Errorf("could not rotate the log file: %w", err)
+	}
+	return nil
+}
+
+// pruneBackups deletes the oldest rotated logs beyond the five-log limit.
+func pruneBackups(path string) error {
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil {
+		return fmt.Errorf("could not inspect the old logs: %w", err)
+	}
+
+	generations := make([]int, 0)
+	for _, entry := range entries {
+		suffix, found := strings.CutPrefix(entry.Name(), FileName+".")
+		if !found {
+			continue
+		}
+		generation, err := strconv.Atoi(suffix)
+		if err != nil || generation <= 0 {
+			continue
+		}
+		generations = append(generations, generation)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(generations)))
+
+	extra := len(generations) - maxBackupGenerations
+	for index := 0; index < extra; index++ {
+		generation := generations[index]
+		old := fmt.Sprintf("%s.%d", path, generation)
+		if err := os.Remove(old); err != nil {
+			return fmt.Errorf("could not delete the old log: %w", err)
+		}
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -90,5 +91,53 @@ func TestOpenRotatesWhenFull(t *testing.T) {
 	active, err := os.ReadFile(file.Path())
 	if err != nil || !bytes.Contains(active, []byte("second")) {
 		t.Fatalf("active log = %q, err = %v", active, err)
+	}
+}
+
+func TestOpenPrunesOldBackups(t *testing.T) {
+	dir := t.TempDir()
+	active := filepath.Join(dir, FileName)
+	contents := map[string]string{
+		active:           "active",
+		active + ".1":    "first",
+		active + ".2":    "second",
+		active + ".3":    "third",
+		active + ".4":    "fourth",
+		active + ".5":    "fifth",
+		active + ".6":    "sixth",
+		active + ".text": "ignored",
+	}
+	for path, content := range contents {
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	file, err := Open(dir, Options{MaxBytes: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	expected := map[int]string{
+		1: "first",
+		2: "second",
+		3: "third",
+		4: "fourth",
+	}
+	for generation, want := range expected {
+		path := fmt.Sprintf("%s.%d", active, generation)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != want {
+			t.Fatalf("%s = %q, want %q", path, data, want)
+		}
+	}
+	for _, name := range []string{active + ".5", active + ".6"} {
+		if _, err := os.Stat(name); !os.IsNotExist(err) {
+			t.Fatalf("%s still exists", name)
+		}
 	}
 }
