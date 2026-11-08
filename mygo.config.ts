@@ -4,7 +4,7 @@ export default defineConfig({
   name: "Ressu",
   slug: "ressu",
   identifier: "com.sdttttt.ressu",
-  version: "26.11.2",
+  version: "26.11.3",
   copyright: "© 2026 sdttttt",
   devUrl: "http://localhost:5173",
   devCommand: "bun run dev:web",
