@@ -1,6 +1,6 @@
 import { createStore } from "solid-js/store";
 
-import type { Feed, Post, PostSummary, Prefs, SyncState } from "~/mygo";
+import type { Feed, Post, PostSummary, Prefs, SortOrder, SyncState } from "~/mygo";
 
 export type DialogName = "addFeed" | "settings" | "help";
 
@@ -30,6 +30,7 @@ type AppState = {
   feedFilter: string;
   unreadOnly: boolean;
   starredOnly: boolean;
+  postSortOrder: SortOrder;
   current: { feedId: number | null; postFeedId: number | null; guid: string | null };
   dialog: Record<DialogName, boolean>;
   sidebar: { collapsed: boolean; visible: boolean };
@@ -68,6 +69,7 @@ const [state, setState] = createStore<AppState>({
   feedFilter: "",
   unreadOnly: false,
   starredOnly: false,
+  postSortOrder: "desc",
   current: { feedId: null, postFeedId: null, guid: null },
   dialog: { addFeed: false, settings: false, help: false },
   sidebar: { collapsed: false, visible: false },

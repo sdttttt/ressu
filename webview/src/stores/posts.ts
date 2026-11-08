@@ -1,6 +1,6 @@
 import { toast } from "solid-sonner";
 
-import { Posts } from "~/mygo";
+import { Posts, type SortOrder } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 import { closeSnapshot } from "~/stores/snapshot-actions";
@@ -23,6 +23,7 @@ export async function loadPosts(offset = 0): Promise<void> {
       search: "",
       offset,
       limit: PAGE_SIZE,
+      sortOrder: state.postSortOrder,
     });
     if (offset === 0) setState("posts", page.posts);
     else setState("posts", (posts) => [...posts, ...page.posts]);
@@ -38,6 +39,13 @@ export async function loadPosts(offset = 0): Promise<void> {
 export async function loadMorePosts(): Promise<void> {
   if (state.loadingPosts) return;
   await loadPosts(state.posts.length);
+}
+
+/** Sorts posts oldest or newest first by reloading the result from Go. */
+export async function setPostSortOrder(sortOrder: SortOrder): Promise<void> {
+  if (state.postSortOrder === sortOrder) return;
+  setState("postSortOrder", sortOrder);
+  await loadPosts(0);
 }
 
 /** Filters the list by unread or starred posts. */

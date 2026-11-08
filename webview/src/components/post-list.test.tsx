@@ -45,6 +45,8 @@ const fixtures = vi.hoisted(() => {
   return { feed, first, second };
 });
 
+const { setPostSortOrder } = vi.hoisted(() => ({ setPostSortOrder: vi.fn() }));
+
 vi.mock("~/stores/app", () => ({
   app: {
     posts: [fixtures.first, fixtures.second],
@@ -52,6 +54,7 @@ vi.mock("~/stores/app", () => ({
     postUnread: 1,
     unreadOnly: false,
     starredOnly: false,
+    postSortOrder: "desc",
     loadingPosts: false,
     current: { feedId: 1, guid: null },
   },
@@ -59,6 +62,7 @@ vi.mock("~/stores/app", () => ({
   selectPost: vi.fn(),
   toggleStar: vi.fn(),
   setPostFilter: vi.fn(),
+  setPostSortOrder,
   markAllRead: vi.fn(),
   loadMorePosts: vi.fn(),
 }));
@@ -100,5 +104,13 @@ describe("PostList", () => {
     fireEvent.click(getByText(/加载更多/));
 
     expect(store.loadMorePosts).toHaveBeenCalled();
+  });
+
+  it("asks for the opposite order when the sort button is clicked", () => {
+    const { getByRole } = render(() => <PostList />);
+
+    fireEvent.click(getByRole("button", { name: "按时间升序排列" }));
+
+    expect(setPostSortOrder).toHaveBeenCalledWith("asc");
   });
 });

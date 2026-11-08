@@ -48,6 +48,18 @@ func TestPostsListAggregatesFeeds(t *testing.T) {
 		t.Errorf("aggregate order = %+v", page.Posts)
 	}
 
+	ascending, err := NewPosts(st).List(PostQuery{
+		FeedID:    AggregateFeedID,
+		Limit:     4,
+		SortOrder: SortOrderAscending,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ascending.Posts[0].GUID != "1-0" || ascending.Posts[3].GUID != "2-1" {
+		t.Errorf("ascending order = %+v", ascending.Posts)
+	}
+
 	changed, err := NewPosts(st).MarkAllRead(AggregateFeedID)
 	if err != nil {
 		t.Fatal(err)

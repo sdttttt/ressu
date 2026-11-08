@@ -30,6 +30,7 @@ export {
   PAGE_SIZE,
   selectPost,
   setOpenPostRead,
+  setPostSortOrder,
   setPostFilter,
   toggleStar,
 } from "~/stores/posts";

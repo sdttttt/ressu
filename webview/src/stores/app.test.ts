@@ -145,6 +145,7 @@ describe("sidebar preference", () => {
       search: "",
       offset: 0,
       limit: app.PAGE_SIZE,
+      sortOrder: "desc",
     });
   });
 
@@ -199,6 +200,7 @@ describe("selectFeed", () => {
       search: "",
       offset: 0,
       limit: app.PAGE_SIZE,
+      sortOrder: "desc",
     });
 
     await app.selectFeed(2);
@@ -211,6 +213,7 @@ describe("selectFeed", () => {
       search: "",
       offset: 0,
       limit: app.PAGE_SIZE,
+      sortOrder: "desc",
     });
   });
 });
@@ -224,6 +227,21 @@ describe("setPostFilter", () => {
 
     expect(app.app.unreadOnly).toBe(true);
     expect(vi.mocked(mygo.Posts.list).mock.lastCall?.[0]).toMatchObject({ unreadOnly: true });
+  });
+});
+
+describe("setPostSortOrder", () => {
+  it("asks Go for the sorted first page", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+
+    await app.setPostSortOrder("asc");
+
+    expect(app.app.postSortOrder).toBe("asc");
+    expect(vi.mocked(mygo.Posts.list).mock.lastCall?.[0]).toMatchObject({
+      offset: 0,
+      sortOrder: "asc",
+    });
   });
 });
 

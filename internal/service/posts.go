@@ -1,6 +1,7 @@
 package service
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/sdttttt/ressu/internal/store"
@@ -15,6 +16,23 @@ const maxLimit = 500
 // AggregateFeedID asks for posts from every feed.
 const AggregateFeedID = 0
 
+// SortOrder determines whether Posts.List returns newest or oldest first.
+type SortOrder string
+
+// SortOrderDescending returns newer posts before older posts.
+const SortOrderDescending SortOrder = "desc"
+
+// SortOrderAscending returns older posts before newer posts.
+const SortOrderAscending SortOrder = "asc"
+
+// normalize turns unknown and empty orders into the default order.
+func (o SortOrder) normalize() SortOrder {
+	if o == SortOrderAscending {
+		return SortOrderAscending
+	}
+	return SortOrderDescending
+}
+
 // Posts is the post service the frontend calls.
 type Posts struct {
 	store *store.Store
@@ -25,14 +43,16 @@ func NewPosts(st *store.Store) *Posts {
 	return &Posts{store: st}
 }
 
-// PostQuery selects a page of posts. FeedID zero selects all feeds.
+// PostQuery selects a page of posts. FeedID zero selects all feeds. An
+// unknown SortOrder selects the default newest-first order.
 type PostQuery struct {
-	FeedID      int64  `json:"feedId"`
-	UnreadOnly  bool   `json:"unreadOnly"`
-	StarredOnly bool   `json:"starredOnly"`
-	Search      string `json:"search"`
-	Offset      int    `json:"offset"`
-	Limit       int    `json:"limit"`
+	FeedID      int64     `json:"feedId"`
+	UnreadOnly  bool      `json:"unreadOnly"`
+	StarredOnly bool      `json:"starredOnly"`
+	Search      string    `json:"search"`
+	Offset      int       `json:"offset"`
+	Limit       int       `json:"limit"`
+	SortOrder   SortOrder `json:"sortOrder"`
 }
 
 // PostPage is a page of posts, with how many match the query and how many of
@@ -43,7 +63,8 @@ type PostPage struct {
 	Unread int                 `json:"unread"`
 }
 
-// List returns the posts of a feed that match the query, newest first.
+// List returns the posts of a feed that match the query, newest first unless
+// the query asks for oldest first.
 func (p *Posts) List(query PostQuery) (PostPage, error) {
 	var posts []store.Post
 	var err error
@@ -73,6 +94,9 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 			continue
 		}
 		matches = append(matches, post.ToSummary())
+	}
+	if query.SortOrder.normalize() == SortOrderAscending {
+		slices.SortStableFunc(matches, byPublishedAsc)
 	}
 
 	total := len(matches)
@@ -145,4 +169,8 @@ func postMatches(post store.Post, needle string) bool {
 	return strings.Contains(strings.ToLower(post.Title), needle) ||
 		strings.Contains(strings.ToLower(post.Summary), needle) ||
 		strings.Contains(strings.ToLower(post.Author), needle)
+}
+
+func byPublishedAsc(first, second store.PostSummary) int {
+	return first.PublishedAt.Compare(second.PublishedAt)
 }

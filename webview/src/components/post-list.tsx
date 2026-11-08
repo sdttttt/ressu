@@ -6,7 +6,7 @@ import {
   Loader2,
   Star,
 } from "lucide-solid";
-import { For, Show, createSignal } from "solid-js";
+import { For, Show } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
@@ -24,6 +24,7 @@ import {
   loadMorePosts,
   markAllRead,
   selectPost,
+  setPostSortOrder,
   setPostFilter,
   toggleStar,
 } from "~/stores/app";
@@ -36,10 +37,6 @@ function activeFilters(): string[] {
 }
 
 export default function PostList() {
-  const [sortAsc, setSortAsc] = createSignal(false);
-  const sortedPosts = () =>
-    sortAsc() ? [...app.posts].sort((a, b) => compareDates(a, b)) : app.posts;
-
   return (
     <section class="flex h-full min-h-0 flex-col bg-background">
       <Show when={currentFeed()?.title ?? "所有"}>
@@ -59,11 +56,16 @@ export default function PostList() {
                   </Badge>
                 </div>
                 <IconButton
-                  label={sortAsc() ? "按时间降序排列" : "按时间升序排列"}
+                  label={app.postSortOrder === "asc" ? "按时间降序排列" : "按时间升序排列"}
                   class="size-7"
-                  onClick={() => setSortAsc((prev) => !prev)}
+                  onClick={() =>
+                    void setPostSortOrder(app.postSortOrder === "asc" ? "desc" : "asc")
+                  }
                 >
-                  <Show when={sortAsc()} fallback={<ArrowDownWideNarrow class="size-3.5" />}>
+                  <Show
+                    when={app.postSortOrder === "asc"}
+                    fallback={<ArrowDownWideNarrow class="size-3.5" />}
+                  >
                     <ArrowUpNarrowWide class="size-3.5" />
                   </Show>
                 </IconButton>
@@ -115,7 +117,7 @@ export default function PostList() {
                   }
                 >
                   <div class="space-y-1">
-                    <For each={sortedPosts()}>{(post) => <PostRow post={post} />}</For>
+                    <For each={app.posts}>{(post) => <PostRow post={post} />}</For>
                   </div>
 
                   <Show when={app.posts.length < app.postTotal}>
@@ -143,11 +145,6 @@ export default function PostList() {
       </Show>
     </section>
   );
-}
-
-/** Compares two posts by published date, oldest first. */
-function compareDates(a: PostSummary, b: PostSummary): number {
-  return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
 }
 
 function PostRow(props: { post: PostSummary }) {
