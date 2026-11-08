@@ -57,6 +57,7 @@ export default function StatusBar() {
           </>
         )}
       </Show>
+      <span class="shrink-0 tabular-nums">v{import.meta.env.APP_VERSION}</span>
     </footer>
   );
 }
