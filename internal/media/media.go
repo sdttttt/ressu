@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -41,6 +42,8 @@ const (
 	maxRedirect = 4
 	maxFailures = 10000
 )
+
+var loggedURLPattern = regexp.MustCompile(`(?i)([a-z][a-z0-9+.-]*://)[^\s"'<>]+`)
 
 // Entry describes one cached image. A nil size marks a prepared, but not yet
 // downloaded resource.
@@ -179,9 +182,9 @@ func (c *Cache) load() error {
 // ServeHTTP answers local image requests from rewritten article HTML.
 func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	started := time.Now()
-	status := c.serveHTTP(writer, request, started)
-	reported := status < http.StatusServiceUnavailable
-	if status >= http.StatusBadRequest && !reported {
+	status, cause := c.serveHTTP(writer, request, started)
+	reported := false
+	if status >= http.StatusBadRequest {
 		reported = c.reportFailure(strings.TrimPrefix(request.URL.Path, "/i/"), started)
 	}
 	if status >= http.StatusBadRequest && reported && request.Context().Err() == nil {
@@ -191,12 +194,16 @@ func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 			level = slog.LevelWarn
 			message = "media image unavailable"
 		}
-		slog.Log(request.Context(), level, message,
+		args := []any{
 			"operation", "media.serveHTTP",
 			"cacheKey", strings.TrimPrefix(request.URL.Path, "/i/"),
 			"status", status,
 			"elapsedMs", time.Since(started).Milliseconds(),
-		)
+		}
+		if cause != nil {
+			args = append(args, "error", diagnosticError(cause))
+		}
+		slog.Log(request.Context(), level, message, args...)
 	}
 }
 
@@ -205,22 +212,22 @@ func (c *Cache) serveHTTP(
 	writer http.ResponseWriter,
 	request *http.Request,
 	started time.Time,
-) int {
+) (int, error) {
 	if request.Method != http.MethodGet && request.Method != http.MethodHead ||
 		!strings.EqualFold(request.URL.Host, "localhost") {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return http.StatusNotFound
+		return http.StatusNotFound, errors.New("invalid media protocol method or host")
 	}
 
 	prefix := "/i/"
 	if !strings.HasPrefix(request.URL.Path, prefix) {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return http.StatusNotFound
+		return http.StatusNotFound, errors.New("invalid media protocol path")
 	}
 	key := strings.TrimPrefix(request.URL.Path, prefix)
 	if !validKey(key) {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return http.StatusNotFound
+		return http.StatusNotFound, errors.New("invalid media protocol key")
 	}
 
 	entry, err := c.get(request.Context(), key)
@@ -230,19 +237,19 @@ func (c *Cache) serveHTTP(
 				slog.Warn("stale image served after refresh failure",
 					"operation", "media.serveHTTP",
 					"cacheKey", key,
-					"error", err,
+					"error", diagnosticError(err),
 				)
 			}
 		} else {
 			http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
-			return http.StatusServiceUnavailable
+			return http.StatusServiceUnavailable, err
 		}
 	}
 
 	file, err := os.Open(c.dataFile(key))
 	if err != nil {
 		http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
-		return http.StatusServiceUnavailable
+		return http.StatusServiceUnavailable, fmt.Errorf("could not open image bytes: %w", err)
 	}
 	defer file.Close()
 
@@ -250,7 +257,7 @@ func (c *Cache) serveHTTP(
 	writer.Header().Set("Cache-Control", "private, max-age=300")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeContent(writer, request, "", entry.FetchedAt, file)
-	return http.StatusOK
+	return http.StatusOK, nil
 }
 
 // reportFailure keeps repeated failures for the same image from filling the
@@ -409,6 +416,11 @@ func (c *Cache) fetch(ctx context.Context, old Entry) (Entry, error) {
 	entry.FailedAt = time.Time{}
 	entry.Size = int64(len(data))
 	return entry, c.put(old.Key, entry, data)
+}
+
+// diagnosticError removes image source URLs from an error before logging it.
+func diagnosticError(err error) string {
+	return loggedURLPattern.ReplaceAllString(err.Error(), "${1}[redacted]")
 }
 
 // fail records a short-lived negative result while retaining stale bytes.

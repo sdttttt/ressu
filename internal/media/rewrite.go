@@ -1,6 +1,7 @@
 package media
 
 import (
+	"log/slog"
 	"net/url"
 	"strings"
 
@@ -18,7 +19,7 @@ func (c *Cache) LocalURL(raw string) (string, bool) {
 	if !c.prepare(key, source) {
 		return "", false
 	}
-	return Scheme + "://localhost/i/" + key, true
+	return localURL(key), true
 }
 
 // RewriteHTML replaces remote img addresses with local cache URLs. Images that
@@ -33,21 +34,36 @@ func (c *Cache) RewriteHTML(markup, baseURL string) string {
 	}
 	body := bodyOf(document)
 	if body == nil {
+		slog.Warn("article image rewrite failed",
+			"operation", "media.rewriteHTML", "reason", "no document body")
 		return ""
 	}
-	rewriteImages(body, baseURL, c)
+	stats := rewriteStats{}
+	rewriteImages(body, baseURL, c, &stats)
 
 	var output strings.Builder
 	for child := body.FirstChild; child != nil; child = child.NextSibling {
 		if err := html.Render(&output, child); err != nil {
+			slog.Warn("article image rewrite failed",
+				"operation", "media.rewriteHTML", "reason", "render failed", "error", err)
 			return ""
 		}
 	}
+	slog.Info("article images rewritten",
+		"operation", "media.rewriteHTML",
+		"mappedImages", stats.mapped,
+		"unmappedImages", stats.unmapped,
+	)
 	return output.String()
 }
 
+type rewriteStats struct {
+	mapped   int
+	unmapped int
+}
+
 // rewriteImages walks one cleaned article fragment and maps every img source.
-func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
+func rewriteImages(node *html.Node, baseURL string, cache *Cache, stats *rewriteStats) {
 	if node.Type == html.ElementNode && strings.EqualFold(node.Data, "img") {
 		if src := attribute(node, "src"); src != nil {
 			if scheme, _, err := splitScheme(src.Val); err == nil &&
@@ -57,14 +73,16 @@ func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
 			source := absolute(baseURL, src.Val)
 			if local, ok := cache.LocalURL(source); ok {
 				src.Val = local
+				stats.mapped++
 			} else {
 				removeAttribute(node, "src")
+				stats.unmapped++
 			}
 		}
 		removeAttribute(node, "srcset")
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		rewriteImages(child, baseURL, cache)
+		rewriteImages(child, baseURL, cache, stats)
 	}
 }
 

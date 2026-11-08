@@ -2,6 +2,7 @@ package media
 
 import (
 	"bytes"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -42,5 +43,46 @@ func TestHandlerLogsAndDeduplicatesUnavailableImages(t *testing.T) {
 	}
 	if strings.Contains(logs, "cdn.example") {
 		t.Fatalf("log leaked the source URL: %s", logs)
+	}
+}
+
+func TestRewriteHTMLLogsImageCounts(t *testing.T) {
+	var output bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
+	t.Cleanup(func() { slog.SetDefault(previous) })
+
+	cache, err := Open(filepath.Join(t.TempDir(), "media"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cache.Close()
+
+	cache.RewriteHTML(
+		`<img src="https://cdn.example/mapped.png">`+
+			`<img src="http://127.0.0.1:8080/private.png">`+
+			`<img src="http://localhost:8080/private.png">`,
+		"",
+	)
+
+	logs := output.String()
+	if !strings.Contains(logs, `"mappedImages":1`) ||
+		!strings.Contains(logs, `"unmappedImages":2`) {
+		t.Fatalf("expected rewrite counts in logs, got: %s", logs)
+	}
+	if strings.Contains(logs, "cdn.example") || strings.Contains(logs, "127.0.0.1") {
+		t.Fatalf("log leaked an image URL: %s", logs)
+	}
+}
+
+func TestDiagnosticErrorRedactsURLs(t *testing.T) {
+	cause := errors.New(`Get "https://user:secret@cdn.example/private.png": dial tcp: failure`)
+	logged := diagnosticError(cause)
+
+	if !strings.Contains(logged, "https://[redacted]") {
+		t.Fatalf("expected redacted URL, got: %s", logged)
+	}
+	if strings.Contains(logged, "cdn.example") || strings.Contains(logged, "secret") {
+		t.Fatalf("diagnostic error leaked the source URL: %s", logged)
 	}
 }
