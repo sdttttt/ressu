@@ -1,10 +1,11 @@
 import { Camera, ExternalLink, Loader2, MailOpen, Newspaper, Star } from "lucide-solid";
-import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
 import ArticleLayer, { type LayerKind } from "~/components/article-layer";
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
+import ImagePreview, { type PreviewImage } from "~/components/image-preview";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -112,8 +113,19 @@ function dropRetired(swap: number): void {
 
 onCleanup(() => clearTimeout(cleanupTimer));
 
-function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
+function handleLinkClick(
+  event: MouseEvent,
+  root: HTMLElement,
+  onImage: (image: HTMLImageElement) => void,
+): void {
   const target = event.target as HTMLElement | null;
+  const image = target?.closest("img");
+  if (image && root.contains(image) && image.getAttribute("src")) {
+    event.preventDefault();
+    onImage(image);
+    return;
+  }
+
   const anchor = target?.closest("a");
   if (!anchor || !root.contains(anchor)) return;
 
@@ -125,6 +137,7 @@ function handleLinkClick(event: MouseEvent, root: HTMLElement): void {
 
 export default function PostView() {
   let articleRef: HTMLElement | undefined;
+  const [preview, setPreview] = createSignal<PreviewImage | null>(null);
 
   const bindArticle = (element: HTMLElement) => {
     articleRef = element;
@@ -134,7 +147,15 @@ export default function PostView() {
     const element = articleRef;
     if (!element) return;
 
-    const listener = (event: MouseEvent) => handleLinkClick(event, element);
+    const listener = (event: MouseEvent) =>
+      handleLinkClick(event, element, (image) => {
+        setPreview({
+          src: image.currentSrc || image.getAttribute("src") || "",
+          alt: image.getAttribute("alt") ?? "",
+          rect: image.getBoundingClientRect(),
+          source: image,
+        });
+      });
     element.addEventListener("click", listener);
     onCleanup(() => element.removeEventListener("click", listener));
   });
@@ -176,6 +197,9 @@ export default function PostView() {
             )}
           </For>
         </div>
+      </Show>
+      <Show when={preview()}>
+        {(image) => <ImagePreview image={image()} onClosed={() => setPreview(null)} />}
       </Show>
     </article>
   );

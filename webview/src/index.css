@@ -251,6 +251,11 @@
     max-width: 100%;
     height: auto;
     border-radius: var(--radius-md);
+    cursor: zoom-in;
+  }
+
+  .image-preview-overlay {
+    background-color: rgb(0 0 0 / 78%);
   }
 
   .post-body figure {

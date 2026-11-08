@@ -37,7 +37,8 @@ function make(guid: string): MockPost {
     publishedAt: "2026-01-01T00:00:00Z",
     read: false,
     starred: false,
-    content: "<p>正文</p>",
+    content:
+      '<p>正文</p><a href="https://a.example/cover" rel="noopener noreferrer"><img src="https://image.example/cover.png" alt="封面"></a>',
   };
 }
 
