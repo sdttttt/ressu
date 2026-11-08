@@ -8,7 +8,12 @@ import { closeSnapshot } from "~/stores/snapshot-actions";
 /** How many posts a page of the list holds. */
 export const PAGE_SIZE = 100;
 
+/** How long to wait for typing to settle before searching titles. */
+const SEARCH_DEBOUNCE_MS = 300;
+
 const aggregateFeedId = 0;
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Loads a page of the selected feed's posts, replacing or appending them. */
 export async function loadPosts(offset = 0): Promise<void> {
@@ -20,7 +25,7 @@ export async function loadPosts(offset = 0): Promise<void> {
       feedId,
       unreadOnly: state.unreadOnly,
       starredOnly: state.starredOnly,
-      search: "",
+      search: state.postSearch,
       offset,
       limit: PAGE_SIZE,
       sortOrder: state.postSortOrder,
@@ -39,6 +44,35 @@ export async function loadPosts(offset = 0): Promise<void> {
 export async function loadMorePosts(): Promise<void> {
   if (state.loadingPosts) return;
   await loadPosts(state.posts.length);
+}
+
+/** Searches post titles after the user stops typing. */
+export function setPostSearch(value: string): void {
+  clearTimeout(searchTimer);
+  const query = value.trim();
+  if (query === "") {
+    setState("postSearch", "");
+    void loadPosts(0);
+    return;
+  }
+
+  searchTimer = setTimeout(() => {
+    setState("postSearch", query);
+    void loadPosts(0);
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+/** Shows the title search field, or clears the active search while hiding it. */
+export async function togglePostSearch(): Promise<void> {
+  if (!state.postSearchOpen) {
+    setState("postSearchOpen", true);
+    return;
+  }
+
+  clearTimeout(searchTimer);
+  const hadSearch = state.postSearch !== "";
+  setState({ postSearchOpen: false, postSearch: "" });
+  if (hadSearch) await loadPosts(0);
 }
 
 /** Sorts posts oldest or newest first by reloading the result from Go. */

@@ -268,6 +268,45 @@ describe("setPostFilter", () => {
   });
 });
 
+describe("post search", () => {
+  it("searches titles after typing settles", async () => {
+    vi.useFakeTimers();
+    const { mygo, app } = await setup();
+    await app.start();
+
+    app.setPostSearch("标题");
+    expect(app.app.postSearch).toBe("");
+    expect(vi.mocked(mygo.Posts.list)).not.toHaveBeenCalledWith(
+      expect.objectContaining({ search: "标题" }),
+    );
+
+    vi.advanceTimersByTime(300);
+    expect(app.app.postSearch).toBe("标题");
+    expect(vi.mocked(mygo.Posts.list).mock.lastCall?.[0]).toMatchObject({
+      offset: 0,
+      search: "标题",
+    });
+    vi.useRealTimers();
+  });
+
+  it("clears the query when the search field is closed", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    app.setPostSearch("标题");
+    await new Promise((resolve) => setTimeout(resolve, 320));
+
+    await app.togglePostSearch();
+    await app.togglePostSearch();
+
+    expect(app.app.postSearchOpen).toBe(false);
+    expect(app.app.postSearch).toBe("");
+    expect(vi.mocked(mygo.Posts.list).mock.lastCall?.[0]).toMatchObject({
+      offset: 0,
+      search: "",
+    });
+  });
+});
+
 describe("setPostSortOrder", () => {
   it("asks Go for the sorted first page", async () => {
     const { mygo, app } = await setup();

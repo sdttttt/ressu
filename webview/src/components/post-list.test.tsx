@@ -45,23 +45,34 @@ const fixtures = vi.hoisted(() => {
   return { feed, first, second };
 });
 
-const { setPostSortOrder } = vi.hoisted(() => ({ setPostSortOrder: vi.fn() }));
-
-vi.mock("~/stores/app", () => ({
-  app: {
+const { setPostSearch, setPostSortOrder, storeApp, togglePostSearch } = vi.hoisted(() => ({
+  setPostSearch: vi.fn(),
+  setPostSortOrder: vi.fn(),
+  storeApp: {
     posts: [fixtures.first, fixtures.second],
     postTotal: 3,
     postUnread: 1,
     unreadOnly: false,
     starredOnly: false,
+    postSearch: "",
+    postSearchOpen: false,
     postSortOrder: "desc",
     loadingPosts: false,
-    current: { feedId: 1, guid: null },
+    current: { feedId: 1, postFeedId: null, guid: null },
   },
+  togglePostSearch: vi.fn(() => {
+    storeApp.postSearchOpen = !storeApp.postSearchOpen;
+  }),
+}));
+
+vi.mock("~/stores/app", () => ({
+  app: storeApp,
   currentFeed: () => fixtures.feed,
   selectPost: vi.fn(),
   toggleStar: vi.fn(),
   setPostFilter: vi.fn(),
+  setPostSearch,
+  togglePostSearch,
   setPostSortOrder,
   markAllRead: vi.fn(),
   loadMorePosts: vi.fn(),
@@ -112,5 +123,19 @@ describe("PostList", () => {
     fireEvent.click(getByRole("button", { name: "按时间升序排列" }));
 
     expect(setPostSortOrder).toHaveBeenCalledWith("asc");
+  });
+
+  it("toggles the title search field and passes its keyword", () => {
+    storeApp.postSearchOpen = true;
+    const { getByRole } = render(() => <PostList />);
+
+    const input = getByRole("searchbox", { name: "搜索文章标题" });
+    fireEvent.input(input, { target: { value: " 标题 " } });
+
+    expect(setPostSearch).toHaveBeenCalledWith(" 标题 ");
+
+    fireEvent.click(getByRole("button", { name: "关闭标题搜索" }));
+    expect(togglePostSearch).toHaveBeenCalledTimes(1);
+    storeApp.postSearchOpen = false;
   });
 });

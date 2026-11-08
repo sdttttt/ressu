@@ -4,9 +4,10 @@ import {
   CheckCheck,
   FileText,
   Loader2,
+  Search,
   Star,
 } from "lucide-solid";
-import { For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
@@ -14,6 +15,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
+import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { formatPostDate } from "~/lib/format";
 import { cn } from "~/lib/utils";
@@ -24,8 +26,10 @@ import {
   loadMorePosts,
   markAllRead,
   selectPost,
+  setPostSearch,
   setPostSortOrder,
   setPostFilter,
+  togglePostSearch,
   toggleStar,
 } from "~/stores/app";
 
@@ -37,6 +41,8 @@ function activeFilters(): string[] {
 }
 
 export default function PostList() {
+  const [searchInput, setSearchInput] = createSignal(app.postSearch);
+
   return (
     <section class="flex h-full min-h-0 flex-col bg-background">
       <Show when={currentFeed()?.title ?? "所有"}>
@@ -55,6 +61,13 @@ export default function PostList() {
                     {app.postUnread} 未读
                   </Badge>
                 </div>
+                <IconButton
+                  label={app.postSearchOpen ? "关闭标题搜索" : "搜索标题"}
+                  class={cn("size-7", app.postSearchOpen && "text-primary")}
+                  onClick={() => void togglePostSearch()}
+                >
+                  <Search class="size-3.5" />
+                </IconButton>
                 <IconButton
                   label={app.postSortOrder === "asc" ? "按时间降序排列" : "按时间升序排列"}
                   class="size-7"
@@ -96,6 +109,24 @@ export default function PostList() {
                   <CheckCheck class="size-3.5" />
                 </IconButton>
               </div>
+              <Show when={app.postSearchOpen}>
+                <TextField
+                  class="mt-1.5"
+                  value={searchInput()}
+                  onChange={(value) => {
+                    setSearchInput(value);
+                    setPostSearch(value);
+                  }}
+                >
+                  <TextFieldInput
+                    type="search"
+                    autofocus
+                    aria-label="搜索文章标题"
+                    placeholder="搜索标题"
+                    class="h-7 rounded-md px-2 text-xs"
+                  />
+                </TextField>
+              </Show>
             </header>
 
             <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">

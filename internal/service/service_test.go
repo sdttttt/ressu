@@ -342,3 +342,40 @@ func TestPostsListPagesAndSearches(t *testing.T) {
 		t.Errorf("starred page = %+v", page)
 	}
 }
+
+func TestPostsListSearchesTitlesOnly(t *testing.T) {
+	st := openStore(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	base := time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := st.MergePosts(feed.ID, []store.Post{{
+		GUID:        "needle",
+		Title:       "标题匹配",
+		Summary:     "摘要 keyword",
+		Author:      "作者 keyword",
+		Content:     "<p>正文 keyword</p>",
+		PublishedAt: base,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	posts := NewPosts(st)
+	page, err := posts.List(PostQuery{FeedID: feed.ID, Search: "keyword"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Total != 0 {
+		t.Errorf("non-title search total = %d", page.Total)
+	}
+
+	page, err = posts.List(PostQuery{FeedID: feed.ID, Search: "标题"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Total != 1 {
+		t.Errorf("title search total = %d", page.Total)
+	}
+}

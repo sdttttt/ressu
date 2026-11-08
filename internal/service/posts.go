@@ -43,8 +43,9 @@ func NewPosts(st *store.Store) *Posts {
 	return &Posts{store: st}
 }
 
-// PostQuery selects a page of posts. FeedID zero selects all feeds. An
-// unknown SortOrder selects the default newest-first order.
+// PostQuery selects a page of posts. FeedID zero selects all feeds. Search
+// matches titles only. An unknown SortOrder selects the default newest-first
+// order.
 type PostQuery struct {
 	FeedID      int64     `json:"feedId"`
 	UnreadOnly  bool      `json:"unreadOnly"`
@@ -166,9 +167,7 @@ func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error)
 }
 
 func postMatches(post store.Post, needle string) bool {
-	return strings.Contains(strings.ToLower(post.Title), needle) ||
-		strings.Contains(strings.ToLower(post.Summary), needle) ||
-		strings.Contains(strings.ToLower(post.Author), needle)
+	return strings.Contains(strings.ToLower(post.Title), needle)
 }
 
 func byPublishedAsc(first, second store.PostSummary) int {

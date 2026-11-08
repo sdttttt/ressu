@@ -23,9 +23,11 @@ export {
   markAllRead,
   PAGE_SIZE,
   selectPost,
+  setPostSearch,
   setOpenPostRead,
   setPostSortOrder,
   setPostFilter,
+  togglePostSearch,
   toggleStar,
 } from "~/stores/posts";
 export {
