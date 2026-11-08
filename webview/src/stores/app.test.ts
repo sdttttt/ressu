@@ -11,6 +11,7 @@ vi.mock("~/lib/snapshot", () => ({ generateSnapshot: vi.fn() }));
 vi.mock("~/mygo", () => ({
   Feeds: {
     list: vi.fn(),
+    icon: vi.fn(),
     add: vi.fn(),
     exportOPML: vi.fn(),
     importOPML: vi.fn(),
@@ -215,6 +216,39 @@ describe("selectFeed", () => {
       limit: app.PAGE_SIZE,
       sortOrder: "desc",
     });
+  });
+});
+
+describe("ensureFeedIcon", () => {
+  it("loads an icon once and renders its data URL locally", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.icon).mockResolvedValue({
+      meta: {
+        sourceUrl: "https://a.example/favicon.ico",
+        contentType: "image/png",
+        fetchedAt: new Date().toISOString(),
+      },
+      data: "png-bytes",
+    });
+
+    await app.ensureFeedIcon(1);
+    await app.ensureFeedIcon(1);
+
+    expect(app.app.icons[1]?.src).toBe("data:image/png;base64,png-bytes");
+    expect(mygo.Feeds.icon).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks a failed icon as missing without repeated requests", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.icon).mockRejectedValue(new Error("no icon"));
+
+    await app.ensureFeedIcon(1);
+    await app.ensureFeedIcon(1);
+
+    expect(app.app.icons[1]?.missing).toBe(true);
+    expect(mygo.Feeds.icon).toHaveBeenCalledTimes(1);
   });
 });
 

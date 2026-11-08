@@ -17,13 +17,19 @@ const (
 	dbFileName       = "ressu.db"
 	feedsBucket      = "feeds"
 	postsBucket      = "posts"
+	iconsBucket      = "icons"
 	settingsBucket   = "settings"
 	prefsKey         = "prefs"
 	schemaVersionKey = "schemaVersion"
+	iconDataKey      = "data"
+	iconMetaKey      = "meta"
 )
 
 // currentSchemaVersion marks the newest data layout and cleanup behavior.
-const currentSchemaVersion = 2
+const currentSchemaVersion = 3
+
+// maxIconBytes bounds the raw image kept in the local cache.
+const maxIconBytes = 256 << 10
 
 // Errors of the store.
 var (
@@ -72,6 +78,9 @@ func (s *Store) init(tx *bolt.Tx) error {
 		return err
 	}
 	if _, err := tx.CreateBucketIfNotExists([]byte(postsBucket)); err != nil {
+		return err
+	}
+	if _, err := tx.CreateBucketIfNotExists([]byte(iconsBucket)); err != nil {
 		return err
 	}
 	settings, err := tx.CreateBucketIfNotExists([]byte(settingsBucket))
@@ -236,12 +245,77 @@ func (s *Store) RemoveFeed(id int64) error {
 		if err := deletePosts(tx, id); err != nil {
 			return err
 		}
+		if err := deleteIcon(tx, id); err != nil {
+			return err
+		}
 		return tx.Bucket([]byte(feedsBucket)).Delete(feedKey(id))
 	}); err != nil {
 		return err
 	}
 	s.feeds = slices.Delete(s.feeds, i, i+1)
 	return nil
+}
+
+// Icon returns the cached icon of a feed.
+func (s *Store) Icon(feedID int64) (Icon, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.feedIndex(feedID) < 0 {
+		return Icon{}, ErrNotFound
+	}
+
+	var icon Icon
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		data, meta, err := readIcon(tx, feedID)
+		if err != nil {
+			return err
+		}
+		icon = Icon{Meta: meta, Data: slices.Clone(data)}
+		return nil
+	}); err != nil {
+		return Icon{}, err
+	}
+	return icon, nil
+}
+
+// PutIcon replaces the cached icon of an existing feed.
+func (s *Store) PutIcon(feedID int64, icon Icon) error {
+	if len(icon.Data) > maxIconBytes {
+		return errors.New("icon is too large")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.feedIndex(feedID) < 0 {
+		return ErrNotFound
+	}
+	return s.db.Update(func(tx *bolt.Tx) error {
+		feeds := tx.Bucket([]byte(iconsBucket))
+		if feeds == nil {
+			return errors.New("icons bucket is missing")
+		}
+		feed, err := feeds.CreateBucketIfNotExists(feedKey(feedID))
+		if err != nil {
+			return err
+		}
+		if err := feed.Put([]byte(iconDataKey), slices.Clone(icon.Data)); err != nil {
+			return err
+		}
+		return put(feed, []byte(iconMetaKey), icon.Meta)
+	})
+}
+
+// DeleteIcon removes the cached icon of a feed.
+func (s *Store) DeleteIcon(feedID int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.feedIndex(feedID) < 0 {
+		return ErrNotFound
+	}
+	return s.db.Update(func(tx *bolt.Tx) error { return deleteIcon(tx, feedID) })
 }
 
 // Prefs returns the preferences.

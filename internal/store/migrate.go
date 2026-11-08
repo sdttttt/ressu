@@ -27,6 +27,11 @@ func migrate(tx *bolt.Tx) error {
 			return err
 		}
 	}
+	if version < 3 {
+		if _, err := tx.CreateBucketIfNotExists([]byte(iconsBucket)); err != nil {
+			return err
+		}
+	}
 	return put(settings, []byte(schemaVersionKey), currentSchemaVersion)
 }
 

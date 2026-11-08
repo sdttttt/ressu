@@ -3,6 +3,7 @@ import { toast } from "solid-sonner";
 import { Feeds } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
+import { forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
 import { closeSnapshot } from "~/stores/snapshot-actions";
 import { closeDialog } from "~/stores/ui";
@@ -19,7 +20,9 @@ export async function selectFeed(id: number): Promise<void> {
 /** Fetches one feed. */
 export async function refreshFeed(feedId: number): Promise<void> {
   try {
+    const previous = state.feeds.find((feed) => feed.id === feedId);
     const feed = await Feeds.refresh(feedId);
+    syncFeedIcons(previous ? [previous] : [], [feed]);
     setState("feeds", (item) => item.id === feed.id, feed);
   } catch (error) {
     toast.error(`${feedId}：${messageOf(error)}`);
@@ -44,6 +47,7 @@ export async function refreshAll(): Promise<void> {
 export async function addFeed(feedURL: string): Promise<boolean> {
   try {
     const feed = await Feeds.add(feedURL.trim());
+    syncFeedIcons([], [feed]);
     setState("feeds", (feeds) => [...feeds.filter((item) => item.id !== feed.id), feed]);
     closeDialog("addFeed");
     await selectFeed(feed.id);
@@ -88,6 +92,7 @@ export async function removeFeed(id: number): Promise<void> {
   try {
     await Feeds.remove(id);
     const feeds = state.feeds.filter((feed) => feed.id !== id);
+    forgetFeedIcon(id);
     setState("feeds", feeds);
     if (!wasCurrent) return;
 

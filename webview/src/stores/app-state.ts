@@ -11,8 +11,16 @@ type Snapshot = {
   png: string;
 };
 
+export type FeedIconView = {
+  src: string;
+  sourceURL: string;
+  fetchedAt: string;
+  missing: boolean;
+};
+
 type AppState = {
   feeds: Feed[];
+  icons: Record<number, FeedIconView>;
   posts: PostSummary[];
   postTotal: number;
   postUnread: number;
@@ -52,6 +60,7 @@ export const idleSync: SyncState = { active: false, done: 0, total: 0, feedId: 0
 
 const [state, setState] = createStore<AppState>({
   feeds: [],
+  icons: {},
   posts: [],
   postTotal: 0,
   postUnread: 0,

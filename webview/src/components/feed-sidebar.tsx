@@ -11,7 +11,7 @@ import {
   Settings as SettingsIcon,
   Trash2,
 } from "lucide-solid";
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
@@ -38,6 +38,7 @@ import {
   app,
   collapseSidebar,
   expandSidebar,
+  ensureFeedIcon,
   isSyncingFeed,
   markAllRead,
   openDialog,
@@ -235,14 +236,11 @@ function FeedRow(props: { feed: Feed }) {
 function FeedIcon(props: { feed: Feed }) {
   const [failed, setFailed] = createSignal(false);
 
+  createEffect(() => void ensureFeedIcon(props.feed.id));
+
   const source = () => {
-    if (props.feed.iconUrl) return props.feed.iconUrl;
-    if (!props.feed.siteUrl) return "";
-    try {
-      return new URL("/favicon.ico", props.feed.siteUrl).toString();
-    } catch {
-      return "";
-    }
+    const icon = app.icons[props.feed.id];
+    return icon?.missing || !icon?.src ? "" : icon.src;
   };
 
   return (

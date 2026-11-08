@@ -47,8 +47,10 @@ internal/
     fetch.go               ValidateURL、Fetch、ETag/If-Modified-Since、超时与体积上限
     parse.go               Parse、Meta/Item、相对链接解析、plainText/truncate
     testdata/              RSS 2.0、Atom、JSON Feed、坏 XML 夹具
+  icon/                    订阅源图标发现、下载校验与体积限制
+  sanitize/                基于 bluemonday 的订阅源正文清洗
   store/                   bbolt 持久化、订阅与偏好缓存、未读计数
-    store.go, model.go
+    store.go, model.go, icons.go, migrate.go
   service/                 暴露给页面的服务、事件与后台行为
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
 webview/                   前端源码和独立构建配置
@@ -68,6 +70,7 @@ webview/                   前端源码和独立构建配置
       app-state.ts         状态类型、默认值、Solid store、派生值
       app.ts               供组件使用的统一导出层
       feeds.ts             订阅源选择、添加、删除和刷新
+      icons.ts             订阅源图标状态、本地 data URL 渲染和失效
       posts.ts             文章分页、筛选、打开、已读和星标
       snapshot-actions.ts  快照生成、预览、保存和复制
       settings.ts          偏好、面板宽度、外链和数据目录
@@ -189,13 +192,15 @@ bun install
 | `feeds`    | 8 字节大端订阅 id | 整个 `Feed` 的 JSON：元数据、ETag/Last-Modified、未读数 |
 | `posts`    | 订阅 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                           |
 | `settings` | `prefs`           | 整个 `Prefs` 的 JSON                                    |
+| `icons`    | 订阅 id（嵌套桶） | `data` 键存原始图片字节；`meta` 键存缓存元数据 JSON     |
 
 `window-state.json` 由 MyGO 依据 `StateKey` 写在同一个用户数据目录，不是本仓库代码。
 
 - `Store` 在内存缓存订阅和偏好，文章每次从数据库读取；一把互斥锁串行化写操作。返回的
   slice 会克隆，调用方不能改到内部状态。
 - bbolt 的文件锁意味着同一数据目录只能有一个进程打开数据库；第二个实例会超时报错。
-- 没有 schema 版本键或迁移框架。修改持久化结构时必须兼容旧记录，或主动加入版本键和迁移。
+- `settings/schemaVersion` 记录数据库版本。修改持久化结构时必须兼容旧记录，或在
+  `store/migrate.go` 加入迁移。
 - `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
   按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读。它在一个事务里重写该
   订阅的整个文章桶。
@@ -222,13 +227,17 @@ bun install
 - 正文在 `internal/sanitize` 基于 bluemonday 清洗，随后存入数据库。链接和媒体地址会按
   文章地址补全为绝对地址。
 - 损坏 XML 或不是订阅源的页面返回错误，服务层把错误展示给用户。
+- 订阅源图标由 `internal/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon
+  链接，最后 `/favicon.ico`。只允许位图、http/https、256KB 以内，并通过 bbolt 缓存。
+- `Feeds.Icon` 使用 7 天 TTL 和按订阅源 singleflight；显式图标地址变化时缓存失效。
 
 ## 前端结构与状态
 
 - `webview/src/stores/app-state.ts` 持有唯一的 Solid store、状态类型、默认值和派生函数。
   `webview/src/stores/app.ts` 只是统一导出层；动作按功能拆在 `feeds.ts`、`posts.ts`、
-  `snapshot-actions.ts`、`settings.ts`、`selection.ts`、`sync-events.ts`、`lifecycle.ts`
-  和 `ui.ts`。组件继续统一从 `~/stores/app` 导入，不要直接调用 `setAppState`。
+  `icons.ts`、`snapshot-actions.ts`、`settings.ts`、`selection.ts`、`sync-events.ts`、
+  `lifecycle.ts` 和 `ui.ts`。组件继续统一从 `~/stores/app` 导入，不要直接调用
+  `setAppState`。
 - 组件不直接调用 `~/mygo`；事件和快照模块除外，它们分别封装订阅和底层截图调用。
 - 派生值使用普通函数，如 `currentFeed()`、`visibleFeeds()`、`totalUnread()`、
   `isSyncingFeed(id)`，不要引入 memo。
@@ -325,9 +334,10 @@ bun install
 ## 测试
 
 - Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `internal/rss/testdata/`；`store` 覆盖
-  数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除和重开；`service` 用 httptest 跑
-  添加、刷新、304、新增、标记已读、筛选、分页和搜索；`foreground` 覆盖回前台刷新和窗口焦点
-  兜底；`snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
+  数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除、重开和图标缓存；`service` 用
+  httptest 跑添加、刷新、304、新增、标记已读、筛选、分页、搜索和图标缓存；`icon` 覆盖
+  图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；`snapshot`
+  覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。
@@ -375,8 +385,8 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。
 - 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；设置对话框可打开数据目录。
-- 没有账号、同步、遥测或统计。除抓取订阅源外，WebView 会直接加载文章图片和订阅源图标，
-  对方服务器因此能看到请求。
+- 没有账号、同步、遥测或统计。除抓取订阅源和文章图片外，WebView 不直接加载订阅源图标；
+  图标由 Go 缓存后以本地 data URL 渲染。
 - webview 端禁止直接网络请求，由 `.oxlintrc.json` 的 `no-restricted-globals` 和
   `webview/test/setup.ts` 的网络 stub 双重执行。需要远程数据时新增 Go 绑定。
 - `mygo build` 从 `mygo://localhost` 提供内嵌页面；页面没有 CSP meta 标签，因此 XSS 防护

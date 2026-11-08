@@ -21,6 +21,19 @@ type Feed struct {
 	CreatedAt     time.Time  `json:"createdAt"`
 }
 
+// IconMeta describes a cached feed icon.
+type IconMeta struct {
+	SourceURL   string    `json:"sourceUrl"`
+	ContentType string    `json:"contentType"`
+	FetchedAt   time.Time `json:"fetchedAt"`
+}
+
+// Icon is the cached image of a feed, with the metadata needed to reuse it.
+type Icon struct {
+	Meta IconMeta `json:"meta"`
+	Data []byte   `json:"data"`
+}
+
 // Post is an item of a feed, with the HTML of its body.
 type Post struct {
 	FeedID      int64     `json:"feedId"`

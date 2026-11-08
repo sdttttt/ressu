@@ -7,12 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sdttttt/ressu/internal/icon"
 	"github.com/sdttttt/ressu/internal/rss"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
 // maxConcurrent bounds how many feeds are fetched at once.
 const maxConcurrent = 4
+
+// iconTTL bounds how long a resolved feed icon is reused.
+const iconTTL = 7 * 24 * time.Hour
 
 // ErrRefreshing reports a refresh that is already running.
 var ErrRefreshing = errors.New("a refresh is already running")
@@ -28,18 +32,93 @@ type SyncSummary struct {
 type Feeds struct {
 	store *store.Store
 
-	mu         sync.Mutex
-	refreshing bool
+	mu           sync.Mutex
+	refreshing   bool
+	iconMu       sync.Mutex
+	iconRequests map[int64]*iconRequest
+}
+
+// iconRequest tracks one in-flight icon resolution so repeated calls share it.
+type iconRequest struct {
+	done chan struct{}
+	icon store.Icon
+	err  error
 }
 
 // NewFeeds serves the subscriptions of st.
 func NewFeeds(st *store.Store) *Feeds {
-	return &Feeds{store: st}
+	return &Feeds{store: st, iconRequests: make(map[int64]*iconRequest)}
 }
 
 // List returns every subscription, with its unread count.
 func (f *Feeds) List() []store.Feed {
 	return f.store.Feeds()
+}
+
+// Icon returns the local icon of a feed, fetching it when the cache is absent,
+// stale, or based on a changed feed icon address.
+func (f *Feeds) Icon(ctx context.Context, id int64) (store.Icon, error) {
+	if err := ctx.Err(); err != nil {
+		return store.Icon{}, err
+	}
+
+	feed, err := f.store.Feed(id)
+	if err != nil {
+		return store.Icon{}, err
+	}
+	cached, err := f.store.Icon(id)
+	if err == nil && iconFresh(cached, feed.IconURL) {
+		return cached, nil
+	}
+
+	return f.fetchIcon(ctx, feed)
+}
+
+// fetchIcon resolves one feed's icon once, sharing a single network request
+// with concurrent calls for the same subscription.
+func (f *Feeds) fetchIcon(ctx context.Context, feed store.Feed) (store.Icon, error) {
+	f.iconMu.Lock()
+	if request, ok := f.iconRequests[feed.ID]; ok {
+		f.iconMu.Unlock()
+		<-request.done
+		return request.icon, request.err
+	}
+
+	request := &iconRequest{done: make(chan struct{})}
+	f.iconRequests[feed.ID] = request
+	f.iconMu.Unlock()
+
+	image, err := icon.Fetch(ctx, icon.Source{
+		FeedURL: feed.URL,
+		SiteURL: feed.SiteURL,
+		IconURL: feed.IconURL,
+	})
+	if err == nil {
+		request.icon = store.Icon{
+			Meta: store.IconMeta{
+				SourceURL:   image.SourceURL,
+				ContentType: image.ContentType,
+				FetchedAt:   time.Now(),
+			},
+			Data: image.Data,
+		}
+		err = f.store.PutIcon(feed.ID, request.icon)
+	}
+	request.err = err
+
+	f.iconMu.Lock()
+	delete(f.iconRequests, feed.ID)
+	f.iconMu.Unlock()
+	close(request.done)
+
+	return request.icon, request.err
+}
+
+// iconFresh reports whether a cached icon is complete, fresh, and still tied
+// to the feed's explicit icon address.
+func iconFresh(icon store.Icon, feedIconURL string) bool {
+	return len(icon.Data) > 0 && icon.Meta.FetchedAt.Add(iconTTL).After(time.Now()) &&
+		(feedIconURL == "" || icon.Meta.SourceURL == feedIconURL)
 }
 
 // Add subscribes to a feed: it fetches the address once, stores the channel
