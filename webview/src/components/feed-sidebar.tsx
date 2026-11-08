@@ -123,7 +123,9 @@ export default function FeedSidebar() {
             </Show>
           }
         >
-          <For each={visibleFeeds()}>{(feed) => <FeedRow feed={feed} />}</For>
+          <div class="space-y-0.5">
+            <For each={visibleFeeds()}>{(feed) => <FeedRow feed={feed} />}</For>
+          </div>
         </Show>
       </div>
     </aside>
