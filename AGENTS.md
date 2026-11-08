@@ -206,8 +206,8 @@ bun install
   面板宽度不合规则恢复 `[18,30]`。
 - 前端 `defaultPrefs`（`webview/src/stores/app-state.ts`）复制了 Go 默认值；新增偏好时两处
   都要改。
-- `Post.Content` 是订阅源原始 HTML，`Post.Summary` 是截到 280 个字符的纯文本。HTML 只在
-  渲染或生成快照时清洗。
+- `Post.Content` 是入库前清洗后的 HTML，`Post.Summary` 是截到 280 个字符的纯文本。
+  前端渲染和生成快照时不再重复清洗正文。
 
 ## 订阅源抓取与解析
 
@@ -219,6 +219,8 @@ bun install
 - `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
   链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。
 - 频道和文章里的相对链接会按订阅源地址解析为绝对地址。摘要会去掉 HTML、折叠空白并截断。
+- 正文在 `internal/sanitize` 基于 bluemonday 清洗，随后存入数据库。链接和媒体地址会按
+  文章地址补全为绝对地址。
 - 损坏 XML 或不是订阅源的页面返回错误，服务层把错误展示给用户。
 
 ## 前端结构与状态
@@ -256,7 +258,7 @@ bun install
 
 1. `webview/src/lib/snapshot.ts` 在页面中挂载固定 760px 宽、固定浅色的离屏
    `.snapshot-card`。
-2. 写入正文前调用 `sanitizeHTML`；正文文本使用 `textContent`，只有清洗后的 HTML 进入
+2. 正文文本使用 `textContent`，标题和元数据也写入安全节点；Go 已清洗的 HTML 才能进入
    `innerHTML`。
 3. 先等待所有图片 `decode()` 完成（失败图片会被移除），再测量 `scrollHeight`。
 4. 按有重叠的滚动位置逐片调用 `Posts.CaptureSnapshot`；Go 通过 `Window.CapturePage()`
@@ -363,12 +365,12 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
 
 ## 安全
 
-- 订阅源内容不可信。所有以 HTML 渲染的正文必须经过 `sanitizeHTML`
-  （`webview/src/lib/sanitize.ts`）：DOMPurify HTML profile，并禁用
-  `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、`button` 以及
-  `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
+- 订阅源内容不可信。正文必须在 Go 端经过 `internal/sanitize` 的 bluemonday 策略清洗后
+  入库，并禁用 `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、
+  `button` 以及 `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
-- `post-view.tsx` 和快照卡片里的 `innerHTML` 必须始终经过 `sanitizeHTML`。
+- `post-view.tsx` 和快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；不要把抓取
+  原文直接传给前端。
 - 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`Settings.OpenLink`
   再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。

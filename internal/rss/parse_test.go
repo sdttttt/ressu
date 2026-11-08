@@ -57,6 +57,9 @@ func TestParseRSS2(t *testing.T) {
 	if !strings.Contains(first.Content, "<strong>world</strong>") {
 		t.Errorf("content = %q", first.Content)
 	}
+	if strings.Contains(first.Content, "<script") || strings.Contains(first.Content, "alert(1)") {
+		t.Errorf("content = %q", first.Content)
+	}
 	want := time.Date(2024, 10, 2, 12, 0, 0, 0, time.UTC)
 	if !first.PublishedAt.Equal(want) {
 		t.Errorf("published = %s, want %s", first.PublishedAt, want)

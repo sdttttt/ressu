@@ -14,12 +14,16 @@ import (
 )
 
 const (
-	dbFileName     = "ressu.db"
-	feedsBucket    = "feeds"
-	postsBucket    = "posts"
-	settingsBucket = "settings"
-	prefsKey       = "prefs"
+	dbFileName       = "ressu.db"
+	feedsBucket      = "feeds"
+	postsBucket      = "posts"
+	settingsBucket   = "settings"
+	prefsKey         = "prefs"
+	schemaVersionKey = "schemaVersion"
 )
+
+// currentSchemaVersion marks the newest data layout and cleanup behavior.
+const currentSchemaVersion = 2
 
 // Errors of the store.
 var (
@@ -49,7 +53,12 @@ func Open(dir string) (*Store, error) {
 	}
 
 	s := &Store{db: db, prefs: DefaultPrefs()}
-	if err := db.Update(s.init); err != nil {
+	if err := db.Update(func(tx *bolt.Tx) error {
+		if err := s.init(tx); err != nil {
+			return err
+		}
+		return migrate(tx)
+	}); err != nil {
 		db.Close()
 		return nil, err
 	}

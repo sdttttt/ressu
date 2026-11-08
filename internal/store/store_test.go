@@ -1,12 +1,16 @@
 package store
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	bolt "go.etcd.io/bbolt"
 )
 
 var base = time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC)
@@ -64,6 +68,69 @@ func TestAddFeedRejectsDuplicates(t *testing.T) {
 	}
 	if second.ID != 2 {
 		t.Errorf("second id = %d", second.ID)
+	}
+}
+
+func TestOpenSanitizesStoredPostHTML(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = s.db.Update(func(tx *bolt.Tx) error {
+		return put(tx.Bucket([]byte(settingsBucket)), []byte(schemaVersionKey), 1)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.MergePosts(feed.ID, []Post{{
+		GUID:        "raw",
+		URL:         "https://a.example/post",
+		Title:       "Raw",
+		Content:     `<p>正文</p><script>alert(1)</script><a href="/next">next</a>`,
+		PublishedAt: base,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	posts, err := reopened.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 1 {
+		t.Fatalf("posts = %+v", posts)
+	}
+	content := posts[0].Content
+	if strings.Contains(content, "<script") || strings.Contains(content, "alert(1)") {
+		t.Fatalf("script survived migration: %s", content)
+	}
+	if !strings.Contains(content, `href="https://a.example/next" rel="noopener noreferrer" target="_blank"`) {
+		t.Fatalf("links were not completed during migration: %s", content)
+	}
+
+	var version int
+	err = reopened.db.View(func(tx *bolt.Tx) error {
+		value := tx.Bucket([]byte(settingsBucket)).Get([]byte(schemaVersionKey))
+		return json.Unmarshal(value, &version)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != currentSchemaVersion {
+		t.Errorf("schema version = %d, want %d", version, currentSchemaVersion)
 	}
 }
 

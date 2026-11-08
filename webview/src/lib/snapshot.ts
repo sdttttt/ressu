@@ -1,5 +1,4 @@
 import { formatDateTime } from "~/lib/format";
-import { sanitizeHTML } from "~/lib/sanitize";
 import { Posts, type Post, type SnapshotTile } from "~/mygo";
 
 /** The fixed CSS width of the capture. It must match the snapshot CSS. */
@@ -74,8 +73,8 @@ export async function generateSnapshot(post: Post, feedTitle: string): Promise<S
   }
 }
 
-/** Builds the offscreen card. Text goes in through textContent; only
- * sanitized HTML reaches innerHTML. */
+/** Builds the offscreen card. Text goes in through textContent; body HTML has
+ * already been cleaned by Go. */
 function buildCard(post: Post, feedTitle: string): HTMLElement {
   const card = document.createElement("article");
   card.className = "snapshot-card";
@@ -101,8 +100,8 @@ function buildCard(post: Post, feedTitle: string): HTMLElement {
 
   const body = document.createElement("div");
   body.className = "post-body";
-  // The HTML is cleaned by DOMPurify before it reaches the DOM.
-  body.innerHTML = sanitizeHTML(post.content || post.summary, post.url);
+  // The HTML was cleaned by Go before storage.
+  body.innerHTML = post.content || post.summary;
 
   const footer = document.createElement("footer");
   if (post.url.trim()) {

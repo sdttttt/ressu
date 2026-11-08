@@ -11,7 +11,6 @@ import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { formatDateTime } from "~/lib/format";
-import { sanitizeHTML } from "~/lib/sanitize";
 import { cn } from "~/lib/utils";
 import type { Post } from "~/mygo";
 import {
@@ -210,7 +209,7 @@ export default function PostView() {
   );
 }
 
-/** One article's content: header row plus the sanitized body. */
+/** One article's content: header row plus the body already cleaned by Go. */
 function ArticleBody(props: { post: Post }) {
   return (
     <>
@@ -285,8 +284,8 @@ function ArticleBody(props: { post: Post }) {
       <div data-post-scroll class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div
           class="post-body"
-          // The HTML is cleaned by DOMPurify before it reaches the DOM.
-          innerHTML={sanitizeHTML(props.post.content || props.post.summary, props.post.url)}
+          // The HTML was cleaned by Go before storage.
+          innerHTML={props.post.content || props.post.summary}
         />
       </div>
     </>

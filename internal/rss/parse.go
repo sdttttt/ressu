@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mmcdole/gofeed"
+	"github.com/sdttttt/ressu/internal/sanitize"
 	"golang.org/x/net/html"
 )
 
@@ -93,6 +94,7 @@ func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
 			Content:     content,
 			PublishedAt: published,
 		}
+		item.Content = sanitize.HTML(item.Content, item.URL)
 		if item.GUID == "" {
 			item.GUID = item.Title + "|" + item.PublishedAt.Format(time.RFC3339Nano)
 		}

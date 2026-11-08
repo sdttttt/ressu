@@ -24,7 +24,6 @@
     "@kobalte/core": "^0.13.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dompurify": "^3.4.17",
     "lucide-solid": "^1.70.0",
     "mygo-runtime": "^0.8.1",
     "solid-js": "^1.9.18",
