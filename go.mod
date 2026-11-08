@@ -3,7 +3,7 @@ module github.com/sdttttt/ressu
 go 1.27.3
 
 require (
-	github.com/egoist/mygo v0.8.1
+	github.com/egoist/mygo v0.8.3
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.5.0
 	go.etcd.io/bbolt v1.5.0
