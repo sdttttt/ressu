@@ -22,4 +22,4 @@
 
 ## LICENSE
 
-See [LICENSE](LICENSE) (0BSD).
+See [LICENSE](LICENSE) (0BSD发布，爱干嘛干嘛).
