@@ -98,13 +98,17 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer articleMedia.Close()
+	mediaURL, ok := articleMedia.LocalURL("https://cdn.example.com/photo.png")
+	if !ok {
+		t.Fatal("source URL could not be mapped")
+	}
 	post, err := NewPostsWithMedia(st, articleMedia).Get(1, "photo")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if strings.Contains(post.Content, "https://cdn.example.com/photo.png") ||
-		!strings.Contains(post.Content, media.Scheme+"://localhost/i/") ||
+		!strings.Contains(post.Content, `src="`+mediaURL+`"`) ||
 		!strings.Contains(post.Content, `src="data:image/png;base64,aGVsbG8="`) {
 		t.Fatalf("content = %s", post.Content)
 	}
@@ -126,7 +130,7 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(webviewPost.Content, "https://cdn.example.com/photo.png") ||
-		strings.Contains(webviewPost.Content, media.Scheme+"://localhost/i/") {
+		strings.Contains(webviewPost.Content, mediaURL) {
 		t.Fatalf("Webview content = %s", webviewPost.Content)
 	}
 }

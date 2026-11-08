@@ -17,13 +17,17 @@ import (
 func TestRewriteHTMLPreparesRemoteImages(t *testing.T) {
 	cache := openTestCache(t)
 	source := "https://cdn.example/cover.png"
+	localURL, ok := cache.LocalURL(source)
+	if !ok {
+		t.Fatal("source URL could not be mapped")
+	}
 	output := cache.RewriteHTML(
 		`<p>before</p><img src="`+source+`" srcset="small.png 1x" loading="lazy">`,
 		"https://example.com/post",
 	)
 
 	key := keyFor(source)
-	if !strings.Contains(output, Scheme+"://localhost/i/"+key) ||
+	if !strings.Contains(output, localURL) ||
 		strings.Contains(output, "cdn.example") || strings.Contains(output, "srcset") {
 		t.Fatalf("unexpected rewritten HTML: %s", output)
 	}
@@ -38,6 +42,10 @@ func TestRewriteHTMLKeepsDataImagesAndDropsUnsafeImages(t *testing.T) {
 	input := `<img src="data:image/png;base64,aGVsbG8=">` +
 		`<img src="http://127.0.0.1:8080/private.png">` +
 		`<img src="https://cdn.example/real.png">`
+	localURL, ok := cache.LocalURL("https://cdn.example/real.png")
+	if !ok {
+		t.Fatal("source URL could not be mapped")
+	}
 	output := cache.RewriteHTML(input, "")
 
 	if !strings.Contains(output, `src="data:image/png;base64,aGVsbG8="`) {
@@ -46,7 +54,7 @@ func TestRewriteHTMLKeepsDataImagesAndDropsUnsafeImages(t *testing.T) {
 	if strings.Contains(output, "127.0.0.1") {
 		t.Fatalf("private image stayed reachable: %s", output)
 	}
-	if !strings.Contains(output, Scheme+"://localhost/i/") {
+	if !strings.Contains(output, localURL) {
 		t.Fatalf("public image was not rewritten: %s", output)
 	}
 }

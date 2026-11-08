@@ -35,7 +35,7 @@ func TestOpenWritesStructuredErrors(t *testing.T) {
 		entry["operation"] != "refresh" || entry["feedId"] != float64(7) {
 		t.Fatalf("unexpected log entry: %#v", entry)
 	}
-	if info, err := os.Stat(file.Path()); err != nil || info.Mode().Perm() != 0o600 {
+	if info, err := os.Stat(file.Path()); err != nil || info.Mode().Perm() != expectedFilePerm() {
 		t.Fatalf("file mode = %v, err = %v; want 0600", info.Mode(), err)
 	}
 }
