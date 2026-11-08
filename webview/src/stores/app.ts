@@ -14,6 +14,7 @@ export {
   refreshFeed,
   removeFeed,
   selectFeed,
+  testFeed,
 } from "~/stores/feeds";
 export { ensureFeedIcon, forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
 export { start } from "~/stores/lifecycle";

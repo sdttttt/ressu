@@ -13,6 +13,7 @@ vi.mock("~/mygo", () => ({
     list: vi.fn(),
     icon: vi.fn(),
     add: vi.fn(),
+    test: vi.fn(),
     exportOPML: vi.fn(),
     importOPML: vi.fn(),
     remove: vi.fn(),
@@ -330,10 +331,10 @@ describe("addFeed", () => {
     const added = { ...feedB, id: 3, title: "C 站" };
     vi.mocked(mygo.Feeds.add).mockResolvedValue(added);
 
-    const ok = await app.addFeed("https://c.example/feed");
+    const ok = await app.addFeed("C 站", "https://c.example/feed");
 
     expect(ok).toBe(true);
-    expect(mygo.Feeds.add).toHaveBeenCalledWith("https://c.example/feed");
+    expect(mygo.Feeds.add).toHaveBeenCalledWith("C 站", "https://c.example/feed");
     expect(app.app.feeds.map((feed) => feed.id)).toContain(3);
     expect(app.app.current.feedId).toBe(3);
   });
@@ -343,10 +344,41 @@ describe("addFeed", () => {
     await app.start();
     vi.mocked(mygo.Feeds.add).mockRejectedValue(new Error("该订阅源已经存在"));
 
-    const ok = await app.addFeed("https://a.example/feed");
+    const ok = await app.addFeed("", "https://a.example/feed");
 
     expect(ok).toBe(false);
     expect(app.app.feeds).toHaveLength(2);
+  });
+});
+
+describe("testFeed", () => {
+  it("returns a parsed preview", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.test).mockResolvedValue({
+      title: "C 站",
+      siteUrl: "https://c.example/",
+      description: "",
+      iconUrl: "",
+      language: "",
+    });
+
+    const result = await app.testFeed("https://c.example/feed");
+
+    expect(result.error).toBe("");
+    expect(result.feed?.title).toBe("C 站");
+    expect(mygo.Feeds.test).toHaveBeenCalledWith("https://c.example/feed");
+  });
+
+  it("returns an inline error", async () => {
+    const { mygo, app } = await setup();
+    await app.start();
+    vi.mocked(mygo.Feeds.test).mockRejectedValue(new Error("测试失败"));
+
+    const result = await app.testFeed("https://c.example/feed");
+
+    expect(result.feed).toBeNull();
+    expect(result.error).toBe("测试失败");
   });
 });
 

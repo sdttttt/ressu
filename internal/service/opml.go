@@ -97,7 +97,7 @@ func opmlFeeds(feeds []store.Feed) []rss.OPMLFeed {
 func (f *Feeds) importOPMLURLs(ctx context.Context, urls []string) (ImportSummary, error) {
 	var summary ImportSummary
 	for _, feedURL := range urls {
-		if _, err := f.Add(ctx, feedURL); err != nil {
+		if _, err := f.Add(ctx, "", feedURL); err != nil {
 			if err == store.ErrDuplicate {
 				summary.Skipped++
 			} else {

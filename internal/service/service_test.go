@@ -69,7 +69,7 @@ func TestAddRefreshAndRead(t *testing.T) {
 	posts := NewPosts(st)
 
 	ctx := context.Background()
-	feed, err := feeds.Add(ctx, server.URL)
+	feed, err := feeds.Add(ctx, "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,14 +176,14 @@ func TestAddRejectsWhatIsNotAFeed(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(context.Background(), server.URL); err == nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL); err == nil {
 		t.Fatal("a page that is not a feed should be refused")
 	}
 	if len(st.Feeds()) != 0 {
 		t.Error("nothing should be stored")
 	}
 
-	if _, err := feeds.Add(context.Background(), "not a url"); err == nil {
+	if _, err := feeds.Add(context.Background(), "", "not a url"); err == nil {
 		t.Fatal("an invalid address should be refused")
 	}
 }
@@ -197,11 +197,58 @@ func TestAddRejectsDuplicates(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(context.Background(), server.URL); err != nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := feeds.Add(context.Background(), server.URL); err == nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL); err == nil {
 		t.Fatal("the same URL should not be added twice")
+	}
+}
+
+func TestFeedAndAddTitle(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, feedXML(itemXML("a", "第一篇")))
+	}))
+	defer server.Close()
+
+	st := openStore(t)
+	feeds := NewFeeds(st)
+	ctx := context.Background()
+
+	preview, err := feeds.Test(ctx, server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preview.Title != "测试源" || preview.SiteURL != "https://example.com/" {
+		t.Errorf("preview = %+v", preview)
+	}
+	if len(st.Feeds()) != 0 {
+		t.Fatal("testing should not subscribe to the feed")
+	}
+
+	feed, err := feeds.Add(ctx, "自定义名称", server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Title != "自定义名称" {
+		t.Errorf("custom title = %q", feed.Title)
+	}
+}
+
+func TestFeedRejectsDuplicates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, feedXML(itemXML("a", "第一篇")))
+	}))
+	defer server.Close()
+
+	st := openStore(t)
+	feeds := NewFeeds(st)
+
+	if _, err := feeds.Add(context.Background(), "", server.URL); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := feeds.Test(context.Background(), server.URL); err == nil {
+		t.Fatal("a duplicate feed should not pass testing")
 	}
 }
 
@@ -248,7 +295,7 @@ func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	feed, err := feeds.Add(context.Background(), server.URL)
+	feed, err := feeds.Add(context.Background(), "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

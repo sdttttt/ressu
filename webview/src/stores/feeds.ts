@@ -1,6 +1,6 @@
 import { toast } from "solid-sonner";
 
-import { Feeds } from "~/mygo";
+import { Feeds, type FeedPreview } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 import { forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
@@ -44,9 +44,9 @@ export async function refreshAll(): Promise<void> {
 }
 
 /** Subscribes to a feed. Returns whether it worked. */
-export async function addFeed(feedURL: string): Promise<boolean> {
+export async function addFeed(feedTitle: string, feedURL: string): Promise<boolean> {
   try {
-    const feed = await Feeds.add(feedURL.trim());
+    const feed = await Feeds.add(feedTitle.trim(), feedURL.trim());
     syncFeedIcons([], [feed]);
     setState("feeds", (feeds) => [...feeds.filter((item) => item.id !== feed.id), feed]);
     closeDialog("addFeed");
@@ -55,6 +55,17 @@ export async function addFeed(feedURL: string): Promise<boolean> {
   } catch (error) {
     toast.error(messageOf(error));
     return false;
+  }
+}
+
+/** Tests whether an address serves a subscribable feed. */
+export async function testFeed(
+  feedURL: string,
+): Promise<{ feed: FeedPreview | null; error: string }> {
+  try {
+    return { feed: await Feeds.test(feedURL.trim()), error: "" };
+  } catch (error) {
+    return { feed: null, error: messageOf(error) };
   }
 }
 

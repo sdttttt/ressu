@@ -48,7 +48,7 @@ func TestFeedsIconUsesAndReusesLocalCache(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	feeds := NewFeeds(openStore(t))
-	feed, err := feeds.Add(context.Background(), server.URL)
+	feed, err := feeds.Add(context.Background(), "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestFeedsIconInvalidatesAChangedSource(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	feeds := NewFeeds(openStore(t))
-	feed, err := feeds.Add(context.Background(), server.URL)
+	feed, err := feeds.Add(context.Background(), "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestFeedsIconExpiresAfterTTL(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	feeds := NewFeeds(openStore(t))
-	feed, err := feeds.Add(context.Background(), server.URL)
+	feed, err := feeds.Add(context.Background(), "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestFeedsIconSharesOneRequest(t *testing.T) {
 	}()
 
 	feeds := NewFeeds(openStore(t))
-	feed, err := feeds.Add(context.Background(), server.URL)
+	feed, err := feeds.Add(context.Background(), "", server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

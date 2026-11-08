@@ -222,7 +222,7 @@ bun install
   地址都返回 `ErrInvalidURL`。
 - `rss.Fetch` 发送 `User-Agent: Ressu/0.1 (+https://github.com/sdttttt/ressu)`、偏向订阅源的
   `Accept`，以及可用的 `If-None-Match`/`If-Modified-Since`。
-- 请求和读取 body 共享 30 秒超时；响应最多读取 16 MiB；非 200/304 状态直接报错。
+- 请求和读取 body 共享 15 秒超时；响应最多读取 16 MiB；非 200/304 状态直接报错。
 - `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
   链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。
 - 频道和文章里的相对链接会按订阅源地址解析为绝对地址。摘要会去掉 HTML、折叠空白并截断。

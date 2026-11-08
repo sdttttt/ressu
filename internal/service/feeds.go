@@ -28,6 +28,15 @@ type SyncSummary struct {
 	New     int `json:"new"`
 }
 
+// FeedPreview is the subscribable metadata of a fetched feed.
+type FeedPreview struct {
+	Title       string `json:"title"`
+	SiteURL     string `json:"siteUrl"`
+	Description string `json:"description"`
+	IconURL     string `json:"iconUrl"`
+	Language    string `json:"language"`
+}
+
 // Feeds is the subscription service the frontend calls.
 type Feeds struct {
 	store *store.Store
@@ -126,17 +135,49 @@ func iconFresh(icon store.Icon, feedIconURL string) bool {
 		(feedIconURL == "" || icon.Meta.SourceURL == feedIconURL)
 }
 
+// Test fetches and parses a feed without subscribing to it.
+func (f *Feeds) Test(ctx context.Context, feedURL string) (FeedPreview, error) {
+	feedURL = strings.TrimSpace(feedURL)
+	if err := rss.ValidateURL(feedURL); err != nil {
+		return FeedPreview{}, err
+	}
+	if f.duplicateFeed(feedURL) {
+		return FeedPreview{}, store.ErrDuplicate
+	}
+
+	result, err := rss.Fetch(ctx, feedURL, "", "")
+	if err != nil {
+		return FeedPreview{}, err
+	}
+
+	return FeedPreview{
+		Title:       titleOf(result.Feed, feedURL),
+		SiteURL:     result.Feed.Meta.SiteURL,
+		Description: result.Feed.Meta.Description,
+		IconURL:     result.Feed.Meta.IconURL,
+		Language:    result.Feed.Meta.Language,
+	}, nil
+}
+
+// duplicateFeed reports whether a feed is already stored by address.
+func (f *Feeds) duplicateFeed(feedURL string) bool {
+	for _, exist := range f.store.Feeds() {
+		if exist.URL == feedURL {
+			return true
+		}
+	}
+	return false
+}
+
 // Add subscribes to a feed: it fetches the address once, stores the channel
-// and its posts.
-func (f *Feeds) Add(ctx context.Context, feedURL string) (store.Feed, error) {
+// and its posts. A non-empty title replaces the feed's channel title.
+func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, error) {
 	feedURL = strings.TrimSpace(feedURL)
 	if err := rss.ValidateURL(feedURL); err != nil {
 		return store.Feed{}, err
 	}
-	for _, exist := range f.store.Feeds() {
-		if exist.URL == feedURL {
-			return store.Feed{}, store.ErrDuplicate
-		}
+	if f.duplicateFeed(feedURL) {
+		return store.Feed{}, store.ErrDuplicate
 	}
 
 	result, err := rss.Fetch(ctx, feedURL, "", "")
@@ -145,9 +186,10 @@ func (f *Feeds) Add(ctx context.Context, feedURL string) (store.Feed, error) {
 	}
 
 	now := time.Now()
+	title = strings.TrimSpace(title)
 	feed, err := f.store.AddFeed(store.Feed{
 		URL:           feedURL,
-		Title:         titleOf(result.Feed, feedURL),
+		Title:         firstNonEmpty(title, titleOf(result.Feed, feedURL)),
 		SiteURL:       result.Feed.Meta.SiteURL,
 		Description:   result.Feed.Meta.Description,
 		IconURL:       result.Feed.Meta.IconURL,

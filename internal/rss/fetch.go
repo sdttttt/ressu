@@ -14,7 +14,7 @@ import (
 const MaxBody = 16 << 20
 
 // Timeout bounds a request and the reading of its body.
-const Timeout = 30 * time.Second
+const Timeout = 15 * time.Second
 
 // UserAgent identifies the app to feed servers.
 const UserAgent = "Ressu/0.1 (+https://github.com/sdttttt/ressu)"
