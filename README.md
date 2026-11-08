@@ -1,24 +1,17 @@
 # Ressu
 
-一个简单易用，容易聚焦的 **RSS 阅读器**，使用 [MyGO](https://github.com/egoist/mygo) + solid.js 构建，基于Webview的显示效果。
-
-主要面向 Windows，其次是 macOS 与 Linux。
-
-[![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/ressu)
-
-<img width="1290" height="889" alt="图片" src="https://github.com/user-attachments/assets/145c2dda-8e9e-4435-b09d-0731d80d9464" />
+一个随处可见，普通，没有什么特点的 **RSS 阅读器**，使用 [MyGO](https://github.com/egoist/mygo) + solid.js 构建，基于Webview的显示效果。
 
 <img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
 
 ## 功能
 
-- 订阅源：添加（RSS / Atom / JSON Feed）、取消订阅、搜索、右键菜单（刷新、全部已读、取消订阅）、未读徽标
-- 导入 / 导出：从 OPML 批量导入订阅源，或在设置里导出全部订阅源（原生文件选择器）
-- 抓取：启动时刷新、手动刷新单个或全部（4 路并发），带 ETag 缓存与逐源错误提示
-- 阅读：三栏可拖拽布局、未读/星标筛选、打开即已读、标记未读、星标、正文 HTML 清洗后渲染
-- 分享：把当前文章生成完整长图，先在应用内预览，再保存为 PNG 或复制到剪贴板
-- 设置：跟随系统/浅色/深色主题、启动刷新、打开链接方式（系统浏览器或应用内窗口）、每源保留条数、数据目录
-- 界面：暗色模式、同步进度状态栏、Toast 提示、键盘可达的列表项
+- 支持添加（RSS / Atom / JSON Feed）
+- 从 OPML 批量导入订阅源，或在设置里导出
+- 没有固定的抓取间隔设置，无通知，只有在你想用的时候，回到前台会自动刷新
+- 三栏/二栏可拖拽布局
+- 支持文章生成完整长图，方便和群友分享
+- 跟随系统/浅色/深色主题
 
 ## 数据放在哪
 
