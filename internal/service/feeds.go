@@ -360,6 +360,7 @@ func toPosts(items []rss.Item) []store.Post {
 			Author:      item.Author,
 			Summary:     item.Summary,
 			Content:     item.Content,
+			WordCount:   item.WordCount,
 			PublishedAt: item.PublishedAt,
 		})
 	}

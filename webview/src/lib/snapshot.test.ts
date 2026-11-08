@@ -17,6 +17,7 @@ const post: Post = {
   url: "https://a.example/1",
   author: "作者",
   summary: "",
+  wordCount: 3,
   content: '<p>正文</p><img src="https://img.example/1.png">',
   publishedAt: "2026-01-02T00:00:00Z",
   fetchedAt: "2026-01-02T00:00:00Z",

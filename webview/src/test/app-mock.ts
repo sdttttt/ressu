@@ -10,6 +10,7 @@ export type MockPost = {
   url: string;
   author: string;
   summary: string;
+  wordCount: number;
   publishedAt: string;
   read: boolean;
   starred: boolean;
@@ -34,6 +35,7 @@ function make(guid: string): MockPost {
     url: `https://a.example/${guid}`,
     author: "",
     summary: "摘要",
+    wordCount: 3,
     publishedAt: "2026-01-01T00:00:00Z",
     read: false,
     starred: false,

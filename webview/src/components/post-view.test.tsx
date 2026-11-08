@@ -57,6 +57,8 @@ describe("PostView cover transition", () => {
     expect(layers(container)).toEqual(["enter"]);
     const layer = container.querySelector("[data-layer='enter']");
     expect(layer!.className).toContain("slide-in-from-bottom-6");
+    expect(container.textContent).toContain("约 1 分钟");
+    expect(container.textContent).toContain("3 字");
   });
 
   it("positions every layer absolutely so the article scroller is constrained", async () => {

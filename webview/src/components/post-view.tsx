@@ -10,7 +10,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
-import { formatDateTime } from "~/lib/format";
+import { formatDateTime, formatReadingTime, formatWordCount } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import type { Post } from "~/mygo";
 import {
@@ -223,6 +223,16 @@ function ArticleBody(props: { post: Post }) {
                 <>
                   <Separator orientation="vertical" class="h-3" />
                   <span>{author()}</span>
+                </>
+              )}
+            </Show>
+            <Show when={props.post.wordCount}>
+              {(count) => (
+                <>
+                  <Separator orientation="vertical" class="h-3" />
+                  <span>{formatReadingTime(count())}</span>
+                  <Separator orientation="vertical" class="h-3" />
+                  <span>{formatWordCount(count())}</span>
                 </>
               )}
             </Show>

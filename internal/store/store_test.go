@@ -148,6 +148,54 @@ func TestOpenSanitizesStoredPostHTML(t *testing.T) {
 	}
 }
 
+func TestOpenBackfillsPostWordCounts(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.MergePosts(feed.ID, []Post{{
+		GUID:        "counted",
+		Title:       "Counted",
+		Summary:     "摘要",
+		Content:     `<p>中文 two</p>`,
+		PublishedAt: base,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = s.db.Update(func(tx *bolt.Tx) error {
+		return put(tx.Bucket([]byte(settingsBucket)), []byte(schemaVersionKey), 3)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	posts, err := reopened.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 1 || posts[0].WordCount != 3 {
+		t.Fatalf("posts = %+v, word count = 3", posts)
+	}
+	summary := posts[0].ToSummary()
+	if summary.WordCount != 3 {
+		t.Errorf("summary word count = %d, want 3", summary.WordCount)
+	}
+}
+
 func TestMergePostsKeepsReadAndStarred(t *testing.T) {
 	s := openTemp(t)
 	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})

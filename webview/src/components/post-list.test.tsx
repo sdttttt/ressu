@@ -27,6 +27,7 @@ const fixtures = vi.hoisted(() => {
     url: "https://a.example/1",
     author: "作者甲",
     summary: "这是摘要",
+    wordCount: 250,
     publishedAt: "2026-01-02T00:00:00Z",
     read: false,
     starred: false,
@@ -37,6 +38,7 @@ const fixtures = vi.hoisted(() => {
     guid: "guid-2",
     title: "第二篇文章",
     summary: "",
+    wordCount: 0,
     publishedAt: "2025-06-01T00:00:00Z",
     read: true,
     starred: true,
@@ -84,6 +86,8 @@ describe("PostList", () => {
 
     expect(getByText("第一篇文章")).toBeTruthy();
     expect(getByText("这是摘要")).toBeTruthy();
+    expect(getByText("约 1 分钟 · 250 字")).toBeTruthy();
+    expect(() => getByText("约 1 分钟 · 0 字")).toThrow();
     expect(getByText(/2025/)).toBeTruthy();
     expect(getByText("A 站")).toBeTruthy();
   });

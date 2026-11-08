@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDateTime, formatPostDate, formatRelative, truncate } from "~/lib/format";
+import {
+  formatDateTime,
+  formatPostDate,
+  formatReadingTime,
+  formatWordCount,
+  formatRelative,
+  truncate,
+} from "~/lib/format";
 
 const now = new Date(2026, 4, 20, 15, 30, 0);
 
@@ -34,6 +41,28 @@ describe("formatDateTime", () => {
     const text = formatDateTime(value);
     expect(text).toContain("2026");
     expect(text).toMatch(/09:05|9:05/);
+  });
+});
+
+describe("formatWordCount", () => {
+  it("formats readable counts and hides empty ones", () => {
+    expect(formatWordCount(1234)).toBe("1,234 字");
+    expect(formatWordCount(0)).toBe("");
+  });
+});
+
+describe("formatReadingTime", () => {
+  it("estimates at least one minute", () => {
+    expect(formatReadingTime(1)).toBe("约 1 分钟");
+    expect(formatReadingTime(500)).toBe("约 2 分钟");
+  });
+
+  it("switches to hours for long posts", () => {
+    expect(formatReadingTime(30_000)).toBe("约 2 小时");
+  });
+
+  it("hides empty posts", () => {
+    expect(formatReadingTime(0)).toBe("");
   });
 });
 

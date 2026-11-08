@@ -17,7 +17,7 @@ import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { formatPostDate } from "~/lib/format";
+import { formatPostDate, formatReadingTime, formatWordCount } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import type { PostSummary } from "~/mygo";
 import {
@@ -215,6 +215,11 @@ function PostRow(props: { post: PostSummary }) {
           <span>{formatPostDate(props.post.publishedAt)}</span>
           <Show when={props.post.author}>
             <span class="max-w-32 truncate">{props.post.author}</span>
+          </Show>
+          <Show when={props.post.wordCount}>
+            <span class="min-w-0 truncate">
+              {formatReadingTime(props.post.wordCount)} · {formatWordCount(props.post.wordCount)}
+            </span>
           </Show>
         </div>
       </button>

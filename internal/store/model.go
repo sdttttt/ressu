@@ -43,6 +43,7 @@ type Post struct {
 	Author      string    `json:"author"`
 	Summary     string    `json:"summary"`
 	Content     string    `json:"content"`
+	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
 	FetchedAt   time.Time `json:"fetchedAt"`
 	Read        bool      `json:"read"`
@@ -58,6 +59,7 @@ func (p Post) ToSummary() PostSummary {
 		URL:         p.URL,
 		Author:      p.Author,
 		Summary:     p.Summary,
+		WordCount:   p.WordCount,
 		PublishedAt: p.PublishedAt,
 		Read:        p.Read,
 		Starred:     p.Starred,
@@ -72,6 +74,7 @@ type PostSummary struct {
 	URL         string    `json:"url"`
 	Author      string    `json:"author"`
 	Summary     string    `json:"summary"`
+	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
 	Read        bool      `json:"read"`
 	Starred     bool      `json:"starred"`

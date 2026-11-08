@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/sdttttt/ressu/internal/sanitize"
+	"github.com/sdttttt/ressu/internal/textmetrics"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -32,7 +33,44 @@ func migrate(tx *bolt.Tx) error {
 			return err
 		}
 	}
+	if version < 4 {
+		if err := backfillPostWordCounts(tx); err != nil {
+			return err
+		}
+	}
 	return put(settings, []byte(schemaVersionKey), currentSchemaVersion)
+}
+
+// backfillPostWordCounts counts the readable text of posts saved before the
+// metric was added.
+func backfillPostWordCounts(tx *bolt.Tx) error {
+	parent := tx.Bucket([]byte(postsBucket))
+	if parent == nil {
+		return nil
+	}
+	return parent.ForEach(func(key, value []byte) error {
+		if value != nil {
+			return nil
+		}
+		posts := parent.Bucket(key)
+		if posts == nil {
+			return nil
+		}
+		return posts.ForEach(func(key, value []byte) error {
+			if value == nil {
+				return nil
+			}
+			var post Post
+			if err := json.Unmarshal(value, &post); err != nil {
+				return err
+			}
+			post.WordCount = textmetrics.Count(post.Content)
+			if post.WordCount == 0 {
+				post.WordCount = textmetrics.Count(post.Summary)
+			}
+			return put(posts, key, post)
+		})
+	})
 }
 
 // sanitizeStoredPosts rewrites HTML saved before content was cleaned on parse.

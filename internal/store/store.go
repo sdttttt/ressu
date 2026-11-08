@@ -26,7 +26,7 @@ const (
 )
 
 // currentSchemaVersion marks the newest data layout and cleanup behavior.
-const currentSchemaVersion = 3
+const currentSchemaVersion = 4
 
 // maxIconBytes bounds the raw image kept in the local cache.
 const maxIconBytes = 256 << 10

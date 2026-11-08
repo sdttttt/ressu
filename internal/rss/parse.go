@@ -11,6 +11,7 @@ import (
 
 	"github.com/mmcdole/gofeed"
 	"github.com/sdttttt/ressu/internal/sanitize"
+	"github.com/sdttttt/ressu/internal/textmetrics"
 	"golang.org/x/net/html"
 )
 
@@ -31,6 +32,7 @@ type Item struct {
 	Author      string
 	Summary     string
 	Content     string
+	WordCount   int
 	PublishedAt time.Time
 }
 
@@ -95,6 +97,10 @@ func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
 			PublishedAt: published,
 		}
 		item.Content = sanitize.HTML(item.Content, item.URL)
+		item.WordCount = textmetrics.Count(item.Content)
+		if item.WordCount == 0 {
+			item.WordCount = textmetrics.Count(item.Summary)
+		}
 		if item.GUID == "" {
 			item.GUID = item.Title + "|" + item.PublishedAt.Format(time.RFC3339Nano)
 		}

@@ -71,6 +71,7 @@ const summary: PostSummary = {
   url: "https://a.example/1",
   author: "",
   summary: "摘要",
+  wordCount: 3,
   publishedAt: "2026-01-02T00:00:00Z",
   read: false,
   starred: false,
@@ -79,6 +80,7 @@ const summary: PostSummary = {
 const post: Post = {
   ...summary,
   content: "<p>正文</p>",
+  wordCount: 3,
   fetchedAt: "2026-01-02T00:00:00Z",
 };
 

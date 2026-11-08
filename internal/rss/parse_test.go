@@ -60,6 +60,9 @@ func TestParseRSS2(t *testing.T) {
 	if strings.Contains(first.Content, "<script") || strings.Contains(first.Content, "alert(1)") {
 		t.Errorf("content = %q", first.Content)
 	}
+	if first.WordCount != 2 {
+		t.Errorf("word count = %d, want 2", first.WordCount)
+	}
 	want := time.Date(2024, 10, 2, 12, 0, 0, 0, time.UTC)
 	if !first.PublishedAt.Equal(want) {
 		t.Errorf("published = %s, want %s", first.PublishedAt, want)
@@ -77,6 +80,9 @@ func TestParseRSS2(t *testing.T) {
 	}
 	if second.Summary != "Plain text & more" {
 		t.Errorf("summary = %q", second.Summary)
+	}
+	if second.WordCount != 3 {
+		t.Errorf("word count = %d, want 3", second.WordCount)
 	}
 }
 

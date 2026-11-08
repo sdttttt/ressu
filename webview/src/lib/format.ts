@@ -21,6 +21,8 @@ const dateTimeFormat = new Intl.DateTimeFormat("zh-CN", {
   hour12: false,
 });
 
+const numberFormat = new Intl.NumberFormat("zh-CN");
+
 function toDate(value: string): Date | null {
   if (!value) return null;
   const date = new Date(value);
@@ -46,6 +48,19 @@ export function formatPostDate(value: string, now: Date = new Date()): string {
 export function formatDateTime(value: string): string {
   const date = toDate(value);
   return date ? dateTimeFormat.format(date) : "";
+}
+
+/** Formats a post's reading units as its word count. */
+export function formatWordCount(count: number): string {
+  if (count <= 0) return "";
+  return `${numberFormat.format(count)} 字`;
+}
+
+/** Estimates a post's reading time from its word count. */
+export function formatReadingTime(count: number): string {
+  if (count <= 0) return "";
+  const minutes = Math.max(1, Math.ceil(count / 250));
+  return minutes < 60 ? `约 ${minutes} 分钟` : `约 ${Math.floor(minutes / 60)} 小时`;
 }
 
 /** Formats how long ago something happened, in words. */
