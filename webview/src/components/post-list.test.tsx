@@ -87,7 +87,7 @@ describe("PostList", () => {
     expect(getByText("第一篇文章")).toBeTruthy();
     expect(getByText("这是摘要")).toBeTruthy();
     expect(getByText("约 1 分钟 · 250 字")).toBeTruthy();
-    expect(() => getByText("约 1 分钟 · 0 字")).toThrow();
+    expect(() => getByText("约 1 分钟 · 0 字")).toThrow("Unable to find an element with the text");
     expect(getByText(/2025/)).toBeTruthy();
     expect(getByText("A 站")).toBeTruthy();
   });

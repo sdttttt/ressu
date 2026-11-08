@@ -18,32 +18,11 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
 } from "~/components/ui/number-field";
-import {
-  RadioGroup,
-  RadioGroupItem,
-  RadioGroupItemLabel,
-} from "~/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem, RadioGroupItemLabel } from "~/components/ui/radio-group";
 import { Separator } from "~/components/ui/separator";
-import {
-  Slider,
-  SliderFill,
-  SliderThumb,
-  SliderTrack,
-} from "~/components/ui/slider";
-import {
-  Switch,
-  SwitchControl,
-  SwitchLabel,
-  SwitchThumb,
-} from "~/components/ui/switch";
-import {
-  app,
-  closeDialog,
-  exportOPML,
-  openDataDir,
-  openDialog,
-  updatePrefs,
-} from "~/stores/app";
+import { Slider, SliderFill, SliderThumb, SliderTrack } from "~/components/ui/slider";
+import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "~/components/ui/switch";
+import { app, closeDialog, exportOPML, openDataDir, openDialog, updatePrefs } from "~/stores/app";
 
 const themes = [
   { value: "system", label: "跟随系统" },
@@ -66,8 +45,7 @@ const fontSizeIndex = () =>
 
 function changeFontSize([index]: number[]): void {
   const size = fontSizes[index];
-  if (size && size.value !== app.prefs.fontSize)
-    void updatePrefs({ fontSize: size.value });
+  if (size && size.value !== app.prefs.fontSize) void updatePrefs({ fontSize: size.value });
 }
 
 const linkTargets = [
@@ -84,9 +62,7 @@ export default function SettingsDialog() {
   return (
     <Dialog
       open={app.dialog.settings}
-      onOpenChange={(open) =>
-        open ? openDialog("settings") : closeDialog("settings")
-      }
+      onOpenChange={(open) => (open ? openDialog("settings") : closeDialog("settings"))}
     >
       <DialogContent class="max-w-lg">
         <DialogHeader>
@@ -98,15 +74,11 @@ export default function SettingsDialog() {
         </DialogHeader>
 
         <section class="space-y-2">
-          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">
-            外观
-          </h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">外观</h3>
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-4">
               <Label class="text-sm font-normal">界面字体大小</Label>
-              <span class="text-xs text-muted-foreground">
-                {fontSizes[fontSizeIndex()]?.label}
-              </span>
+              <span class="text-xs text-muted-foreground">{fontSizes[fontSizeIndex()]?.label}</span>
             </div>
             <Slider
               value={[fontSizeIndex()]}
@@ -122,9 +94,7 @@ export default function SettingsDialog() {
               </SliderTrack>
               <SliderThumb class="top-[-7px]" />
               <div class="flex w-full justify-between text-xs text-muted-foreground">
-                <For each={fontSizes}>
-                  {(size) => <span>{size.label}</span>}
-                </For>
+                <For each={fontSizes}>{(size) => <span>{size.label}</span>}</For>
               </div>
             </Slider>
           </div>
@@ -141,9 +111,7 @@ export default function SettingsDialog() {
               <For each={themes}>
                 {(theme) => (
                   <RadioGroupItem value={theme.value} class="gap-2">
-                    <RadioGroupItemLabel class="font-normal">
-                      {theme.label}
-                    </RadioGroupItemLabel>
+                    <RadioGroupItemLabel class="font-normal">{theme.label}</RadioGroupItemLabel>
                   </RadioGroupItem>
                 )}
               </For>
@@ -154,20 +122,14 @@ export default function SettingsDialog() {
         <Separator />
 
         <section class="space-y-3">
-          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">
-            阅读
-          </h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">阅读</h3>
 
           <Switch
             class="flex items-center justify-between gap-4"
             checked={app.prefs.markReadOnOpen}
-            onChange={(checked) =>
-              void updatePrefs({ markReadOnOpen: checked })
-            }
+            onChange={(checked) => void updatePrefs({ markReadOnOpen: checked })}
           >
-            <SwitchLabel class="text-sm font-normal">
-              打开文章时标记为已读
-            </SwitchLabel>
+            <SwitchLabel class="text-sm font-normal">打开文章时标记为已读</SwitchLabel>
             <SwitchControl>
               <SwitchThumb />
             </SwitchControl>
@@ -176,13 +138,9 @@ export default function SettingsDialog() {
           <Switch
             class="flex items-center justify-between gap-4"
             checked={app.prefs.refreshOnStart}
-            onChange={(checked) =>
-              void updatePrefs({ refreshOnStart: checked })
-            }
+            onChange={(checked) => void updatePrefs({ refreshOnStart: checked })}
           >
-            <SwitchLabel class="text-sm font-normal">
-              启动时刷新全部订阅源
-            </SwitchLabel>
+            <SwitchLabel class="text-sm font-normal">启动时刷新全部订阅源</SwitchLabel>
             <SwitchControl>
               <SwitchThumb />
             </SwitchControl>
@@ -194,8 +152,7 @@ export default function SettingsDialog() {
             maxValue={2000}
             step={50}
             onRawValueChange={(value) => {
-              if (value !== app.prefs.postsPerFeed)
-                void updatePrefs({ postsPerFeed: value });
+              if (value !== app.prefs.postsPerFeed) void updatePrefs({ postsPerFeed: value });
             }}
           >
             <div class="flex items-center justify-between gap-4">
@@ -214,50 +171,36 @@ export default function SettingsDialog() {
         <Separator />
 
         <section class="space-y-2">
-          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">
-            远程资源访问
-          </h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">远程资源访问</h3>
           <RadioGroup
             value={app.prefs.remoteResources}
-            onChange={(access) =>
-              access && void updatePrefs({ remoteResources: access })
-            }
+            onChange={(access) => access && void updatePrefs({ remoteResources: access })}
             class="gap-2"
           >
             <For each={remoteResources}>
               {(resource) => (
                 <RadioGroupItem value={resource.value} class="gap-2">
-                  <RadioGroupItemLabel class="font-normal">
-                    {resource.label}
-                  </RadioGroupItemLabel>
+                  <RadioGroupItemLabel class="font-normal">{resource.label}</RadioGroupItemLabel>
                 </RadioGroupItem>
               )}
             </For>
           </RadioGroup>
-          <p class="text-xs text-muted-foreground">
-            Go代理能缓解部分访问外部资源限制问题
-          </p>
+          <p class="text-xs text-muted-foreground">Go代理能缓解部分访问外部资源限制问题</p>
         </section>
 
         <Separator />
 
         <section class="space-y-2">
-          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">
-            链接
-          </h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">链接</h3>
           <RadioGroup
             value={app.prefs.openLinks}
-            onChange={(openLinks) =>
-              openLinks && void updatePrefs({ openLinks })
-            }
+            onChange={(openLinks) => openLinks && void updatePrefs({ openLinks })}
             class="gap-2"
           >
             <For each={linkTargets}>
               {(target) => (
                 <RadioGroupItem value={target.value} class="gap-2">
-                  <RadioGroupItemLabel class="font-normal">
-                    {target.label}
-                  </RadioGroupItemLabel>
+                  <RadioGroupItemLabel class="font-normal">{target.label}</RadioGroupItemLabel>
                 </RadioGroupItem>
               )}
             </For>
@@ -267,9 +210,7 @@ export default function SettingsDialog() {
         <Separator />
 
         <section class="space-y-2">
-          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">
-            数据
-          </h3>
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">数据</h3>
           <div class="flex items-center justify-between gap-4">
             <Label class="text-sm font-normal">订阅源备份</Label>
             <Button
@@ -281,9 +222,7 @@ export default function SettingsDialog() {
               导出 OPML
             </Button>
           </div>
-          <Label class="text-xs font-normal text-muted-foreground">
-            数据目录
-          </Label>
+          <Label class="text-xs font-normal text-muted-foreground">数据目录</Label>
           <div class="flex items-start gap-2">
             <code class="min-w-0 flex-1 rounded-md bg-muted px-2 py-1.5 text-[0.6875rem] break-all">
               {app.dataDir || "…"}
