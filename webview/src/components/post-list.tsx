@@ -45,7 +45,7 @@ export default function PostList() {
 
   return (
     <section class="flex h-full min-h-0 flex-col bg-background">
-      <Show when={currentFeed()?.title ?? "所有"}>
+      <Show when={currentFeed()?.title ?? "聚合源"}>
         {(aggregateTitle) => (
           <>
             <header class="border-b px-3 py-2">
