@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/egoist/mygo"
@@ -30,6 +31,7 @@ func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
 		},
 	})
 	if err != nil {
+		slog.Warn("OPML picker failed", "operation", "feeds.importOPML", "error", err)
 		return ImportSummary{}, err
 	}
 	if len(paths) == 0 {
@@ -38,12 +40,14 @@ func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
 
 	file, err := os.Open(paths[0])
 	if err != nil {
+		slog.Error("OPML open failed", "operation", "feeds.importOPML", "error", err)
 		return ImportSummary{}, err
 	}
 	defer file.Close()
 
 	urls, err := rss.ReadOPML(file)
 	if err != nil {
+		slog.Warn("OPML parse failed", "operation", "feeds.importOPML", "error", err)
 		return ImportSummary{}, err
 	}
 
@@ -55,6 +59,7 @@ func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
 func (f *Feeds) ExportOPML(ctx context.Context) (string, error) {
 	data, err := rss.ExportOPML(opmlFeeds(f.store.Feeds()))
 	if err != nil {
+		slog.Error("OPML encode failed", "operation", "feeds.exportOPML", "error", err)
 		return "", err
 	}
 
@@ -67,12 +72,14 @@ func (f *Feeds) ExportOPML(ctx context.Context) (string, error) {
 		},
 	})
 	if err != nil {
+		slog.Warn("OPML save picker failed", "operation", "feeds.exportOPML", "error", err)
 		return "", err
 	}
 	if path == "" {
 		return "", nil
 	}
 	if err := os.WriteFile(path, data, 0o600); err != nil {
+		slog.Error("OPML write failed", "operation", "feeds.exportOPML", "error", err)
 		return "", fmt.Errorf("could not save the OPML file: %w", err)
 	}
 	return path, nil

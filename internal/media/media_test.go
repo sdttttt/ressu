@@ -126,9 +126,9 @@ func TestGetServesStaleImageAfterFailure(t *testing.T) {
 	cache.mu.Unlock()
 	cache.client = &http.Client{Transport: failingTransport{}}
 
-	fresh, ok := cache.get(context.Background(), key)
-	if !ok || fresh.Size != entry.Size || fresh.FailedAt.IsZero() {
-		t.Fatalf("get = %+v, ok = %t; want stale bytes and a failed refresh", fresh, ok)
+	fresh, err := cache.get(context.Background(), key)
+	if err == nil || fresh.Size != entry.Size || fresh.FailedAt.IsZero() {
+		t.Fatalf("get = %+v, err = %v; want stale bytes and a failed refresh", fresh, err)
 	}
 	if _, err := os.Stat(cache.dataFile(key)); err != nil {
 		t.Fatalf("stale data was removed: %v", err)

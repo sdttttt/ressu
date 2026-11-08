@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
+	"log/slog"
 	"math"
 	"os"
 	"strings"
@@ -54,14 +55,28 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request SnapshotCaptureRequ
 	}
 	window := mygo.CallerWindow(ctx)
 	if window == nil || window.IsDestroyed() {
-		return nil, fmt.Errorf("the snapshot window is no longer available")
+		err := fmt.Errorf("the snapshot window is no longer available")
+		slog.Warn("snapshot window unavailable", "operation", "posts.captureSnapshot", "error", err)
+		return nil, err
 	}
-	return window.CapturePage()
+	data, err := window.CapturePage()
+	if err != nil {
+		slog.Warn("snapshot capture failed",
+			"operation", "posts.captureSnapshot",
+			"error", err,
+		)
+		return nil, err
+	}
+	return data, nil
 }
 
 // StitchSnapshot joins visible-page captures into one complete PNG.
 func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byte, error) {
-	return stitchSnapshot(tiles, geometryOf(tiles))
+	data, err := stitchSnapshot(tiles, geometryOf(tiles))
+	if err != nil {
+		slog.Warn("snapshot stitch failed", "operation", "posts.stitchSnapshot", "error", err)
+	}
+	return data, err
 }
 
 // SaveSnapshot shows a save dialog and writes a stitched snapshot to the
@@ -78,12 +93,14 @@ func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) 
 		Filters:     []mygo.FileFilter{{Name: "PNG 图片", Extensions: []string{"png"}}},
 	})
 	if err != nil {
+		slog.Warn("snapshot save picker failed", "operation", "posts.saveSnapshot", "error", err)
 		return "", err
 	}
 	if path == "" {
 		return "", nil
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
+		slog.Error("snapshot write failed", "operation", "posts.saveSnapshot", "error", err)
 		return "", fmt.Errorf("could not save the snapshot: %w", err)
 	}
 	return path, nil
@@ -92,9 +109,14 @@ func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) 
 // CopySnapshot puts a stitched snapshot on the clipboard.
 func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
 	if err := validateSnapshotImage(data); err != nil {
+		slog.Warn("invalid snapshot image", "operation", "posts.copySnapshot", "error", err)
 		return err
 	}
-	return mygo.Clipboard.WriteImage(data)
+	if err := mygo.Clipboard.WriteImage(data); err != nil {
+		slog.Warn("snapshot copy failed", "operation", "posts.copySnapshot", "error", err)
+		return err
+	}
+	return nil
 }
 
 // validate rejects captures whose page geometry cannot be trusted.

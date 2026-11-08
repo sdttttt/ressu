@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -83,6 +84,7 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 		posts, err = p.store.Posts(query.FeedID)
 	}
 	if err != nil {
+		slog.Warn("post list failed", "operation", "posts.list", "error", err)
 		return PostPage{}, err
 	}
 
@@ -127,6 +129,8 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 	post, err := p.store.Post(feedID, guid)
 	if err != nil {
+		slog.Warn("post lookup failed",
+			"operation", "posts.get", "feedId", feedID, "error", err)
 		return store.Post{}, err
 	}
 	if p.media != nil && p.store.Prefs().RemoteResources == store.ResourceAccessGoProxy {
@@ -138,6 +142,8 @@ func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 // MarkRead marks a post read or unread.
 func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
 	if _, err := p.store.UpdatePost(feedID, guid, func(post *store.Post) { post.Read = read }); err != nil {
+		slog.Warn("post read state update failed",
+			"operation", "posts.markRead", "feedId", feedID, "error", err)
 		return err
 	}
 	broadcastFeeds(p.store)
@@ -152,6 +158,8 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 		for _, feed := range p.store.Feeds() {
 			feedChanged, err := p.store.MarkAllRead(feed.ID)
 			if err != nil {
+				slog.Error("all posts read update failed",
+					"operation", "posts.markAllRead", "feedId", feed.ID, "error", err)
 				return changed, err
 			}
 			changed += feedChanged
@@ -164,6 +172,8 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 
 	changed, err := p.store.MarkAllRead(feedID)
 	if err != nil {
+		slog.Warn("all posts read update failed",
+			"operation", "posts.markAllRead", "feedId", feedID, "error", err)
 		return 0, err
 	}
 	if changed > 0 {
@@ -176,6 +186,8 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error) {
 	post, err := p.store.UpdatePost(feedID, guid, func(post *store.Post) { post.Starred = !post.Starred })
 	if err != nil {
+		slog.Warn("post star update failed",
+			"operation", "posts.toggleStar", "feedId", feedID, "error", err)
 		return store.PostSummary{}, err
 	}
 	return post.ToSummary(), nil

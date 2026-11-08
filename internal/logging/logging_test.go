@@ -1,0 +1,94 @@
+package logging
+
+import (
+	"bytes"
+	"encoding/json"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestOpenWritesStructuredErrors(t *testing.T) {
+	file, err := Open(t.TempDir(), Options{MaxBytes: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	file.Logger().Error("operation failed", "operation", "refresh", "feedId", int64(7))
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(file.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entry map[string]any
+	if err := json.Unmarshal(data, &entry); err != nil {
+		t.Fatalf("log entry is not JSON: %v", err)
+	}
+	if entry["level"] != "ERROR" || entry["msg"] != "operation failed" ||
+		entry["operation"] != "refresh" || entry["feedId"] != float64(7) {
+		t.Fatalf("unexpected log entry: %#v", entry)
+	}
+	if info, err := os.Stat(file.Path()); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("file mode = %v, err = %v; want 0600", info.Mode(), err)
+	}
+}
+
+func TestOpenFiltersBelowLevel(t *testing.T) {
+	file, err := Open(t.TempDir(), Options{
+		MaxBytes: -1,
+		Level:    slog.LevelWarn,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	file.Logger().Info("not diagnostic")
+	file.Logger().Warn("diagnostic")
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(file.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if text := string(data); strings.Contains(text, "not diagnostic") ||
+		!strings.Contains(text, "diagnostic") {
+		t.Fatalf("unexpected filtered log: %s", text)
+	}
+}
+
+func TestOpenRotatesWhenFull(t *testing.T) {
+	dir := t.TempDir()
+	file, err := Open(dir, Options{MaxBytes: 32})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.Logger().Warn(strings.Repeat("first", 10))
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	file, err = Open(dir, Options{MaxBytes: 32})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	file.Logger().Warn(strings.Repeat("second", 10))
+
+	backup, err := os.ReadFile(filepath.Join(dir, rotatedFileName))
+	if err != nil || !bytes.Contains(backup, []byte("first")) {
+		t.Fatalf("rotated log = %q, err = %v", backup, err)
+	}
+	active, err := os.ReadFile(file.Path())
+	if err != nil || !bytes.Contains(active, []byte("second")) {
+		t.Fatalf("active log = %q, err = %v", active, err)
+	}
+}

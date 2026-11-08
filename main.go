@@ -6,13 +6,15 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/egoist/mygo"
 
+	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/service"
 	"github.com/sdttttt/ressu/internal/store"
@@ -21,35 +23,48 @@ import (
 func main() {
 	app := mygo.App
 	app.SetName("Ressu")
-
 	dir, err := app.Path(mygo.PathUserData)
 	if err != nil {
-		log.Fatal(err)
+		fatal("user data path failed", err)
+	}
+	logFile, err := logging.Open(dir, logging.Options{})
+	if err != nil {
+		slog.Warn("log file disabled", "operation", "logging.open", "error", err)
+		logFile = nil
+	} else {
+		defer logFile.Close()
+		slog.SetDefault(logFile.Logger())
 	}
 	cacheDir, err := app.Path(mygo.PathCache)
 	if err != nil {
-		log.Fatal(err)
+		fatal("cache path failed", err)
 	}
 	st, err := store.Open(dir)
 	if err != nil {
-		log.Fatal(err)
+		fatal("database open failed", err)
 	}
 	defer st.Close()
+	slog.Info("application starting", "operation", "app.start")
 
 	articleMedia, err := media.Open(filepath.Join(cacheDir, "articles"))
 	if err != nil {
-		log.Fatal(err)
+		fatal("article media cache open failed", err)
 	}
 	defer articleMedia.Close()
 	if err := mygo.Protocol.Handle(media.Scheme, articleMedia.Handler()); err != nil {
-		log.Fatal(err)
+		fatal("media protocol registration failed", err)
 	}
 
 	feeds := service.NewFeeds(st)
-	mygo.Bind(feeds, service.NewPostsWithMedia(st, articleMedia), service.NewSettings(st))
+	mygo.Bind(
+		feeds,
+		service.NewPostsWithMedia(st, articleMedia),
+		service.NewSettings(st),
+	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
 		if _, err := feeds.RefreshAll(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
-			log.Printf("refresh on foreground: %v", err)
+			slog.Warn("refresh on foreground failed",
+				"operation", "app.foregroundRefresh", "error", err)
 		}
 	})
 	app.OnDidResignActive(foreground.ResignActive)
@@ -65,15 +80,23 @@ func main() {
 			}
 			go func() {
 				if _, err := feeds.RefreshAll(context.Background()); err != nil {
-					log.Printf("refresh on start: %v", err)
+					slog.Warn("refresh on start failed",
+						"operation", "app.startRefresh", "error", err)
 				}
 			}()
 		}, foreground, app.IsActive)
 	})
 
 	if err := app.Run(); err != nil {
-		log.Fatal(err)
+		fatal("application run failed", err)
 	}
+	slog.Info("application stopped", "operation", "app.stop")
+}
+
+// fatal records a startup error and exits before the application becomes usable.
+func fatal(message string, err error) {
+	slog.Error(message, "operation", "app.startup", "error", err)
+	os.Exit(1)
 }
 
 // openWindow creates the main window hidden and shows it once the page has

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,6 +39,7 @@ const (
 	dataPath    = "data"
 	dataSuffix  = ".bin"
 	maxRedirect = 4
+	maxFailures = 10000
 )
 
 // Entry describes one cached image. A nil size marks a prepared, but not yet
@@ -63,7 +65,13 @@ type Cache struct {
 	entries  map[string]Entry
 	total    int64
 	inFlight map[string]*fetchRequest
+
+	failureMu    sync.Mutex
+	failureTimes map[string]time.Time
 }
+
+// errCacheMiss reports that a local protocol key has no prepared mapping.
+var errCacheMiss = errors.New("image cache miss")
 
 type fetchRequest struct {
 	done chan struct{}
@@ -77,10 +85,11 @@ func Open(dir string) (*Cache, error) {
 		return nil, err
 	}
 	cache := &Cache{
-		dir:      dir,
-		client:   newClient(),
-		entries:  make(map[string]Entry),
-		inFlight: make(map[string]*fetchRequest),
+		dir:          dir,
+		client:       newClient(),
+		entries:      make(map[string]Entry),
+		inFlight:     make(map[string]*fetchRequest),
+		failureTimes: make(map[string]time.Time),
 	}
 	for _, name := range []string{dir, filepath.Join(dir, indexPath), filepath.Join(dir, dataPath)} {
 		if err := os.MkdirAll(name, 0o700); err != nil {
@@ -169,33 +178,71 @@ func (c *Cache) load() error {
 
 // ServeHTTP answers local image requests from rewritten article HTML.
 func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	started := time.Now()
+	status := c.serveHTTP(writer, request, started)
+	reported := status < http.StatusServiceUnavailable
+	if status >= http.StatusBadRequest && !reported {
+		reported = c.reportFailure(strings.TrimPrefix(request.URL.Path, "/i/"), started)
+	}
+	if status >= http.StatusBadRequest && reported && request.Context().Err() == nil {
+		level := slog.LevelDebug
+		message := "media protocol request rejected"
+		if status == http.StatusServiceUnavailable {
+			level = slog.LevelWarn
+			message = "media image unavailable"
+		}
+		slog.Log(request.Context(), level, message,
+			"operation", "media.serveHTTP",
+			"cacheKey", strings.TrimPrefix(request.URL.Path, "/i/"),
+			"status", status,
+			"elapsedMs", time.Since(started).Milliseconds(),
+		)
+	}
+}
+
+// serveHTTP answers one media request and reports the response status.
+func (c *Cache) serveHTTP(
+	writer http.ResponseWriter,
+	request *http.Request,
+	started time.Time,
+) int {
 	if request.Method != http.MethodGet && request.Method != http.MethodHead ||
 		!strings.EqualFold(request.URL.Host, "localhost") {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return
+		return http.StatusNotFound
 	}
 
 	prefix := "/i/"
 	if !strings.HasPrefix(request.URL.Path, prefix) {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return
+		return http.StatusNotFound
 	}
 	key := strings.TrimPrefix(request.URL.Path, prefix)
 	if !validKey(key) {
 		http.Error(writer, "not found", http.StatusNotFound)
-		return
+		return http.StatusNotFound
 	}
 
-	entry, ok := c.get(request.Context(), key)
-	if !ok {
-		http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
-		return
+	entry, err := c.get(request.Context(), key)
+	if err != nil {
+		if entry.Size > 0 {
+			if request.Context().Err() == nil && c.reportFailure(key, started) {
+				slog.Warn("stale image served after refresh failure",
+					"operation", "media.serveHTTP",
+					"cacheKey", key,
+					"error", err,
+				)
+			}
+		} else {
+			http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
+			return http.StatusServiceUnavailable
+		}
 	}
 
 	file, err := os.Open(c.dataFile(key))
 	if err != nil {
 		http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
-		return
+		return http.StatusServiceUnavailable
 	}
 	defer file.Close()
 
@@ -203,30 +250,52 @@ func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Cache-Control", "private, max-age=300")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeContent(writer, request, "", entry.FetchedAt, file)
+	return http.StatusOK
+}
+
+// reportFailure keeps repeated failures for the same image from filling the
+// local diagnostic log.
+func (c *Cache) reportFailure(key string, failedAt time.Time) bool {
+	c.failureMu.Lock()
+	defer c.failureMu.Unlock()
+
+	if last, ok := c.failureTimes[key]; ok && failedAt.Sub(last) < time.Minute {
+		return false
+	}
+	if len(c.failureTimes) >= maxFailures {
+		return false
+	}
+	c.failureTimes[key] = failedAt
+	return true
 }
 
 // get returns a fresh cached image, revalidates a stale one, downloads a
-// prepared one, or reports a fresh failure.
-func (c *Cache) get(ctx context.Context, key string) (Entry, bool) {
+// prepared one, or reports why no usable bytes are available. A stale image is
+// returned together with the refresh error.
+func (c *Cache) get(ctx context.Context, key string) (Entry, error) {
 	return c.getOnce(ctx, key, 0)
 }
 
-func (c *Cache) getOnce(ctx context.Context, key string, depth int) (Entry, bool) {
+func (c *Cache) getOnce(ctx context.Context, key string, depth int) (Entry, error) {
 	if depth > maxRedirect {
-		return Entry{}, false
+		return Entry{}, errors.New("too many image cache redirects")
 	}
 
 	c.mu.Lock()
 	entry, ok := c.entries[key]
-	if ok && c.imageFresh(entry) {
+	if !ok {
+		c.mu.Unlock()
+		return Entry{}, errCacheMiss
+	}
+	if c.imageFresh(entry) {
 		entry.LastAttempt = time.Now()
 		c.entries[key] = entry
 		c.mu.Unlock()
-		return entry, true
+		return entry, nil
 	}
-	if ok && imageNegative(entry) && entry.Size == 0 {
+	if imageNegative(entry) && entry.Size == 0 {
 		c.mu.Unlock()
-		return Entry{}, false
+		return Entry{}, errors.New("the image recently failed to download")
 	}
 	if existing, waiting := c.inFlight[key]; waiting {
 		c.mu.Unlock()
@@ -245,16 +314,16 @@ func (c *Cache) getOnce(ctx context.Context, key string, depth int) (Entry, bool
 		c.mu.Unlock()
 		entry.FailedAt = time.Now()
 		entry.LastAttempt = entry.FailedAt
-		return entry, true
+		return entry, err
 	}
 	c.mu.Lock()
 	delete(c.inFlight, key)
 	close(current.done)
 	c.mu.Unlock()
 	if err != nil {
-		return Entry{}, false
+		return Entry{}, err
 	}
-	return fetched, true
+	return fetched, nil
 }
 
 // imageFresh reports whether usable image bytes are still current enough.
@@ -418,6 +487,8 @@ func (c *Cache) prepare(key, sourceURL string) bool {
 	entry := Entry{Key: key, SourceURL: sourceURL}
 	c.mu.Unlock()
 	if err := saveEntry(c.dir, entry); err != nil {
+		slog.Warn("image mapping save failed",
+			"operation", "media.prepare", "cacheKey", key, "error", err)
 		return false
 	}
 	c.mu.Lock()

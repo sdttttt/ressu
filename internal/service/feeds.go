@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -78,6 +80,8 @@ func (f *Feeds) Icon(ctx context.Context, id int64) (store.Icon, error) {
 
 	feed, err := f.store.Feed(id)
 	if err != nil {
+		slog.Warn("icon feed lookup failed",
+			"operation", "feeds.icon", "feedId", id, "error", err)
 		return store.Icon{}, err
 	}
 	cached, err := f.store.Icon(id)
@@ -107,7 +111,12 @@ func (f *Feeds) fetchIcon(ctx context.Context, feed store.Feed) (store.Icon, err
 		SiteURL: feed.SiteURL,
 		IconURL: feed.IconURL,
 	})
-	if err == nil {
+	if err != nil {
+		if ctx.Err() == nil {
+			slog.Warn("icon fetch failed",
+				"operation", "feeds.icon", "feedId", feed.ID, "error", err)
+		}
+	} else {
 		request.icon = store.Icon{
 			Meta: store.IconMeta{
 				SourceURL:   image.SourceURL,
@@ -116,7 +125,10 @@ func (f *Feeds) fetchIcon(ctx context.Context, feed store.Feed) (store.Icon, err
 			},
 			Data: image.Data,
 		}
-		err = f.store.PutIcon(feed.ID, request.icon)
+		if err = f.store.PutIcon(feed.ID, request.icon); err != nil {
+			slog.Error("icon cache write failed",
+				"operation", "feeds.icon", "feedId", feed.ID, "error", err)
+		}
 	}
 	request.err = err
 
@@ -147,6 +159,11 @@ func (f *Feeds) Test(ctx context.Context, feedURL string) (FeedPreview, error) {
 
 	result, err := rss.Fetch(ctx, feedURL, "", "")
 	if err != nil {
+		slog.Warn("feed test failed",
+			"operation", "feeds.test",
+			"feedHost", feedHost(feedURL),
+			"error", redactedFeedError(feedURL, err),
+		)
 		return FeedPreview{}, err
 	}
 
@@ -182,6 +199,9 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 
 	result, err := rss.Fetch(ctx, feedURL, "", "")
 	if err != nil {
+		slog.Warn("feed add failed",
+			"operation", "feeds.add", "feedHost", feedHost(feedURL),
+			"error", redactedFeedError(feedURL, err))
 		return store.Feed{}, err
 	}
 
@@ -199,11 +219,15 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 		LastFetchedAt: &now,
 	})
 	if err != nil {
+		slog.Error("feed add save failed",
+			"operation", "feeds.add", "error", err)
 		return store.Feed{}, err
 	}
 
 	added, err := f.store.MergePosts(feed.ID, toPosts(result.Feed.Items))
 	if err != nil {
+		slog.Error("stored feed posts failed",
+			"operation", "feeds.add", "feedId", feed.ID, "error", err)
 		return store.Feed{}, err
 	}
 
@@ -215,6 +239,8 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 // Remove unsubscribes from a feed and deletes its posts.
 func (f *Feeds) Remove(id int64) error {
 	if err := f.store.RemoveFeed(id); err != nil {
+		slog.Warn("feed remove failed",
+			"operation", "feeds.remove", "feedId", id, "error", err)
 		return err
 	}
 	broadcastFeeds(f.store)
@@ -240,14 +266,18 @@ func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 	}
 	f.refreshing = true
 	f.mu.Unlock()
+	feeds := f.store.Feeds()
+	total := len(feeds)
+	slog.Info("refresh all started",
+		"operation", "feeds.refreshAll",
+		"total", total,
+	)
 	defer func() {
 		f.mu.Lock()
 		f.refreshing = false
 		f.mu.Unlock()
 	}()
 
-	feeds := f.store.Feeds()
-	total := len(feeds)
 	_ = SyncStateEvent.Broadcast(SyncState{Active: total > 0, Total: total})
 	if total == 0 {
 		return SyncSummary{}, nil
@@ -289,6 +319,12 @@ func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 
 	wg.Wait()
 	_ = SyncStateEvent.Broadcast(SyncState{Total: total, Done: total})
+	slog.Info("refresh all finished",
+		"operation", "feeds.refreshAll",
+		"updated", summary.Updated,
+		"failed", summary.Failed,
+		"new", summary.New,
+	)
 	return summary, nil
 }
 
@@ -298,6 +334,8 @@ func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	feed, err := f.store.Feed(id)
 	if err != nil {
+		slog.Warn("feed lookup failed",
+			"operation", "feeds.refresh", "feedId", id, "error", err)
 		return 0, err
 	}
 
@@ -311,14 +349,25 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	if err != nil {
 		feed.LastError = err.Error()
 		if updateErr := f.store.UpdateFeed(feed); updateErr != nil {
+			slog.Error("feed failure state update failed",
+				"operation", "feeds.refresh", "feedId", feed.ID, "error", updateErr)
 			return 0, updateErr
 		}
 		broadcastFeeds(f.store)
+		slog.Warn("feed refresh failed",
+			"operation", "feeds.refresh",
+			"feedId", feed.ID,
+			"feedHost", feedHost(feed.URL),
+			"elapsedMs", time.Since(started).Milliseconds(),
+			"error", redactedFeedError(feed.URL, err),
+		)
 		return 0, err
 	}
 
 	added, err := f.store.MergePosts(id, toPosts(result.Feed.Items))
 	if err != nil {
+		slog.Error("feed merge failed",
+			"operation", "feeds.refresh", "feedId", feed.ID, "error", err)
 		return 0, err
 	}
 
@@ -342,6 +391,8 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	feed.LastFetchedAt = &started
 	feed.LastError = ""
 	if err := f.store.UpdateFeed(feed); err != nil {
+		slog.Error("feed update failed",
+			"operation", "feeds.refresh", "feedId", feed.ID, "error", err)
 		return 0, err
 	}
 
@@ -381,4 +432,24 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// feedHost returns only the host of an address, keeping post and query data
+// out of logs.
+func feedHost(feedURL string) string {
+	parsed, err := url.Parse(feedURL)
+	if err != nil {
+		return ""
+	}
+	return parsed.Host
+}
+
+// redactedFeedError replaces the complete feed address with its host while
+// keeping the diagnostic part of the error message.
+func redactedFeedError(feedURL string, err error) string {
+	detail := err.Error()
+	if host := feedHost(feedURL); host != "" {
+		return strings.ReplaceAll(detail, feedURL, host)
+	}
+	return detail
 }

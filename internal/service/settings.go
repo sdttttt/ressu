@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/egoist/mygo"
@@ -27,6 +28,7 @@ func (s *Settings) Get() store.Prefs {
 // Update stores the preferences and applies the appearance they ask for.
 func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
 	if err := s.store.SetPrefs(prefs); err != nil {
+		slog.Warn("preference update failed", "operation", "settings.update", "error", err)
 		return store.Prefs{}, err
 	}
 	ApplyTheme(prefs.Theme)
@@ -40,7 +42,11 @@ func (s *Settings) DataDir() string {
 
 // OpenDataDir shows the data directory in the file manager.
 func (s *Settings) OpenDataDir() error {
-	return mygo.Shell.OpenPath(s.store.Dir())
+	if err := mygo.Shell.OpenPath(s.store.Dir()); err != nil {
+		slog.Warn("data directory open failed", "operation", "settings.openDataDir", "error", err)
+		return err
+	}
+	return nil
 }
 
 // OpenLink opens a post's link in the browser, or in a window of the app when
@@ -54,7 +60,12 @@ func (s *Settings) OpenLink(ctx context.Context, link string) error {
 		mygo.NewWindow(mygo.WindowOptions{Title: link, URL: link, Width: 1000, Height: 800})
 		return nil
 	}
-	return mygo.Shell.OpenExternal(link)
+	if err := mygo.Shell.OpenExternal(link); err != nil {
+		slog.Warn("external link open failed",
+			"operation", "settings.openLink", "externalHost", feedHost(link), "error", err)
+		return err
+	}
+	return nil
 }
 
 // ApplyTheme makes the app and its windows follow theme, one of "system",
