@@ -98,6 +98,12 @@ const (
 	OpenLinksWindow  = "window"
 )
 
+// Values of Prefs.RemoteResources.
+const (
+	ResourceAccessGoProxy = "goProxy"
+	ResourceAccessWebview = "webview"
+)
+
 // DefaultPostsPerFeed bounds the posts kept for a feed.
 const DefaultPostsPerFeed = 500
 
@@ -107,6 +113,7 @@ type Prefs struct {
 	FontSize         string `json:"fontSize"`
 	RefreshOnStart   bool   `json:"refreshOnStart"`
 	MarkReadOnOpen   bool   `json:"markReadOnOpen"`
+	RemoteResources  string `json:"remoteResources"`
 	OpenLinks        string `json:"openLinks"`
 	PostsPerFeed     int    `json:"postsPerFeed"`
 	PaneSizes        []int  `json:"paneSizes"` // widths of the sidebar and the list, in percent
@@ -120,6 +127,7 @@ func DefaultPrefs() Prefs {
 		FontSize:         FontSizeMedium,
 		RefreshOnStart:   true,
 		MarkReadOnOpen:   true,
+		RemoteResources:  ResourceAccessGoProxy,
 		OpenLinks:        OpenLinksBrowser,
 		PostsPerFeed:     DefaultPostsPerFeed,
 		PaneSizes:        []int{18, 30},
@@ -144,6 +152,9 @@ func (p *Prefs) Normalize() {
 	}
 	if p.PostsPerFeed < 50 || p.PostsPerFeed > 2000 {
 		p.PostsPerFeed = DefaultPostsPerFeed
+	}
+	if p.RemoteResources != ResourceAccessWebview {
+		p.RemoteResources = ResourceAccessGoProxy
 	}
 	if len(p.PaneSizes) != 2 || p.PaneSizes[0] < 5 || p.PaneSizes[0] > 90 ||
 		p.PaneSizes[1] < 5 || p.PaneSizes[1] > 90 {

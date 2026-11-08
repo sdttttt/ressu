@@ -7,11 +7,13 @@ import (
 	"context"
 	"errors"
 	"log"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/egoist/mygo"
 
+	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/service"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -24,14 +26,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	cacheDir, err := app.Path(mygo.PathCache)
+	if err != nil {
+		log.Fatal(err)
+	}
 	st, err := store.Open(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer st.Close()
 
+	articleMedia, err := media.Open(filepath.Join(cacheDir, "articles"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer articleMedia.Close()
+	if err := mygo.Protocol.Handle(media.Scheme, articleMedia.Handler()); err != nil {
+		log.Fatal(err)
+	}
+
 	feeds := service.NewFeeds(st)
-	mygo.Bind(feeds, service.NewPosts(st), service.NewSettings(st))
+	mygo.Bind(feeds, service.NewPostsWithMedia(st, articleMedia), service.NewSettings(st))
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
 		if _, err := feeds.RefreshAll(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
 			log.Printf("refresh on foreground: %v", err)

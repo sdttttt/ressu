@@ -2,9 +2,12 @@ package service
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -66,5 +69,64 @@ func TestPostsListAggregatesFeeds(t *testing.T) {
 	}
 	if changed != 4 {
 		t.Errorf("aggregate changed = %d", changed)
+	}
+}
+
+func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
+	st := openStore(t)
+	_, err := st.AddFeed(store.Feed{
+		URL:     "https://example.com/feed.xml",
+		Title:   "Example",
+		SiteURL: "https://example.com/",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := `<p>正文</p><img src="https://cdn.example.com/photo.png">` +
+		`<img src="data:image/png;base64,aGVsbG8=">`
+	if _, err := st.MergePosts(1, []store.Post{{
+		FeedID:  1,
+		GUID:    "photo",
+		URL:     "https://example.com/photo",
+		Content: content,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	articleMedia, err := media.Open(filepath.Join(t.TempDir(), "articles"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer articleMedia.Close()
+	post, err := NewPostsWithMedia(st, articleMedia).Get(1, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(post.Content, "https://cdn.example.com/photo.png") ||
+		!strings.Contains(post.Content, media.Scheme+"://localhost/i/") ||
+		!strings.Contains(post.Content, `src="data:image/png;base64,aGVsbG8="`) {
+		t.Fatalf("content = %s", post.Content)
+	}
+	withoutMedia, err := NewPosts(st).Get(1, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(withoutMedia.Content, "https://cdn.example.com/photo.png") {
+		t.Fatalf("legacy posts service unexpectedly changed content: %s", withoutMedia.Content)
+	}
+
+	prefs := st.Prefs()
+	prefs.RemoteResources = store.ResourceAccessWebview
+	if err := st.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+	webviewPost, err := NewPostsWithMedia(st, articleMedia).Get(1, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(webviewPost.Content, "https://cdn.example.com/photo.png") ||
+		strings.Contains(webviewPost.Content, media.Scheme+"://localhost/i/") {
+		t.Fatalf("Webview content = %s", webviewPost.Content)
 	}
 }

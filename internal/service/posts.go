@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -36,11 +37,18 @@ func (o SortOrder) normalize() SortOrder {
 // Posts is the post service the frontend calls.
 type Posts struct {
 	store *store.Store
+	media *media.Cache
 }
 
 // NewPosts serves the posts of st.
 func NewPosts(st *store.Store) *Posts {
 	return &Posts{store: st}
+}
+
+// NewPostsWithMedia serves posts whose remote images are rewritten to local
+// protocol URLs before they cross the binding boundary.
+func NewPostsWithMedia(st *store.Store, mediaCache *media.Cache) *Posts {
+	return &Posts{store: st, media: mediaCache}
 }
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search
@@ -117,7 +125,14 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 
 // Get returns one post with its body.
 func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
-	return p.store.Post(feedID, guid)
+	post, err := p.store.Post(feedID, guid)
+	if err != nil {
+		return store.Post{}, err
+	}
+	if p.media != nil && p.store.Prefs().RemoteResources == store.ResourceAccessGoProxy {
+		post.Content = p.media.RewriteHTML(post.Content, post.URL)
+	}
+	return post, nil
 }
 
 // MarkRead marks a post read or unread.

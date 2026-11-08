@@ -51,6 +51,7 @@ internal/
   sanitize/                基于 bluemonday 的订阅源正文清洗
   store/                   bbolt 持久化、订阅与偏好缓存、未读计数
     store.go, model.go, icons.go, migrate.go
+  media/                   正文图片安全下载、启动时清空重用的磁盘缓存和本地协议
   service/                 暴露给页面的服务、事件与后台行为
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
 webview/                   前端源码和独立构建配置
@@ -207,7 +208,8 @@ bun install
 - `UpdatePost` 和 `MarkAllRead` 只写受影响的数据，并同步更新内存中的未读数。
 - `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
 - `Prefs.Normalize` 会替换越界值。未知主题回落 `system`，未知字号回落 `medium`，
-  `openLinks` 不是 `window` 就变成 `browser`，`postsPerFeed` 限制在 50–2000，
+  `openLinks` 不是 `window` 就变成 `browser`，`remoteResources` 不是 `webview` 就回落
+  `goProxy`，`postsPerFeed` 限制在 50–2000，
   面板宽度不合规则恢复 `[18,30]`。
 - 前端 `defaultPrefs`（`webview/src/stores/app-state.ts`）复制了 Go 默认值；新增偏好时两处
   都要改。
@@ -385,8 +387,9 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。
 - 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；设置对话框可打开数据目录。
-- 没有账号、同步、遥测或统计。除抓取订阅源和文章图片外，WebView 不直接加载订阅源图标；
-  图标由 Go 缓存后以本地 data URL 渲染。
+- 没有账号、同步、遥测或统计。WebView 不直接加载订阅源图标；图标由 Go 缓存后以本地 data
+  URL 渲染。正文远端图片默认由 Go 在 `Posts.Get` 中改写为 `ressu-media://`，通过本地缓存协议
+  提供；用户可在设置中选择 Webview 直接加载。
 - webview 端禁止直接网络请求，由 `.oxlintrc.json` 的 `no-restricted-globals` 和
   `webview/test/setup.ts` 的网络 stub 双重执行。需要远程数据时新增 Go 绑定。
 - `mygo build` 从 `mygo://localhost` 提供内嵌页面；页面没有 CSP meta 标签，因此 XSS 防护

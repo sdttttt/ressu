@@ -92,6 +92,7 @@ const prefs: Prefs = {
   fontSize: "small",
   refreshOnStart: true,
   markReadOnOpen: true,
+  remoteResources: "goProxy",
   openLinks: "browser",
   postsPerFeed: 500,
   paneSizes: [18, 30],

@@ -1,0 +1,131 @@
+package media
+
+import (
+	"net/url"
+	"strings"
+
+	"golang.org/x/net/html"
+)
+
+// LocalURL maps one public image address to its stable local protocol URL. It
+// persists only the source mapping; bytes are downloaded when WebView asks.
+func (c *Cache) LocalURL(raw string) (string, bool) {
+	source, ok := normalizeSource(raw)
+	if !ok {
+		return "", false
+	}
+	key := keyFor(source)
+	if !c.prepare(key, source) {
+		return "", false
+	}
+	return Scheme + "://localhost/i/" + key, true
+}
+
+// RewriteHTML replaces remote img addresses with local cache URLs. Images that
+// cannot be mapped lose their src instead of remaining reachable directly.
+func (c *Cache) RewriteHTML(markup, baseURL string) string {
+	if markup == "" {
+		return ""
+	}
+	document, err := html.Parse(strings.NewReader(markup))
+	if err != nil {
+		return ""
+	}
+	body := bodyOf(document)
+	if body == nil {
+		return ""
+	}
+	rewriteImages(body, baseURL, c)
+
+	var output strings.Builder
+	for child := body.FirstChild; child != nil; child = child.NextSibling {
+		if err := html.Render(&output, child); err != nil {
+			return ""
+		}
+	}
+	return output.String()
+}
+
+// rewriteImages walks one cleaned article fragment and maps every img source.
+func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
+	if node.Type == html.ElementNode && strings.EqualFold(node.Data, "img") {
+		if src := attribute(node, "src"); src != nil {
+			if scheme, _, err := splitScheme(src.Val); err == nil &&
+				(scheme == "data" || scheme == Scheme) {
+				return
+			}
+			source := absolute(baseURL, src.Val)
+			if local, ok := cache.LocalURL(source); ok {
+				src.Val = local
+			} else {
+				removeAttribute(node, "src")
+			}
+		}
+		removeAttribute(node, "srcset")
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		rewriteImages(child, baseURL, cache)
+	}
+}
+
+// bodyOf finds the body element created while parsing a fragment.
+func bodyOf(document *html.Node) *html.Node {
+	if document.Type == html.ElementNode && document.Data == "body" {
+		return document
+	}
+	for child := document.FirstChild; child != nil; child = child.NextSibling {
+		if body := bodyOf(child); body != nil {
+			return body
+		}
+	}
+	return nil
+}
+
+// absolute resolves a reference against the article address.
+func absolute(baseURL string, reference string) string {
+	if baseURL == "" || reference == "" {
+		return reference
+	}
+	base, err := url.Parse(baseURL)
+	if err != nil || !base.IsAbs() {
+		return reference
+	}
+	parsed, err := url.Parse(reference)
+	if err != nil {
+		return reference
+	}
+	return base.ResolveReference(parsed).String()
+}
+
+// splitScheme reports the lowercase scheme of an already-sanitized URL.
+func splitScheme(raw string) (string, string, error) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return "", "", err
+	}
+	return strings.ToLower(parsed.Scheme), raw, nil
+}
+
+// attribute returns a mutable attribute by its lowercase name.
+func attribute(node *html.Node, name string) *html.Attribute {
+	for index := range node.Attr {
+		if strings.EqualFold(node.Attr[index].Key, name) {
+			return &node.Attr[index]
+		}
+	}
+	return nil
+}
+
+// removeAttribute removes an attribute by its lowercase name.
+func removeAttribute(node *html.Node, name string) {
+	position := -1
+	for index := range node.Attr {
+		if strings.EqualFold(node.Attr[index].Key, name) {
+			position = index
+			break
+		}
+	}
+	if position >= 0 {
+		node.Attr = append(node.Attr[:position], node.Attr[position+1:]...)
+	}
+}

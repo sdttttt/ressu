@@ -53,6 +53,11 @@ const linkTargets = [
   { value: "window", label: "应用内新窗口" },
 ];
 
+const remoteResources = [
+  { value: "goProxy", label: "Go代理" },
+  { value: "webview", label: "Webview" },
+];
+
 export default function SettingsDialog() {
   return (
     <Dialog
@@ -161,6 +166,27 @@ export default function SettingsDialog() {
               </NumberFieldGroup>
             </div>
           </NumberField>
+        </section>
+
+        <Separator />
+
+        <section class="space-y-2">
+          <h3 class="text-[0.6875rem] font-medium text-muted-foreground">远程资源</h3>
+          <Label class="text-sm font-normal">远程资源访问</Label>
+          <RadioGroup
+            value={app.prefs.remoteResources}
+            onChange={(access) => access && void updatePrefs({ remoteResources: access })}
+            class="gap-2"
+          >
+            <For each={remoteResources}>
+              {(resource) => (
+                <RadioGroupItem value={resource.value} class="gap-2">
+                  <RadioGroupItemLabel class="font-normal">{resource.label}</RadioGroupItemLabel>
+                </RadioGroupItem>
+              )}
+            </For>
+          </RadioGroup>
+          <p class="text-xs text-muted-foreground">Go代理能缓解部分外部网站的资源限制问题</p>
         </section>
 
         <Separator />
