@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { externalHref, plainText, sanitizeHTML } from "~/lib/sanitize";
+import { externalHref, sanitizeHTML } from "~/lib/sanitize";
 
 describe("sanitizeHTML", () => {
   it("drops scripts and styles", () => {
@@ -39,22 +39,6 @@ describe("sanitizeHTML", () => {
 
   it("returns an empty string for empty input", () => {
     expect(sanitizeHTML("")).toBe("");
-  });
-});
-
-describe("plainText", () => {
-  it("keeps the text of markup on one line", () => {
-    expect(plainText("<p>hello <strong>there</strong></p>")).toBe("hello there");
-    expect(plainText("<p>a\n\n b</p>")).toBe("a b");
-  });
-
-  it("cuts long text", () => {
-    const text = plainText(`<p>${"字".repeat(20)}</p>`, 5);
-    expect(text).toBe("字字字字字…");
-  });
-
-  it("returns nothing for empty input", () => {
-    expect(plainText("")).toBe("");
   });
 });
 

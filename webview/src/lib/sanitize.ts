@@ -52,15 +52,6 @@ export function sanitizeHTML(html: string, baseURL = ""): string {
   return doc.body.innerHTML;
 }
 
-/** Returns the text a piece of markup shows, on one line. */
-export function plainText(html: string, limit = 280): string {
-  if (!html) return "";
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const text = (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
-  if (text.length <= limit) return text;
-  return `${text.slice(0, limit).trimEnd()}…`;
-}
-
 /** Parses the URL a link points at, or null when it is the app's own page. */
 export function externalHref(href: string): string | null {
   if (!href) return null;
