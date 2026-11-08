@@ -1,4 +1,5 @@
 import { app, setAppState, type DialogName } from "~/stores/app-state";
+import { updatePrefs } from "~/stores/settings";
 
 export function openDialog(name: DialogName): void {
   setAppState("dialog", name, true);
@@ -38,16 +39,18 @@ function scheduleSidebarShow(delay: number): void {
 }
 
 /** Turns the docked feed sidebar into its floating overlay. */
-export function collapseSidebar(): void {
+export async function collapseSidebar(): Promise<void> {
   clearSidebarTimers();
   setAppState("sidebar", { collapsed: true, visible: false });
   scheduleSidebarShow(SIDEBAR_INITIAL_SHOW_DELAY_MS);
+  await updatePrefs({ sidebarCollapsed: true });
 }
 
 /** Restores the docked three-pane layout. */
-export function expandSidebar(): void {
+export async function expandSidebar(): Promise<void> {
   clearSidebarTimers();
   setAppState("sidebar", { collapsed: false, visible: false });
+  await updatePrefs({ sidebarCollapsed: false });
 }
 
 /** Shows the floating feed sidebar while the docked sidebar stays hidden. */

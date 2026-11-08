@@ -90,25 +90,27 @@ const DefaultPostsPerFeed = 500
 
 // Prefs are the user's preferences, kept in the settings bucket.
 type Prefs struct {
-	Theme          string `json:"theme"`
-	FontSize       string `json:"fontSize"`
-	RefreshOnStart bool   `json:"refreshOnStart"`
-	MarkReadOnOpen bool   `json:"markReadOnOpen"`
-	OpenLinks      string `json:"openLinks"`
-	PostsPerFeed   int    `json:"postsPerFeed"`
-	PaneSizes      []int  `json:"paneSizes"` // widths of the sidebar and the list, in percent
+	Theme            string `json:"theme"`
+	FontSize         string `json:"fontSize"`
+	RefreshOnStart   bool   `json:"refreshOnStart"`
+	MarkReadOnOpen   bool   `json:"markReadOnOpen"`
+	OpenLinks        string `json:"openLinks"`
+	PostsPerFeed     int    `json:"postsPerFeed"`
+	PaneSizes        []int  `json:"paneSizes"` // widths of the sidebar and the list, in percent
+	SidebarCollapsed bool   `json:"sidebarCollapsed"`
 }
 
 // DefaultPrefs are the preferences of a new install.
 func DefaultPrefs() Prefs {
 	return Prefs{
-		Theme:          ThemeSystem,
-		FontSize:       FontSizeMedium,
-		RefreshOnStart: true,
-		MarkReadOnOpen: true,
-		OpenLinks:      OpenLinksBrowser,
-		PostsPerFeed:   DefaultPostsPerFeed,
-		PaneSizes:      []int{18, 30},
+		Theme:            ThemeSystem,
+		FontSize:         FontSizeMedium,
+		RefreshOnStart:   true,
+		MarkReadOnOpen:   true,
+		OpenLinks:        OpenLinksBrowser,
+		PostsPerFeed:     DefaultPostsPerFeed,
+		PaneSizes:        []int{18, 30},
+		SidebarCollapsed: false,
 	}
 }
 

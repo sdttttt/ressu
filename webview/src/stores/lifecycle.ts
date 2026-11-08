@@ -14,7 +14,13 @@ export async function start(): Promise<void> {
       Settings.get(),
       Settings.dataDir(),
     ]);
-    setAppState({ feeds, prefs, dataDir, ready: true });
+    setAppState({
+      feeds,
+      prefs,
+      dataDir,
+      ready: true,
+      sidebar: { collapsed: prefs.sidebarCollapsed, visible: false },
+    });
     applyTheme(prefs.theme);
     applyFontSize(prefs.fontSize);
 

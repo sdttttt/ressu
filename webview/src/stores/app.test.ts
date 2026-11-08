@@ -94,6 +94,7 @@ const prefs: Prefs = {
   openLinks: "browser",
   postsPerFeed: 500,
   paneSizes: [18, 30],
+  sidebarCollapsed: false,
 };
 
 beforeEach(() => {
@@ -126,7 +127,7 @@ async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
   return { mygo, snapshot, toast, app };
 }
 
-describe("start", () => {
+describe("sidebar preference", () => {
   it("loads every feed's posts without selecting one", async () => {
     const { mygo, app } = await setup();
 
@@ -691,12 +692,14 @@ describe("copySnapshot", () => {
 
 describe("sidebar overlay", () => {
   it("floats the sidebar and hides it without leaving the two-pane layout", async () => {
-    const { app } = await setup();
+    const { mygo, app } = await setup();
+    await app.start();
     vi.useFakeTimers();
 
-    app.collapseSidebar();
+    await app.collapseSidebar();
     vi.advanceTimersByTime(30);
     expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
+    expect(mygo.Settings.update).toHaveBeenCalledWith({ ...prefs, sidebarCollapsed: true });
 
     app.hideSidebar();
     vi.advanceTimersByTime(200);
@@ -705,9 +708,21 @@ describe("sidebar overlay", () => {
     app.showSidebar();
     expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
 
-    app.expandSidebar();
+    await app.expandSidebar();
     expect(app.app.sidebar).toEqual({ collapsed: false, visible: false });
+    expect(mygo.Settings.update).toHaveBeenLastCalledWith({ ...prefs, sidebarCollapsed: false });
     vi.useRealTimers();
+  });
+});
+
+describe("start", () => {
+  it("restores the collapsed sidebar preference without showing it", async () => {
+    const { mygo, app } = await setup();
+    vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs, sidebarCollapsed: true });
+
+    await app.start();
+
+    expect(app.app.sidebar).toEqual({ collapsed: true, visible: false });
   });
 });
 

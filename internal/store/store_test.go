@@ -260,6 +260,7 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 	prefs.Theme = ThemeDark
 	prefs.PostsPerFeed = 100
 	prefs.PaneSizes = []int{40, 55}
+	prefs.SidebarCollapsed = true
 	if err := s.SetPrefs(prefs); err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +275,7 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 	defer reopened.Close()
 
 	got := reopened.Prefs()
-	if got.Theme != ThemeDark || got.PostsPerFeed != 100 {
+	if got.Theme != ThemeDark || got.PostsPerFeed != 100 || !got.SidebarCollapsed {
 		t.Errorf("prefs = %+v", got)
 	}
 	if len(got.PaneSizes) != 2 || got.PaneSizes[0] != 40 {
@@ -302,6 +303,7 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 
 func TestPrefsNormalize(t *testing.T) {
 	p := Prefs{Theme: "solarized", FontSize: "huge", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
+	p.SidebarCollapsed = true
 	p.Normalize()
 
 	if p.Theme != ThemeSystem {
@@ -318,5 +320,8 @@ func TestPrefsNormalize(t *testing.T) {
 	}
 	if len(p.PaneSizes) != 2 {
 		t.Errorf("pane sizes = %v", p.PaneSizes)
+	}
+	if !p.SidebarCollapsed {
+		t.Errorf("sidebar collapsed = false")
 	}
 }

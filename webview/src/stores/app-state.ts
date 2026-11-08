@@ -43,6 +43,7 @@ const defaultPrefs: Prefs = {
   openLinks: "browser",
   postsPerFeed: 500,
   paneSizes: [18, 30],
+  sidebarCollapsed: false,
 };
 
 /** The sync state before a refresh starts or after one finishes. */
