@@ -2,18 +2,18 @@ import { toast } from "solid-sonner";
 
 import { generateSnapshot } from "~/lib/snapshot";
 import { Posts } from "~/mygo";
-import { app as state, currentFeed, setAppState as setState } from "~/stores/app-state";
+import { app as state, feedTitle, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 
 /** Captures the open post, stitches it and opens the preview dialog. */
 export async function captureSnapshot(): Promise<void> {
   const post = state.post;
   if (!post || state.snapshotting) return;
-  const feedTitle = currentFeed()?.title ?? "";
+  const title = feedTitle(post.feedId);
 
   setState({ snapshotting: true, snapshot: null, snapshotAction: null });
   try {
-    const tiles = await generateSnapshot(post, feedTitle);
+    const tiles = await generateSnapshot(post, title);
     const png = await Posts.stitchSnapshot(tiles);
     setState({ snapshotting: false, snapshot: { post, png } });
   } catch (error) {

@@ -12,6 +12,7 @@ vi.mock("~/stores/app", async () => {
   return {
     app: mockStore,
     currentFeed: () => feed,
+    feedTitle: () => feed.title,
     openLink: vi.fn(),
     setOpenPostRead: vi.fn(),
     toggleStar: vi.fn(),

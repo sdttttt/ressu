@@ -127,16 +127,24 @@ async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
 }
 
 describe("start", () => {
-  it("loads the feeds and opens the first one", async () => {
-    const { app } = await setup();
+  it("loads every feed's posts without selecting one", async () => {
+    const { mygo, app } = await setup();
 
     await app.start();
 
     expect(app.app.ready).toBe(true);
     expect(app.app.feeds).toHaveLength(2);
-    expect(app.app.current.feedId).toBe(1);
+    expect(app.app.current.feedId).toBeNull();
     expect(app.app.posts).toHaveLength(1);
     expect(app.app.dataDir).toBe("C:/Users/me/AppData/Ressu");
+    expect(mygo.Posts.list).toHaveBeenLastCalledWith({
+      feedId: 0,
+      unreadOnly: false,
+      starredOnly: false,
+      search: "",
+      offset: 0,
+      limit: app.PAGE_SIZE,
+    });
   });
 
   it("survives a failing store", async () => {
@@ -176,7 +184,7 @@ describe("selectPost", () => {
 });
 
 describe("selectFeed", () => {
-  it("loads the posts of the feed it selects", async () => {
+  it("loads a selected feed and toggles it back to aggregate", async () => {
     const { mygo, app } = await setup();
     await app.start();
 
@@ -185,6 +193,18 @@ describe("selectFeed", () => {
     expect(app.app.current.feedId).toBe(2);
     expect(mygo.Posts.list).toHaveBeenLastCalledWith({
       feedId: 2,
+      unreadOnly: false,
+      starredOnly: false,
+      search: "",
+      offset: 0,
+      limit: app.PAGE_SIZE,
+    });
+
+    await app.selectFeed(2);
+
+    expect(app.app.current.feedId).toBeNull();
+    expect(mygo.Posts.list).toHaveBeenLastCalledWith({
+      feedId: 0,
       unreadOnly: false,
       starredOnly: false,
       search: "",
@@ -234,7 +254,7 @@ describe("addFeed", () => {
 });
 
 describe("removeFeed", () => {
-  it("selects another feed once the current one is gone", async () => {
+  it("returns to aggregate once the selected feed is gone", async () => {
     const { mygo, app } = await setup();
     await app.start();
     vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
@@ -243,11 +263,12 @@ describe("removeFeed", () => {
 
     expect(mygo.Feeds.remove).toHaveBeenCalledWith(1);
     expect(app.app.feeds).toHaveLength(1);
-    expect(app.app.current.feedId).toBe(2);
+    expect(app.app.current.feedId).toBeNull();
+    expect(mygo.Posts.list).toHaveBeenLastCalledWith(expect.objectContaining({ feedId: 0 }));
   });
 
-  it("clears the list when no feed is left", async () => {
-    const { mygo, app } = await setup({ feeds: [feedA] });
+  it("shows the empty aggregate when no feed is left", async () => {
+    const { mygo, app } = await setup({ feeds: [feedA], posts: [] });
     await app.start();
     vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
 
@@ -344,12 +365,13 @@ describe("applySync", () => {
 });
 
 describe("replaceFeeds", () => {
-  it("moves the selection when its feed disappears", async () => {
+  it("returns to aggregate when its selected feed disappears", async () => {
     const { app } = await setup();
     await app.start();
 
-    app.replaceFeeds([feedB]);
-    await vi.waitFor(() => expect(app.app.current.feedId).toBe(2));
+    await app.replaceFeeds([feedB]);
+    await vi.waitFor(() => expect(app.app.current.feedId).toBeNull());
+    expect(app.app.posts).toHaveLength(1);
   });
 });
 
@@ -472,9 +494,26 @@ describe("openSelectedPostInBrowser", () => {
 });
 
 describe("selectNeighbourFeed", () => {
-  it("walks to the neighbouring feed and back", async () => {
+  it("walks between neighbouring feeds", async () => {
     const { app } = await setup();
     await app.start();
+
+    await app.selectNeighbourFeed(1);
+    expect(app.app.current.feedId).toBe(1);
+
+    await app.selectNeighbourFeed(1);
+    expect(app.app.current.feedId).toBe(2);
+
+    await app.selectNeighbourFeed(-1);
+    expect(app.app.current.feedId).toBe(1);
+  });
+
+  it("stops at the neighbouring feed boundaries", async () => {
+    const { app } = await setup();
+    await app.start();
+
+    await app.selectNeighbourFeed(-1);
+    expect(app.app.current.feedId).toBe(2);
 
     await app.selectNeighbourFeed(1);
     expect(app.app.current.feedId).toBe(2);

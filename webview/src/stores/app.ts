@@ -3,7 +3,14 @@
  * the implementations live in the feature modules next to this file.
  */
 
-export { app, currentFeed, isSyncingFeed, totalUnread, visibleFeeds } from "~/stores/app-state";
+export {
+  app,
+  currentFeed,
+  feedTitle,
+  isSyncingFeed,
+  totalUnread,
+  visibleFeeds,
+} from "~/stores/app-state";
 export type { DialogName } from "~/stores/app-state";
 export { messageOf } from "~/stores/errors";
 export {

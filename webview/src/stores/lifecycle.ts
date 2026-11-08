@@ -4,9 +4,9 @@ import { applyFontSize, applyTheme } from "~/lib/theme";
 import { Feeds, Settings } from "~/mygo";
 import { setAppState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
-import { selectFeed } from "~/stores/feeds";
+import { loadPosts } from "~/stores/posts";
 
-/** Loads the subscriptions and the preferences, and selects the first feed. */
+/** Loads the subscriptions and the preferences, then shows all posts. */
 export async function start(): Promise<void> {
   try {
     const [feeds, prefs, dataDir] = await Promise.all([
@@ -18,8 +18,7 @@ export async function start(): Promise<void> {
     applyTheme(prefs.theme);
     applyFontSize(prefs.fontSize);
 
-    const first = feeds[0];
-    if (first) await selectFeed(first.id);
+    await loadPosts(0);
   } catch (error) {
     setAppState("ready", true);
     toast.error(`无法读取本地数据：${messageOf(error)}`);

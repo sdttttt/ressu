@@ -9,7 +9,9 @@ function selectionTarget(delta: 1 | -1, onlyUnread: boolean): number {
   const posts = state.posts;
   if (posts.length === 0) return -1;
 
-  const current = posts.findIndex((post) => post.guid === state.current.guid);
+  const current = posts.findIndex(
+    (post) => post.feedId === state.current.postFeedId && post.guid === state.current.guid,
+  );
   let index = current === -1 ? (delta === 1 ? 0 : posts.length - 1) : current + delta;
 
   while (index >= 0 && index < posts.length) {
@@ -19,10 +21,12 @@ function selectionTarget(delta: 1 | -1, onlyUnread: boolean): number {
   return -1;
 }
 
-/** Scrolls the post list so the row of `guid` is visible. */
-function revealPost(guid: string): void {
+/** Scrolls the post list so its row is visible. */
+function revealPost(feedId: number, guid: string): void {
   document
-    .querySelector<HTMLElement>(`[data-guid="${CSS.escape(guid)}"]`)
+    .querySelector<HTMLElement>(
+      `[data-feed-id="${CSS.escape(String(feedId))}"][data-guid="${CSS.escape(guid)}"]`,
+    )
     ?.scrollIntoView({ block: "nearest" });
 }
 
@@ -36,8 +40,8 @@ export async function moveSelection(delta: 1 | -1, onlyUnread = false): Promise<
   if (index === -1) return;
 
   const post = state.posts[index]!;
-  await selectPost(post.guid);
-  revealPost(post.guid);
+  await selectPost(post.guid, post.feedId);
+  revealPost(post.feedId, post.guid);
 }
 
 /** Opens the selected post, or the first post when nothing is selected. */
@@ -46,13 +50,15 @@ export async function openSelectedPost(): Promise<void> {
   if (index === -1) return;
 
   const post = state.posts[index]!;
-  await selectPost(post.guid);
-  revealPost(post.guid);
+  await selectPost(post.guid, post.feedId);
+  revealPost(post.feedId, post.guid);
 }
 
 /** Opens the selected post's original page in a browser. */
 export async function openSelectedPostInBrowser(): Promise<void> {
-  const post = state.posts.find((item) => item.guid === state.current.guid);
+  const post = state.posts.find(
+    (item) => item.feedId === state.current.postFeedId && item.guid === state.current.guid,
+  );
   if (post) await openLink(post.url);
 }
 

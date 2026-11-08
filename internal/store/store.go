@@ -273,6 +273,26 @@ func (s *Store) Posts(feedID int64) ([]Post, error) {
 	return posts, nil
 }
 
+// AllPosts returns every post of every feed, newest first.
+func (s *Store) AllPosts() ([]Post, error) {
+	var posts []Post
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte(postsBucket)).ForEach(func(key, _ []byte) error {
+			feedID := int64(binary.BigEndian.Uint64(key))
+			feedPosts, err := readPosts(tx, feedID)
+			if err != nil {
+				return err
+			}
+			posts = append(posts, feedPosts...)
+			return nil
+		})
+	}); err != nil {
+		return nil, err
+	}
+	slices.SortStableFunc(posts, byPublishedDesc)
+	return posts, nil
+}
+
 // Post returns one post of a feed.
 func (s *Store) Post(feedID int64, guid string) (Post, error) {
 	var post Post

@@ -17,7 +17,7 @@ import type { Post } from "~/mygo";
 import {
   app,
   captureSnapshot,
-  currentFeed,
+  feedTitle,
   openLink,
   setOpenPostRead,
   toggleStar,
@@ -49,10 +49,15 @@ let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
 let swapId = 0;
 
 /** How the swap should animate, based on list order. */
+function samePost(first: Post, second: Post): boolean {
+  return first.feedId === second.feedId && first.guid === second.guid;
+}
+
 function swapDirection(from: Post, to: Post): "cover-down" | "exit-up" {
-  const indexAt = (guid: string) => app.posts.findIndex((post) => post.guid === guid);
-  const fromIndex = indexAt(from.guid);
-  const toIndex = indexAt(to.guid);
+  const indexAt = (post: Post) =>
+    app.posts.findIndex((item) => item.feedId === post.feedId && item.guid === post.guid);
+  const fromIndex = indexAt(from);
+  const toIndex = indexAt(to);
   if (fromIndex === -1 || toIndex === -1) return "cover-down";
   // Moving earlier in the list: the previous article sheets down from the
   // top. Moving later: the current article slides up and away, revealing the
@@ -75,7 +80,7 @@ createEffect(() => {
   const current = visible[visible.length - 1];
   // Same article: refresh the top snapshot in place (star/read toggles) and
   // never restart the animation.
-  if (current?.post.guid === latest.guid) {
+  if (current && samePost(current.post, latest)) {
     setLayers("items", visible.length - 1, "post", reconcile({ ...latest }, { key: "guid" }));
     return;
   }
@@ -222,15 +227,15 @@ function ArticleBody(props: { post: Post }) {
                 </>
               )}
             </Show>
-            <Show when={currentFeed()}>
-              {(feed) => (
+            <Show when={feedTitle(props.post.feedId)}>
+              {(source) => (
                 <>
                   <Separator orientation="vertical" class="h-3" />
                   <Badge
                     variant="outline"
                     class="h-4 max-w-48 rounded-full px-1.5 py-0 text-[0.625rem] font-normal"
                   >
-                    <span class="truncate">{feed().title}</span>
+                    <span class="truncate">{source()}</span>
                   </Badge>
                 </>
               )}
@@ -239,7 +244,7 @@ function ArticleBody(props: { post: Post }) {
           <div class="flex shrink-0 items-center gap-0.5">
             <IconButton
               label={props.post.starred ? "取消星标" : "加星标"}
-              onClick={() => void toggleStar(props.post.guid)}
+              onClick={() => void toggleStar(props.post.guid, props.post.feedId)}
             >
               <Star class={cn("size-4", props.post.starred && "fill-current text-warning")} />
             </IconButton>

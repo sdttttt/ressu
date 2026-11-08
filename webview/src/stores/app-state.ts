@@ -30,7 +30,7 @@ type AppState = {
   feedFilter: string;
   unreadOnly: boolean;
   starredOnly: boolean;
-  current: { feedId: number | null; guid: string | null };
+  current: { feedId: number | null; postFeedId: number | null; guid: string | null };
   dialog: Record<DialogName, boolean>;
 };
 
@@ -66,7 +66,7 @@ const [state, setState] = createStore<AppState>({
   feedFilter: "",
   unreadOnly: false,
   starredOnly: false,
-  current: { feedId: null, guid: null },
+  current: { feedId: null, postFeedId: null, guid: null },
   dialog: { addFeed: false, settings: false, help: false },
 });
 
@@ -88,6 +88,11 @@ export function visibleFeeds(): Feed[] {
 /** The selected subscription, if any. */
 export function currentFeed(): Feed | undefined {
   return state.feeds.find((feed) => feed.id === state.current.feedId);
+}
+
+/** The title of a post's subscription, useful in the aggregate list. */
+export function feedTitle(id: number): string {
+  return state.feeds.find((feed) => feed.id === id)?.title ?? "";
 }
 
 /** How many posts are unread across the subscriptions. */

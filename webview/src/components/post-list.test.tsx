@@ -79,7 +79,7 @@ describe("PostList", () => {
 
     fireEvent.click(getByText("第一篇文章"));
 
-    expect(store.selectPost).toHaveBeenCalledWith("guid-1");
+    expect(store.selectPost).toHaveBeenCalledWith("guid-1", 1);
   });
 
   it("stars a post without opening it", async () => {
@@ -89,7 +89,7 @@ describe("PostList", () => {
     const [star] = getAllByRole("button", { name: "加星标" });
     fireEvent.click(star!);
 
-    expect(store.toggleStar).toHaveBeenCalledWith("guid-1");
+    expect(store.toggleStar).toHaveBeenCalledWith("guid-1", 1);
     expect(store.selectPost).not.toHaveBeenCalled();
   });
 

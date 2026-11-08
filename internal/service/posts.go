@@ -12,6 +12,9 @@ const defaultLimit = 100
 // maxLimit bounds what a caller may ask for.
 const maxLimit = 500
 
+// AggregateFeedID asks for posts from every feed.
+const AggregateFeedID = 0
+
 // Posts is the post service the frontend calls.
 type Posts struct {
 	store *store.Store
@@ -22,7 +25,7 @@ func NewPosts(st *store.Store) *Posts {
 	return &Posts{store: st}
 }
 
-// PostQuery selects a page of posts of one feed.
+// PostQuery selects a page of posts. FeedID zero selects all feeds.
 type PostQuery struct {
 	FeedID      int64  `json:"feedId"`
 	UnreadOnly  bool   `json:"unreadOnly"`
@@ -42,7 +45,13 @@ type PostPage struct {
 
 // List returns the posts of a feed that match the query, newest first.
 func (p *Posts) List(query PostQuery) (PostPage, error) {
-	posts, err := p.store.Posts(query.FeedID)
+	var posts []store.Post
+	var err error
+	if query.FeedID == AggregateFeedID {
+		posts, err = p.store.AllPosts()
+	} else {
+		posts, err = p.store.Posts(query.FeedID)
+	}
 	if err != nil {
 		return PostPage{}, err
 	}
@@ -96,7 +105,23 @@ func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
 }
 
 // MarkAllRead marks every post of a feed read, and returns how many changed.
+// The aggregate id marks every stored post.
 func (p *Posts) MarkAllRead(feedID int64) (int, error) {
+	if feedID == AggregateFeedID {
+		changed := 0
+		for _, feed := range p.store.Feeds() {
+			feedChanged, err := p.store.MarkAllRead(feed.ID)
+			if err != nil {
+				return changed, err
+			}
+			changed += feedChanged
+		}
+		if changed > 0 {
+			broadcastFeeds(p.store)
+		}
+		return changed, nil
+	}
+
 	changed, err := p.store.MarkAllRead(feedID)
 	if err != nil {
 		return 0, err

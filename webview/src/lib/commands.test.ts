@@ -8,8 +8,8 @@ vi.mock("~/stores/app", () => {
       { id: 1, title: "A" },
       { id: 2, title: "B" },
     ],
-    posts: [{ guid: "guid-1" }],
-    current: { feedId: 1, guid: null },
+    posts: [{ feedId: 1, guid: "guid-1" }],
+    current: { feedId: 1, postFeedId: 1, guid: null },
     post: null,
     dialog: { addFeed: false, settings: false, help: false },
   };
@@ -177,7 +177,7 @@ describe("installShortcuts", () => {
 
     press({ key: "s" });
 
-    expect(app.toggleStar).toHaveBeenCalledWith("guid-1");
+    expect(app.toggleStar).toHaveBeenCalledWith("guid-1", 1);
     stop();
     app.app.current.guid = null;
   });

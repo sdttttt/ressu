@@ -119,7 +119,10 @@ export default function FeedSidebar() {
 
 function FeedRow(props: { feed: Feed }) {
   const selected = () => app.current.feedId === props.feed.id;
-  const open = () => void selectFeed(props.feed.id);
+  const toggle = () => void selectFeed(props.feed.id);
+  const open = () => {
+    if (!selected()) void selectFeed(props.feed.id);
+  };
   const [confirming, setConfirming] = createSignal(false);
 
   return (
@@ -137,7 +140,7 @@ function FeedRow(props: { feed: Feed }) {
         type="button"
         class="flex min-w-0 flex-1 items-center gap-2 py-1.5 pl-1.5 text-left"
         title={props.feed.title}
-        onClick={open}
+        onClick={toggle}
       >
         <FeedIcon feed={props.feed} />
 

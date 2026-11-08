@@ -14,7 +14,7 @@ export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
     setState("prefs", prefs);
     if (patch.theme !== undefined) applyTheme(prefs.theme);
     if (patch.fontSize !== undefined) applyFontSize(prefs.fontSize);
-    if (patch.postsPerFeed !== undefined && state.current.feedId !== null) {
+    if (patch.postsPerFeed !== undefined) {
       await loadPosts(0);
     }
   } catch (error) {

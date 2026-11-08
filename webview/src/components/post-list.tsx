@@ -42,14 +42,11 @@ export default function PostList() {
 
   return (
     <section class="flex h-full min-h-0 flex-col bg-background">
-      <Show
-        when={currentFeed()}
-        fallback={<EmptyState icon={<FileText class="size-10" />} title="选择一个订阅源" />}
-      >
-        {(feed) => (
+      <Show when={currentFeed()?.title ?? "所有"}>
+        {(aggregateTitle) => (
           <>
             <header class="border-b px-3 py-2">
-              <div class="truncate text-sm font-semibold">{feed().title}</div>
+              <div class="truncate text-sm font-semibold">{aggregateTitle()}</div>
               <div class="mt-1 flex items-center gap-1">
                 <div class="flex min-w-0 flex-1 items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
                   <span class="tabular-nums">{app.postTotal} 篇</span>
@@ -154,11 +151,13 @@ function compareDates(a: PostSummary, b: PostSummary): number {
 }
 
 function PostRow(props: { post: PostSummary }) {
-  const selected = () => app.current.guid === props.post.guid;
-  const open = () => void selectPost(props.post.guid);
+  const selected = () =>
+    app.current.postFeedId === props.post.feedId && app.current.guid === props.post.guid;
+  const open = () => void selectPost(props.post.guid, props.post.feedId);
 
   return (
     <div
+      data-feed-id={props.post.feedId}
       data-guid={props.post.guid}
       class={cn(
         "group relative rounded-md transition-[background-color,transform] duration-100 ease-out hover:bg-accent/60 active:scale-[0.98]",
@@ -199,7 +198,7 @@ function PostRow(props: { post: PostSummary }) {
             "pointer-events-none size-6 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
             props.post.starred && "pointer-events-auto text-warning opacity-100",
           )}
-          onClick={() => void toggleStar(props.post.guid)}
+          onClick={() => void toggleStar(props.post.guid, props.post.feedId)}
         >
           <Star class={cn("size-3.5", props.post.starred && "fill-current")} />
         </IconButton>

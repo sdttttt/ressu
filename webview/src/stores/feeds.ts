@@ -7,10 +7,11 @@ import { loadPosts } from "~/stores/posts";
 import { closeSnapshot } from "~/stores/snapshot-actions";
 import { closeDialog } from "~/stores/ui";
 
-/** Selects a subscription and loads the first page of its posts. */
+/** Selects a subscription, or deselects it to show the aggregate list. */
 export async function selectFeed(id: number): Promise<void> {
   closeSnapshot();
-  setState("current", { feedId: id, guid: null });
+  const selected = state.current.feedId === id;
+  setState("current", { feedId: selected ? null : id, postFeedId: null, guid: null });
   setState("post", null);
   await loadPosts(0);
 }
@@ -90,18 +91,11 @@ export async function removeFeed(id: number): Promise<void> {
     setState("feeds", feeds);
     if (!wasCurrent) return;
 
-    const next = feeds[0];
-    if (next) {
-      await selectFeed(next.id);
-    } else {
-      setState({
-        posts: [],
-        postTotal: 0,
-        postUnread: 0,
-        post: null,
-        current: { feedId: null, guid: null },
-      });
-    }
+    setState({
+      current: { feedId: null, postFeedId: null, guid: null },
+      post: null,
+    });
+    await loadPosts(0);
   } catch (error) {
     toast.error(messageOf(error));
   }

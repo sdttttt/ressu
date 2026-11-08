@@ -64,8 +64,10 @@ const scrollOrNext = (): void => {
 };
 
 const starSelected = (): void => {
-  const guid = app.current.guid;
-  if (guid !== null) void toggleStar(guid);
+  const post = app.posts.find(
+    (item) => item.feedId === app.current.postFeedId && item.guid === app.current.guid,
+  );
+  if (post) void toggleStar(post.guid, post.feedId);
 };
 
 /**

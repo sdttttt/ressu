@@ -8,13 +8,11 @@ import { closeSnapshot } from "~/stores/snapshot-actions";
 /** How many posts a page of the list holds. */
 export const PAGE_SIZE = 100;
 
+const aggregateFeedId = 0;
+
 /** Loads a page of the selected feed's posts, replacing or appending them. */
 export async function loadPosts(offset = 0): Promise<void> {
-  const feedId = state.current.feedId;
-  if (feedId === null) {
-    setState({ posts: [], postTotal: 0, postUnread: 0 });
-    return;
-  }
+  const feedId = state.current.feedId ?? aggregateFeedId;
 
   setState("loadingPosts", true);
   try {
@@ -54,20 +52,22 @@ export async function setPostFilter(filter: {
   await loadPosts(0);
 }
 
-/** Opens a post, and marks it read when the preferences ask for that. */
-export async function selectPost(guid: string): Promise<void> {
-  const feedId = state.current.feedId;
-  if (feedId === null) return;
+/** Opens a post, and marks it read when the preferences ask for that. The
+ * feed id is required in the aggregate list; callers can omit it when the
+ * selected feed is unambiguous. */
+export async function selectPost(guid: string, feedId?: number): Promise<void> {
+  const selectedFeedId = feedId ?? state.posts.find((post) => post.guid === guid)?.feedId;
+  if (selectedFeedId === undefined) return;
 
   closeSnapshot();
-  setState("current", "guid", guid);
+  setState("current", { postFeedId: selectedFeedId, guid });
   setState("loadingPost", true);
   try {
-    const post = await Posts.get(feedId, guid);
+    const post = await Posts.get(selectedFeedId, guid);
     setState("post", post);
     if (state.prefs.markReadOnOpen && !post.read) {
-      await Posts.markRead(feedId, guid, true);
-      setReadLocally(guid, true);
+      await Posts.markRead(selectedFeedId, guid, true);
+      setReadLocally(selectedFeedId, guid, true);
     }
   } catch (error) {
     toast.error(`无法打开文章：${messageOf(error)}`);
@@ -78,46 +78,48 @@ export async function selectPost(guid: string): Promise<void> {
 
 /** Marks the open post read or unread. */
 export async function setOpenPostRead(read: boolean): Promise<void> {
-  const feedId = state.current.feedId;
   const post = state.post;
-  if (feedId === null || !post) return;
+  if (!post) return;
 
   try {
-    await Posts.markRead(feedId, post.guid, read);
-    setReadLocally(post.guid, read);
+    await Posts.markRead(post.feedId, post.guid, read);
+    setReadLocally(post.feedId, post.guid, read);
     setState("post", "read", read);
   } catch (error) {
     toast.error(messageOf(error));
   }
 }
 
-/** Marks every post of a feed read, the selected one by default. */
+/** Marks every post of a feed read, or every stored post in aggregate mode. */
 export async function markAllRead(feedId: number | null = state.current.feedId): Promise<void> {
-  if (feedId === null) return;
-
   try {
-    await Posts.markAllRead(feedId);
-    if (feedId === state.current.feedId) await loadPosts(0);
+    await Posts.markAllRead(feedId ?? aggregateFeedId);
+    if (feedId === null || feedId === state.current.feedId) await loadPosts(0);
   } catch (error) {
     toast.error(messageOf(error));
   }
 }
 
-/** Stars or unstars a post. */
-export async function toggleStar(guid: string): Promise<void> {
-  const feedId = state.current.feedId;
-  if (feedId === null) return;
+/** Stars or unstars a post. The feed id is required in the aggregate list. */
+export async function toggleStar(guid: string, feedId?: number): Promise<void> {
+  const selectedFeedId = feedId ?? state.posts.find((post) => post.guid === guid)?.feedId;
+  if (selectedFeedId === undefined) return;
 
   try {
-    const updated = await Posts.toggleStar(feedId, guid);
-    setState("posts", (post) => post.guid === guid, "starred", updated.starred);
+    const updated = await Posts.toggleStar(selectedFeedId, guid);
+    setState(
+      "posts",
+      (post) => post.feedId === selectedFeedId && post.guid === guid,
+      "starred",
+      updated.starred,
+    );
     if (state.post?.guid === guid) setState("post", "starred", updated.starred);
   } catch (error) {
     toast.error(messageOf(error));
   }
 }
 
-function setReadLocally(guid: string, read: boolean): void {
-  setState("posts", (post) => post.guid === guid, "read", read);
+function setReadLocally(feedId: number, guid: string, read: boolean): void {
+  setState("posts", (post) => post.feedId === feedId && post.guid === guid, "read", read);
   setState("postUnread", (unread) => Math.max(read ? unread - 1 : unread + 1, 0));
 }

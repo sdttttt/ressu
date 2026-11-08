@@ -6,7 +6,7 @@ import { openDialog } from "~/stores/ui";
 /** Follows the Go side's events. Returns the unsubscribe function. */
 export function subscribe(): () => void {
   const offs = [
-    events.feedsChanged.on((snapshot) => replaceFeeds(snapshot.feeds)),
+    events.feedsChanged.on((snapshot) => void replaceFeeds(snapshot.feeds)),
     events.postsChanged.on((change) => handlePostsChanged(change.feedId)),
     events.syncState.on((state) => applySync(state)),
     events.uiCommand.on((command) => handleCommand(command)),

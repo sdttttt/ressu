@@ -2,24 +2,16 @@ import { toast } from "solid-sonner";
 
 import type { Feed, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
-import { selectFeed } from "~/stores/feeds";
 import { loadPosts } from "~/stores/posts";
 
 /** Applies the feed list the Go side sent. */
-export function replaceFeeds(feeds: Feed[]): void {
+export async function replaceFeeds(feeds: Feed[]): Promise<void> {
   setState("feeds", feeds);
   if (state.current.feedId !== null && !feeds.some((feed) => feed.id === state.current.feedId)) {
-    const next = feeds[0];
-    if (next) void selectFeed(next.id);
-    else
-      setState({
-        posts: [],
-        postTotal: 0,
-        postUnread: 0,
-        post: null,
-        current: { feedId: null, guid: null },
-      });
+    setState({ current: { feedId: null, postFeedId: null, guid: null }, post: null });
   }
+
+  if (state.current.feedId === null) await loadPosts(0);
 }
 
 /** Applies a refresh event. */
@@ -41,5 +33,5 @@ export function applySync(event: SyncState): void {
 
 /** Refreshes the list of the selected feed after its posts changed. */
 export function handlePostsChanged(feedId: number): void {
-  if (feedId === state.current.feedId) void loadPosts(0);
+  if (feedId === state.current.feedId || state.current.feedId === null) void loadPosts(0);
 }
