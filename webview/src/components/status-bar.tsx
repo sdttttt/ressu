@@ -6,7 +6,7 @@ import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
 import { formatRelative } from "~/lib/format";
-import { app, currentFeed, totalUnread } from "~/stores/app";
+import { app, currentFeed } from "~/stores/app";
 
 export default function StatusBar() {
   return (
@@ -21,7 +21,7 @@ export default function StatusBar() {
               variant="secondary"
               class="h-4 rounded-full px-1.5 py-0 text-[0.625rem] font-medium tabular-nums"
             >
-              {totalUnread()} 未读
+              {app.totalUnread} 未读
             </Badge>
           </div>
         }

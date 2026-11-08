@@ -51,8 +51,13 @@ func NewFeeds(st *store.Store) *Feeds {
 }
 
 // List returns every subscription, with its unread count.
-func (f *Feeds) List() []store.Feed {
-	return f.store.Feeds()
+func (f *Feeds) List() FeedsSnapshot {
+	return feedsSnapshot(f.store)
+}
+
+// feedsSnapshot combines the subscriptions and their total unread count.
+func feedsSnapshot(st *store.Store) FeedsSnapshot {
+	return FeedsSnapshot{Feeds: st.Feeds(), Unread: st.Unread()}
 }
 
 // Icon returns the local icon of a feed, fetching it when the cache is absent,

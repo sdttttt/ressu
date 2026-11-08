@@ -1,15 +1,18 @@
 import { toast } from "solid-sonner";
 
-import type { Feed, SyncState } from "~/mygo";
+import type { FeedsSnapshot, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
 import { syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
 
 /** Applies the feed list the Go side sent. */
-export async function replaceFeeds(feeds: Feed[]): Promise<void> {
-  syncFeedIcons(state.feeds, feeds);
-  setState("feeds", feeds);
-  if (state.current.feedId !== null && !feeds.some((feed) => feed.id === state.current.feedId)) {
+export async function replaceFeeds(snapshot: FeedsSnapshot): Promise<void> {
+  syncFeedIcons(state.feeds, snapshot.feeds);
+  setState({ feeds: snapshot.feeds, totalUnread: snapshot.unread });
+  if (
+    state.current.feedId !== null &&
+    !snapshot.feeds.some((feed) => feed.id === state.current.feedId)
+  ) {
     setState({ current: { feedId: null, postFeedId: null, guid: null }, post: null });
   }
 

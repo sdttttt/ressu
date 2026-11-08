@@ -9,13 +9,14 @@ import { loadPosts } from "~/stores/posts";
 /** Loads the subscriptions and the preferences, then shows all posts. */
 export async function start(): Promise<void> {
   try {
-    const [feeds, prefs, dataDir] = await Promise.all([
+    const [snapshot, prefs, dataDir] = await Promise.all([
       Feeds.list(),
       Settings.get(),
       Settings.dataDir(),
     ]);
     setAppState({
-      feeds,
+      feeds: snapshot.feeds,
+      totalUnread: snapshot.unread,
       prefs,
       dataDir,
       ready: true,

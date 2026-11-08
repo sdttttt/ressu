@@ -205,6 +205,35 @@ func TestAddRejectsDuplicates(t *testing.T) {
 	}
 }
 
+func TestListCarriesTotalUnread(t *testing.T) {
+	st := openStore(t)
+	feeds := NewFeeds(st)
+	posts := NewPosts(st)
+
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "测试源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.MergePosts(feed.ID, []store.Post{
+		{GUID: "a", Title: "第一篇", PublishedAt: time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC)},
+		{GUID: "b", Title: "第二篇", PublishedAt: time.Date(2024, 10, 1, 13, 0, 0, 0, time.UTC)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	snapshot := feeds.List()
+	if len(snapshot.Feeds) != 1 || snapshot.Unread != 2 {
+		t.Fatalf("list = %+v", snapshot)
+	}
+
+	if _, err := posts.MarkAllRead(feed.ID); err != nil {
+		t.Fatal(err)
+	}
+	if snapshot = feeds.List(); snapshot.Unread != 0 {
+		t.Errorf("unread after read = %d", snapshot.Unread)
+	}
+}
+
 func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 	var failing atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

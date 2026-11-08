@@ -51,5 +51,5 @@ const (
 
 // broadcastFeeds tells the pages about the current subscriptions.
 func broadcastFeeds(st *store.Store) {
-	_ = FeedsChanged.Broadcast(FeedsSnapshot{Feeds: st.Feeds(), Unread: st.Unread()})
+	_ = FeedsChanged.Broadcast(feedsSnapshot(st))
 }

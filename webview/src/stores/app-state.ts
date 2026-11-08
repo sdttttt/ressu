@@ -20,6 +20,7 @@ export type FeedIconView = {
 
 type AppState = {
   feeds: Feed[];
+  totalUnread: number;
   icons: Record<number, FeedIconView>;
   posts: PostSummary[];
   postTotal: number;
@@ -60,6 +61,7 @@ export const idleSync: SyncState = { active: false, done: 0, total: 0, feedId: 0
 
 const [state, setState] = createStore<AppState>({
   feeds: [],
+  totalUnread: 0,
   icons: {},
   posts: [],
   postTotal: 0,
@@ -107,11 +109,6 @@ export function currentFeed(): Feed | undefined {
 /** The title of a post's subscription, useful in the aggregate list. */
 export function feedTitle(id: number): string {
   return state.feeds.find((feed) => feed.id === id)?.title ?? "";
-}
-
-/** How many posts are unread across the subscriptions. */
-export function totalUnread(): number {
-  return state.feeds.reduce((total, feed) => total + feed.unread, 0);
 }
 
 /** Whether a feed is being fetched right now. */

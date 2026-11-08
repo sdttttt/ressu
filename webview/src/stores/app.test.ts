@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Feed, Post, PostSummary, Prefs, SyncState } from "~/mygo";
+import type { Feed, FeedsSnapshot, Post, PostSummary, Prefs, SyncState } from "~/mygo";
 
 vi.mock("solid-sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -103,15 +103,18 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-async function setup(options: { feeds?: Feed[]; posts?: PostSummary[] } = {}) {
+async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSummary[] } = {}) {
   const mygo = await import("~/mygo");
   const snapshot = await import("~/lib/snapshot");
   const { toast } = await import("solid-sonner");
   const app = await import("~/stores/app");
 
-  vi.mocked(mygo.Feeds.list).mockImplementation(async () =>
-    (options.feeds ?? [feedA, feedB]).map((feed) => ({ ...feed })),
-  );
+  const feeds = (options.feeds ?? [feedA, feedB]).map((feed) => ({ ...feed }));
+  const feedsSnapshot: FeedsSnapshot = {
+    feeds,
+    unread: options.unread ?? feeds.reduce((total, feed) => total + feed.unread, 0),
+  };
+  vi.mocked(mygo.Feeds.list).mockResolvedValue(feedsSnapshot);
   vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs });
   vi.mocked(mygo.Settings.update).mockImplementation(async (next) => next);
   vi.mocked(mygo.Settings.dataDir).mockResolvedValue("C:/Users/me/AppData/Ressu");
@@ -136,6 +139,7 @@ describe("sidebar preference", () => {
 
     expect(app.app.ready).toBe(true);
     expect(app.app.feeds).toHaveLength(2);
+    expect(app.app.totalUnread).toBe(1);
     expect(app.app.current.feedId).toBeNull();
     expect(app.app.posts).toHaveLength(1);
     expect(app.app.dataDir).toBe("C:/Users/me/AppData/Ressu");
@@ -418,12 +422,14 @@ describe("applySync", () => {
 });
 
 describe("replaceFeeds", () => {
-  it("returns to aggregate when its selected feed disappears", async () => {
+  it("stores backend unread and returns to aggregate when its feed disappears", async () => {
     const { app } = await setup();
     await app.start();
 
-    await app.replaceFeeds([feedB]);
+    await app.replaceFeeds({ feeds: [feedB], unread: 5 });
     await vi.waitFor(() => expect(app.app.current.feedId).toBeNull());
+    expect(app.app.feeds).toHaveLength(1);
+    expect(app.app.totalUnread).toBe(5);
     expect(app.app.posts).toHaveLength(1);
   });
 });
