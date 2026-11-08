@@ -110,6 +110,18 @@ const (
 // DefaultPostsPerFeed bounds the posts kept for a feed.
 const DefaultPostsPerFeed = 500
 
+const (
+	// MinImageCacheLimit bounds the article image cache from below, in MB.
+	MinImageCacheLimit = 32
+
+	// DefaultImageCacheLimit is the article image cache limit of a new
+	// install, in MB.
+	DefaultImageCacheLimit = 256
+
+	// MaxImageCacheLimit bounds the article image cache from above, in MB.
+	MaxImageCacheLimit = 512
+)
+
 // Prefs are the user's preferences, kept in the settings bucket.
 type Prefs struct {
 	Theme            string `json:"theme"`
@@ -119,7 +131,8 @@ type Prefs struct {
 	RemoteResources  string `json:"remoteResources"`
 	OpenLinks        string `json:"openLinks"`
 	PostsPerFeed     int    `json:"postsPerFeed"`
-	PaneSizes        []int  `json:"paneSizes"` // widths of the sidebar and the list, in percent
+	ImageCacheLimit  int    `json:"imageCacheLimit"` // maximum image cache size, in MB
+	PaneSizes        []int  `json:"paneSizes"`       // widths of the sidebar and the list, in percent
 	SidebarCollapsed bool   `json:"sidebarCollapsed"`
 }
 
@@ -133,6 +146,7 @@ func DefaultPrefs() Prefs {
 		RemoteResources:  ResourceAccessGoProxy,
 		OpenLinks:        OpenLinksBrowser,
 		PostsPerFeed:     DefaultPostsPerFeed,
+		ImageCacheLimit:  DefaultImageCacheLimit,
 		PaneSizes:        []int{18, 30},
 		SidebarCollapsed: false,
 	}
@@ -155,6 +169,9 @@ func (p *Prefs) Normalize() {
 	}
 	if p.PostsPerFeed < 50 || p.PostsPerFeed > 2000 {
 		p.PostsPerFeed = DefaultPostsPerFeed
+	}
+	if p.ImageCacheLimit < MinImageCacheLimit || p.ImageCacheLimit > MaxImageCacheLimit {
+		p.ImageCacheLimit = DefaultImageCacheLimit
 	}
 	if p.RemoteResources != ResourceAccessWebview {
 		p.RemoteResources = ResourceAccessGoProxy

@@ -1,5 +1,5 @@
 import { Settings as SettingsIcon } from "lucide-solid";
-import { For } from "solid-js";
+import { For, createEffect, createSignal } from "solid-js";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -58,7 +58,12 @@ const remoteResources = [
   { value: "webview", label: "Webview" },
 ];
 
+const cacheLimitLabel = (limit: number): string => `${limit} MB`;
+
 export default function SettingsDialog() {
+  const [imageCacheLimit, setImageCacheLimit] = createSignal(app.prefs.imageCacheLimit);
+  createEffect(() => setImageCacheLimit(app.prefs.imageCacheLimit));
+
   return (
     <Dialog
       open={app.dialog.settings}
@@ -186,6 +191,39 @@ export default function SettingsDialog() {
             </For>
           </RadioGroup>
           <p class="text-xs text-muted-foreground">Go代理能缓解部分访问外部资源限制问题</p>
+          <div class="pt-2">
+            <div class="flex items-center justify-between gap-4">
+              <Label class="text-sm font-normal">图片缓存空间</Label>
+              <span class="text-xs text-muted-foreground">
+                {cacheLimitLabel(imageCacheLimit())}
+              </span>
+            </div>
+            <Slider
+              value={[imageCacheLimit()]}
+              minValue={32}
+              maxValue={512}
+              step={16}
+              getValueLabel={({ values }) => cacheLimitLabel(values[0])}
+              onChange={([limit]) => {
+                if (limit !== undefined) setImageCacheLimit(limit);
+              }}
+              onChangeEnd={([limit]) => {
+                if (limit !== undefined && limit !== app.prefs.imageCacheLimit) {
+                  void updatePrefs({ imageCacheLimit: limit });
+                }
+              }}
+              class="mt-2 gap-2"
+            >
+              <SliderTrack class="h-1.5 w-full">
+                <SliderFill />
+              </SliderTrack>
+              <SliderThumb class="top-[-7px]" />
+              <div class="flex w-full justify-between text-xs text-muted-foreground">
+                <span>32 MB</span>
+                <span>512 MB</span>
+              </div>
+            </Slider>
+          </div>
         </section>
 
         <Separator />

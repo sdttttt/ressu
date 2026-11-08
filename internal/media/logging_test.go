@@ -17,7 +17,7 @@ func TestHandlerLogsAndDeduplicatesUnavailableImages(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
 	t.Cleanup(func() { slog.SetDefault(previous) })
 
-	cache, err := Open(filepath.Join(t.TempDir(), "media"))
+	cache, err := Open(filepath.Join(t.TempDir(), "media"), Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

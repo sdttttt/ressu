@@ -55,6 +55,7 @@ const defaultPrefs: Prefs = {
   remoteResources: "goProxy",
   openLinks: "browser",
   postsPerFeed: 500,
+  imageCacheLimit: 256,
   paneSizes: [18, 30],
   sidebarCollapsed: false,
 };

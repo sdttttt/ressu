@@ -29,8 +29,16 @@ const Scheme = "ressu-media"
 // MaxBytes bounds a single downloaded image.
 const MaxBytes = 8 << 20
 
-// MaxCacheBytes bounds the disk space used by downloaded image bytes.
-const MaxCacheBytes = 256 << 20
+const (
+	// MinCacheBytes bounds the disk cache from below.
+	MinCacheBytes = 32 << 20
+
+	// DefaultCacheBytes is the disk cache limit of a new install.
+	DefaultCacheBytes = 256 << 20
+
+	// MaxCacheBytes bounds the disk cache from above.
+	MaxCacheBytes = 512 << 20
+)
 
 // MaxEntries bounds source mappings created for one local cache.
 const MaxEntries = 10000
@@ -50,9 +58,11 @@ var loggedURLPattern = regexp.MustCompile(`(?i)([a-z][a-z0-9+.-]*://)[^\s"'<>]+`
 // Entry describes one cached image. A nil size marks a prepared, but not yet
 // downloaded resource.
 type Entry struct {
-	Key          string    `json:"key"`
-	SourceURL    string    `json:"sourceUrl"`
-	ContentType  string    `json:"contentType"`
+	Key         string `json:"key"`
+	SourceURL   string `json:"sourceUrl"`
+	ContentType string `json:"contentType"`
+	// CreatedAt is when the cached image bytes were first stored.
+	CreatedAt    time.Time `json:"createdAt"`
 	ETag         string    `json:"etag,omitempty"`
 	LastModified string    `json:"lastModified,omitempty"`
 	FetchedAt    time.Time `json:"fetchedAt"`
@@ -63,8 +73,9 @@ type Entry struct {
 
 // Cache downloads, stores, evicts, and serves article images.
 type Cache struct {
-	dir    string
-	client *http.Client
+	dir      string
+	client   *http.Client
+	maxBytes int64
 
 	mu       sync.Mutex
 	entries  map[string]Entry
@@ -82,29 +93,44 @@ type fetchRequest struct {
 	done chan struct{}
 }
 
-// Open creates a media cache below dir after clearing files left by a previous
-// launch. The cache never contacts remote servers until a rewritten article
-// image is requested by the WebView.
-func Open(dir string) (*Cache, error) {
-	if err := os.RemoveAll(dir); err != nil {
-		return nil, err
-	}
-	cache := &Cache{
-		dir:          dir,
-		client:       newClient(),
-		entries:      make(map[string]Entry),
-		inFlight:     make(map[string]*fetchRequest),
-		failureTimes: make(map[string]time.Time),
-	}
+type Options struct {
+	// MaxBytes bounds image bytes stored on disk. Zero uses the default.
+	MaxBytes int64
+}
+
+// Open opens a persistent image cache, loads its mappings, and removes the
+// oldest bytes that exceed the limit. The cache never contacts remote servers
+// until a rewritten article image is requested by the WebView.
+func Open(dir string, options Options) (*Cache, error) {
 	for _, name := range []string{dir, filepath.Join(dir, indexPath), filepath.Join(dir, dataPath)} {
 		if err := os.MkdirAll(name, 0o700); err != nil {
 			return nil, err
 		}
 	}
+	cache := &Cache{
+		dir:          dir,
+		client:       newClient(),
+		maxBytes:     normalizeLimit(options.MaxBytes),
+		entries:      make(map[string]Entry),
+		inFlight:     make(map[string]*fetchRequest),
+		failureTimes: make(map[string]time.Time),
+	}
 	if err := cache.load(); err != nil {
 		return nil, err
 	}
+	if err := cache.enforceLimitLocked(); err != nil {
+		return nil, err
+	}
 	return cache, nil
+}
+
+// SetLimit changes the disk cache limit and removes the oldest bytes that now
+// exceed it.
+func (c *Cache) SetLimit(maxBytes int64) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.maxBytes = normalizeLimit(maxBytes)
+	return c.enforceLimitLocked()
 }
 
 // Close releases cache resources. Downloads use short-lived files and clients,
@@ -129,11 +155,15 @@ func (c *Cache) load() error {
 	defer c.mu.Unlock()
 
 	for _, item := range items {
-		if item.IsDir() || !strings.HasSuffix(item.Name(), ".json") {
+		if item.IsDir() || strings.HasPrefix(item.Name(), ".") {
+			if strings.HasPrefix(item.Name(), ".") {
+				_ = os.Remove(filepath.Join(c.dir, indexPath, item.Name()))
+			}
 			continue
 		}
 		key := strings.TrimSuffix(item.Name(), ".json")
 		if !validKey(key) {
+			_ = os.Remove(filepath.Join(c.dir, indexPath, item.Name()))
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(c.dir, indexPath, item.Name()))
@@ -160,6 +190,15 @@ func (c *Cache) load() error {
 				c.total += entry.Size
 			}
 		}
+		if entry.CreatedAt.IsZero() {
+			entry.CreatedAt = entry.FetchedAt
+		}
+		if entry.CreatedAt.IsZero() {
+			entry.CreatedAt = entry.LastAttempt
+		}
+		if entry.CreatedAt.IsZero() {
+			entry.CreatedAt = time.Now()
+		}
 		c.entries[key] = entry
 	}
 
@@ -169,6 +208,10 @@ func (c *Cache) load() error {
 	}
 	for _, item := range binaryItems {
 		if item.IsDir() {
+			continue
+		}
+		if strings.HasPrefix(item.Name(), ".") {
+			_ = os.Remove(filepath.Join(c.dir, dataPath, item.Name()))
 			continue
 		}
 		key := strings.TrimSuffix(item.Name(), dataSuffix)
@@ -348,6 +391,9 @@ func (c *Cache) fetch(ctx context.Context, old Entry) (Entry, error) {
 	now := time.Now()
 	entry := old
 	entry.LastAttempt = now
+	if old.Size == 0 {
+		entry.CreatedAt = now
+	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, old.SourceURL, nil)
 	if err != nil {
@@ -451,15 +497,14 @@ func (c *Cache) put(key string, entry Entry, data []byte) error {
 	}
 	c.entries[key] = entry
 	c.total += entry.Size
-	c.evictLocked(key)
-	return nil
+	return c.evictLocked(key)
 }
 
-// evictLocked removes least recently used images until the cache fits its
-// limit. The key just stored is never evicted.
-func (c *Cache) evictLocked(keep string) {
-	if c.total <= MaxCacheBytes {
-		return
+// evictLocked removes oldest images until the cache fits its limit. The key
+// just stored is never evicted.
+func (c *Cache) evictLocked(keep string) error {
+	if c.total <= c.maxBytes {
+		return nil
 	}
 	keys := make([]string, 0, len(c.entries))
 	for key, entry := range c.entries {
@@ -468,18 +513,26 @@ func (c *Cache) evictLocked(keep string) {
 		}
 	}
 	slices.SortFunc(keys, func(first, second string) int {
-		return c.entries[first].LastAttempt.Compare(c.entries[second].LastAttempt)
+		return c.entries[first].CreatedAt.Compare(c.entries[second].CreatedAt)
 	})
 	for _, key := range keys {
-		if c.total <= MaxCacheBytes {
-			return
+		if c.total <= c.maxBytes {
+			return nil
 		}
 		entry := c.entries[key]
-		_ = os.Remove(c.dataFile(key))
-		_ = os.Remove(filepath.Join(c.dir, indexPath, key+".json"))
+		if err := removeEntry(c.dir, key); err != nil {
+			return err
+		}
 		delete(c.entries, key)
 		c.total -= entry.Size
 	}
+	return nil
+}
+
+// enforceLimitLocked checks the whole loaded cache at startup and after the
+// preference changes.
+func (c *Cache) enforceLimitLocked() error {
+	return c.evictLocked("")
 }
 
 // prepare records the mapping needed to resolve a rewritten URL later.
@@ -494,7 +547,7 @@ func (c *Cache) prepare(key, sourceURL string) bool {
 		return false
 	}
 
-	entry := Entry{Key: key, SourceURL: sourceURL}
+	entry := Entry{Key: key, SourceURL: sourceURL, CreatedAt: time.Now()}
 	c.mu.Unlock()
 	if err := saveEntry(c.dir, entry); err != nil {
 		slog.Warn("image mapping save failed",
@@ -532,8 +585,18 @@ func (c *Cache) dataFile(key string) string {
 	return filepath.Join(c.dir, dataPath, key+dataSuffix)
 }
 
-func entryFile(dir, key string) string {
+func entryPath(dir, key string) string {
 	return filepath.Join(dir, indexPath, key+".json")
+}
+
+func removeEntry(dir, key string) error {
+	paths := []string{filepath.Join(dir, dataPath, key+dataSuffix), entryPath(dir, key)}
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("could not remove image cache entry: %w", err)
+		}
+	}
+	return nil
 }
 
 func saveEntry(dir string, entry Entry) error {
@@ -541,7 +604,20 @@ func saveEntry(dir string, entry Entry) error {
 	if err != nil {
 		return err
 	}
-	return writeAtomic(entryFile(dir, entry.Key), data, 0o600)
+	return writeAtomic(entryPath(dir, entry.Key), data, 0o600)
+}
+
+func normalizeLimit(maxBytes int64) int64 {
+	switch {
+	case maxBytes <= 0:
+		return DefaultCacheBytes
+	case maxBytes < MinCacheBytes:
+		return MinCacheBytes
+	case maxBytes > MaxCacheBytes:
+		return MaxCacheBytes
+	default:
+		return maxBytes
+	}
 }
 
 func writeData(path string, data []byte) error {
@@ -549,12 +625,17 @@ func writeData(path string, data []byte) error {
 }
 
 func writeAtomic(path string, data []byte, mode os.FileMode) error {
-	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
+	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".")
 	if err != nil {
 		return err
 	}
 	temp := file.Name()
-	defer os.Remove(temp)
+	removeTemp := true
+	defer func() {
+		if removeTemp {
+			_ = os.Remove(temp)
+		}
+	}()
 
 	if _, err = file.Write(data); err == nil {
 		err = file.Sync()
@@ -568,5 +649,9 @@ func writeAtomic(path string, data []byte, mode os.FileMode) error {
 	if err = os.Chmod(temp, mode); err != nil {
 		return err
 	}
-	return os.Rename(temp, path)
+	if err = os.Rename(temp, path); err != nil {
+		return err
+	}
+	removeTemp = false
+	return nil
 }

@@ -1,12 +1,14 @@
 package media
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
-func TestOpenClearsPreviousLaunchCache(t *testing.T) {
+func TestOpenLoadsPreviousLaunchCache(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "articles")
 	if err := os.MkdirAll(filepath.Join(dir, indexPath), 0o700); err != nil {
 		t.Fatal(err)
@@ -25,7 +27,7 @@ func TestOpenClearsPreviousLaunchCache(t *testing.T) {
 		}
 	}
 
-	cache, err := Open(dir)
+	cache, err := Open(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +45,41 @@ func TestOpenClearsPreviousLaunchCache(t *testing.T) {
 			t.Fatalf("%s contains %d items after startup", name, len(items))
 		}
 	}
-	if _, err := os.Stat(filepath.Join(dir, "root.bin")); !os.IsNotExist(err) {
-		t.Fatalf("root leftover stat err = %v, want not exist", err)
+	if _, err := os.Stat(filepath.Join(dir, "root.bin")); err != nil {
+		t.Fatalf("unrelated root file should be left alone: %v", err)
+	}
+}
+
+func TestOpenPrunesOldestImagesBeyondLimit(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "articles")
+	oldKey := newTestCacheEntry(
+		t,
+		dir,
+		"https://cdn.example/old.png",
+		bytes.Repeat([]byte{1}, MinCacheBytes),
+		time.Now().Add(-time.Minute),
+	)
+	newKey := newTestCacheEntry(t, dir, "https://cdn.example/new.png", []byte{1}, time.Now())
+	if oldKey == newKey {
+		t.Fatal("test entries have the same key")
+	}
+
+	cache, err := Open(dir, Options{MaxBytes: 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cache.Close()
+
+	if _, cached := cache.entries[oldKey]; cached || cache.total != 1 {
+		t.Fatalf("cache = %d bytes, old cached = %t; want old removed", cache.total, cached)
+	}
+	if _, cached := cache.entries[newKey]; !cached {
+		t.Fatal("new image was removed")
+	}
+	if _, err := os.Stat(cache.dataFile(oldKey)); !os.IsNotExist(err) {
+		t.Fatalf("old data stat err = %v, want not exist", err)
+	}
+	if _, err := os.Stat(entryPath(dir, oldKey)); !os.IsNotExist(err) {
+		t.Fatalf("old metadata stat err = %v, want not exist", err)
 	}
 }

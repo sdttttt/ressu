@@ -93,7 +93,7 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	articleMedia, err := media.Open(filepath.Join(t.TempDir(), "articles"))
+	articleMedia, err := media.Open(filepath.Join(t.TempDir(), "articles"), media.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

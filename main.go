@@ -46,7 +46,9 @@ func main() {
 	defer st.Close()
 	slog.Info("application starting", "operation", "app.start")
 
-	articleMedia, err := media.Open(filepath.Join(cacheDir, "articles"))
+	articleMedia, err := media.Open(filepath.Join(cacheDir, "articles"), media.Options{
+		MaxBytes: int64(st.Prefs().ImageCacheLimit) << 20,
+	})
 	if err != nil {
 		fatal("article media cache open failed", err)
 	}
@@ -59,7 +61,7 @@ func main() {
 	mygo.Bind(
 		feeds,
 		service.NewPostsWithMedia(st, articleMedia),
-		service.NewSettings(st),
+		service.NewSettingsWithMedia(st, articleMedia),
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
 		if _, err := feeds.RefreshAll(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {

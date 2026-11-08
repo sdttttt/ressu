@@ -186,7 +186,7 @@ func (failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
 
 func openTestCache(t *testing.T) *Cache {
 	t.Helper()
-	cache, err := Open(filepath.Join(t.TempDir(), "media"))
+	cache, err := Open(filepath.Join(t.TempDir(), "media"), Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

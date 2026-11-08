@@ -447,6 +447,9 @@ func TestPrefsNormalize(t *testing.T) {
 	if p.PostsPerFeed != DefaultPostsPerFeed {
 		t.Errorf("posts per feed = %d", p.PostsPerFeed)
 	}
+	if p.ImageCacheLimit != DefaultImageCacheLimit {
+		t.Errorf("image cache limit = %d", p.ImageCacheLimit)
+	}
 	if len(p.PaneSizes) != 2 {
 		t.Errorf("pane sizes = %v", p.PaneSizes)
 	}
