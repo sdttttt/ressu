@@ -96,12 +96,7 @@ export async function markAllRead(feedId: number | null = state.current.feedId):
   if (feedId === null) return;
 
   try {
-    const changed = await Posts.markAllRead(feedId);
-    if (changed === 0) {
-      toast.info("这个订阅源没有未读文章");
-      return;
-    }
-    toast.success(`已把 ${changed} 篇文章标记为已读`);
+    await Posts.markAllRead(feedId);
     if (feedId === state.current.feedId) await loadPosts(0);
   } catch (error) {
     toast.error(messageOf(error));

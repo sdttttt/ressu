@@ -38,7 +38,6 @@ export async function saveSnapshot(): Promise<void> {
   try {
     const path = await Posts.saveSnapshot(snapshot.post.title, snapshot.png);
     if (path) {
-      toast.success(`快照已保存：${path}`);
       closeSnapshot();
     }
   } catch (error) {
@@ -56,7 +55,6 @@ export async function copySnapshot(): Promise<void> {
   setState("snapshotAction", "copy");
   try {
     await Posts.copySnapshot(snapshot.png);
-    toast.success("快照已复制到剪贴板");
     closeSnapshot();
   } catch (error) {
     toast.error(`无法复制快照：${messageOf(error)}`);

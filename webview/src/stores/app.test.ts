@@ -539,7 +539,7 @@ describe("saveSnapshot", () => {
     await app.saveSnapshot();
 
     expect(mygo.Posts.saveSnapshot).toHaveBeenCalledWith("第一篇文章", "c3RpdGNoZWQ");
-    expect(toast.success).toHaveBeenCalledWith("快照已保存：C:/Users/me/第一篇文章.png");
+    expect(toast.success).not.toHaveBeenCalled();
     expect(app.app.snapshot).toBeNull();
     expect(app.app.snapshotAction).toBeNull();
   });
@@ -597,7 +597,7 @@ describe("copySnapshot", () => {
     await app.copySnapshot();
 
     expect(mygo.Posts.copySnapshot).toHaveBeenCalledWith("c3RpdGNoZWQ");
-    expect(toast.success).toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
     expect(app.app.snapshot).toBeNull();
   });
 
