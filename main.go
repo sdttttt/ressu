@@ -54,7 +54,6 @@ func main() {
 	if err := mygo.Protocol.Handle(media.Scheme, articleMedia.Handler()); err != nil {
 		fatal("media protocol registration failed", err)
 	}
-	slog.Info("media protocol registered", "operation", "app.startup", "scheme", media.Scheme)
 
 	feeds := service.NewFeeds(st)
 	mygo.Bind(

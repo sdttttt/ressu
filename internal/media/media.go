@@ -183,27 +183,17 @@ func (c *Cache) load() error {
 func (c *Cache) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	started := time.Now()
 	status, cause := c.serveHTTP(writer, request, started)
-	reported := false
-	if status >= http.StatusBadRequest {
-		reported = c.reportFailure(strings.TrimPrefix(request.URL.Path, "/i/"), started)
-	}
-	if status >= http.StatusBadRequest && reported && request.Context().Err() == nil {
-		level := slog.LevelDebug
-		message := "media protocol request rejected"
-		if status == http.StatusServiceUnavailable {
-			level = slog.LevelWarn
-			message = "media image unavailable"
-		}
+	if status == http.StatusServiceUnavailable && request.Context().Err() == nil &&
+		c.reportFailure(strings.TrimPrefix(request.URL.Path, "/i/"), started) {
 		args := []any{
 			"operation", "media.serveHTTP",
 			"cacheKey", strings.TrimPrefix(request.URL.Path, "/i/"),
-			"status", status,
 			"elapsedMs", time.Since(started).Milliseconds(),
 		}
 		if cause != nil {
 			args = append(args, "error", diagnosticError(cause))
 		}
-		slog.Log(request.Context(), level, message, args...)
+		slog.Warn("media image unavailable", args...)
 	}
 }
 

@@ -38,8 +38,7 @@ func (c *Cache) RewriteHTML(markup, baseURL string) string {
 			"operation", "media.rewriteHTML", "reason", "no document body")
 		return ""
 	}
-	stats := rewriteStats{}
-	rewriteImages(body, baseURL, c, &stats)
+	rewriteImages(body, baseURL, c)
 
 	var output strings.Builder
 	for child := body.FirstChild; child != nil; child = child.NextSibling {
@@ -49,21 +48,11 @@ func (c *Cache) RewriteHTML(markup, baseURL string) string {
 			return ""
 		}
 	}
-	slog.Info("article images rewritten",
-		"operation", "media.rewriteHTML",
-		"mappedImages", stats.mapped,
-		"unmappedImages", stats.unmapped,
-	)
 	return output.String()
 }
 
-type rewriteStats struct {
-	mapped   int
-	unmapped int
-}
-
 // rewriteImages walks one cleaned article fragment and maps every img source.
-func rewriteImages(node *html.Node, baseURL string, cache *Cache, stats *rewriteStats) {
+func rewriteImages(node *html.Node, baseURL string, cache *Cache) {
 	if node.Type == html.ElementNode && strings.EqualFold(node.Data, "img") {
 		if src := attribute(node, "src"); src != nil {
 			if scheme, _, err := splitScheme(src.Val); err == nil &&
@@ -73,16 +62,14 @@ func rewriteImages(node *html.Node, baseURL string, cache *Cache, stats *rewrite
 			source := absolute(baseURL, src.Val)
 			if local, ok := cache.LocalURL(source); ok {
 				src.Val = local
-				stats.mapped++
 			} else {
 				removeAttribute(node, "src")
-				stats.unmapped++
 			}
 		}
 		removeAttribute(node, "srcset")
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		rewriteImages(child, baseURL, cache, stats)
+		rewriteImages(child, baseURL, cache)
 	}
 }
 
