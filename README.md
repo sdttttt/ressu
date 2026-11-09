@@ -1,6 +1,7 @@
 # Ressu
 
 一个随处可见，普通，没有什么特点的传统 **RSS 阅读器**。
+
 <img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
 
 ## Feature
@@ -11,7 +12,7 @@
 - 支持文章生成完整长图，方便和群友分享
 - 跟随系统/浅色/深色主题
 
-> 默认使用Go远程资源代理访问文章中的图片资源，如果发现图裂的情况下，可以尝试切换到Webview模式
+> 默认使用Go远程资源代理访问文章中的图片资源，如果发现图裂，可以尝试`设置 > 远程资源访问 > 切换到[Webview模式]`。
 
 
 ## Road Map
