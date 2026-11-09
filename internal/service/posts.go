@@ -82,11 +82,15 @@ func (p *Posts) OpenImage(ctx context.Context, source string, alt string) error 
 		return errors.New("the image viewer is unavailable")
 	}
 
-	data, viewerURL, err := p.media.Get(ctx, source)
+	entry, err := p.media.Get(ctx, source)
 	if err != nil {
 		return fmt.Errorf("could not load the image: %w", err)
 	}
-	return gui.OpenImageViewer(mygo.CallerWindow(ctx), data, viewerURL, alt)
+	data, err := p.media.Read(entry)
+	if err != nil {
+		return fmt.Errorf("could not load the image: %w", err)
+	}
+	return gui.OpenImageViewer(mygo.CallerWindow(ctx), data, entry.ViewerURL(), alt)
 }
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search

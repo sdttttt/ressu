@@ -119,41 +119,59 @@ func (c *Cache) SetLimit(maxBytes int64) error {
 	return c.enforceLimitLocked()
 }
 
-// Get returns image bytes for a data URL, a local protocol URL, or a public
-// remote image URL. For remote images it first maps the source to this
-// cache's local URL. The returned viewer URL is always safe to load in a
-// child WebView.
-func (c *Cache) Get(ctx context.Context, source string) ([]byte, string, error) {
+// Get resolves a data URL, a local protocol URL, or a public remote image
+// URL to its cache entry. For remote images it first maps the source to this
+// cache's local URL. A usable stale entry is returned even when refreshing
+// it failed; read its bytes with Read.
+func (c *Cache) Get(ctx context.Context, source string) (Entry, error) {
 	if c == nil {
-		return nil, "", ErrImageUnavailable
+		return Entry{}, ErrImageUnavailable
 	}
 	source = strings.TrimSpace(source)
 	if strings.HasPrefix(strings.ToLower(source), "data:") {
 		data, err := decodeDataURL(source)
 		if err != nil {
-			return nil, "", err
+			return Entry{}, err
 		}
-		return data, source, nil
+		return Entry{
+			Key:         keyFor(source),
+			SourceURL:   source,
+			ContentType: imageType(data, ""),
+			CreatedAt:   time.Now(),
+			FetchedAt:   time.Now(),
+			LastAttempt: time.Now(),
+			Size:        int64(len(data)),
+		}, nil
 	}
 
 	key, ok := localImageKey(source)
 	if ok {
-		return c.readImage(ctx, key, localURL(key))
+		return c.getUsable(ctx, key)
 	}
 
 	viewerURL, ok := c.LocalURL(source)
 	if !ok {
-		return nil, "", ErrInvalidImageSource
+		return Entry{}, ErrInvalidImageSource
 	}
 	parsed, err := url.Parse(viewerURL)
 	if err != nil {
-		return nil, "", ErrInvalidImageSource
+		return Entry{}, ErrInvalidImageSource
 	}
 	key, ok = localImageKey(viewerURL)
 	if !ok || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return nil, "", ErrInvalidImageSource
+		return Entry{}, ErrInvalidImageSource
 	}
-	return c.readImage(ctx, key, viewerURL)
+	return c.getUsable(ctx, key)
+}
+
+// getUsable returns a stale entry when a refresh failed but older bytes
+// remain available.
+func (c *Cache) getUsable(ctx context.Context, key string) (Entry, error) {
+	entry, getErr := c.get(ctx, key)
+	if getErr != nil && entry.Size == 0 {
+		return Entry{}, getErr
+	}
+	return entry, nil
 }
 
 // Close releases cache resources. Downloads use short-lived files and clients,
@@ -162,25 +180,22 @@ func (c *Cache) Close() error {
 	return nil
 }
 
-// readImage downloads or revalidates one mapped image and reads its bytes.
-// A stale image is still usable when its refresh fails.
-func (c *Cache) readImage(ctx context.Context, key, viewerURL string) ([]byte, string, error) {
-	entry, getErr := c.get(ctx, key)
-	if getErr != nil && entry.Size == 0 {
-		return nil, "", getErr
+// Read returns the image bytes described by an entry returned from Get. A
+// stale image is still readable when its refresh failed.
+func (c *Cache) Read(entry Entry) ([]byte, error) {
+	if strings.HasPrefix(strings.ToLower(entry.SourceURL), "data:") {
+		return decodeDataURL(entry.SourceURL)
 	}
 
-	data, readErr := os.ReadFile(c.dataFile(key))
-	if readErr != nil {
-		if getErr != nil {
-			return nil, "", getErr
-		}
-		return nil, "", ErrImageUnavailable
+	if !validKey(entry.Key) {
+		return nil, ErrImageUnavailable
 	}
-	if len(data) == 0 || entry.Size > 0 && int64(len(data)) != entry.Size {
-		return nil, "", ErrImageUnavailable
+
+	data, err := os.ReadFile(c.dataFile(entry.Key))
+	if err != nil || len(data) == 0 || entry.Size > 0 && int64(len(data)) != entry.Size {
+		return nil, ErrImageUnavailable
 	}
-	return data, viewerURL, nil
+	return data, nil
 }
 
 func (c *Cache) get(ctx context.Context, key string) (Entry, error) {
@@ -193,6 +208,15 @@ func (c *Cache) getOnce(ctx context.Context, key string, depth int) (Entry, erro
 
 func (c *Cache) imageFresh(entry Entry) bool {
 	return cacheImageFresh(entry)
+}
+
+// ViewerURL returns the local protocol URL for a cache entry. Data URLs are
+// already safe to load directly.
+func (e Entry) ViewerURL() string {
+	if strings.HasPrefix(strings.ToLower(e.SourceURL), "data:") {
+		return e.SourceURL
+	}
+	return localURL(e.Key)
 }
 
 func (c *Cache) fetch(ctx context.Context, old Entry) (Entry, error) {

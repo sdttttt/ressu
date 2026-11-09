@@ -30,21 +30,29 @@ func TestCacheGetDownloadsRemoteImage(t *testing.T) {
 	if !ok {
 		t.Fatal("source URL could not be mapped")
 	}
-	got, viewerURL, err := cache.Get(context.Background(), source)
+	entry, err := cache.Get(context.Background(), source)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(got, data) || viewerURL != wantURL {
-		t.Fatalf("Get = %d bytes at %q; want %d bytes at %q", len(got), viewerURL, len(data), wantURL)
+	got, err := cache.Read(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, data) || entry.ViewerURL() != wantURL {
+		t.Fatalf("Get/Read = %d bytes at %q; want %d bytes at %q", len(got), entry.ViewerURL(), len(data), wantURL)
 	}
 
 	localSource := "http://" + Scheme + ".localhost/i/" + keyFor(source)
-	got, viewerURL, err = cache.Get(context.Background(), localSource)
+	entry, err = cache.Get(context.Background(), localSource)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(got, data) || viewerURL != wantURL {
-		t.Fatalf("local Get = %d bytes at %q; want %d bytes at %q", len(got), viewerURL, len(data), wantURL)
+	got, err = cache.Read(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, data) || entry.ViewerURL() != wantURL {
+		t.Fatalf("local Get/Read = %d bytes at %q; want %d bytes at %q", len(got), entry.ViewerURL(), len(data), wantURL)
 	}
 }
 
@@ -67,22 +75,30 @@ func TestCacheGetServesStaleImageAfterFailedRefresh(t *testing.T) {
 	if !ok {
 		t.Fatal("source URL could not be mapped")
 	}
-	if got, _, err := cache.Get(context.Background(), source); err != nil || !bytes.Equal(got, data) {
+	entry, err := cache.Get(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := cache.Read(entry); err != nil || !bytes.Equal(got, data) {
 		t.Fatalf("initial Get = %d bytes, err = %v; want fresh image", len(got), err)
 	}
 
 	key := keyFor(source)
 	cache.mu.Lock()
-	entry := cache.entries[key]
+	entry = cache.entries[key]
 	entry.FetchedAt = time.Now().Add(-freshTTL - time.Minute)
 	entry.LastAttempt = entry.FetchedAt
 	cache.entries[key] = entry
 	cache.mu.Unlock()
 	cache.client = &http.Client{Transport: failingTransport{}}
 
-	got, viewerURL, err := cache.Get(context.Background(), source)
-	if err != nil || !bytes.Equal(got, data) || viewerURL != wantURL {
-		t.Fatalf("stale Get = %d bytes at %q, err = %v; want stale image", len(got), viewerURL, err)
+	entry, err = cache.Get(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := cache.Read(entry)
+	if err != nil || !bytes.Equal(got, data) || entry.ViewerURL() != wantURL {
+		t.Fatalf("stale Get/Read = %d bytes at %q, err = %v; want stale image", len(got), entry.ViewerURL(), err)
 	}
 }
 
@@ -91,12 +107,16 @@ func TestCacheGetDecodesDataURL(t *testing.T) {
 	data := []byte("bitmap")
 	source := "data:image/png;base64," + base64.StdEncoding.EncodeToString(data)
 
-	got, viewerURL, err := cache.Get(context.Background(), source)
+	entry, err := cache.Get(context.Background(), source)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(got, data) || viewerURL != source {
-		t.Fatalf("Get = %q at %q; want %q at its source", got, viewerURL, data)
+	got, err := cache.Read(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, data) || entry.ViewerURL() != source {
+		t.Fatalf("Get/Read = %q at %q; want %q at its source", got, entry.ViewerURL(), data)
 	}
 }
 
@@ -108,7 +128,7 @@ func TestCacheGetRejectsUnsafeSources(t *testing.T) {
 		"ressu-media://localhost/short",
 		"data:image/png,aGVsbG8=",
 	} {
-		if _, _, err := cache.Get(context.Background(), source); err == nil {
+		if _, err := cache.Get(context.Background(), source); err == nil {
 			t.Fatalf("Get accepted %q", source)
 		}
 	}
