@@ -10,9 +10,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/mmcdole/gofeed"
+	"golang.org/x/net/html"
+
 	"github.com/sdttttt/ressu/internal/sanitize"
 	"github.com/sdttttt/ressu/internal/textmetrics"
-	"golang.org/x/net/html"
 )
 
 // Meta is the channel metadata of a feed.
