@@ -13,16 +13,17 @@
 
 > 默认使用Go远程资源代理访问文章中的图片资源，如果发现图裂的情况下，可以尝试切换到Webview模式
 
+
+## Road Map
+
+后续可能将页面部分功能移植到MyGo的GPU渲染实现。
+
 ## Credit
 
 - 桌面构建 [egoist/mygo](https://github.com/egoist/mygo)
 - 前端 [solid.js](https://github.com/solidjs/solid)
 - 存储 [etcd-io/bbolt](https://github.com/etcd-io/bbolt)
 - 苦力 [codex](https://github.com/openai/codex)
-
-## Road Map
-
-后续可能将页面部分功能移植到MyGo的GPU渲染实现。
 
 ## LICENSE
 
