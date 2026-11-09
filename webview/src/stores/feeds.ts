@@ -1,6 +1,6 @@
 import { toast } from "solid-sonner";
 
-import { Feeds, type FeedPreview } from "~/mygo";
+import { Feeds, Status, type FeedPreview } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 import { forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
@@ -12,6 +12,7 @@ import { closeDialog } from "~/stores/ui";
 export async function selectFeed(id: number): Promise<void> {
   closeSnapshot();
   const selected = state.current.feedId === id;
+  void Status.selectFeed(selected ? 0 : id).catch(() => undefined);
   setState("current", { feedId: selected ? null : id, postFeedId: null, guid: null });
   setState("post", null);
   await loadPosts(0);

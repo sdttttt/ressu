@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sdttttt/ressu/internal/media"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -37,19 +38,30 @@ func (o SortOrder) normalize() SortOrder {
 
 // Posts is the post service the frontend calls.
 type Posts struct {
-	store *store.Store
-	media *media.Cache
+	store  *store.Store
+	media  *media.Cache
+	status *appstatus.Model
 }
 
 // NewPosts serves the posts of st.
 func NewPosts(st *store.Store) *Posts {
-	return &Posts{store: st}
+	return NewPostsWithMediaAndStatus(st, nil, nil)
 }
 
 // NewPostsWithMedia serves posts whose remote images are rewritten to local
 // protocol URLs before they cross the binding boundary.
 func NewPostsWithMedia(st *store.Store, mediaCache *media.Cache) *Posts {
-	return &Posts{store: st, media: mediaCache}
+	return NewPostsWithMediaAndStatus(st, mediaCache, nil)
+}
+
+// NewPostsWithMediaAndStatus serves posts and mirrors changes to native UI.
+func NewPostsWithMediaAndStatus(st *store.Store, mediaCache *media.Cache, model *appstatus.Model) *Posts {
+	return &Posts{store: st, media: mediaCache, status: model}
+}
+
+// broadcastFeeds mirrors unread changes to native UI before pages receive them.
+func (p *Posts) broadcastFeeds() {
+	broadcastFeeds(p.store, p.status)
 }
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search
@@ -146,7 +158,7 @@ func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
 			"operation", "posts.markRead", "feedId", feedID, "error", err)
 		return err
 	}
-	broadcastFeeds(p.store)
+	p.broadcastFeeds()
 	return nil
 }
 
@@ -165,7 +177,7 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 			changed += feedChanged
 		}
 		if changed > 0 {
-			broadcastFeeds(p.store)
+			p.broadcastFeeds()
 		}
 		return changed, nil
 	}
@@ -177,7 +189,7 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 		return 0, err
 	}
 	if changed > 0 {
-		broadcastFeeds(p.store)
+		p.broadcastFeeds()
 	}
 	return changed, nil
 }

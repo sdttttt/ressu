@@ -38,6 +38,10 @@ vi.mock("~/mygo", () => ({
     openDataDir: vi.fn(),
     openLink: vi.fn(),
   },
+  Status: {
+    selectFeed: vi.fn(),
+    pageReady: vi.fn(),
+  },
   events: {
     feedsChanged: { on: vi.fn(() => () => {}) },
     postsChanged: { on: vi.fn(() => () => {}) },
@@ -123,6 +127,8 @@ async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSum
   vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs });
   vi.mocked(mygo.Settings.update).mockImplementation(async (next) => next);
   vi.mocked(mygo.Settings.dataDir).mockResolvedValue("C:/Users/me/AppData/Ressu");
+  vi.mocked(mygo.Status.pageReady).mockResolvedValue(undefined);
+  vi.mocked(mygo.Status.selectFeed).mockResolvedValue(undefined);
   vi.mocked(mygo.Posts.list).mockImplementation(async () => {
     const posts = (options.posts ?? [summary]).map((item) => ({ ...item }));
     return { posts, total: posts.length, unread: posts.filter((item) => !item.read).length };

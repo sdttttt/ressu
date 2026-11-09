@@ -8,23 +8,31 @@ import (
 	"github.com/egoist/mygo"
 
 	"github.com/sdttttt/ressu/internal/media"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
 // Settings is the preferences service the frontend calls.
 type Settings struct {
-	store *store.Store
-	media *media.Cache
+	store  *store.Store
+	media  *media.Cache
+	status *appstatus.Model
 }
 
 // NewSettings serves the preferences of st.
 func NewSettings(st *store.Store) *Settings {
-	return &Settings{store: st}
+	return NewSettingsWithMediaAndStatus(st, nil, nil)
 }
 
 // NewSettingsWithMedia applies image cache preferences to the media cache.
 func NewSettingsWithMedia(st *store.Store, mediaCache *media.Cache) *Settings {
-	return &Settings{store: st, media: mediaCache}
+	return NewSettingsWithMediaAndStatus(st, mediaCache, nil)
+}
+
+// NewSettingsWithMediaAndStatus serves preferences and mirrors appearance to
+// native UI.
+func NewSettingsWithMediaAndStatus(st *store.Store, mediaCache *media.Cache, model *appstatus.Model) *Settings {
+	return &Settings{store: st, media: mediaCache, status: model}
 }
 
 // Get returns the preferences.
@@ -39,6 +47,9 @@ func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
 		return store.Prefs{}, err
 	}
 	ApplyTheme(prefs.Theme)
+	if s.status != nil {
+		s.status.SetAppearance(prefs.Theme, prefs.FontSize)
+	}
 	if s.media != nil {
 		if err := s.media.SetLimit(int64(prefs.ImageCacheLimit) << 20); err != nil {
 			slog.Warn("image cache limit update failed",

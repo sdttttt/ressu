@@ -53,13 +53,18 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request SnapshotCaptureRequ
 	if request.tileCount() > maxSnapshotTiles {
 		return nil, fmt.Errorf("the article is too long for one snapshot")
 	}
-	window := mygo.CallerWindow(ctx)
-	if window == nil || window.IsDestroyed() {
-		err := fmt.Errorf("the snapshot window is no longer available")
-		slog.Warn("snapshot window unavailable", "operation", "posts.captureSnapshot", "error", err)
-		return nil, err
+	var data []byte
+	var err error
+	if page := mygo.CallerPage(ctx); page != nil && page.WebView() != nil {
+		data, err = page.WebView().CapturePage()
+	} else {
+		window := mygo.CallerWindow(ctx)
+		if window == nil || window.IsDestroyed() {
+			err = fmt.Errorf("the snapshot window is no longer available")
+		} else {
+			data, err = window.CapturePage()
+		}
 	}
-	data, err := window.CapturePage()
 	if err != nil {
 		slog.Warn("snapshot capture failed",
 			"operation", "posts.captureSnapshot",

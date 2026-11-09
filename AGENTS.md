@@ -1,7 +1,8 @@
 # AGENTS.md
 
 Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
-MyGO 绑定把数据交给 SolidJS 页面；页面只渲染本地状态。面向用户的中文介绍在 `README.md`。
+MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态，底部状态栏由 MyGO 原生 UI
+直接渲染。面向用户的中文介绍在 `README.md`。
 
 本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
 的规则。
@@ -40,6 +41,7 @@ MyGO 绑定把数据交给 SolidJS 页面；页面只渲染本地状态。面向
 
 ```text
 main.go                    应用入口：打开数据库、绑定服务、创建窗口、启动刷新
+app_view.go                主窗原生布局：嵌入阅读页与底部状态栏
 menu_darwin.go             macOS 系统菜单；菜单项向页面广播 ui:command
 menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
 internal/
@@ -54,6 +56,8 @@ internal/
   media/                   正文图片安全下载、启动时清空重用的磁盘缓存和本地协议
   service/                 暴露给页面的服务、事件与后台行为
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
+  status/                  原生状态栏与页面共享的服务状态模型
+  nativeui/                MyGO 原生状态栏渲染
 webview/                   前端源码和独立构建配置
   index.html               Vite 入口，lang="zh-CN"
   vite.config.ts           Solid + Tailwind 插件、~ 别名、root 指回 webview/、固定 5173
@@ -61,7 +65,7 @@ webview/                   前端源码和独立构建配置
   tsconfig.json            strict、noEmit、jsx preserve、~/* 路径别名
   src/
     main.tsx               挂载 App，首帧前先按系统主题上色
-    app.tsx                三栏布局、对话框、状态栏与 toast
+    app.tsx                三栏布局、对话框与 toast
     index.css              Tailwind 4 入口、主题 token、.post-body、.snapshot-*
     mygo.ts                生成的类型化客户端；被 git 忽略，不要编辑
     components/            页面组件、对话框、图标按钮和内联 shadcn 风格原语
@@ -166,8 +170,8 @@ bun install
 - `feeds:changed` 携带完整订阅列表和总未读数；`posts:changed` 只携带 feed id 和新文章数。
 - macOS 原生菜单只广播命令字符串（`add-feed`、`refresh`、`settings`），不直接拥有对话框。
   页面通过 `webview/src/stores/events.ts` 打开对话框或执行动作。Windows/Linux 没有原生菜单栏。
-- 任何会改变订阅或未读状态的服务方法都应广播 `feeds:changed`（通常调用
-  `broadcastFeeds`）；多窗口依赖该事件保持一致。
+- 任何会改变订阅或未读状态的服务方法都应调用 `broadcastFeeds`：它先更新原生状态栏模型，
+  再广播 `feeds:changed`；多窗口依赖该事件保持一致。
 
 ## 订阅刷新流程
 
@@ -180,7 +184,7 @@ bun install
 - `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`。304 映射为
   `rss.ErrNotModified`：保留文章，只清除错误并更新 `lastFetchedAt`。
 - 抓取失败会把错误写入 `Feed.LastError`，保留订阅和已存文章，并广播
-  `feeds:changed`；页面在状态栏和 toast 中展示错误。
+  `feeds:changed`；原生状态栏展示错误摘要，页面在 toast 中补充提示。
 - 成功抓取后调用 `store.MergePosts`，再刷新频道元数据、校验器和 `lastFetchedAt`。合并完成
   后重新读取 Feed，因为未读数已经在事务中重算。
 - `Posts.List` 在服务端完成未读/星标筛选、搜索和分页。返回 `{posts,total,unread}`。
@@ -385,7 +389,7 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   `button` 以及 `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
 - `post-view.tsx` 和快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；不要把抓取
-  原文直接传给前端。
+  原文直接传给前端。嵌入 WebView 的快照必须通过 `Page.WebView().CapturePage()` 捕获。
 - 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`Settings.OpenLink`
   再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。

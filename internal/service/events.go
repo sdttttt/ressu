@@ -5,24 +5,15 @@ package service
 import (
 	"github.com/egoist/mygo"
 
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
 // SyncState reports how a refresh is going.
-type SyncState struct {
-	Active bool   `json:"active"`
-	Done   int    `json:"done"`
-	Total  int    `json:"total"`
-	FeedID int64  `json:"feedId"`
-	Feed   string `json:"feed"`
-	Error  string `json:"error,omitempty"`
-}
+type SyncState = appstatus.SyncState
 
 // FeedsSnapshot is the subscription list with the total unread count.
-type FeedsSnapshot struct {
-	Feeds  []store.Feed `json:"feeds"`
-	Unread int          `json:"unread"`
-}
+type FeedsSnapshot = appstatus.FeedsSnapshot
 
 // PostsChanged says which feed's posts changed, and how many are new.
 type PostsChanged struct {
@@ -49,7 +40,11 @@ const (
 	CommandSettings = "settings"
 )
 
-// broadcastFeeds tells the pages about the current subscriptions.
-func broadcastFeeds(st *store.Store) {
-	_ = FeedsChanged.Broadcast(feedsSnapshot(st))
+// broadcastFeeds tells the pages and native UI about current subscriptions.
+func broadcastFeeds(st *store.Store, model *appstatus.Model) {
+	snapshot := feedsSnapshot(st)
+	if model != nil {
+		model.SetFeeds(snapshot)
+	}
+	_ = FeedsChanged.Broadcast(snapshot)
 }

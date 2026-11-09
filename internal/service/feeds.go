@@ -11,6 +11,7 @@ import (
 
 	"github.com/sdttttt/ressu/internal/icon"
 	"github.com/sdttttt/ressu/internal/rss"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -45,7 +46,8 @@ type FeedPreview struct {
 
 // Feeds is the subscription service the frontend calls.
 type Feeds struct {
-	store *store.Store
+	store  *store.Store
+	status *appstatus.Model
 
 	mu           sync.Mutex
 	refreshing   bool
@@ -62,12 +64,30 @@ type iconRequest struct {
 
 // NewFeeds serves the subscriptions of st.
 func NewFeeds(st *store.Store) *Feeds {
-	return &Feeds{store: st, iconRequests: make(map[int64]*iconRequest)}
+	return NewFeedsWithStatus(st, nil)
+}
+
+// NewFeedsWithStatus serves subscriptions and mirrors changes to native UI.
+func NewFeedsWithStatus(st *store.Store, model *appstatus.Model) *Feeds {
+	return &Feeds{store: st, status: model, iconRequests: make(map[int64]*iconRequest)}
 }
 
 // List returns every subscription, with its unread count.
 func (f *Feeds) List() FeedsSnapshot {
 	return feedsSnapshot(f.store)
+}
+
+// broadcastFeeds mirrors subscriptions to native UI before pages receive them.
+func (f *Feeds) broadcastFeeds() {
+	broadcastFeeds(f.store, f.status)
+}
+
+// broadcastSync mirrors refresh progress to native UI before pages receive it.
+func (f *Feeds) broadcastSync(state SyncState) {
+	if f.status != nil {
+		f.status.SetSync(state)
+	}
+	_ = SyncStateEvent.Broadcast(state)
 }
 
 // feedsSnapshot combines the subscriptions and their total unread count.
@@ -235,7 +255,7 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 		return store.Feed{}, err
 	}
 
-	broadcastFeeds(f.store)
+	f.broadcastFeeds()
 	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: feed.ID, New: added})
 	return f.store.Feed(feed.ID)
 }
@@ -247,7 +267,7 @@ func (f *Feeds) Remove(id int64) error {
 			"operation", "feeds.remove", "feedId", id, "error", err)
 		return err
 	}
-	broadcastFeeds(f.store)
+	f.broadcastFeeds()
 	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: id})
 	return nil
 }
@@ -305,7 +325,7 @@ func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSumma
 		f.mu.Unlock()
 	}()
 
-	_ = SyncStateEvent.Broadcast(SyncState{Active: total > 0, Total: total})
+	f.broadcastSync(SyncState{Active: total > 0, Total: total})
 	if total == 0 {
 		return SyncSummary{}, nil
 	}
@@ -340,12 +360,12 @@ func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSumma
 			}
 			mu.Unlock()
 
-			_ = SyncStateEvent.Broadcast(state)
+			f.broadcastSync(state)
 		}(feed)
 	}
 
 	wg.Wait()
-	_ = SyncStateEvent.Broadcast(SyncState{Total: total, Done: total})
+	f.broadcastSync(SyncState{Total: total, Done: total})
 	slog.Info("refresh batch finished",
 		"operation", "feeds.refreshAll",
 		"updated", summary.Updated,
@@ -380,7 +400,7 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 				"operation", "feeds.refresh", "feedId", feed.ID, "error", updateErr)
 			return 0, updateErr
 		}
-		broadcastFeeds(f.store)
+		f.broadcastFeeds()
 		slog.Warn("feed refresh failed",
 			"operation", "feeds.refresh",
 			"feedId", feed.ID,
@@ -423,7 +443,7 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 		return 0, err
 	}
 
-	broadcastFeeds(f.store)
+	f.broadcastFeeds()
 	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: id, New: added})
 	return added, nil
 }

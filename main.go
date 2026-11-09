@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -13,10 +14,13 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
 
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
+	"github.com/sdttttt/ressu/internal/nativeui"
 	"github.com/sdttttt/ressu/internal/service"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -57,11 +61,24 @@ func main() {
 		fatal("media protocol registration failed", err)
 	}
 
-	feeds := service.NewFeeds(st)
+	prefs := st.Prefs()
+	statusModel := appstatus.New(app.Version())
+	statusModel.SetAppearance(prefs.Theme, prefs.FontSize)
+	feeds := service.NewFeedsWithStatus(st, statusModel)
+	statusModel.SetFeeds(feeds.List())
+	posts := service.NewPostsWithMediaAndStatus(st, articleMedia, statusModel)
+	pageReady := make(chan struct{}, 1)
+	status := service.NewStatus(statusModel, func() {
+		select {
+		case pageReady <- struct{}{}:
+		default:
+		}
+	})
 	mygo.Bind(
 		feeds,
-		service.NewPostsWithMedia(st, articleMedia),
-		service.NewSettingsWithMedia(st, articleMedia),
+		posts,
+		service.NewSettingsWithMediaAndStatus(st, articleMedia, statusModel),
+		status,
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
 		if _, err := feeds.RefreshStale(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
@@ -76,7 +93,7 @@ func main() {
 		prefs := st.Prefs()
 		service.ApplyTheme(prefs.Theme)
 		setMenu()
-		openWindow(func() {
+		if _, err := openWindow(statusModel, pageReady, func() {
 			if !prefs.RefreshOnStart {
 				return
 			}
@@ -86,7 +103,9 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive)
+		}, foreground, app.IsActive); err != nil {
+			fatal("main window creation failed", err)
+		}
 	})
 
 	if err := app.Run(); err != nil {
@@ -102,12 +121,12 @@ func fatal(message string, err error) {
 }
 
 // openWindow creates the main window hidden and shows it once the page has
-// painted, so startup shows a splash instead of a blank window. onReady runs
+// mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
-func openWindow(onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) {
+func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) (*mygo.Window, error) {
+	view := &appView{status: nativeui.NewStatusBar(statusModel)}
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
-		URL:             "/",
 		Width:           1200,
 		Height:          800,
 		MinWidth:        900,
@@ -115,20 +134,44 @@ func openWindow(onReady func(), foreground *service.ForegroundRefresher, isActiv
 		StateKey:        "main",
 		Hidden:          true,
 		BackgroundColor: "light-dark(#ffffff, #101012)",
+		Content:         ui.View(view.view),
+	})
+	statusModel.SetChanged(func() {
+		if !win.IsDestroyed() {
+			win.Invalidate()
+		}
 	})
 
 	var once sync.Once
 	show := func() {
+		if win.IsDestroyed() {
+			return
+		}
 		once.Do(func() {
 			win.Show()
 			onReady()
 		})
 	}
 
-	win.OnReadyToShow(show)
+	page, err := win.NewWebView(mygo.WebViewOptions{
+		URL:             "/",
+		BackgroundColor: "light-dark(#ffffff, #101012)",
+	})
+	if err != nil {
+		win.Destroy()
+		return nil, fmt.Errorf("create reader page: %w", err)
+	}
+	view.page = page
+	win.Invalidate()
+
+	timer := time.AfterFunc(5*time.Second, show)
+	go func() {
+		<-pageReady
+		timer.Stop()
+		show()
+	}()
 	win.OnBlur(func() { foreground.WindowBlurred(isActive()) })
 	win.OnFocus(func() { foreground.WindowFocused(isActive()) })
-	// A page that never becomes ready must not leave the app windowless.
-	timer := time.AfterFunc(5*time.Second, show)
 	win.OnClosed(func() { timer.Stop() })
+	return win, nil
 }
