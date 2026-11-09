@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/mmcdole/gofeed"
+	"github.com/sdttttt/ressu/pkg/limitreader"
 )
 
-// MaxBody bounds how much of a response is read.
+// MaxBody bounds the size of a feed response.
 const MaxBody = 16 << 20
 
 // Timeout bounds a request and the reading of its body.
@@ -51,6 +54,11 @@ func ValidateURL(raw string) error {
 // Fetch downloads and parses a feed. It sends etag and lastModified as
 // validators and returns ErrNotModified when the server answers 304.
 func Fetch(ctx context.Context, feedURL, etag, lastModified string) (*Result, error) {
+	return fetch(ctx, feedURL, etag, lastModified, MaxBody)
+}
+
+// fetch implements Fetch with an explicit body limit.
+func fetch(ctx context.Context, feedURL, etag, lastModified string, maxBody int64) (*Result, error) {
 	if err := ValidateURL(feedURL); err != nil {
 		return nil, err
 	}
@@ -81,18 +89,23 @@ func Fetch(ctx context.Context, feedURL, etag, lastModified string) (*Result, er
 		return nil, fmt.Errorf("the server answered %s", res.Status)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(res.Body, MaxBody))
-	if err != nil {
+	body := limitreader.New(res.Body, maxBody)
+	parsed, err := gofeed.NewParser().Parse(body)
+	if err := body.Err(); err != nil {
 		return nil, err
 	}
-
-	feed, err := Parse(body, feedURL, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("this address does not serve a feed: %w", err)
 	}
 
+	// XML parsers can stop at the root's closing tag, so consume the rest to
+	// enforce the limit and surface trailing read errors.
+	if _, err := io.Copy(io.Discard, body); err != nil {
+		return nil, err
+	}
+
 	return &Result{
-		Feed:         feed,
+		Feed:         convertFeed(parsed, feedURL, time.Now()),
 		ETag:         res.Header.Get("ETag"),
 		LastModified: res.Header.Get("Last-Modified"),
 	}, nil

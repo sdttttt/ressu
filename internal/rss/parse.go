@@ -51,7 +51,11 @@ func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
 	if err != nil {
 		return nil, err
 	}
+	return convertFeed(parsed, feedURL, now), nil
+}
 
+// convertFeed turns a gofeed feed into the shape stored by Ressu.
+func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 	feed := &Feed{
 		Meta: Meta{
 			Title:       strings.TrimSpace(parsed.Title),
@@ -109,7 +113,7 @@ func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
 		}
 		feed.Items = append(feed.Items, item)
 	}
-	return feed, nil
+	return feed
 }
 
 func descriptionOf(it *gofeed.Item) string {
