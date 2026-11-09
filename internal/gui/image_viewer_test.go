@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"image"
+	"image/jpeg"
 	"image/png"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/egoist/mygo/ui"
 )
 
 func TestNewImageViewerContentDecodesPNG(t *testing.T) {
@@ -33,6 +37,62 @@ func TestNewImageViewerContentFallsBackForAVIF(t *testing.T) {
 	}
 	if content.image != nil || content.url != source {
 		t.Fatalf("content = %+v; want a WebView fallback", content)
+	}
+}
+
+func TestImageViewerClipboardPNGKeepsPNGBytes(t *testing.T) {
+	data, err := testViewerPNG()
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := newImageViewerContent(data, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := content.clipboardPNG()
+	if err != nil || !bytes.Equal(got, data) {
+		t.Fatalf("clipboardPNG() copied %d bytes, error %v; want the original PNG", len(got), err)
+	}
+}
+
+func TestImageViewerClipboardPNGConvertsJPEG(t *testing.T) {
+	var source bytes.Buffer
+	if err := jpeg.Encode(&source, image.NewRGBA(image.Rect(0, 0, 2, 1)), nil); err != nil {
+		t.Fatal(err)
+	}
+	content, err := newImageViewerContent(source.Bytes(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := content.clipboardPNG()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pngData, err := png.Decode(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bounds := pngData.Bounds(); bounds.Dx() != 2 || bounds.Dy() != 1 {
+		t.Fatalf("copied PNG bounds = %v; want 2x1", bounds)
+	}
+}
+
+func TestImageViewerOffersCopyContextMenu(t *testing.T) {
+	data, err := testViewerPNG()
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := newImageViewerContent(data, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tester := ui.NewTester(func(c *ui.Context) { imageViewerView(c, &content) }, 2, 1)
+	tester.RightClickAt(1, 0.5)
+	if got := tester.Menu(); !slices.Equal(got, []string{"复制图片"}) {
+		t.Fatalf("image viewer context menu = %q; want [复制图片]", got)
 	}
 }
 
