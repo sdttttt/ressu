@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/icon"
 	"github.com/sdttttt/ressu/internal/rss"
-	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -46,8 +46,8 @@ type FeedPreview struct {
 
 // Feeds is the subscription service the frontend calls.
 type Feeds struct {
-	store  *store.Store
-	status *appstatus.Model
+	store *store.Store
+	hub   *appevent.Hub
 
 	mu           sync.Mutex
 	refreshing   bool
@@ -64,12 +64,12 @@ type iconRequest struct {
 
 // NewFeeds serves the subscriptions of st.
 func NewFeeds(st *store.Store) *Feeds {
-	return NewFeedsWithStatus(st, nil)
+	return NewFeedsWithHub(st, nil)
 }
 
-// NewFeedsWithStatus serves subscriptions and mirrors changes to native UI.
-func NewFeedsWithStatus(st *store.Store, model *appstatus.Model) *Feeds {
-	return &Feeds{store: st, status: model, iconRequests: make(map[int64]*iconRequest)}
+// NewFeedsWithHub serves subscriptions and publishes changes through hub.
+func NewFeedsWithHub(st *store.Store, hub *appevent.Hub) *Feeds {
+	return &Feeds{store: st, hub: hub, iconRequests: make(map[int64]*iconRequest)}
 }
 
 // List returns every subscription, with its unread count.
@@ -77,17 +77,11 @@ func (f *Feeds) List() FeedsSnapshot {
 	return feedsSnapshot(f.store)
 }
 
-// broadcastFeeds mirrors subscriptions to native UI before pages receive them.
+// broadcastFeeds publishes the complete subscription state.
 func (f *Feeds) broadcastFeeds() {
-	broadcastFeeds(f.store, f.status)
-}
-
-// broadcastSync mirrors refresh progress to native UI before pages receive it.
-func (f *Feeds) broadcastSync(state SyncState) {
-	if f.status != nil {
-		f.status.SetSync(state)
+	if f.hub != nil {
+		f.hub.FeedsChanged(feedsSnapshot(f.store))
 	}
-	_ = SyncStateEvent.Broadcast(state)
 }
 
 // feedsSnapshot combines the subscriptions and their total unread count.
@@ -256,7 +250,7 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 	}
 
 	f.broadcastFeeds()
-	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: feed.ID, New: added})
+	f.hub.PostsChanged(appevent.PostsChanged{FeedID: feed.ID, New: added})
 	return f.store.Feed(feed.ID)
 }
 
@@ -268,7 +262,7 @@ func (f *Feeds) Remove(id int64) error {
 		return err
 	}
 	f.broadcastFeeds()
-	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: id})
+	f.hub.PostsChanged(appevent.PostsChanged{FeedID: id})
 	return nil
 }
 
@@ -281,7 +275,7 @@ func (f *Feeds) Refresh(ctx context.Context, id int64) (store.Feed, error) {
 }
 
 // RefreshAll fetches every feed, four at a time, and reports each one through
-// the sync:state event.
+// sync events.
 func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 	return f.refreshFeeds(ctx, f.store.Feeds())
 }
@@ -305,7 +299,7 @@ func (f *Feeds) RefreshStale(ctx context.Context) (SyncSummary, error) {
 }
 
 // refreshFeeds fetches the given feeds, four at a time, and reports each one
-// through the sync:state event.
+// through sync events.
 func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSummary, error) {
 	f.mu.Lock()
 	if f.refreshing {
@@ -325,10 +319,11 @@ func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSumma
 		f.mu.Unlock()
 	}()
 
-	f.broadcastSync(SyncState{Active: total > 0, Total: total})
 	if total == 0 {
+		f.hub.SyncFinished(SyncState{Total: 0})
 		return SyncSummary{}, nil
 	}
+	f.hub.SyncStarted(SyncState{Active: true, Total: total})
 
 	var (
 		wg      sync.WaitGroup
@@ -358,14 +353,13 @@ func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSumma
 				summary.Updated++
 				summary.New += added
 			}
+			f.hub.SyncProgress(state)
 			mu.Unlock()
-
-			f.broadcastSync(state)
 		}(feed)
 	}
 
 	wg.Wait()
-	f.broadcastSync(SyncState{Total: total, Done: total})
+	f.hub.SyncFinished(SyncState{Total: total, Done: total})
 	slog.Info("refresh batch finished",
 		"operation", "feeds.refreshAll",
 		"updated", summary.Updated,
@@ -444,7 +438,7 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	}
 
 	f.broadcastFeeds()
-	_ = PostsChangedEvent.Broadcast(PostsChanged{FeedID: id, New: added})
+	f.hub.PostsChanged(appevent.PostsChanged{FeedID: id, New: added})
 	return added, nil
 }
 

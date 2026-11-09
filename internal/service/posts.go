@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/media"
-	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -38,30 +38,32 @@ func (o SortOrder) normalize() SortOrder {
 
 // Posts is the post service the frontend calls.
 type Posts struct {
-	store  *store.Store
-	media  *media.Cache
-	status *appstatus.Model
+	store *store.Store
+	media *media.Cache
+	hub   *appevent.Hub
 }
 
 // NewPosts serves the posts of st.
 func NewPosts(st *store.Store) *Posts {
-	return NewPostsWithMediaAndStatus(st, nil, nil)
+	return NewPostsWithMediaAndHub(st, nil, nil)
 }
 
 // NewPostsWithMedia serves posts whose remote images are rewritten to local
 // protocol URLs before they cross the binding boundary.
 func NewPostsWithMedia(st *store.Store, mediaCache *media.Cache) *Posts {
-	return NewPostsWithMediaAndStatus(st, mediaCache, nil)
+	return NewPostsWithMediaAndHub(st, mediaCache, nil)
 }
 
-// NewPostsWithMediaAndStatus serves posts and mirrors changes to native UI.
-func NewPostsWithMediaAndStatus(st *store.Store, mediaCache *media.Cache, model *appstatus.Model) *Posts {
-	return &Posts{store: st, media: mediaCache, status: model}
+// NewPostsWithMediaAndHub serves posts and publishes changes through hub.
+func NewPostsWithMediaAndHub(st *store.Store, mediaCache *media.Cache, hub *appevent.Hub) *Posts {
+	return &Posts{store: st, media: mediaCache, hub: hub}
 }
 
-// broadcastFeeds mirrors unread changes to native UI before pages receive them.
+// broadcastFeeds publishes the complete subscription state.
 func (p *Posts) broadcastFeeds() {
-	broadcastFeeds(p.store, p.status)
+	if p.hub != nil {
+		p.hub.FeedsChanged(feedsSnapshot(p.store))
+	}
 }
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search

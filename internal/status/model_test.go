@@ -33,6 +33,9 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		snapshot.Theme != store.ThemeSystem || snapshot.FontSize != store.FontSizeMedium {
 		t.Fatalf("unexpected snapshot counts: %+v", snapshot)
 	}
+	if len(snapshot.Feeds) != 1 || snapshot.Feeds[0].ID != 1 || snapshot.CurrentFeedID != 1 {
+		t.Fatalf("unexpected snapshot feeds: %+v", snapshot)
+	}
 	if snapshot.CurrentFeed == nil || snapshot.CurrentFeed.ID != 1 || snapshot.CurrentFeed.LastFetchedAt != &fetched {
 		t.Fatalf("unexpected current feed: %+v", snapshot.CurrentFeed)
 	}

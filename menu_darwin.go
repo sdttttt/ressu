@@ -5,24 +5,25 @@ package main
 import (
 	"github.com/egoist/mygo"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/service"
 )
 
 // setMenu installs the system menu bar, which macOS owns.
-func setMenu() {
-	mygo.App.SetMenu(newMenu())
+func setMenu(hub *appevent.Hub) {
+	mygo.App.SetMenu(newMenu(hub))
 }
 
 // newMenu builds the menu bar. Its items send commands to the page, which owns
 // the dialogs they open.
-func newMenu() *mygo.Menu {
+func newMenu(hub *appevent.Hub) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Role: mygo.RoleAppMenu},
 		{Label: "File", Submenu: []*mygo.MenuItem{
-			{Label: "Add Feed…", Accelerator: "CmdOrCtrl+N", Click: sendCommand(service.CommandAddFeed)},
-			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: sendCommand(service.CommandRefresh)},
+			{Label: "Add Feed…", Accelerator: "CmdOrCtrl+N", Click: sendCommand(hub, service.CommandAddFeed)},
+			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: sendCommand(hub, service.CommandRefresh)},
 			mygo.Separator(),
-			{Label: "Settings…", Accelerator: "CmdOrCtrl+,", Click: sendCommand(service.CommandSettings)},
+			{Label: "Settings…", Accelerator: "CmdOrCtrl+,", Click: sendCommand(hub, service.CommandSettings)},
 			mygo.Separator(),
 			{Role: mygo.RoleClose},
 		}},
@@ -32,8 +33,8 @@ func newMenu() *mygo.Menu {
 	})
 }
 
-func sendCommand(name string) func(*mygo.MenuItem, *mygo.Window) {
+func sendCommand(hub *appevent.Hub, name string) func(*mygo.MenuItem, *mygo.Window) {
 	return func(*mygo.MenuItem, *mygo.Window) {
-		_ = service.Command.Broadcast(name)
+		hub.UICommand(name)
 	}
 }

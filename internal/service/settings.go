@@ -7,32 +7,32 @@ import (
 
 	"github.com/egoist/mygo"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/media"
-	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
 // Settings is the preferences service the frontend calls.
 type Settings struct {
-	store  *store.Store
-	media  *media.Cache
-	status *appstatus.Model
+	store *store.Store
+	media *media.Cache
+	hub   *appevent.Hub
 }
 
 // NewSettings serves the preferences of st.
 func NewSettings(st *store.Store) *Settings {
-	return NewSettingsWithMediaAndStatus(st, nil, nil)
+	return NewSettingsWithMediaAndHub(st, nil, nil)
 }
 
 // NewSettingsWithMedia applies image cache preferences to the media cache.
 func NewSettingsWithMedia(st *store.Store, mediaCache *media.Cache) *Settings {
-	return NewSettingsWithMediaAndStatus(st, mediaCache, nil)
+	return NewSettingsWithMediaAndHub(st, mediaCache, nil)
 }
 
-// NewSettingsWithMediaAndStatus serves preferences and mirrors appearance to
-// native UI.
-func NewSettingsWithMediaAndStatus(st *store.Store, mediaCache *media.Cache, model *appstatus.Model) *Settings {
-	return &Settings{store: st, media: mediaCache, status: model}
+// NewSettingsWithMediaAndHub serves preferences and publishes appearance
+// changes through hub.
+func NewSettingsWithMediaAndHub(st *store.Store, mediaCache *media.Cache, hub *appevent.Hub) *Settings {
+	return &Settings{store: st, media: mediaCache, hub: hub}
 }
 
 // Get returns the preferences.
@@ -46,18 +46,19 @@ func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
 		slog.Warn("preference update failed", "operation", "settings.update", "error", err)
 		return store.Prefs{}, err
 	}
-	ApplyTheme(prefs.Theme)
-	if s.status != nil {
-		s.status.SetAppearance(prefs.Theme, prefs.FontSize)
+	stored := s.store.Prefs()
+	ApplyTheme(stored.Theme)
+	if s.hub != nil {
+		s.hub.AppearanceChanged(stored.Theme, stored.FontSize)
 	}
 	if s.media != nil {
-		if err := s.media.SetLimit(int64(prefs.ImageCacheLimit) << 20); err != nil {
+		if err := s.media.SetLimit(int64(stored.ImageCacheLimit) << 20); err != nil {
 			slog.Warn("image cache limit update failed",
 				"operation", "settings.update", "error", err)
 			return store.Prefs{}, err
 		}
 	}
-	return s.store.Prefs(), nil
+	return stored, nil
 }
 
 // DataDir returns the directory holding the app's data.

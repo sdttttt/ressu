@@ -3,29 +3,31 @@ package service
 import (
 	"context"
 
-	appstatus "github.com/sdttttt/ressu/internal/status"
+	appevent "github.com/sdttttt/ressu/internal/event"
 )
 
-// Status forwards page selection changes to the native status bar.
+// Status forwards page selection changes to native UI and other pages.
 type Status struct {
-	model     *appstatus.Model
+	hub       *appevent.Hub
 	pageReady func()
 }
 
-// NewStatus serves the native status bar's page-driven state.
-func NewStatus(model *appstatus.Model, pageReady func()) *Status {
-	return &Status{model: model, pageReady: pageReady}
+// NewStatus serves the page-driven application state.
+func NewStatus(hub *appevent.Hub, pageReady func()) *Status {
+	return &Status{hub: hub, pageReady: pageReady}
 }
 
-// SelectFeed tells the native status bar which feed the page selected; zero
-// selects the aggregate list.
+// SelectFeed records the feed the page selected; zero selects the aggregate
+// list.
 func (s *Status) SelectFeed(_ context.Context, feedID int64) {
-	s.model.SetCurrentFeed(feedID)
+	s.hub.SelectionChanged(feedID)
 }
 
-// PageReady lets the app show once the page has mounted its splash.
+// PageReady lets the app show once the page has mounted its splash, then
+// broadcasts the complete state to it.
 func (s *Status) PageReady(_ context.Context) {
 	if s.pageReady != nil {
 		s.pageReady()
 	}
+	s.hub.PublishSnapshot()
 }

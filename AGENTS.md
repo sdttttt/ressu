@@ -42,7 +42,7 @@ MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态
 ```text
 main.go                    应用入口：打开数据库、绑定服务、创建窗口、启动刷新
 app_view.go                主窗原生布局：嵌入阅读页与底部状态栏
-menu_darwin.go             macOS 系统菜单；菜单项向页面广播 ui:command
+menu_darwin.go             macOS 系统菜单；菜单项通过统一事件广播 ui.command
 menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
 internal/
   rss/                     HTTP 抓取与 RSS/Atom/JSON Feed 解析
@@ -56,6 +56,7 @@ internal/
   media/                   正文图片安全下载、启动时清空重用的磁盘缓存和本地协议
   service/                 暴露给页面的服务、事件与后台行为
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
+  event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
   gui/                     MyGO 原生状态栏渲染
 webview/                   前端源码和独立构建配置
@@ -80,7 +81,7 @@ webview/                   前端源码和独立构建配置
       snapshot-actions.ts  快照生成、预览、保存和复制
       settings.ts          偏好、面板宽度、外链和数据目录
       selection.ts         键盘选择、相邻订阅源和原文打开
-      sync-events.ts       刷新与文章变更事件的本地状态同步
+      sync-events.ts       统一广播事件的状态应用辅助函数
       lifecycle.ts         启动加载
       ui.ts                对话框和订阅源过滤状态
       events.ts            MyGO 事件订阅
@@ -165,26 +166,34 @@ bun install
   `string | null`。
 - `mygo generate` 生成接口、`Feeds`/`Posts`/`Settings` 客户端和 `events.*`。生成文件里的
   JSON tag 会转成 camelCase，并保留 Go 文档注释。
-- 事件名用冒号分区，声明在 `internal/service/events.go`：
-  `sync:state`、`feeds:changed`、`posts:changed`、`ui:command`。
-- `feeds:changed` 携带完整订阅列表和总未读数；`posts:changed` 只携带 feed id 和新文章数。
+- Go 只声明一个广播通道 `app:event`，载荷是 `internal/event.Event`。所有 EID 共用同一
+  结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`selection` 或 `command`
+  中的哪一段，未使用字段为 `null` 或空字符串。
+- 事件由 `internal/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
+  `status.Model`，最后广播。不要绕过 Hub 直接调用 `AppEvent.Broadcast`。
+- 主要 EID 有 `state.snapshot`、`sync.started`、`sync.progress`、`sync.finished`、
+  `feeds.changed`、`posts.changed`、`appearance.changed`、`selection.changed` 和
+  `ui.command`。`state.snapshot` 在 `Status.PageReady` 时补发完整状态。
+- `feeds.changed` 携带完整订阅列表和总未读数；`posts.changed` 只携带 feed id 和新文章数。
 - macOS 原生菜单只广播命令字符串（`add-feed`、`refresh`、`settings`），不直接拥有对话框。
-  页面通过 `webview/src/stores/events.ts` 打开对话框或执行动作。Windows/Linux 没有原生菜单栏。
-- 任何会改变订阅或未读状态的服务方法都应调用 `broadcastFeeds`：它先更新原生状态栏模型，
-  再广播 `feeds:changed`；多窗口依赖该事件保持一致。
+  页面通过 `webview/src/stores/events.ts` 的单一 dispatcher 打开对话框或执行动作。
+  Windows/Linux 没有原生菜单栏。
+- 任何会改变订阅或未读状态的服务方法都应调用 Hub 的 `FeedsChanged`；多窗口依赖该事件
+  保持一致。
 
 ## 订阅刷新流程
 
 - `Feeds.Add` 先校验绝对 `http`/`https` URL、检查重复，再立即抓取一次并保存频道元数据与
-  首批文章；成功后广播 `feeds:changed` 和 `posts:changed`。
+  首批文章；成功后广播 `feeds.changed` 和 `posts.changed`。
 - `Feeds.RefreshAll` 供手动全量刷新使用，用 `maxConcurrent = 4` 的信号量并发抓取，每个
-  订阅完成后广播一次 `sync:state`，最后再广播 `active: false`。
+  订阅完成后广播一次 `sync.progress`，批次开始和结束分别广播 `sync.started` 与
+  `sync.finished`。
 - `Feeds.RefreshStale` 供启动和回前台自动刷新使用：按 `Feed.LastFetchedAt` 过滤最近 5 分钟
   已经抓取过的订阅源，再交给同一并发刷新逻辑；没有到期订阅源时直接返回。
 - `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`。304 映射为
   `rss.ErrNotModified`：保留文章，只清除错误并更新 `lastFetchedAt`。
 - 抓取失败会把错误写入 `Feed.LastError`，保留订阅和已存文章，并广播
-  `feeds:changed`；原生状态栏展示错误摘要，页面在 toast 中补充提示。
+  `feeds.changed`；原生状态栏展示错误摘要，页面在 toast 中补充提示。
 - 成功抓取后调用 `store.MergePosts`，再刷新频道元数据、校验器和 `lastFetchedAt`。合并完成
   后重新读取 Feed，因为未读数已经在事务中重算。
 - `Posts.List` 在服务端完成未读/星标筛选、搜索和分页。返回 `{posts,total,unread}`。
@@ -253,6 +262,7 @@ bun install
 - store 动作用 `messageOf(error)` 弹中文 toast。只有调用方需要按成功与否分支时才返回布尔值
   （例如 `addFeed`）；事件处理里的“发后不管”用 `void action()`。
 - 事件只在 `App` 的 `onMount` 中通过 `subscribe()` 订阅一次，并在 `onCleanup` 中退订。
+  `stores/events.ts` 是唯一 dispatcher，按 `eid` 路由并丢弃 `revision` 不递增的事件。
 - 没有路由。普通对话框由 `app.dialog` 控制；快照预览使用独立的 `app.snapshot` 状态。
 - 三栏宽度保存在 `Prefs.PaneSizes`，拖拽停止 500ms 后由 `savePaneSizes` 写回。
 - 文章列表采用分页追加，筛选同时支持未读和星标。列表当前选中项保存在
@@ -328,11 +338,13 @@ bun install
 
 ## 常见改动路径
 
-- 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 加导出方法；需要时广播变更事件；运行
-  `bun run generate`；在对应的 `stores/feeds.ts`、`posts.ts` 或 `settings.ts` 动作中调用，
-  处理错误和本地状态，最后从 `stores/app.ts` 导出。
-- 新增事件：在 `internal/service/events.go` 用 `mygo.NewEvent[T]` 声明，在状态变化处广播，
-  重新生成，并在 `stores/events.ts` 订阅。
+- 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 加导出方法；需要时通过
+  `internal/event.Hub` 广播变更；运行 `bun run generate`；在对应的 `stores/feeds.ts`、
+  `posts.ts` 或 `settings.ts` 动作中调用，处理错误和本地状态，最后从 `stores/app.ts`
+  导出。
+- 新增事件：在 `internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，
+  在状态变化处调用；重新生成后在 `stores/events.ts` 的 dispatcher 加分支。不要新增第二个
+  `mygo.NewEvent` 通道。
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
   `stores/app-state.ts` 里的 `defaultPrefs`；在 `settings-dialog.tsx` 加控件；若影响阅读则
   更新 `stores/settings.ts`、相关功能模块和应用逻辑。
@@ -345,6 +357,7 @@ bun install
 - Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `internal/rss/testdata/`；`store` 覆盖
   数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除、重开和图标缓存；`service` 用
   httptest 跑添加、刷新、304、自动刷新节流、新增、标记已读、筛选、分页、搜索和图标缓存；
+  `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
   `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过

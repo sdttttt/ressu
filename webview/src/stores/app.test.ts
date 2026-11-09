@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Feed, FeedsSnapshot, Post, PostSummary, Prefs, SyncState } from "~/mygo";
+import type {
+  Event as BroadcastEvent,
+  Feed,
+  FeedsSnapshot,
+  Post,
+  PostSummary,
+  Prefs,
+  SyncState,
+} from "~/mygo";
 
 vi.mock("solid-sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -43,10 +51,7 @@ vi.mock("~/mygo", () => ({
     pageReady: vi.fn(),
   },
   events: {
-    feedsChanged: { on: vi.fn(() => () => {}) },
-    postsChanged: { on: vi.fn(() => () => {}) },
-    syncState: { on: vi.fn(() => () => {}) },
-    uiCommand: { on: vi.fn(() => () => {}) },
+    appEvent: { on: vi.fn(() => () => {}) },
   },
 }));
 
@@ -140,6 +145,24 @@ async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSum
   vi.mocked(mygo.Posts.markRead).mockResolvedValue(undefined);
 
   return { mygo, snapshot, toast, app };
+}
+
+function makeEvent(
+  eid: BroadcastEvent["eid"],
+  overrides: Partial<BroadcastEvent> = {},
+): BroadcastEvent {
+  return {
+    eid,
+    revision: 1,
+    occurredAt: "2026-11-09T12:00:00Z",
+    sync: null,
+    feeds: null,
+    posts: null,
+    appearance: null,
+    selection: null,
+    command: "",
+    ...overrides,
+  };
 }
 
 describe("sidebar preference", () => {
@@ -458,11 +481,61 @@ describe("applySync", () => {
     subscribe();
     await app.start();
 
-    const listener = vi.mocked(mygo.events.syncState.on).mock.calls[0]?.[0];
+    const listener = vi.mocked(mygo.events.appEvent.on).mock.calls[0]?.[0];
     expect(listener).toBeTypeOf("function");
-    listener!({ active: true, done: 1, total: 2, feedId: 1, feed: "A 站" });
+    listener!(
+      makeEvent("sync.progress", {
+        sync: { active: true, done: 1, total: 2, feedId: 1, feed: "A 站" },
+      }),
+    );
 
     expect(app.app.sync).toMatchObject({ active: true, done: 1, total: 2, feed: "A 站" });
+  });
+
+  it("ignores an event with an older revision", async () => {
+    const { mygo, app } = await setup();
+    const { subscribe } = await import("~/stores/events");
+    subscribe();
+    await app.start();
+
+    const listener = vi.mocked(mygo.events.appEvent.on).mock.calls[0]?.[0];
+    listener!(
+      makeEvent("sync.progress", {
+        revision: 3,
+        sync: { active: true, done: 2, total: 2, feedId: 1, feed: "A 站" },
+      }),
+    );
+    listener!(
+      makeEvent("sync.progress", {
+        revision: 2,
+        sync: { active: true, done: 1, total: 2, feedId: 1, feed: "A 站" },
+      }),
+    );
+
+    expect(app.app.sync.done).toBe(2);
+  });
+
+  it("applies a full state snapshot", async () => {
+    const { mygo, app } = await setup();
+    const { subscribe } = await import("~/stores/events");
+    subscribe();
+    await app.start();
+
+    const listener = vi.mocked(mygo.events.appEvent.on).mock.calls[0]?.[0];
+    listener!(
+      makeEvent("state.snapshot", {
+        revision: 2,
+        feeds: { feeds: [feedB], unread: 5 },
+        sync: { active: false, done: 0, total: 0, feedId: 0, feed: "" },
+        appearance: { theme: "dark", fontSize: "large" },
+        selection: { feedId: 0 },
+      }),
+    );
+
+    await vi.waitFor(() => expect(app.app.feeds).toHaveLength(1));
+    expect(app.app.totalUnread).toBe(5);
+    expect(app.app.prefs.theme).toBe("dark");
+    expect(app.app.prefs.fontSize).toBe("large");
   });
 
   it("ends the sync state after the last feed", async () => {

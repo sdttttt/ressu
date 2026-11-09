@@ -28,8 +28,10 @@ type FeedsSnapshot struct {
 // Snapshot is the state needed to draw the native status bar.
 type Snapshot struct {
 	Sync          SyncState
+	Feeds         []store.Feed
 	FeedCount     int
 	Unread        int
+	CurrentFeedID int64
 	CurrentFeed   *store.Feed
 	Theme         string
 	FontSize      string
@@ -123,8 +125,10 @@ func (m *Model) Snapshot() Snapshot {
 	current := m.current
 	snapshot := Snapshot{
 		Sync:          m.sync,
+		Feeds:         feeds,
 		FeedCount:     len(feeds),
 		Unread:        m.unread,
+		CurrentFeedID: current,
 		Theme:         m.theme,
 		FontSize:      m.font,
 		Version:       m.version,

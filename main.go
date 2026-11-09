@@ -16,6 +16,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
@@ -64,11 +65,12 @@ func main() {
 	prefs := st.Prefs()
 	statusModel := appstatus.New(app.Version())
 	statusModel.SetAppearance(prefs.Theme, prefs.FontSize)
-	feeds := service.NewFeedsWithStatus(st, statusModel)
-	statusModel.SetFeeds(feeds.List())
-	posts := service.NewPostsWithMediaAndStatus(st, articleMedia, statusModel)
+	hub := appevent.NewHub(statusModel)
+	feeds := service.NewFeedsWithHub(st, hub)
+	hub.FeedsChanged(feeds.List())
+	posts := service.NewPostsWithMediaAndHub(st, articleMedia, hub)
 	pageReady := make(chan struct{}, 1)
-	status := service.NewStatus(statusModel, func() {
+	status := service.NewStatus(hub, func() {
 		select {
 		case pageReady <- struct{}{}:
 		default:
@@ -77,7 +79,7 @@ func main() {
 	mygo.Bind(
 		feeds,
 		posts,
-		service.NewSettingsWithMediaAndStatus(st, articleMedia, statusModel),
+		service.NewSettingsWithMediaAndHub(st, articleMedia, hub),
 		status,
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
@@ -92,7 +94,7 @@ func main() {
 	app.WhenReady(func() {
 		prefs := st.Prefs()
 		service.ApplyTheme(prefs.Theme)
-		setMenu()
+		setMenu(hub)
 		if _, err := openWindow(statusModel, pageReady, func() {
 			if !prefs.RefreshOnStart {
 				return

@@ -1,12 +1,10 @@
 // Package service exposes the app's data to the frontend through MyGo
-// bindings, and tells pages when it changes through typed events.
+// bindings, and tells pages when it changes through events.
 package service
 
 import (
-	"github.com/egoist/mygo"
-
+	appevent "github.com/sdttttt/ressu/internal/event"
 	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 // SyncState reports how a refresh is going.
@@ -16,22 +14,7 @@ type SyncState = appstatus.SyncState
 type FeedsSnapshot = appstatus.FeedsSnapshot
 
 // PostsChanged says which feed's posts changed, and how many are new.
-type PostsChanged struct {
-	FeedID int64 `json:"feedId"`
-	New    int   `json:"new"`
-}
-
-// Events reach the pages of every window.
-var (
-	// SyncStateEvent reports the progress of a refresh.
-	SyncStateEvent = mygo.NewEvent[SyncState]("sync:state")
-	// FeedsChanged carries the subscription list once it changes.
-	FeedsChanged = mygo.NewEvent[FeedsSnapshot]("feeds:changed")
-	// PostsChangedEvent says which feed's posts changed.
-	PostsChangedEvent = mygo.NewEvent[PostsChanged]("posts:changed")
-	// Command carries a menu command for the page to run.
-	Command = mygo.NewEvent[string]("ui:command")
-)
+type PostsChanged = appevent.PostsChanged
 
 // Commands the menu sends to the page.
 const (
@@ -39,12 +22,3 @@ const (
 	CommandRefresh  = "refresh"
 	CommandSettings = "settings"
 )
-
-// broadcastFeeds tells the pages and native UI about current subscriptions.
-func broadcastFeeds(st *store.Store, model *appstatus.Model) {
-	snapshot := feedsSnapshot(st)
-	if model != nil {
-		model.SetFeeds(snapshot)
-	}
-	_ = FeedsChanged.Broadcast(snapshot)
-}

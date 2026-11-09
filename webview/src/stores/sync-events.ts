@@ -1,5 +1,6 @@
 import { toast } from "solid-sonner";
 
+import { applyFontSize, applyTheme } from "~/lib/theme";
 import type { FeedsSnapshot, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
 import { syncFeedIcons } from "~/stores/icons";
@@ -34,6 +35,25 @@ export function applySync(event: SyncState): void {
     toast.error(`${state.syncErrors.length} 个订阅源刷新失败，详情见状态栏`);
     setState("syncErrors", []);
   }
+}
+
+/** Starts a new refresh run and clears errors from the previous one. */
+export function beginSync(event: SyncState): void {
+  setState("syncErrors", []);
+  setState("sync", event);
+}
+
+/** Applies the sync section of a full state snapshot without ending a run. */
+export function applySyncSnapshot(event: SyncState): void {
+  setState("sync", event);
+}
+
+/** Applies theme and font size from another window or native command. */
+export function applyAppearance(theme: string, fontSize: string): void {
+  setState("prefs", "theme", theme);
+  setState("prefs", "fontSize", fontSize);
+  applyTheme(theme);
+  applyFontSize(fontSize);
 }
 
 /** Refreshes the list of the selected feed after its posts changed. */
