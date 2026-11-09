@@ -76,6 +76,7 @@ type Cache struct {
 	dir      string
 	client   *http.Client
 	maxBytes int64
+	openedAt time.Time
 
 	mu       sync.Mutex
 	entries  map[string]Entry
@@ -111,6 +112,7 @@ func Open(dir string, options Options) (*Cache, error) {
 		dir:          dir,
 		client:       newClient(),
 		maxBytes:     normalizeLimit(options.MaxBytes),
+		openedAt:     time.Now(),
 		entries:      make(map[string]Entry),
 		inFlight:     make(map[string]*fetchRequest),
 		failureTimes: make(map[string]time.Time),
@@ -341,7 +343,7 @@ func (c *Cache) getOnce(ctx context.Context, key string, depth int) (Entry, erro
 		c.mu.Unlock()
 		return entry, nil
 	}
-	if imageNegative(entry) && entry.Size == 0 {
+	if imageNegative(entry, c.openedAt) && entry.Size == 0 {
 		c.mu.Unlock()
 		return Entry{}, errors.New("the image recently failed to download")
 	}
@@ -379,10 +381,11 @@ func (c *Cache) imageFresh(entry Entry) bool {
 	return entry.Size > 0 && entry.FetchedAt.Add(freshTTL).After(time.Now())
 }
 
-// imageNegative reports whether a recent failed download should not be tried
-// again.
-func imageNegative(entry Entry) bool {
+// imageNegative reports whether a recent failure from this process should not
+// be retried. Failures from an earlier launch are retried once after restart.
+func imageNegative(entry Entry, openedAt time.Time) bool {
 	return entry.Size == 0 && !entry.FailedAt.IsZero() &&
+		!entry.FailedAt.Before(openedAt) &&
 		entry.FailedAt.Add(failureTTL).After(time.Now())
 }
 

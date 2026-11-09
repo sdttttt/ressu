@@ -1,7 +1,9 @@
 package media
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"mime"
 	"net"
@@ -17,9 +19,12 @@ import (
 const userAgent = "Ressu/0.1 (+https://github.com/sdttttt/ressu)"
 
 // imageAccept lists raster image formats the target WebViews can render.
-const imageAccept = "image/png,image/jpeg,image/webp,image/gif,image/bmp,image/x-icon,*/*;q=0.8"
+const imageAccept = "image/avif,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/x-icon,*/*;q=0.8"
 
-// allowedContentTypes is based on bytes detected below, not untrusted markup.
+const avifContentType = "image/avif"
+
+// allowedContentTypes covers formats recognized by http.DetectContentType.
+// AVIF is handled separately by isAVIF.
 var allowedContentTypes = map[string]bool{
 	"image/bmp":                true,
 	"image/gif":                true,
@@ -162,7 +167,12 @@ func validateSource(raw string) error {
 }
 
 // imageType returns a supported bitmap type, preferring bytes over headers.
+// AVIF needs a separate ISO BMFF signature check because http.DetectContentType
+// does not recognize it.
 func imageType(data []byte, headerType string) string {
+	if isAVIF(data) {
+		return avifContentType
+	}
 	detected := http.DetectContentType(data)
 	if allowedContentTypes[detected] {
 		return detected
@@ -172,4 +182,25 @@ func imageType(data []byte, headerType string) string {
 		return parsed
 	}
 	return ""
+}
+
+// isAVIF reports whether data starts with an AVIF file type box.
+func isAVIF(data []byte) bool {
+	if len(data) < 16 || !bytes.Equal(data[4:8], []byte("ftyp")) {
+		return false
+	}
+	boxSize := binary.BigEndian.Uint32(data[:4])
+	if boxSize < 16 || boxSize%4 != 0 || int64(boxSize) > int64(len(data)) {
+		return false
+	}
+	for offset := 8; offset+4 <= int(boxSize); offset += 4 {
+		if offset == 12 {
+			continue
+		}
+		brand := string(data[offset : offset+4])
+		if brand == "avif" || brand == "avis" {
+			return true
+		}
+	}
+	return false
 }

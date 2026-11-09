@@ -3,7 +3,9 @@ package media
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +15,120 @@ import (
 	"testing"
 	"time"
 )
+
+func TestImageTypeRecognizesAVIF(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		data   []byte
+		header string
+		want   string
+	}{
+		{
+			name: "still image",
+			data: testAVIF("avif", "mif1", "miaf"),
+			want: avifContentType,
+		},
+		{
+			name:   "image sequence",
+			data:   testAVIF("avis", "msf1"),
+			header: "application/octet-stream",
+			want:   avifContentType,
+		},
+		{
+			name:   "header without AVIF signature",
+			data:   []byte("not an AVIF"),
+			header: avifContentType,
+			want:   "",
+		},
+		{
+			name: "other ISO BMFF image",
+			data: testAVIF("heic", "mif1"),
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := imageType(test.data, test.header); got != test.want {
+				t.Fatalf("imageType() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFetchAndServeAVIF(t *testing.T) {
+	cache := openTestCache(t)
+	source := "https://cdn.example/photo.avif"
+	key := keyFor(source)
+	if !cache.prepare(key, source) {
+		t.Fatal("could not prepare AVIF cache entry")
+	}
+	data := testAVIF("avif", "mif1", "miaf")
+	cache.client = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			Status:        "200 OK",
+			Header:        http.Header{"Content-Type": []string{avifContentType}},
+			Body:          io.NopCloser(bytes.NewReader(data)),
+			ContentLength: int64(len(data)),
+			Request:       request,
+		}, nil
+	})}
+
+	entry, err := cache.get(context.Background(), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entry.ContentType != avifContentType || entry.Size != int64(len(data)) {
+		t.Fatalf("entry = %+v, want cached AVIF", entry)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, Scheme+"://localhost/i/"+key, nil)
+	cache.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK || !bytes.Equal(recorder.Body.Bytes(), data) ||
+		recorder.Header().Get("Content-Type") != avifContentType {
+		t.Fatalf("handler answered %d: %q %v", recorder.Code, recorder.Body.String(), recorder.Header())
+	}
+}
+
+func TestGetRetriesFailureFromPreviousLaunch(t *testing.T) {
+	cache := openTestCache(t)
+	source := "https://cdn.example/previous-failure.avif"
+	key := keyFor(source)
+	if !cache.prepare(key, source) {
+		t.Fatal("could not prepare cache entry")
+	}
+	failedAt := time.Now().Add(-time.Minute)
+	cache.mu.Lock()
+	entry := cache.entries[key]
+	entry.FailedAt = failedAt
+	entry.LastAttempt = failedAt
+	cache.entries[key] = entry
+	cache.mu.Unlock()
+	if err := saveEntry(cache.dir, entry); err != nil {
+		t.Fatal(err)
+	}
+	cache.openedAt = failedAt.Add(time.Second)
+
+	data := testAVIF("avif", "mif1", "miaf")
+	cache.client = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			Status:        "200 OK",
+			Header:        http.Header{"Content-Type": []string{avifContentType}},
+			Body:          io.NopCloser(bytes.NewReader(data)),
+			ContentLength: int64(len(data)),
+			Request:       request,
+		}, nil
+	})}
+
+	fetched, err := cache.get(context.Background(), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fetched.ContentType != avifContentType || fetched.Size != int64(len(data)) {
+		t.Fatalf("entry = %+v, want previous failure retried", fetched)
+	}
+}
 
 func TestRewriteHTMLPreparesRemoteImages(t *testing.T) {
 	cache := openTestCache(t)
@@ -182,6 +298,24 @@ type failingTransport struct{}
 
 func (failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, errors.New("test transport failure")
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (function roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return function(request)
+}
+
+func testAVIF(major string, compatible ...string) []byte {
+	size := 16 + len(compatible)*4
+	data := make([]byte, size)
+	binary.BigEndian.PutUint32(data[:4], uint32(size))
+	copy(data[4:8], "ftyp")
+	copy(data[8:12], major)
+	for index, brand := range compatible {
+		copy(data[16+index*4:20+index*4], brand)
+	}
+	return data
 }
 
 func openTestCache(t *testing.T) *Cache {
