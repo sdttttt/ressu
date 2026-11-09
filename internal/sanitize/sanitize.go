@@ -85,9 +85,13 @@ func HTML(markup string, baseURL string) string {
 	if markup == "" {
 		return ""
 	}
+	if strings.TrimSpace(markup) == "" {
+		return markup
+	}
 
-	clean := policy.Sanitize(markup)
-	document, err := html.Parse(strings.NewReader(clean))
+	clean := policy.SanitizeReader(strings.NewReader(markup))
+	cleanLen := clean.Len()
+	document, err := html.Parse(clean)
 	if err != nil {
 		return ""
 	}
@@ -97,6 +101,7 @@ func HTML(markup string, baseURL string) string {
 	}
 
 	var output strings.Builder
+	output.Grow(cleanLen)
 	for child := body.FirstChild; child != nil; child = child.NextSibling {
 		enhance(child, baseURL)
 		if err := html.Render(&output, child); err != nil {

@@ -129,3 +129,10 @@ func TestHTMLOmitsDocumentWrapperAndIsIdempotent(t *testing.T) {
 		t.Fatalf("sanitization was not idempotent:\nfirst=%s\nsecond=%s", first, second)
 	}
 }
+
+func TestHTMLPreservesWhitespaceOnlyInput(t *testing.T) {
+	input := " \n\t"
+	if output := sanitize.HTML(input, "https://example.com/"); output != input {
+		t.Fatalf("output = %q, want %q", output, input)
+	}
+}
