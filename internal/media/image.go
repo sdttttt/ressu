@@ -20,6 +20,11 @@ func IsAVIF(data []byte) bool {
 	return imageType(data, "") == avifContentType
 }
 
+// ContentType reports the supported bitmap type carried by image bytes.
+func ContentType(data []byte) string {
+	return imageType(data, "")
+}
+
 // localImageKey extracts the validated cache key from either local URL form.
 // Accepting both forms keeps viewer input valid as an image crosses platform
 // boundaries in tests or stored content.

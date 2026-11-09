@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"image/png"
 	"math"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -57,7 +59,7 @@ func newImageViewerContent(data []byte, viewerURL string) (imageViewerContent, e
 		return imageViewerContent{image: image, url: viewerURL, data: data}, nil
 	}
 	if media.IsAVIF(data) {
-		return imageViewerContent{url: viewerURL}, nil
+		return imageViewerContent{url: viewerURL, data: data}, nil
 	}
 	return imageViewerContent{}, fmt.Errorf("could not decode the image: %w", decodeErr)
 }
@@ -112,23 +114,92 @@ func openImageViewer(parent *mygo.Window, content imageViewerContent, alt string
 	}
 
 	if content.image != nil {
-		options.Content = ui.View(func(c *ui.Context) { imageViewerView(c, &content) })
+		var viewer *mygo.Window
+		options.Content = ui.View(func(c *ui.Context) { imageViewerView(c, &content, viewer) })
+		viewer = mygo.NewWindow(options)
+		return
 	} else {
 		options.URL = content.url
 	}
 	mygo.NewWindow(options)
 }
 
-// imageViewerView draws the image and its native copy action.
-func imageViewerView(c *ui.Context, content *imageViewerContent) {
+// imageViewerView draws the image and its native viewer actions.
+func imageViewerView(c *ui.Context, content *imageViewerContent, viewer *mygo.Window) {
 	ui.Image(c, content.image).Fill().Fit(ui.Contain).ContextMenu(func(m *ui.Menu) {
-		item := m.Item("复制图片")
+		copyItem := m.Item("复制图片")
 		pngData, err := content.clipboardPNG()
-		item.Disabled(err != nil)
-		if item.Chosen() && err == nil {
+		copyItem.Disabled(err != nil)
+		if copyItem.Chosen() && err == nil {
 			_ = mygo.Clipboard.WriteImage(pngData)
 		}
+
+		downloadItem := m.Item("下载图片")
+		downloadItem.Disabled(viewer == nil || len(content.data) == 0)
+		if downloadItem.Chosen() {
+			downloadImageViewerImage(viewer, content)
+		}
 	})
+}
+
+// downloadImageViewerImage asks where to keep the image and writes its
+// validated bytes to the selected path.
+func downloadImageViewerImage(viewer *mygo.Window, content *imageViewerContent) {
+	extension := imageExtension(content.data)
+	savePath, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
+		Parent:      viewer,
+		Title:       "下载图片",
+		DefaultPath: imageDownloadName(extension),
+		ButtonLabel: "保存",
+		Filters:     []mygo.FileFilter{{Name: "图片", Extensions: []string{strings.TrimPrefix(extension, ".")}}},
+	})
+	if err != nil {
+		showImageSaveError(viewer, err)
+		return
+	}
+	if savePath == "" {
+		return
+	}
+	if err := os.WriteFile(savePath, content.data, 0o644); err != nil {
+		showImageSaveError(viewer, fmt.Errorf("could not save the image: %w", err))
+	}
+}
+
+// showImageSaveError reports a failed download without losing the viewer.
+func showImageSaveError(viewer *mygo.Window, err error) {
+	_, _ = mygo.Dialog.Message(mygo.MessageOptions{
+		Parent:  viewer,
+		Type:    mygo.MessageError,
+		Title:   "下载失败",
+		Message: "无法保存图片",
+		Detail:  err.Error(),
+	})
+}
+
+// imageExtension chooses a download extension from validated image bytes.
+func imageExtension(data []byte) string {
+	switch media.ContentType(data) {
+	case "image/avif":
+		return ".avif"
+	case "image/bmp":
+		return ".bmp"
+	case "image/gif":
+		return ".gif"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/x-icon", "image/vnd.microsoft.icon":
+		return ".ico"
+	default:
+		return ".png"
+	}
+}
+
+// imageDownloadName creates a default file name from the current Unix time
+// and the image's actual extension.
+func imageDownloadName(extension string) string {
+	return fmt.Sprintf("%d%s", time.Now().Unix(), extension)
 }
 
 // imageTitle chooses a concise, article-controlled window title.

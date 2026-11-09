@@ -3,12 +3,14 @@ package gui
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 )
@@ -89,16 +91,25 @@ func TestImageViewerOffersCopyContextMenu(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tester := ui.NewTester(func(c *ui.Context) { imageViewerView(c, &content) }, 2, 1)
+	tester := ui.NewTester(func(c *ui.Context) { imageViewerView(c, &content, nil) }, 2, 1)
 	tester.RightClickAt(1, 0.5)
-	if got := tester.Menu(); !slices.Equal(got, []string{"复制图片"}) {
-		t.Fatalf("image viewer context menu = %q; want [复制图片]", got)
+	if got := tester.Menu(); !slices.Equal(got, []string{"复制图片", "下载图片"}) {
+		t.Fatalf("image viewer context menu = %q; want [复制图片 下载图片]", got)
 	}
 }
 
 func TestNewImageViewerContentRejectsUndecodableData(t *testing.T) {
 	if _, err := newImageViewerContent([]byte("not an image"), ""); err == nil {
 		t.Fatal("newImageViewerContent accepted invalid image bytes")
+	}
+}
+
+func TestImageDownloadNameUsesTimestampAndActualFormat(t *testing.T) {
+	before := time.Now().Unix()
+	got := imageDownloadName(".jpg")
+	after := time.Now().Unix()
+	if got != fmt.Sprintf("%d.jpg", before) && got != fmt.Sprintf("%d.jpg", after) {
+		t.Fatalf("imageDownloadName(.jpg) = %q, want a Unix timestamp between %d and %d", got, before, after)
 	}
 }
 
