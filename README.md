@@ -20,6 +20,10 @@
 - 存储 [etcd-io/bbolt](https://github.com/etcd-io/bbolt)
 - 苦力 [codex](https://github.com/openai/codex)
 
+## Road Map
+
+后续可能将页面部分功能移植到MyGo的GPU渲染实现。
+
 ## LICENSE
 
 See [LICENSE](LICENSE) (0BSD发布，爱干嘛干嘛).
