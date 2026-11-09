@@ -77,6 +77,16 @@ describe("formatRelative", () => {
   it("falls back to a date for old posts", () => {
     expect(formatRelative(new Date(2025, 0, 1, 0, 0, 0).toISOString(), now)).toContain("2025");
   });
+
+  it("switches to a date after 30 days", () => {
+    const boundary = new Date(now);
+    boundary.setDate(boundary.getDate() - 30);
+    const older = new Date(now);
+    older.setDate(older.getDate() - 31);
+
+    expect(formatRelative(boundary.toISOString(), now)).not.toBe("30 天前");
+    expect(formatRelative(older.toISOString(), now)).toContain("2026");
+  });
 });
 
 describe("truncate", () => {
