@@ -1,5 +1,5 @@
-// Package nativeui draws the parts of the reader that MyGO renders directly.
-package nativeui
+// Package gui draws the parts of the reader that MyGO renders directly.
+package gui
 
 import (
 	"fmt"

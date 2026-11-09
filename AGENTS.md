@@ -57,7 +57,7 @@ internal/
   service/                 暴露给页面的服务、事件与后台行为
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
   status/                  原生状态栏与页面共享的服务状态模型
-  nativeui/                MyGO 原生状态栏渲染
+  gui/                     MyGO 原生状态栏渲染
 webview/                   前端源码和独立构建配置
   index.html               Vite 入口，lang="zh-CN"
   vite.config.ts           Solid + Tailwind 插件、~ 别名、root 指回 webview/、固定 5173

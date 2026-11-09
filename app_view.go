@@ -4,13 +4,13 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/internal/nativeui"
+	"github.com/sdttttt/ressu/internal/gui"
 )
 
 // appView places the reader page above the native status bar.
 type appView struct {
 	page   *mygo.WebView
-	status *nativeui.StatusBar
+	status *gui.StatusBar
 }
 
 // view builds the native layout around the reader page.

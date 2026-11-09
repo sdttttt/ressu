@@ -16,9 +16,9 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
-	"github.com/sdttttt/ressu/internal/nativeui"
 	"github.com/sdttttt/ressu/internal/service"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
@@ -124,7 +124,7 @@ func fatal(message string, err error) {
 // mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
 func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) (*mygo.Window, error) {
-	view := &appView{status: nativeui.NewStatusBar(statusModel)}
+	view := &appView{status: gui.NewStatusBar(statusModel)}
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
