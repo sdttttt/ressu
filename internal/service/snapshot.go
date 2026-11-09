@@ -2,17 +2,12 @@ package service
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
-	"log/slog"
 	"math"
-	"os"
 	"strings"
-
-	"github.com/egoist/mygo"
 )
 
 // maxSnapshotTiles bounds how many visible-page captures make one snapshot.
@@ -43,85 +38,6 @@ type SnapshotTile struct {
 	Offset   int64            `json:"offset"`
 	PNG      []byte           `json:"png"`
 	Geometry SnapshotGeometry `json:"geometry"`
-}
-
-// CaptureSnapshot captures the visible page for one scroll position.
-func (p *Posts) CaptureSnapshot(ctx context.Context, request SnapshotCaptureRequest) ([]byte, error) {
-	if err := request.validate(); err != nil {
-		return nil, err
-	}
-	if request.tileCount() > maxSnapshotTiles {
-		return nil, fmt.Errorf("the article is too long for one snapshot")
-	}
-	var data []byte
-	var err error
-	if page := mygo.CallerPage(ctx); page != nil && page.WebView() != nil {
-		data, err = page.WebView().CapturePage()
-	} else {
-		window := mygo.CallerWindow(ctx)
-		if window == nil || window.IsDestroyed() {
-			err = fmt.Errorf("the snapshot window is no longer available")
-		} else {
-			data, err = window.CapturePage()
-		}
-	}
-	if err != nil {
-		slog.Warn("snapshot capture failed",
-			"operation", "posts.captureSnapshot",
-			"error", err,
-		)
-		return nil, err
-	}
-	return data, nil
-}
-
-// StitchSnapshot joins visible-page captures into one complete PNG.
-func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byte, error) {
-	data, err := stitchSnapshot(tiles, geometryOf(tiles))
-	if err != nil {
-		slog.Warn("snapshot stitch failed", "operation", "posts.stitchSnapshot", "error", err)
-	}
-	return data, err
-}
-
-// SaveSnapshot shows a save dialog and writes a stitched snapshot to the
-// chosen path, which it returns. A cancelled dialog returns no path.
-func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) (string, error) {
-	if err := validateSnapshotImage(data); err != nil {
-		return "", err
-	}
-
-	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
-		Parent:      mygo.CallerWindow(ctx),
-		Title:       "保存文章快照",
-		DefaultPath: snapshotFileName(fileName),
-		Filters:     []mygo.FileFilter{{Name: "PNG 图片", Extensions: []string{"png"}}},
-	})
-	if err != nil {
-		slog.Warn("snapshot save picker failed", "operation", "posts.saveSnapshot", "error", err)
-		return "", err
-	}
-	if path == "" {
-		return "", nil
-	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		slog.Error("snapshot write failed", "operation", "posts.saveSnapshot", "error", err)
-		return "", fmt.Errorf("could not save the snapshot: %w", err)
-	}
-	return path, nil
-}
-
-// CopySnapshot puts a stitched snapshot on the clipboard.
-func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
-	if err := validateSnapshotImage(data); err != nil {
-		slog.Warn("invalid snapshot image", "operation", "posts.copySnapshot", "error", err)
-		return err
-	}
-	if err := mygo.Clipboard.WriteImage(data); err != nil {
-		slog.Warn("snapshot copy failed", "operation", "posts.copySnapshot", "error", err)
-		return err
-	}
-	return nil
 }
 
 // validate rejects captures whose page geometry cannot be trusted.

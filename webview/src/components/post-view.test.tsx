@@ -17,6 +17,7 @@ vi.mock("~/stores/app", async () => {
     setOpenPostRead: vi.fn(),
     toggleStar: vi.fn(),
     captureSnapshot: vi.fn(),
+    openImage: vi.fn(),
     mockBridge,
   };
 });
@@ -146,8 +147,8 @@ describe("PostView snapshot trigger", () => {
   });
 });
 
-describe("PostView image preview", () => {
-  it("previews a linked article image instead of opening the link", async () => {
+describe("PostView image viewer", () => {
+  it("opens a linked article image through Go instead of opening the link", async () => {
     const store = await import("~/stores/app");
     render(() => <PostView />);
     await closePost();
@@ -155,14 +156,8 @@ describe("PostView image preview", () => {
 
     fireEvent.click(document.querySelector(".post-body img")!);
 
-    const previewImage = document.querySelector("[data-image-preview] img");
-    expect(previewImage).not.toBeNull();
-    expect((previewImage as HTMLImageElement).src).toBe("https://image.example/cover.png");
-    expect(store.openLink).not.toHaveBeenCalled();
-
-    expect(document.querySelector('button[aria-label="关闭图片预览"]')).toBeNull();
-    fireEvent.click(document.querySelector('[data-image-preview] button[aria-hidden="true"]')!);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(store.openImage).toHaveBeenCalledWith("https://image.example/cover.png", "封面");
     expect(document.querySelector("[data-image-preview]")).toBeNull();
+    expect(store.openLink).not.toHaveBeenCalled();
   });
 });

@@ -10,23 +10,19 @@ import (
 	"github.com/sdttttt/ressu/internal/logging"
 )
 
-// LocalURL maps one public image address to its stable local protocol URL. It
-// persists only the source mapping; bytes are downloaded when WebView asks.
-func (c *Cache) LocalURL(raw string) (string, bool) {
+func cacheLocalURL(c *Cache, raw string) (string, bool) {
 	source, ok := normalizeSource(raw)
 	if !ok {
 		return "", false
 	}
 	key := keyFor(source)
-	if !c.prepare(key, source) {
+	if !cachePrepare(c, key, source) {
 		return "", false
 	}
 	return localURL(key), true
 }
 
-// RewriteHTML replaces remote img addresses with local cache URLs. Images that
-// cannot be mapped lose their src instead of remaining reachable directly.
-func (c *Cache) RewriteHTML(markup, baseURL string) string {
+func cacheRewriteHTML(c *Cache, markup, baseURL string) string {
 	if markup == "" {
 		return ""
 	}

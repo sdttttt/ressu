@@ -264,10 +264,6 @@
     cursor: zoom-in;
   }
 
-  .image-preview-overlay {
-    background-color: rgb(0 0 0 / 78%);
-  }
-
   .post-body figure {
     margin: 0;
   }
