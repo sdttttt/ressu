@@ -28,7 +28,7 @@ jobs:
           bun-version: latest
 
       - name: Install the frontend's dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --registry https://registry.npmjs.org/
 
       - name: Go tests
         run: go test ./...
@@ -81,7 +81,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-0 libayatana-appindicator3-1
 
       - name: Install the frontend's dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --registry https://registry.npmjs.org/
 
       - name: Package
         run: bun run build -- -platform ${{ matrix.platform }}
