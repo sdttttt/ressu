@@ -64,7 +64,7 @@ func main() {
 		service.NewSettingsWithMedia(st, articleMedia),
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
-		if _, err := feeds.RefreshAll(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
+		if _, err := feeds.RefreshStale(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
 			slog.Warn("refresh on foreground failed",
 				"operation", "app.foregroundRefresh", "error", err)
 		}
@@ -81,7 +81,7 @@ func main() {
 				return
 			}
 			go func() {
-				if _, err := feeds.RefreshAll(context.Background()); err != nil {
+				if _, err := feeds.RefreshStale(context.Background()); err != nil {
 					slog.Warn("refresh on start failed",
 						"operation", "app.startRefresh", "error", err)
 				}

@@ -17,6 +17,10 @@ import (
 // maxConcurrent bounds how many feeds are fetched at once.
 const maxConcurrent = 4
 
+// autoRefreshInterval is how long a successful fetch suppresses automatic
+// refreshes of the same feed.
+const autoRefreshInterval = 5 * time.Minute
+
 // iconTTL bounds how long a resolved feed icon is reused.
 const iconTTL = 7 * 24 * time.Hour
 
@@ -259,6 +263,30 @@ func (f *Feeds) Refresh(ctx context.Context, id int64) (store.Feed, error) {
 // RefreshAll fetches every feed, four at a time, and reports each one through
 // the sync:state event.
 func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
+	return f.refreshFeeds(ctx, f.store.Feeds())
+}
+
+// RefreshStale fetches feeds whose last successful fetch is missing or at
+// least five minutes old. Failed attempts are retried by the next automatic
+// refresh. Manual refreshes use RefreshAll or Refresh instead.
+func (f *Feeds) RefreshStale(ctx context.Context) (SyncSummary, error) {
+	now := time.Now()
+	feeds := f.store.Feeds()
+	due := make([]store.Feed, 0, len(feeds))
+	for _, feed := range feeds {
+		if feed.LastFetchedAt == nil || now.Sub(*feed.LastFetchedAt) >= autoRefreshInterval {
+			due = append(due, feed)
+		}
+	}
+	if len(due) == 0 {
+		return SyncSummary{}, nil
+	}
+	return f.refreshFeeds(ctx, due)
+}
+
+// refreshFeeds fetches the given feeds, four at a time, and reports each one
+// through the sync:state event.
+func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSummary, error) {
 	f.mu.Lock()
 	if f.refreshing {
 		f.mu.Unlock()
@@ -266,9 +294,8 @@ func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 	}
 	f.refreshing = true
 	f.mu.Unlock()
-	feeds := f.store.Feeds()
 	total := len(feeds)
-	slog.Info("refresh all started",
+	slog.Info("refresh batch started",
 		"operation", "feeds.refreshAll",
 		"total", total,
 	)
@@ -319,7 +346,7 @@ func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 
 	wg.Wait()
 	_ = SyncStateEvent.Broadcast(SyncState{Total: total, Done: total})
-	slog.Info("refresh all finished",
+	slog.Info("refresh batch finished",
 		"operation", "feeds.refreshAll",
 		"updated", summary.Updated,
 		"failed", summary.Failed,

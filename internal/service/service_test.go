@@ -325,6 +325,100 @@ func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 	}
 }
 
+func TestRefreshStaleSkipsRecentlyFetchedFeeds(t *testing.T) {
+	var requests [2]atomic.Int32
+	newServer := func(index int) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requests[index].Add(1)
+			_, _ = io.WriteString(w, feedXML(itemXML("a", fmt.Sprintf("Post %d", index))))
+		}))
+	}
+	servers := []*httptest.Server{newServer(0), newServer(1)}
+	defer servers[0].Close()
+	defer servers[1].Close()
+
+	st := openStore(t)
+	feeds := NewFeeds(st)
+	ctx := context.Background()
+	first, err := feeds.Add(ctx, "", servers[0].URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := feeds.Add(ctx, "", servers[1].URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	requests[0].Store(0)
+	requests[1].Store(0)
+	old := time.Now().Add(-autoRefreshInterval - time.Minute)
+	second.LastFetchedAt = &old
+	if err := st.UpdateFeed(second); err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := feeds.RefreshStale(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests[0].Load() != 0 {
+		t.Error("the recently fetched feed should be skipped")
+	}
+	if requests[1].Load() != 1 {
+		t.Error("the stale feed should be refreshed")
+	}
+	if summary.Updated != 1 {
+		t.Errorf("summary = %+v", summary)
+	}
+
+	requests[0].Store(0)
+	requests[1].Store(0)
+	first, err = st.Feed(first.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.LastFetchedAt = nil
+	if err := st.UpdateFeed(first); err != nil {
+		t.Fatal(err)
+	}
+	second, err = st.Feed(second.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recent := time.Now()
+	second.LastFetchedAt = &recent
+	if err := st.UpdateFeed(second); err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err = feeds.RefreshStale(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests[0].Load() != 1 {
+		t.Error("a feed without a fetch time should be refreshed")
+	}
+	if requests[1].Load() != 0 {
+		t.Error("the recently fetched feed should still be skipped")
+	}
+	if summary.Updated != 1 {
+		t.Errorf("summary = %+v", summary)
+	}
+
+	requests[0].Store(0)
+	requests[1].Store(0)
+	summary, err = feeds.RefreshAll(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests[0].Load() != 1 || requests[1].Load() != 1 {
+		t.Error("a manual refresh should fetch every feed")
+	}
+	if summary.Updated != 2 {
+		t.Errorf("summary = %+v", summary)
+	}
+}
+
 func TestPostsListPagesAndSearches(t *testing.T) {
 	st := openStore(t)
 	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})

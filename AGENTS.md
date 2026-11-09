@@ -141,7 +141,7 @@ bun install
 2. 绑定 `Feeds`、`Posts`、`Settings` 三个服务。
 3. 创建 `ForegroundRefresher` 并挂到应用激活/失活和窗口焦点事件。
 4. `WhenReady` 中应用保存的主题、安装菜单、创建主窗口；只有
-   `RefreshOnStart` 为真时才在窗口显示后异步刷新全部订阅源。
+   `RefreshOnStart` 为真时才在窗口显示后自动刷新最近 5 分钟未抓取的订阅源。
 5. `app.Run()` 阻塞；启动阶段错误走 `log.Fatal`。
 
 主窗口为 1200x800，最小 900x600，`StateKey: "main"`，由 MyGO 写入
@@ -149,8 +149,9 @@ bun install
 就绪也会兜底显示，避免空白窗口。
 
 `internal/service/foreground.go` 记录应用是否真正离开前台。应用失活后再次激活时，会异步
-执行一次 `RefreshAll`；窗口失焦/聚焦只在应用本身失活/激活时作为兜底信号。`RefreshAll`
-自身是单飞：已有刷新时返回 `ErrRefreshing`。
+执行一次 `RefreshStale`；窗口失焦/聚焦只在应用本身失活/激活时作为兜底信号。
+`RefreshStale` 只抓取 `LastFetchedAt` 为空或早于 5 分钟的订阅源，并复用全量刷新的单飞和
+并发逻辑；已有刷新时返回 `ErrRefreshing`。手动全量或单源刷新不受节流限制。
 
 ## MyGO 绑定与事件
 
@@ -172,8 +173,10 @@ bun install
 
 - `Feeds.Add` 先校验绝对 `http`/`https` URL、检查重复，再立即抓取一次并保存频道元数据与
   首批文章；成功后广播 `feeds:changed` 和 `posts:changed`。
-- `Feeds.RefreshAll` 用 `maxConcurrent = 4` 的信号量并发抓取，每个订阅完成后广播一次
-  `sync:state`，最后再广播 `active: false`。
+- `Feeds.RefreshAll` 供手动全量刷新使用，用 `maxConcurrent = 4` 的信号量并发抓取，每个
+  订阅完成后广播一次 `sync:state`，最后再广播 `active: false`。
+- `Feeds.RefreshStale` 供启动和回前台自动刷新使用：按 `Feed.LastFetchedAt` 过滤最近 5 分钟
+  已经抓取过的订阅源，再交给同一并发刷新逻辑；没有到期订阅源时直接返回。
 - `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`。304 映射为
   `rss.ErrNotModified`：保留文章，只清除错误并更新 `lastFetchedAt`。
 - 抓取失败会把错误写入 `Feed.LastError`，保留订阅和已存文章，并广播
@@ -337,9 +340,9 @@ bun install
 
 - Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `internal/rss/testdata/`；`store` 覆盖
   数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除、重开和图标缓存；`service` 用
-  httptest 跑添加、刷新、304、新增、标记已读、筛选、分页、搜索和图标缓存；`icon` 覆盖
-  图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；`snapshot`
-  覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
+  httptest 跑添加、刷新、304、自动刷新节流、新增、标记已读、筛选、分页、搜索和图标缓存；
+  `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
+  `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。
