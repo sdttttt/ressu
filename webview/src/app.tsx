@@ -1,5 +1,5 @@
 import { Rss } from "lucide-solid";
-import { Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, onCleanup, onMount } from "solid-js";
 
 import PostList from "~/components/post-list";
 import PostView from "~/components/post-view";
@@ -19,12 +19,6 @@ function articlePaneSizes(): [number, number] {
 }
 
 export default function App() {
-  const [paneSizes, setPaneSizes] = createSignal(articlePaneSizes());
-
-  createEffect(() => {
-    setPaneSizes(articlePaneSizes());
-  });
-
   onMount(() => {
     const unsubscribe = subscribe();
     const stopThemeWatch = onSystemThemeChange(() => {
@@ -48,13 +42,12 @@ export default function App() {
         <div class="relative min-h-0 flex-1">
           <Resizable
             class="flex h-full"
-            sizes={paneSizes()}
             onSizesChange={(sizes) => {
               const [first, second] = sizes;
               if (first === undefined || second === undefined) return;
-              setPaneSizes([first, second]);
               savePaneSizes(sizes);
             }}
+            initialSizes={articlePaneSizes()}
           >
             <ResizablePanel initialSize={articlePaneSizes()[0]} minSize={0.18} maxSize={0.55}>
               <PostList />
