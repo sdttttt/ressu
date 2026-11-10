@@ -20,8 +20,7 @@ vi.mock("~/mygo", () => ({
   Feeds: {
     list: vi.fn(),
     icon: vi.fn(),
-    add: vi.fn(),
-    test: vi.fn(),
+    openAddFeed: vi.fn(),
     exportOPML: vi.fn(),
     importOPML: vi.fn(),
     remove: vi.fn(),
@@ -355,61 +354,26 @@ describe("setPostSortOrder", () => {
   });
 });
 
-describe("addFeed", () => {
-  it("adds the feed and selects it", async () => {
+describe("openAddFeed", () => {
+  it("opens the native window", async () => {
     const { mygo, app } = await setup();
     await app.start();
-    const added = { ...feedB, id: 3, title: "C 站" };
-    vi.mocked(mygo.Feeds.add).mockResolvedValue(added);
+    vi.mocked(mygo.Feeds.openAddFeed).mockResolvedValue(undefined);
 
-    const ok = await app.addFeed("C 站", "https://c.example/feed");
+    await app.openAddFeed();
 
-    expect(ok).toBe(true);
-    expect(mygo.Feeds.add).toHaveBeenCalledWith("C 站", "https://c.example/feed");
-    expect(app.app.feeds.map((feed) => feed.id)).toContain(3);
-    expect(app.app.current.feedId).toBe(3);
+    expect(mygo.Feeds.openAddFeed).toHaveBeenCalled();
   });
 
-  it("reports a duplicate without adding it", async () => {
+  it("reports an open failure", async () => {
     const { mygo, app } = await setup();
     await app.start();
-    vi.mocked(mygo.Feeds.add).mockRejectedValue(new Error("该订阅源已经存在"));
+    const { toast } = await import("~/lib/notifications");
+    vi.mocked(mygo.Feeds.openAddFeed).mockRejectedValue(new Error("窗口不可用"));
 
-    const ok = await app.addFeed("", "https://a.example/feed");
+    await app.openAddFeed();
 
-    expect(ok).toBe(false);
-    expect(app.app.feeds).toHaveLength(2);
-  });
-});
-
-describe("testFeed", () => {
-  it("returns a parsed preview", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.test).mockResolvedValue({
-      title: "C 站",
-      siteUrl: "https://c.example/",
-      description: "",
-      iconUrl: "",
-      language: "",
-    });
-
-    const result = await app.testFeed("https://c.example/feed");
-
-    expect(result.error).toBe("");
-    expect(result.feed?.title).toBe("C 站");
-    expect(mygo.Feeds.test).toHaveBeenCalledWith("https://c.example/feed");
-  });
-
-  it("returns an inline error", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.test).mockRejectedValue(new Error("测试失败"));
-
-    const result = await app.testFeed("https://c.example/feed");
-
-    expect(result.feed).toBeNull();
-    expect(result.error).toBe("测试失败");
+    expect(toast.error).toHaveBeenCalledWith("窗口不可用");
   });
 });
 

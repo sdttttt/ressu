@@ -30,6 +30,7 @@ type UI interface {
 	OpenExternal(string) error
 	OpenLinkWindow(title, link string)
 	OpenImageViewer(parent *gui.Window, data []byte, viewerURL, alt string) error
+	OpenAddFeed(parent *gui.Window, callbacks gui.AddFeedCallbacks)
 	OpenSettings(parent *gui.Window, callbacks gui.SettingsCallbacks)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
@@ -311,9 +312,35 @@ func (a *AppActions) OpenSettings(parent *gui.Window) {
 	})
 }
 
+// OpenAddFeed opens the native subscription surface.
+func (a *AppActions) OpenAddFeed(parent *gui.Window) {
+	a.ui.OpenAddFeed(parent, gui.AddFeedCallbacks{
+		Appearance: a.settings.Get,
+		Test: func(ctx context.Context, feedURL string) (gui.FeedPreview, error) {
+			preview, err := a.TestFeed(ctx, feedURL)
+			return gui.FeedPreview(preview), err
+		},
+		Add: a.AddAndSelectFeed,
+		ImportOPML: func(feedParent *gui.Window) (gui.ImportSummary, error) {
+			summary, err := a.ImportOPML(context.Background(), feedParent)
+			return gui.ImportSummary(summary), err
+		},
+	})
+}
+
 // SelectFeed broadcasts the feed selected by a page.
 func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
 	a.status.SelectFeed(ctx, feedID)
+}
+
+// AddAndSelectFeed subscribes to a feed and broadcasts its selection.
+func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL string) (store.Feed, error) {
+	feed, err := a.AddFeed(ctx, title, feedURL)
+	if err != nil {
+		return store.Feed{}, err
+	}
+	a.SelectFeed(ctx, feed.ID)
+	return feed, nil
 }
 
 // PageReady marks the reader page as ready to receive a full snapshot.

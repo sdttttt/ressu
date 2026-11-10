@@ -1,5 +1,5 @@
 import { events, type Event as BroadcastEvent } from "~/mygo";
-import { refreshAll } from "~/stores/feeds";
+import { openAddFeed, refreshAll } from "~/stores/feeds";
 import { openSettings } from "~/stores/settings";
 import {
   applyAppearance,
@@ -8,9 +8,9 @@ import {
   applySyncSnapshot,
   beginSync,
   handlePostsChanged,
+  handleSelectionChanged,
   replaceFeeds,
 } from "~/stores/sync-events";
-import { openDialog } from "~/stores/ui";
 
 let lastRevision = 0;
 
@@ -51,6 +51,7 @@ function handleEvent(event: BroadcastEvent): void {
       if (event.prefs) void applyPrefs(event.prefs);
       break;
     case "selection.changed":
+      if (event.selection) void handleSelectionChanged(event.selection.feedId);
       break;
     case "ui.command":
       handleCommand(event.command);
@@ -61,7 +62,7 @@ function handleEvent(event: BroadcastEvent): void {
 function handleCommand(command: string): void {
   switch (command) {
     case "add-feed":
-      openDialog("addFeed");
+      void openAddFeed();
       break;
     case "refresh":
       void refreshAll();

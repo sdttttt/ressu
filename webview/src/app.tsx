@@ -1,7 +1,6 @@
 import { Rss } from "lucide-solid";
 import { Show, onCleanup, onMount } from "solid-js";
 
-import AddFeedDialog from "~/components/add-feed-dialog";
 import FeedSidebar from "~/components/feed-sidebar";
 import PostList from "~/components/post-list";
 import PostView from "~/components/post-view";
@@ -118,7 +117,6 @@ export default function App() {
         </div>
       </Show>
 
-      <AddFeedDialog />
       <ShortcutsDialog />
       <SnapshotDialog />
     </div>

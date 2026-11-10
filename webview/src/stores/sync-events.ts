@@ -68,3 +68,12 @@ export async function applyPrefs(prefs: Prefs): Promise<void> {
 export function handlePostsChanged(feedId: number): void {
   if (feedId === state.current.feedId || state.current.feedId === null) void loadPosts(0);
 }
+
+/** Applies another page's selected subscription. */
+export async function handleSelectionChanged(feedId: number): Promise<void> {
+  if (state.current.feedId === feedId) return;
+
+  setState("current", { feedId, postFeedId: null, guid: null });
+  setState("post", null);
+  await loadPosts(0);
+}

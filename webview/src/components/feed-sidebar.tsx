@@ -41,7 +41,7 @@ import {
   ensureFeedIcon,
   isSyncingFeed,
   markAllRead,
-  openDialog,
+  openAddFeed,
   openSettings,
   refreshAll,
   refreshFeed,
@@ -90,7 +90,7 @@ export default function FeedSidebar() {
           </PopoverContent>
         </Popover>
 
-        <IconButton label="添加订阅源" class="size-7" onClick={() => openDialog("addFeed")}>
+        <IconButton label="添加订阅源" class="size-7" onClick={() => void openAddFeed()}>
           <Plus class="size-4" />
         </IconButton>
 

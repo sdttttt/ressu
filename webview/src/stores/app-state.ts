@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 
 import type { Feed, Post, PostSummary, Prefs, SortOrder, SyncState } from "~/mygo";
 
-export type DialogName = "addFeed" | "help";
+export type DialogName = "help";
 
 type SnapshotAction = "copy" | "save";
 
@@ -86,7 +86,7 @@ const [state, setState] = createStore<AppState>({
   postSearchOpen: false,
   postSortOrder: "desc",
   current: { feedId: null, postFeedId: null, guid: null },
-  dialog: { addFeed: false, help: false },
+  dialog: { help: false },
   sidebar: { collapsed: false, visible: false },
 });
 

@@ -11,11 +11,12 @@ vi.mock("~/stores/app", () => {
     posts: [{ feedId: 1, guid: "guid-1" }],
     current: { feedId: 1, postFeedId: 1, guid: null },
     post: null,
-    dialog: { addFeed: false, help: false },
+    dialog: { help: false },
   };
   return {
     app: state,
     moveSelection: vi.fn(),
+    openAddFeed: vi.fn(),
     openDialog: vi.fn(),
     openSettings: vi.fn(),
     openSelectedPost: vi.fn(),
@@ -121,7 +122,7 @@ describe("installShortcuts", () => {
 
     press({ key: "N", target: input, ctrl: true });
 
-    expect(app.openDialog).toHaveBeenCalledWith("addFeed");
+    expect(app.openAddFeed).toHaveBeenCalled();
     stop();
   });
 

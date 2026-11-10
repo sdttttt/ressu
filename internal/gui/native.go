@@ -94,6 +94,11 @@ func (NativeUI) OpenSettings(parent *Window, callbacks SettingsCallbacks) {
 	OpenSettingsWindow(parent, callbacks)
 }
 
+// OpenAddFeed opens the native add-feed window.
+func (NativeUI) OpenAddFeed(parent *Window, callbacks AddFeedCallbacks) {
+	OpenAddFeedWindow(parent, callbacks)
+}
+
 // CapturePage captures the visible caller page.
 func (NativeUI) CapturePage(ctx context.Context) ([]byte, error) {
 	if page := mygo.CallerPage(ctx); page != nil && page.WebView() != nil {

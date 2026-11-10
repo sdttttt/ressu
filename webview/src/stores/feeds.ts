@@ -1,11 +1,10 @@
 import { toast } from "~/lib/notifications";
-import { Feeds, Status, type FeedPreview } from "~/mygo";
+import { Feeds, Status } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 import { forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
 import { closeSnapshot } from "~/stores/snapshot-actions";
-import { closeDialog } from "~/stores/ui";
 
 /** Selects a subscription, or deselects it to show the aggregate list. */
 export async function selectFeed(id: number): Promise<void> {
@@ -43,29 +42,12 @@ export async function refreshAll(): Promise<void> {
   }
 }
 
-/** Subscribes to a feed. Returns whether it worked. */
-export async function addFeed(feedTitle: string, feedURL: string): Promise<boolean> {
+/** Opens the native add-feed window. */
+export async function openAddFeed(): Promise<void> {
   try {
-    const feed = await Feeds.add(feedTitle.trim(), feedURL.trim());
-    syncFeedIcons([], [feed]);
-    setState("feeds", (feeds) => [...feeds.filter((item) => item.id !== feed.id), feed]);
-    closeDialog("addFeed");
-    await selectFeed(feed.id);
-    return true;
+    await Feeds.openAddFeed();
   } catch (error) {
     toast.error(messageOf(error));
-    return false;
-  }
-}
-
-/** Tests whether an address serves a subscribable feed. */
-export async function testFeed(
-  feedURL: string,
-): Promise<{ feed: FeedPreview | null; error: string }> {
-  try {
-    return { feed: await Feeds.test(feedURL.trim()), error: "" };
-  } catch (error) {
-    return { feed: null, error: messageOf(error) };
   }
 }
 

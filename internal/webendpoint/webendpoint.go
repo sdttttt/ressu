@@ -43,6 +43,11 @@ func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (store.Fee
 	return w.actions.AddFeed(ctx, title, feedURL)
 }
 
+// OpenAddFeed opens the native subscription surface.
+func (w *WebEndpoint) OpenAddFeed(ctx context.Context) {
+	w.actions.OpenAddFeed(mygo.CallerWindow(ctx))
+}
+
 // Remove deletes a subscription.
 func (w *WebEndpoint) Remove(id int64) error {
 	return w.actions.RemoveFeed(id)

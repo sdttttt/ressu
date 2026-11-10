@@ -7,14 +7,13 @@ export { app, currentFeed, feedTitle, isSyncingFeed, visibleFeeds } from "~/stor
 export type { DialogName } from "~/stores/app-state";
 export { messageOf } from "~/stores/errors";
 export {
-  addFeed,
   exportOPML,
   importOPML,
+  openAddFeed,
   refreshAll,
   refreshFeed,
   removeFeed,
   selectFeed,
-  testFeed,
 } from "~/stores/feeds";
 export { ensureFeedIcon, forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
 export { start } from "~/stores/lifecycle";

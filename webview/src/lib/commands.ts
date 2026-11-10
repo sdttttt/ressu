@@ -1,6 +1,7 @@
 import {
   app,
   moveSelection,
+  openAddFeed,
   openDialog,
   openSettings,
   openSelectedPost,
@@ -81,7 +82,7 @@ export const commands: Command[] = [
     binding: { key: "N", mod: true },
     group: "应用",
     label: "添加订阅源",
-    run: () => openDialog("addFeed"),
+    run: () => void openAddFeed(),
   },
   {
     id: "refresh-all-mod",

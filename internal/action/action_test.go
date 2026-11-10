@@ -3,10 +3,15 @@ package action
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/service"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -19,6 +24,7 @@ type fakeUI struct {
 	windowLink    string
 	theme         string
 	notifications []gui.Notification
+	addFeedOpened bool
 }
 
 func (f *fakeUI) SelectOPMLImport(*gui.Window) ([]string, error) {
@@ -53,6 +59,10 @@ func (f *fakeUI) OpenImageViewer(*gui.Window, []byte, string, string) error {
 }
 
 func (f *fakeUI) OpenSettings(*gui.Window, gui.SettingsCallbacks) {}
+
+func (f *fakeUI) OpenAddFeed(*gui.Window, gui.AddFeedCallbacks) {
+	f.addFeedOpened = true
+}
 
 func (f *fakeUI) CapturePage(context.Context) ([]byte, error) {
 	return []byte("png"), nil
@@ -102,6 +112,16 @@ func TestOpenLinkRejectsUnsafeURL(t *testing.T) {
 	}
 	if ui.externalLink != "" || ui.windowLink != "" {
 		t.Fatalf("unsafe links reached the UI: external=%q window=%q", ui.externalLink, ui.windowLink)
+	}
+}
+
+func TestOpenAddFeedUsesNativeUI(t *testing.T) {
+	actions, ui := newTestActions(t)
+
+	actions.OpenAddFeed(nil)
+
+	if !ui.addFeedOpened {
+		t.Error("OpenAddFeed did not reach the native UI")
 	}
 }
 
@@ -170,5 +190,51 @@ func TestNotifyForwardsThroughNativeUI(t *testing.T) {
 	}
 	if got := ui.notifications[0]; got.Type != "warning" || got.Title != "刷新失败" {
 		t.Errorf("notification = %#v; want warning/刷新失败", got)
+	}
+}
+
+func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
+	feedXML := `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>测试源</title>
+<link>https://example.com/</link><description>测试</description>
+<item><title>第一篇</title><link>https://example.com/1</link>
+<guid>guid-1</guid><pubDate>Wed, 02 Oct 2024 12:00:00 GMT</pubDate></item>
+</channel></rss>`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = io.WriteString(w, feedXML)
+	}))
+	t.Cleanup(server.Close)
+
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	model := appstatus.New("")
+	hub := appevent.NewHub(model)
+	actions := New(
+		service.NewFeedsWithHub(st, hub),
+		service.NewPosts(st),
+		service.NewSettings(st),
+		service.NewStatus(hub, nil),
+		nil,
+		&fakeUI{},
+	)
+
+	feed, err := actions.AddAndSelectFeed(context.Background(), "", server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Title != "测试源" {
+		t.Errorf("feed title = %q; want %q", feed.Title, "测试源")
+	}
+	if selected := model.Snapshot().CurrentFeedID; selected != feed.ID {
+		t.Errorf("selected feed = %d; want %d", selected, feed.ID)
 	}
 }
