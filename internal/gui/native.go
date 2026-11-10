@@ -24,11 +24,12 @@ type SettingsCallbacks struct {
 // NativeUI exposes application-level native side effects to the action layer.
 type NativeUI struct {
 	notifications *Notifications
+	confirmations *Confirmations
 }
 
 // NewNativeUI creates the native side-effect adapter.
-func NewNativeUI(notifications *Notifications) NativeUI {
-	return NativeUI{notifications: notifications}
+func NewNativeUI(notifications *Notifications, confirmations *Confirmations) NativeUI {
+	return NativeUI{notifications: notifications, confirmations: confirmations}
 }
 
 // SelectOPMLImport shows the picker used while importing subscriptions.
@@ -97,6 +98,14 @@ func (NativeUI) OpenSettings(parent *Window, callbacks SettingsCallbacks) {
 // OpenAddFeed opens the native add-feed window.
 func (NativeUI) OpenAddFeed(parent *Window, callbacks AddFeedCallbacks) {
 	OpenAddFeedWindow(parent, callbacks)
+}
+
+// Confirm shows an in-app confirmation for a destructive action.
+func (n NativeUI) Confirm(ctx context.Context, parent *Window, request ConfirmationRequest) (bool, error) {
+	if n.confirmations == nil {
+		return false, ErrNoConfirmationSurface
+	}
+	return n.confirmations.Confirm(ctx, parent, request)
 }
 
 // CapturePage captures the visible caller page.

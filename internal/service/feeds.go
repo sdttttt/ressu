@@ -78,6 +78,11 @@ func (f *Feeds) List() FeedsSnapshot {
 	return feedsSnapshot(f.store)
 }
 
+// Feed returns one subscription.
+func (f *Feeds) Feed(id int64) (store.Feed, error) {
+	return f.store.Feed(id)
+}
+
 // broadcastFeeds publishes the complete subscription state.
 func (f *Feeds) broadcastFeeds() {
 	if f.hub != nil {

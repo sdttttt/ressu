@@ -25,6 +25,9 @@ type fakeUI struct {
 	theme         string
 	notifications []gui.Notification
 	addFeedOpened bool
+	confirmation  *gui.ConfirmationRequest
+	confirmed     bool
+	confirmCalled bool
 }
 
 func (f *fakeUI) SelectOPMLImport(*gui.Window) ([]string, error) {
@@ -62,6 +65,16 @@ func (f *fakeUI) OpenSettings(*gui.Window, gui.SettingsCallbacks) {}
 
 func (f *fakeUI) OpenAddFeed(*gui.Window, gui.AddFeedCallbacks) {
 	f.addFeedOpened = true
+}
+
+func (f *fakeUI) Confirm(
+	_ context.Context,
+	_ *gui.Window,
+	request gui.ConfirmationRequest,
+) (bool, error) {
+	f.confirmation = &request
+	f.confirmCalled = true
+	return f.confirmed, nil
 }
 
 func (f *fakeUI) CapturePage(context.Context) ([]byte, error) {
@@ -123,6 +136,76 @@ func TestOpenAddFeedUsesNativeUI(t *testing.T) {
 	if !ui.addFeedOpened {
 		t.Error("OpenAddFeed did not reach the native UI")
 	}
+}
+
+func TestConfirmRemoveFeedDeletesAfterConfirmation(t *testing.T) {
+	actions, ui, st := newRemovalTestActions(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed.xml", Title: "测试源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ui.confirmed = true
+
+	if err := actions.ConfirmRemoveFeed(context.Background(), nil, feed.ID); err != nil {
+		t.Fatal(err)
+	}
+	if !ui.confirmCalled {
+		t.Fatal("RemoveFeed bypassed confirmation")
+	}
+	if got := ui.confirmation.Title; got != "取消订阅「测试源」？" {
+		t.Errorf("confirmation title = %q; want %q", got, "取消订阅「测试源」？")
+	}
+	if !ui.confirmation.Destructive {
+		t.Error("destructive confirmation did not reach the UI")
+	}
+	if _, err := st.Feed(feed.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("st.Feed(%d) = %v; want ErrNotFound", feed.ID, err)
+	}
+}
+
+func TestConfirmRemoveFeedKeepsFeedWhenCanceled(t *testing.T) {
+	actions, ui, st := newRemovalTestActions(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed.xml", Title: "测试源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := actions.ConfirmRemoveFeed(context.Background(), nil, feed.ID); err != nil {
+		t.Fatal(err)
+	}
+	if !ui.confirmCalled {
+		t.Fatal("CancelRemoveFeed did not reach the UI")
+	}
+	if _, err := st.Feed(feed.ID); err != nil {
+		t.Fatalf("canceled removal removed feed: %v", err)
+	}
+}
+
+func TestConfirmRemoveFeedRejectsMissingFeed(t *testing.T) {
+	actions, ui, _ := newRemovalTestActions(t)
+
+	if err := actions.ConfirmRemoveFeed(context.Background(), nil, 1); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("ConfirmRemoveFeed(1) = %v; want ErrNotFound", err)
+	}
+	if ui.confirmCalled {
+		t.Error("a missing feed showed a confirmation")
+	}
+}
+
+func newRemovalTestActions(t *testing.T) (*AppActions, *fakeUI, *store.Store) {
+	t.Helper()
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	ui := &fakeUI{}
+	feeds := service.NewFeeds(st)
+	return New(feeds, nil, nil, nil, nil, ui), ui, st
 }
 
 func TestOpenLinkUsesConfiguredSurface(t *testing.T) {

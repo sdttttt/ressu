@@ -36,6 +36,15 @@ const (
 func main() {
 	app := mygo.App
 	app.SetName("Ressu")
+	if os.Getenv("MYGO_GENERATE") != "" {
+		generateDir := filepath.Join(os.TempDir(), "ressu-generate")
+		if err := os.MkdirAll(generateDir, 0o755); err != nil {
+			fatal("generate data path failed", err)
+		}
+		app.SetPath(mygo.PathUserData, generateDir)
+		app.SetPath(mygo.PathCache, filepath.Join(generateDir, "cache"))
+		app.SetPath(mygo.PathLogs, filepath.Join(generateDir, "logs"))
+	}
 	dir, err := app.Path(mygo.PathUserData)
 	if err != nil {
 		fatal("user data path failed", err)
@@ -89,7 +98,10 @@ func main() {
 		snapshot := statusModel.Snapshot()
 		return snapshot.Theme, snapshot.FontSize
 	})
-	nativeUI := gui.NewNativeUI(notifications)
+	confirmations := gui.NewConfirmations(func() store.Prefs {
+		return st.Prefs()
+	})
+	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
@@ -121,7 +133,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about, notifications); err != nil {
+		}, foreground, app.IsActive, about, notifications, confirmations); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -163,6 +175,7 @@ func openWindow(
 	isActive func() bool,
 	about gui.AboutInfo,
 	notifications *gui.Notifications,
+	confirmations *gui.Confirmations,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
 	view := gui.NewAppView(statusModel, func() {
@@ -171,7 +184,7 @@ func openWindow(
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		gui.OpenAboutWindow(win, info)
-	}, notifications)
+	}, notifications, confirmations)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
@@ -184,6 +197,7 @@ func openWindow(
 		Content:         ui.View(view.View),
 	})
 	notifications.Attach(win)
+	confirmations.Attach(win)
 	statusModel.SetChanged(func() {
 		if !win.IsDestroyed() {
 			win.Invalidate()

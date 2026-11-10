@@ -15,12 +15,6 @@ import { For, Show, createEffect, createSignal } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -139,8 +133,6 @@ function FeedRow(props: { feed: Feed }) {
   const open = () => {
     if (!selected()) void selectFeed(props.feed.id);
   };
-  const [confirming, setConfirming] = createSignal(false);
-
   return (
     <div
       class={cn(
@@ -203,35 +195,12 @@ function FeedRow(props: { feed: Feed }) {
             标记全部已读
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setConfirming(true)}>
+          <DropdownMenuItem onSelect={() => void removeFeed(props.feed.id)}>
             <Trash2 class="size-3.5" />
             取消订阅
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <AlertDialog open={confirming()} onOpenChange={setConfirming}>
-        <AlertDialogContent class="max-w-md">
-          <AlertDialogTitle>取消订阅「{props.feed.title}」？</AlertDialogTitle>
-          <AlertDialogDescription>
-            这个订阅源已保存的文章会一并删除，操作无法撤销。
-          </AlertDialogDescription>
-          <div class="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setConfirming(false)}>
-              取消
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setConfirming(false);
-                void removeFeed(props.feed.id);
-              }}
-            >
-              取消订阅
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

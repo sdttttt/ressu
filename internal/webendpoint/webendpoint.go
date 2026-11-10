@@ -48,9 +48,9 @@ func (w *WebEndpoint) OpenAddFeed(ctx context.Context) {
 	w.actions.OpenAddFeed(mygo.CallerWindow(ctx))
 }
 
-// Remove deletes a subscription.
-func (w *WebEndpoint) Remove(id int64) error {
-	return w.actions.RemoveFeed(id)
+// ConfirmRemove asks before deleting a subscription and its posts.
+func (w *WebEndpoint) ConfirmRemove(ctx context.Context, id int64) error {
+	return w.actions.ConfirmRemoveFeed(ctx, mygo.CallerWindow(ctx), id)
 }
 
 // Refresh fetches one subscription.

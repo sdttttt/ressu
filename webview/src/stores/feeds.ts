@@ -2,7 +2,7 @@ import { toast } from "~/lib/notifications";
 import { Feeds, Status } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
-import { forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
+import { syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
 import { closeSnapshot } from "~/stores/snapshot-actions";
 
@@ -79,21 +79,10 @@ export async function exportOPML(): Promise<void> {
   }
 }
 
-/** Unsubscribes from a feed, selecting another one. */
+/** Confirms and unsubscribes from a feed. */
 export async function removeFeed(id: number): Promise<void> {
-  const wasCurrent = state.current.feedId === id;
   try {
-    await Feeds.remove(id);
-    const feeds = state.feeds.filter((feed) => feed.id !== id);
-    forgetFeedIcon(id);
-    setState("feeds", feeds);
-    if (!wasCurrent) return;
-
-    setState({
-      current: { feedId: null, postFeedId: null, guid: null },
-      post: null,
-    });
-    await loadPosts(0);
+    await Feeds.confirmRemove(id);
   } catch (error) {
     toast.error(messageOf(error));
   }

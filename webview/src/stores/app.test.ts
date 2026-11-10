@@ -23,7 +23,7 @@ vi.mock("~/mygo", () => ({
     openAddFeed: vi.fn(),
     exportOPML: vi.fn(),
     importOPML: vi.fn(),
-    remove: vi.fn(),
+    confirmRemove: vi.fn(),
     refresh: vi.fn(),
     refreshAll: vi.fn(),
   },
@@ -378,29 +378,26 @@ describe("openAddFeed", () => {
 });
 
 describe("removeFeed", () => {
-  it("returns to aggregate once the selected feed is gone", async () => {
+  it("asks Go for confirmation and waits for backend state events", async () => {
     const { mygo, app } = await setup();
     await app.start();
-    vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
+    vi.mocked(mygo.Feeds.confirmRemove).mockResolvedValue(undefined);
 
     await app.removeFeed(1);
 
-    expect(mygo.Feeds.remove).toHaveBeenCalledWith(1);
-    expect(app.app.feeds).toHaveLength(1);
+    expect(mygo.Feeds.confirmRemove).toHaveBeenCalledWith(1);
+    expect(app.app.feeds).toHaveLength(2);
     expect(app.app.current.feedId).toBeNull();
-    expect(mygo.Posts.list).toHaveBeenLastCalledWith(expect.objectContaining({ feedId: 0 }));
   });
 
-  it("shows the empty aggregate when no feed is left", async () => {
-    const { mygo, app } = await setup({ feeds: [feedA], posts: [] });
+  it("reports confirmation failures", async () => {
+    const { mygo, toast, app } = await setup();
     await app.start();
-    vi.mocked(mygo.Feeds.remove).mockResolvedValue(undefined);
+    vi.mocked(mygo.Feeds.confirmRemove).mockRejectedValue(new Error("窗口不可用"));
 
     await app.removeFeed(1);
 
-    expect(app.app.feeds).toHaveLength(0);
-    expect(app.app.posts).toHaveLength(0);
-    expect(app.app.current.feedId).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith("窗口不可用");
   });
 });
 

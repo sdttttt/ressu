@@ -32,6 +32,7 @@ type UI interface {
 	OpenImageViewer(parent *gui.Window, data []byte, viewerURL, alt string) error
 	OpenAddFeed(parent *gui.Window, callbacks gui.AddFeedCallbacks)
 	OpenSettings(parent *gui.Window, callbacks gui.SettingsCallbacks)
+	Confirm(ctx context.Context, parent *gui.Window, request gui.ConfirmationRequest) (bool, error)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
 	ApplyTheme(string)
@@ -89,8 +90,26 @@ func (a *AppActions) AddFeed(ctx context.Context, title, feedURL string) (store.
 	return a.feeds.Add(ctx, title, feedURL)
 }
 
-// RemoveFeed deletes a subscription.
-func (a *AppActions) RemoveFeed(id int64) error {
+// ConfirmRemoveFeed asks before deleting a subscription and its posts.
+func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent *gui.Window, id int64) error {
+	feed, err := a.feeds.Feed(id)
+	if err != nil {
+		return err
+	}
+	request := gui.ConfirmationRequest{
+		Title:        "取消订阅「" + feed.Title + "」？",
+		Description:  "这个订阅源已保存的文章会一并删除，操作无法撤销。",
+		ConfirmLabel: "取消订阅",
+		CancelLabel:  "取消",
+		Destructive:  true,
+	}
+	confirmed, err := a.ui.Confirm(ctx, parent, request)
+	if err != nil {
+		return err
+	}
+	if !confirmed {
+		return nil
+	}
 	return a.feeds.Remove(id)
 }
 

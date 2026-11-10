@@ -25,6 +25,7 @@ const fixtures = vi.hoisted(() => {
     ensureFeedIcon: vi.fn(),
     isSyncingFeed: vi.fn(() => false),
     markAllRead: vi.fn(),
+    openAddFeed: vi.fn(),
     openDialog: vi.fn(),
     openSettings: vi.fn(),
     refreshAll: vi.fn(),

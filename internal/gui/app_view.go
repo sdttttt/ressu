@@ -12,6 +12,7 @@ type AppView struct {
 	page          *mygo.WebView
 	status        *StatusBar
 	notifications *Notifications
+	confirmations *Confirmations
 }
 
 // NewAppView creates the main window's native layout.
@@ -19,10 +20,12 @@ func NewAppView(
 	statusModel *appstatus.Model,
 	onAbout func(),
 	notifications *Notifications,
+	confirmations *Confirmations,
 ) *AppView {
 	return &AppView{
 		status:        NewStatusBar(statusModel, onAbout),
 		notifications: notifications,
+		confirmations: confirmations,
 	}
 }
 
@@ -44,5 +47,8 @@ func (a *AppView) View(c *ui.Context) {
 	})
 	if a.notifications != nil {
 		a.notifications.draw(c)
+	}
+	if a.confirmations != nil {
+		a.confirmations.draw(c)
 	}
 }
