@@ -50,7 +50,7 @@ export default function PostList() {
           <>
             <header class="border-b px-3 py-2">
               <div class="truncate text-sm font-semibold">{aggregateTitle()}</div>
-              <div class="mt-1 flex items-center gap-1">
+              <div class="mt-1 flex flex-wrap items-center gap-1">
                 <div class="flex min-w-0 flex-1 items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
                   <span class="tabular-nums">{app.postTotal} 篇</span>
                   <Separator orientation="vertical" class="h-3" />
@@ -84,6 +84,7 @@ export default function PostList() {
                 </IconButton>
                 <ToggleGroup
                   multiple
+                  class="shrink-0"
                   value={activeFilters()}
                   onChange={(values) =>
                     void setPostFilter({
@@ -195,7 +196,7 @@ function PostRow(props: { post: PostSummary }) {
       <button type="button" class="w-full px-2.5 py-2 text-left" onClick={open}>
         <div
           class={cn(
-            "line-clamp-2 text-[0.8125rem] leading-snug",
+            "line-clamp-2 text-[0.8125rem] leading-snug wrap-anywhere",
             props.post.read ? "text-muted-foreground" : "font-semibold",
           )}
         >
@@ -203,7 +204,7 @@ function PostRow(props: { post: PostSummary }) {
         </div>
 
         <Show when={props.post.summary}>
-          <p class="mt-1 line-clamp-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
+          <p class="mt-1 line-clamp-3 text-[0.6875rem] leading-relaxed wrap-anywhere text-muted-foreground">
             {props.post.summary}
           </p>
         </Show>

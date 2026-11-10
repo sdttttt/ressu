@@ -1,4 +1,4 @@
-import type { DynamicProps, HandleProps, RootProps } from "@corvu/resizable";
+import type { DynamicProps, HandleProps, PanelProps, RootProps } from "@corvu/resizable";
 import ResizablePrimitive from "@corvu/resizable";
 import type { ValidComponent } from "solid-js";
 import { Show, splitProps } from "solid-js";
@@ -17,7 +17,14 @@ const Resizable = <T extends ValidComponent = "div">(props: DynamicProps<T, Resi
   );
 };
 
-const ResizablePanel = ResizablePrimitive.Panel;
+type ResizablePanelProps<T extends ValidComponent = "div"> = PanelProps<T> & { class?: string };
+
+const ResizablePanel = <T extends ValidComponent = "div">(
+  props: DynamicProps<T, ResizablePanelProps<T>>,
+) => {
+  const [, rest] = splitProps(props as ResizablePanelProps, ["class"]);
+  return <ResizablePrimitive.Panel class={cn("min-w-0 overflow-hidden", props.class)} {...rest} />;
+};
 
 type ResizableHandleProps<T extends ValidComponent = "button"> = HandleProps<T> & {
   class?: string;
