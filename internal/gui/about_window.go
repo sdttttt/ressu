@@ -95,7 +95,7 @@ func (a *aboutView) draw(c *ui.Context) {
 			aboutDeveloper(c, theme, a.info.Developer)
 			aboutField(c, theme, "构建日期", a.info.BuildDate)
 			aboutField(c, theme, "邮箱", a.info.Email, "mailto:"+a.info.Email)
-			ui.Text(c, "由可爱的宫城献给你。").TextColor(theme.TextMuted)
+			ui.Text(c, "必开花繁盛，乐上加乐，而且欢呼。").TextColor(theme.TextMuted)
 		})
 	})
 }
