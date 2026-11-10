@@ -13,6 +13,7 @@ type AppView struct {
 	status        *StatusBar
 	notifications *Notifications
 	confirmations *Confirmations
+	sidebar       *FeedSidebar
 }
 
 // NewAppView creates the main window's native layout.
@@ -21,11 +22,13 @@ func NewAppView(
 	onAbout func(),
 	notifications *Notifications,
 	confirmations *Confirmations,
+	sidebar *FeedSidebar,
 ) *AppView {
 	return &AppView{
 		status:        NewStatusBar(statusModel, onAbout),
 		notifications: notifications,
 		confirmations: confirmations,
+		sidebar:       sidebar,
 	}
 }
 
@@ -40,9 +43,24 @@ func (a *AppView) View(c *ui.Context) {
 	ui.Column(c).Fill().Background(theme.Background).Children(func() {
 		if a.page == nil {
 			ui.Box(c).Grow(1).Background(theme.Background)
-			return
+		} else if a.sidebar != nil && !a.sidebar.isCollapsed() {
+			var split ui.Element
+			ui.Themed(c, a.sidebar.SidebarTheme(c)).FillWidth().Grow(1).Children(func() {
+				split = ui.SplitPercent(c, a.sidebar.splitPercent(), func() {
+					a.sidebar.View(c)
+				}, func() {
+					ui.WebView(c, a.page).Grow(1)
+				}).Fill()
+			})
+			if split.Changed() {
+				a.sidebar.savePanePercent()
+			}
+		} else {
+			ui.WebView(c, a.page).Grow(1)
+			if a.sidebar != nil {
+				a.sidebar.drawOverlay(c)
+			}
 		}
-		ui.WebView(c, a.page).Grow(1)
 		a.status.View(c)
 	})
 	if a.notifications != nil {

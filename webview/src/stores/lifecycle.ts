@@ -15,7 +15,6 @@ export async function start(): Promise<void> {
       totalUnread: snapshot.unread,
       prefs,
       ready: true,
-      sidebar: { collapsed: prefs.sidebarCollapsed, visible: false },
     });
     applyTheme(prefs.theme);
     applyFontSize(prefs.fontSize);

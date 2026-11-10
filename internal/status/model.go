@@ -27,30 +27,34 @@ type FeedsSnapshot struct {
 
 // Snapshot is the state needed to draw the native status bar.
 type Snapshot struct {
-	Sync          SyncState
-	Feeds         []store.Feed
-	FeedCount     int
-	Unread        int
-	CurrentFeedID int64
-	CurrentFeed   *store.Feed
-	Theme         string
-	FontSize      string
-	Version       string
-	RelativeStart time.Time
+	Sync             SyncState
+	Feeds            []store.Feed
+	FeedCount        int
+	Unread           int
+	CurrentFeedID    int64
+	CurrentFeed      *store.Feed
+	SidebarCollapsed bool
+	SidebarPercent   float32
+	Theme            string
+	FontSize         string
+	Version          string
+	RelativeStart    time.Time
 }
 
 // Model stores the service state mirrored by the native status bar.
 type Model struct {
-	mu      sync.RWMutex
-	sync    SyncState
-	feeds   []store.Feed
-	unread  int
-	current int64
-	theme   string
-	font    string
-	version string
-	changed func()
-	now     func() time.Time
+	mu               sync.RWMutex
+	sync             SyncState
+	feeds            []store.Feed
+	unread           int
+	current          int64
+	sidebarCollapsed bool
+	sidebarPercent   float32
+	theme            string
+	font             string
+	version          string
+	changed          func()
+	now              func() time.Time
 }
 
 // New creates a status model showing the application version.
@@ -118,21 +122,39 @@ func (m *Model) SetAppearance(theme, fontSize string) {
 	}
 }
 
+// SetLayout mirrors the sidebar's collapsed state and docked width.
+func (m *Model) SetLayout(collapsed bool, sidebarPercent float32) {
+	if sidebarPercent < 5 || sidebarPercent > 90 {
+		sidebarPercent = 18
+	}
+	m.mu.Lock()
+	changed := m.sidebarCollapsed != collapsed || m.sidebarPercent != sidebarPercent
+	m.sidebarCollapsed = collapsed
+	m.sidebarPercent = sidebarPercent
+	callback := m.changed
+	m.mu.Unlock()
+	if changed && callback != nil {
+		callback()
+	}
+}
+
 // Snapshot clones the state for one view frame.
 func (m *Model) Snapshot() Snapshot {
 	m.mu.RLock()
 	feeds := slices.Clone(m.feeds)
 	current := m.current
 	snapshot := Snapshot{
-		Sync:          m.sync,
-		Feeds:         feeds,
-		FeedCount:     len(feeds),
-		Unread:        m.unread,
-		CurrentFeedID: current,
-		Theme:         m.theme,
-		FontSize:      m.font,
-		Version:       m.version,
-		RelativeStart: m.now(),
+		Sync:             m.sync,
+		Feeds:            feeds,
+		FeedCount:        len(feeds),
+		Unread:           m.unread,
+		CurrentFeedID:    current,
+		SidebarCollapsed: m.sidebarCollapsed,
+		SidebarPercent:   m.sidebarPercent,
+		Theme:            m.theme,
+		FontSize:         m.font,
+		Version:          m.version,
+		RelativeStart:    m.now(),
 	}
 	m.mu.RUnlock()
 

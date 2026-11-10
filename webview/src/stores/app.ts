@@ -3,7 +3,7 @@
  * the implementations live in the feature modules next to this file.
  */
 
-export { app, currentFeed, feedTitle, isSyncingFeed, visibleFeeds } from "~/stores/app-state";
+export { app, currentFeed, feedTitle, isSyncingFeed } from "~/stores/app-state";
 export type { DialogName } from "~/stores/app-state";
 export { messageOf } from "~/stores/errors";
 export {
@@ -45,13 +45,4 @@ export {
   saveSnapshot,
 } from "~/stores/snapshot-actions";
 export { applySync, handlePostsChanged, replaceFeeds } from "~/stores/sync-events";
-export {
-  closeDialog,
-  collapseSidebar,
-  expandSidebar,
-  hideSidebar,
-  keepSidebar,
-  openDialog,
-  requestSidebar,
-  setFeedFilter,
-} from "~/stores/ui";
+export { closeDialog, openDialog } from "~/stores/ui";

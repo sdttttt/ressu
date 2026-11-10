@@ -881,72 +881,13 @@ describe("copySnapshot", () => {
   });
 });
 
-describe("sidebar overlay", () => {
-  it("floats the sidebar and hides it without leaving the two-pane layout", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.useFakeTimers();
-
-    await app.collapseSidebar();
-    vi.advanceTimersByTime(30);
-    expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
-    expect(mygo.Settings.update).toHaveBeenCalledWith({ ...prefs, sidebarCollapsed: true });
-
-    app.hideSidebar();
-    vi.advanceTimersByTime(200);
-    expect(app.app.sidebar).toEqual({ collapsed: true, visible: false });
-
-    await app.expandSidebar();
-    expect(app.app.sidebar).toEqual({ collapsed: false, visible: false });
-    expect(mygo.Settings.update).toHaveBeenLastCalledWith({ ...prefs, sidebarCollapsed: false });
-    vi.useRealTimers();
-  });
-});
-
-describe("start", () => {
-  it("restores the collapsed sidebar preference without showing it", async () => {
-    const { mygo, app } = await setup();
-    vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs, sidebarCollapsed: true });
-
-    await app.start();
-
-    expect(app.app.sidebar).toEqual({ collapsed: true, visible: false });
-  });
-});
-
-describe("requestSidebar", () => {
-  it("delays reveal and throttles accidental re-entry", async () => {
-    const { app } = await setup();
-    vi.useFakeTimers();
-
-    app.requestSidebar();
-    expect(app.app.sidebar.visible).toBe(false);
-
-    vi.advanceTimersByTime(180);
-    expect(app.app.sidebar.visible).toBe(true);
-
-    app.hideSidebar();
-    vi.advanceTimersByTime(200);
-    expect(app.app.sidebar.visible).toBe(false);
-
-    app.requestSidebar();
-    vi.advanceTimersByTime(180);
-    expect(app.app.sidebar.visible).toBe(false);
-
-    vi.advanceTimersByTime(300);
-    expect(app.app.sidebar.visible).toBe(true);
-
-    vi.useRealTimers();
-  });
-});
-
 describe("savePaneSizes", () => {
-  it("converts two-pane sizes back into the full-app coordinate space", async () => {
+  it("converts article-pane sizes into preference percentages", async () => {
     const { mygo, app } = await setup();
     await app.start();
     vi.useFakeTimers();
 
-    app.savePaneSizes([0.5, 0.75], { sidebarCollapsed: true });
+    app.savePaneSizes([0.5, 0.75]);
     await vi.runOnlyPendingTimersAsync();
 
     expect(mygo.Settings.update).toHaveBeenCalledWith(

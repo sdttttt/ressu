@@ -35,7 +35,6 @@ type AppState = {
   snapshotting: boolean;
   snapshot: Snapshot | null;
   snapshotAction: SnapshotAction | null;
-  feedFilter: string;
   unreadOnly: boolean;
   starredOnly: boolean;
   postSearch: string;
@@ -43,7 +42,6 @@ type AppState = {
   postSortOrder: SortOrder;
   current: { feedId: number | null; postFeedId: number | null; guid: string | null };
   dialog: Record<DialogName, boolean>;
-  sidebar: { collapsed: boolean; visible: boolean };
 };
 
 const defaultPrefs: Prefs = {
@@ -79,7 +77,6 @@ const [state, setState] = createStore<AppState>({
   snapshotting: false,
   snapshot: null,
   snapshotAction: null,
-  feedFilter: "",
   unreadOnly: false,
   starredOnly: false,
   postSearch: "",
@@ -87,7 +84,6 @@ const [state, setState] = createStore<AppState>({
   postSortOrder: "desc",
   current: { feedId: null, postFeedId: null, guid: null },
   dialog: { help: false },
-  sidebar: { collapsed: false, visible: false },
 });
 
 /** The app's state. Read it in components; change it through app actions. */
@@ -95,15 +91,6 @@ export const app = state;
 
 /** The store writer for actions in `~/stores/app`. */
 export const setAppState = setState;
-
-/** The subscriptions matching the sidebar's search. */
-export function visibleFeeds(): Feed[] {
-  const needle = state.feedFilter.trim().toLowerCase();
-  if (!needle) return state.feeds;
-  return state.feeds.filter(
-    (feed) => feed.title.toLowerCase().includes(needle) || feed.url.toLowerCase().includes(needle),
-  );
-}
 
 /** The selected subscription, if any. */
 export function currentFeed(): Feed | undefined {

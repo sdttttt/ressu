@@ -76,7 +76,11 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	})
 	hub.SelectionChanged(1)
 	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge)
-	hub.PrefsChanged(store.Prefs{Theme: store.ThemeSepia, FontSize: store.FontSizeLarge})
+	hub.PrefsChanged(store.Prefs{
+		Theme:     store.ThemeSepia,
+		FontSize:  store.FontSizeLarge,
+		PaneSizes: []int{18, 30},
+	})
 	hub.SyncStarted(appstatus.SyncState{Active: true, Total: 2})
 	hub.SyncProgress(appstatus.SyncState{Active: true, Done: 1, Total: 2, FeedID: 1, Feed: "A"})
 	hub.PublishSnapshot()
@@ -97,6 +101,9 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if prefsEvent.EID != EventPrefsChanged || prefsEvent.Prefs == nil ||
 		prefsEvent.Prefs.Theme != store.ThemeSepia {
 		t.Fatalf("prefs event = %+v", prefsEvent)
+	}
+	if len(prefsEvent.Prefs.PaneSizes) != 2 || prefsEvent.Prefs.PaneSizes[0] != 18 {
+		t.Fatalf("prefs pane sizes = %v; want [18 30]", prefsEvent.Prefs.PaneSizes)
 	}
 
 	snapshot := emitted[6]
@@ -125,6 +132,9 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if modelSnapshot.CurrentFeedID != 1 || modelSnapshot.FeedCount != 1 ||
 		modelSnapshot.Unread != 3 || modelSnapshot.Sync.Done != 1 {
 		t.Errorf("model snapshot = %+v", modelSnapshot)
+	}
+	if modelSnapshot.SidebarCollapsed || modelSnapshot.SidebarPercent != 18 {
+		t.Errorf("model layout = %+v; want docked 18%%", modelSnapshot)
 	}
 }
 

@@ -50,6 +50,27 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		t.Fatalf("appearance was not mirrored: %+v", snapshot)
 	}
 
+	model.SetLayout(true, 27)
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("SetLayout did not notify")
+	}
+	layout := model.Snapshot()
+	if !layout.SidebarCollapsed || layout.SidebarPercent != 27 {
+		t.Fatalf("layout was not mirrored: %+v", layout)
+	}
+
+	model.SetLayout(false, 101)
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("SetLayout did not notify")
+	}
+	if layout := model.Snapshot(); layout.SidebarCollapsed || layout.SidebarPercent != 18 {
+		t.Fatalf("out-of-range sidebar percent was not clamped: %+v", layout)
+	}
+
 	model.SetCurrentFeed(1)
 	select {
 	case <-changed:

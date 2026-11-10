@@ -141,6 +141,12 @@ func (h *Hub) applyLocked(e Event) {
 		h.model.SetFeeds(*e.Feeds)
 	case EventAppearanceChanged:
 		h.model.SetAppearance(e.Appearance.Theme, e.Appearance.FontSize)
+	case EventPrefsChanged:
+		sidebarPercent := float32(18)
+		if len(e.Prefs.PaneSizes) == 2 {
+			sidebarPercent = float32(e.Prefs.PaneSizes[0])
+		}
+		h.model.SetLayout(e.Prefs.SidebarCollapsed, sidebarPercent)
 	case EventSelectionChanged:
 		h.model.SetCurrentFeed(e.Selection.FeedID)
 	}

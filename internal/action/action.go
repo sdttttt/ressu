@@ -8,9 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/egoist/mygo"
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
@@ -345,6 +348,88 @@ func (a *AppActions) OpenAddFeed(parent *gui.Window) {
 			return gui.ImportSummary(summary), err
 		},
 	})
+}
+
+// SidebarCallbacks exposes native subscription actions and layout updates.
+func (a *AppActions) SidebarCallbacks() gui.FeedSidebarCallbacks {
+	return gui.FeedSidebarCallbacks{
+		Icon:        a.FeedIcon,
+		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
+		RefreshAll:  func() { a.refreshAllWithNotice() },
+		RefreshFeed: func(feedID int64) { a.refreshFeedWithNotice(feedID) },
+		MarkAllRead: func(feedID int64) { a.markAllReadWithNotice(feedID) },
+		Remove: func(parent *mygo.Window, feedID int64) {
+			if err := a.ConfirmRemoveFeed(context.Background(), parent, feedID); err != nil {
+				slog.Warn("native feed removal failed",
+					"operation", "action.sidebar.remove", "feedID", feedID, "error", err)
+				a.Notify("error", "取消订阅失败")
+			}
+		},
+		OpenAddFeed:    a.OpenAddFeed,
+		OpenSettings:   a.OpenSettings,
+		SetCollapsed:   a.SetSidebarCollapsed,
+		SetPanePercent: a.SetSidebarPercent,
+	}
+}
+
+func (a *AppActions) refreshAllWithNotice() {
+	if _, err := a.RefreshAll(context.Background()); err != nil {
+		if errors.Is(err, service.ErrRefreshing) {
+			return
+		}
+		slog.Warn("native refresh all failed",
+			"operation", "action.sidebar.refreshAll", "error", err)
+		a.Notify("error", "刷新订阅源失败")
+	}
+}
+
+func (a *AppActions) refreshFeedWithNotice(feedID int64) {
+	if _, err := a.RefreshFeed(context.Background(), feedID); err != nil {
+		slog.Warn("native feed refresh failed",
+			"operation", "action.sidebar.refreshFeed", "feedID", feedID, "error", err)
+		a.Notify("error", "刷新订阅源失败")
+	}
+}
+
+func (a *AppActions) markAllReadWithNotice(feedID int64) {
+	if _, err := a.MarkAllPostsRead(feedID); err != nil {
+		slog.Warn("native mark all read failed",
+			"operation", "action.sidebar.markAllRead", "feedID", feedID, "error", err)
+		a.Notify("error", "标记已读失败")
+	}
+}
+
+// SetSidebarCollapsed stores the native sidebar's collapsed preference.
+func (a *AppActions) SetSidebarCollapsed(collapsed bool) {
+	prefs := a.settings.Get()
+	if prefs.SidebarCollapsed == collapsed {
+		return
+	}
+	prefs.SidebarCollapsed = collapsed
+	if _, err := a.UpdatePreferences(prefs); err != nil {
+		slog.Warn("native sidebar collapse save failed",
+			"operation", "action.sidebar.setCollapsed", "collapsed", collapsed, "error", err)
+		a.Notify("error", "保存侧边栏状态失败")
+	}
+}
+
+// SetSidebarPercent stores the native sidebar's docked width percentage.
+func (a *AppActions) SetSidebarPercent(percent float32) {
+	prefs := a.settings.Get()
+	sideWidth := min(max(int(math.Round(float64(percent))), 5), 90)
+	listWidth := 30
+	if len(prefs.PaneSizes) == 2 {
+		listWidth = prefs.PaneSizes[1]
+	}
+	if len(prefs.PaneSizes) == 2 && prefs.PaneSizes[0] == sideWidth {
+		return
+	}
+	prefs.PaneSizes = []int{sideWidth, listWidth}
+	if _, err := a.UpdatePreferences(prefs); err != nil {
+		slog.Warn("native sidebar width save failed",
+			"operation", "action.sidebar.setPanePercent", "percent", percent, "error", err)
+		a.Notify("error", "保存侧边栏宽度失败")
+	}
 }
 
 // SelectFeed broadcasts the feed selected by a page.

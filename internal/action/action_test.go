@@ -276,6 +276,36 @@ func TestNotifyForwardsThroughNativeUI(t *testing.T) {
 	}
 }
 
+func TestSidebarCallbacksPersistLayout(t *testing.T) {
+	actions, _ := newTestActions(t)
+	callbacks := actions.SidebarCallbacks()
+
+	callbacks.SetCollapsed(true)
+	callbacks.SetPanePercent(27)
+
+	prefs := actions.Preferences()
+	if !prefs.SidebarCollapsed {
+		t.Error("collapsed preference was not stored")
+	}
+	if len(prefs.PaneSizes) != 2 || prefs.PaneSizes[0] != 27 || prefs.PaneSizes[1] != 30 {
+		t.Errorf("pane sizes = %v; want [27 30]", prefs.PaneSizes)
+	}
+}
+
+func TestSetSidebarPercentClampsPreference(t *testing.T) {
+	actions, _ := newTestActions(t)
+
+	actions.SetSidebarPercent(4)
+	if got := actions.Preferences().PaneSizes[0]; got != 5 {
+		t.Errorf("sidebar percent = %d; want 5", got)
+	}
+
+	actions.SetSidebarPercent(95)
+	if got := actions.Preferences().PaneSizes[0]; got != 90 {
+		t.Errorf("sidebar percent = %d; want 90", got)
+	}
+}
+
 func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
 	feedXML := `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel><title>测试源</title>
