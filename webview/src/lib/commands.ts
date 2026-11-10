@@ -14,12 +14,12 @@ import {
 
 /** A key binding: a bare key, or the same key held with the platform
  * modifier (Cmd on macOS, Ctrl elsewhere). */
-export type Binding = { key: string; mod?: boolean };
+type Binding = { key: string; mod?: boolean };
 
 /** A group heading shown in the shortcuts help dialog. */
-export type CommandGroup = "应用" | "文章列表" | "阅读" | "订阅源";
+type CommandGroup = "应用" | "文章列表" | "阅读" | "订阅源";
 
-export type Command = {
+type Command = {
   id: string;
   binding: Binding;
   group: CommandGroup;

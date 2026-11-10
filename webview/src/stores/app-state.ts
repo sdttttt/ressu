@@ -11,17 +11,9 @@ type Snapshot = {
   png: string;
 };
 
-export type FeedIconView = {
-  src: string;
-  sourceURL: string;
-  fetchedAt: string;
-  missing: boolean;
-};
-
 type AppState = {
   feeds: Feed[];
   totalUnread: number;
-  icons: Record<number, FeedIconView>;
   posts: PostSummary[];
   postTotal: number;
   postUnread: number;
@@ -63,7 +55,6 @@ export const idleSync: SyncState = { active: false, done: 0, total: 0, feedId: 0
 const [state, setState] = createStore<AppState>({
   feeds: [],
   totalUnread: 0,
-  icons: {},
   posts: [],
   postTotal: 0,
   postUnread: 0,
@@ -100,9 +91,4 @@ export function currentFeed(): Feed | undefined {
 /** The title of a post's subscription, useful in the aggregate list. */
 export function feedTitle(id: number): string {
   return state.feeds.find((feed) => feed.id === id)?.title ?? "";
-}
-
-/** Whether a feed is being fetched right now. */
-export function isSyncingFeed(id: number): boolean {
-  return state.sync.active && state.sync.feedId === id;
 }

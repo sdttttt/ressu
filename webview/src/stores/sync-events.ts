@@ -2,12 +2,10 @@ import { toast } from "~/lib/notifications";
 import { applyFontSize, applyTheme } from "~/lib/theme";
 import type { FeedsSnapshot, Prefs, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
-import { syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
 
 /** Applies the feed list the Go side sent. */
 export async function replaceFeeds(snapshot: FeedsSnapshot): Promise<void> {
-  syncFeedIcons(state.feeds, snapshot.feeds);
   setState({ feeds: snapshot.feeds, totalUnread: snapshot.unread });
   if (
     state.current.feedId !== null &&

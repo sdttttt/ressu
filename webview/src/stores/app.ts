@@ -3,23 +3,12 @@
  * the implementations live in the feature modules next to this file.
  */
 
-export { app, currentFeed, feedTitle, isSyncingFeed } from "~/stores/app-state";
+export { app, currentFeed, feedTitle } from "~/stores/app-state";
 export type { DialogName } from "~/stores/app-state";
-export { messageOf } from "~/stores/errors";
-export {
-  exportOPML,
-  importOPML,
-  openAddFeed,
-  refreshAll,
-  refreshFeed,
-  removeFeed,
-  selectFeed,
-} from "~/stores/feeds";
-export { ensureFeedIcon, syncFeedIcons } from "~/stores/icons";
+export { openAddFeed, refreshAll } from "~/stores/feeds";
 export { start } from "~/stores/lifecycle";
 export {
   loadMorePosts,
-  loadPosts,
   markAllRead,
   openImage,
   selectPost,
@@ -37,12 +26,11 @@ export {
   selectNeighbourFeed,
   toggleOpenPostRead,
 } from "~/stores/selection";
-export { openLink, openSettings, savePaneSizes, updatePrefs } from "~/stores/settings";
+export { openLink, openSettings, savePaneSizes } from "~/stores/settings";
 export {
   captureSnapshot,
   closeSnapshot,
   copySnapshot,
   saveSnapshot,
 } from "~/stores/snapshot-actions";
-export { applySync, handlePostsChanged, replaceFeeds } from "~/stores/sync-events";
 export { closeDialog, openDialog } from "~/stores/ui";

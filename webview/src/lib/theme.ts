@@ -1,7 +1,7 @@
 const darkQuery = "(prefers-color-scheme: dark)";
 
 /** Whether a theme asks for the dark appearance right now. */
-export function isDark(theme: string): boolean {
+function isDark(theme: string): boolean {
   if (theme === "dark") return true;
   if (theme === "light" || theme === "sepia") return false;
   return window.matchMedia(darkQuery).matches;
@@ -15,7 +15,7 @@ const fontScales: Record<string, number> = {
 };
 
 /** The scale factor of a font size preference, defaulting to small. */
-export function fontScale(fontSize: string): number {
+function fontScale(fontSize: string): number {
   return fontScales[fontSize] ?? 1;
 }
 

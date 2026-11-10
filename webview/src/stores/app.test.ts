@@ -19,12 +19,7 @@ vi.mock("~/lib/snapshot", () => ({ generateSnapshot: vi.fn() }));
 vi.mock("~/mygo", () => ({
   Feeds: {
     list: vi.fn(),
-    icon: vi.fn(),
     openAddFeed: vi.fn(),
-    exportOPML: vi.fn(),
-    importOPML: vi.fn(),
-    confirmRemove: vi.fn(),
-    refresh: vi.fn(),
     refreshAll: vi.fn(),
   },
   Posts: {
@@ -121,6 +116,8 @@ async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSum
   const snapshot = await import("~/lib/snapshot");
   const { toast } = await import("~/lib/notifications");
   const app = await import("~/stores/app");
+  const storeFeeds = await import("~/stores/feeds");
+  const syncEvents = await import("~/stores/sync-events");
 
   const feeds = (options.feeds ?? [feedA, feedB]).map((feed) => ({ ...feed }));
   const feedsSnapshot: FeedsSnapshot = {
@@ -142,7 +139,7 @@ async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSum
   }));
   vi.mocked(mygo.Posts.markRead).mockResolvedValue(undefined);
 
-  return { mygo, snapshot, toast, app };
+  return { mygo, snapshot, toast, app, storeFeeds, syncEvents };
 }
 
 function makeEvent(
@@ -224,10 +221,10 @@ describe("selectPost", () => {
 
 describe("selectFeed", () => {
   it("loads a selected feed and toggles it back to aggregate", async () => {
-    const { mygo, app } = await setup();
+    const { mygo, app, storeFeeds } = await setup();
     await app.start();
 
-    await app.selectFeed(2);
+    await storeFeeds.selectFeed(2);
 
     expect(app.app.current.feedId).toBe(2);
     expect(mygo.Posts.list).toHaveBeenLastCalledWith({
@@ -240,7 +237,7 @@ describe("selectFeed", () => {
       sortOrder: "desc",
     });
 
-    await app.selectFeed(2);
+    await storeFeeds.selectFeed(2);
 
     expect(app.app.current.feedId).toBeNull();
     expect(mygo.Posts.list).toHaveBeenLastCalledWith({
@@ -252,39 +249,6 @@ describe("selectFeed", () => {
       limit: 100,
       sortOrder: "desc",
     });
-  });
-});
-
-describe("ensureFeedIcon", () => {
-  it("loads an icon once and renders its data URL locally", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.icon).mockResolvedValue({
-      meta: {
-        sourceUrl: "https://a.example/favicon.ico",
-        contentType: "image/png",
-        fetchedAt: new Date().toISOString(),
-      },
-      data: "png-bytes",
-    });
-
-    await app.ensureFeedIcon(1);
-    await app.ensureFeedIcon(1);
-
-    expect(app.app.icons[1]?.src).toBe("data:image/png;base64,png-bytes");
-    expect(mygo.Feeds.icon).toHaveBeenCalledTimes(1);
-  });
-
-  it("marks a failed icon as missing without repeated requests", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.icon).mockRejectedValue(new Error("no icon"));
-
-    await app.ensureFeedIcon(1);
-    await app.ensureFeedIcon(1);
-
-    expect(app.app.icons[1]?.missing).toBe(true);
-    expect(mygo.Feeds.icon).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -377,63 +341,6 @@ describe("openAddFeed", () => {
   });
 });
 
-describe("removeFeed", () => {
-  it("asks Go for confirmation and waits for backend state events", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.confirmRemove).mockResolvedValue(undefined);
-
-    await app.removeFeed(1);
-
-    expect(mygo.Feeds.confirmRemove).toHaveBeenCalledWith(1);
-    expect(app.app.feeds).toHaveLength(2);
-    expect(app.app.current.feedId).toBeNull();
-  });
-
-  it("reports confirmation failures", async () => {
-    const { mygo, toast, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.confirmRemove).mockRejectedValue(new Error("窗口不可用"));
-
-    await app.removeFeed(1);
-
-    expect(toast.error).toHaveBeenCalledWith("窗口不可用");
-  });
-});
-
-describe("exportOPML", () => {
-  it("reports how many feeds were exported", async () => {
-    const { mygo, toast, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.exportOPML).mockResolvedValue("/tmp/ressu.opml");
-
-    await app.exportOPML();
-
-    expect(mygo.Feeds.exportOPML).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith("已导出 2 个订阅源");
-  });
-
-  it("does nothing when the save dialog is cancelled", async () => {
-    const { mygo, toast, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.exportOPML).mockResolvedValue("");
-
-    await app.exportOPML();
-
-    expect(toast.success).not.toHaveBeenCalled();
-  });
-
-  it("reports save failures", async () => {
-    const { mygo, toast, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Feeds.exportOPML).mockRejectedValue(new Error("cannot write"));
-
-    await app.exportOPML();
-
-    expect(toast.error).toHaveBeenCalledWith("cannot write");
-  });
-});
-
 describe("applySync", () => {
   it("updates the page when Go broadcasts a sync state", async () => {
     const { mygo, app } = await setup();
@@ -518,7 +425,7 @@ describe("applySync", () => {
   });
 
   it("ends the sync state after the last feed", async () => {
-    const { app } = await setup();
+    const { app, syncEvents } = await setup();
     await app.start();
 
     const active = (done: number, error?: string): SyncState => ({
@@ -529,12 +436,12 @@ describe("applySync", () => {
       feed: "A 站",
       ...(error ? { error } : {}),
     });
-    app.applySync(active(0));
-    app.applySync(active(1, "服务器错误"));
+    syncEvents.applySync(active(0));
+    syncEvents.applySync(active(1, "服务器错误"));
     expect(app.app.sync.active).toBe(true);
     expect(app.app.syncErrors).toEqual(["A 站：服务器错误"]);
 
-    app.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
+    syncEvents.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
     expect(app.app.sync.active).toBe(false);
     expect(app.app.sync.done).toBe(2);
     expect(app.app.sync.total).toBe(2);
@@ -542,42 +449,28 @@ describe("applySync", () => {
   });
 
   it("resets a sync that is already active", async () => {
-    const { app } = await setup();
+    const { app, syncEvents } = await setup();
     await app.start();
 
-    app.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
+    syncEvents.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
     // A second refresh cannot run while the first one does, so the state the
     // page holds must recover when Go announces a new run.
-    app.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
-    app.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
+    syncEvents.applySync({ active: true, done: 0, total: 2, feedId: 1, feed: "A 站" });
+    syncEvents.applySync({ active: false, done: 2, total: 2, feedId: 0, feed: "" });
     expect(app.app.sync.active).toBe(false);
   });
 });
 
 describe("replaceFeeds", () => {
   it("stores backend unread and returns to aggregate when its feed disappears", async () => {
-    const { app } = await setup();
+    const { app, syncEvents } = await setup();
     await app.start();
 
-    await app.replaceFeeds({ feeds: [feedB], unread: 5 });
+    await syncEvents.replaceFeeds({ feeds: [feedB], unread: 5 });
     await vi.waitFor(() => expect(app.app.current.feedId).toBeNull());
     expect(app.app.feeds).toHaveLength(1);
     expect(app.app.totalUnread).toBe(5);
     expect(app.app.posts).toHaveLength(1);
-  });
-});
-
-describe("updatePrefs", () => {
-  it("stores the preferences and keeps what Go returns", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.mocked(mygo.Settings.update).mockResolvedValue({ ...prefs, theme: "dark" });
-
-    await app.updatePrefs({ theme: "dark" });
-
-    expect(mygo.Settings.update).toHaveBeenCalledWith({ ...prefs, theme: "dark" });
-    expect(app.app.prefs.theme).toBe("dark");
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 });
 

@@ -6,7 +6,7 @@ import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
 
 /** Saves the preferences, applying what they change. */
-export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
+async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
   try {
     const prefs = await Settings.update({ ...state.prefs, ...patch });
     setState("prefs", prefs);
