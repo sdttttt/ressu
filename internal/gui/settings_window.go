@@ -76,7 +76,7 @@ type settingsView struct {
 
 // draw renders one frame of the settings form.
 func (s *settingsView) draw(c *ui.Context) {
-	theme := settingsTheme(c, s.prefs)
+	theme := nativeTheme(c, s.prefs.Theme, s.prefs.FontSize)
 	changed := false
 
 	ui.Themed(c, theme).Fill().Children(func() {
@@ -242,21 +242,6 @@ func (s *settingsView) fail(c *ui.Context, err error) {
 	s.notice = ""
 	s.err = fmt.Sprintf("操作失败：%v", err)
 	c.Invalidate()
-}
-
-// settingsTheme applies the preference font and sepia palette to native UI.
-func settingsTheme(c *ui.Context, prefs store.Prefs) *ui.Theme {
-	theme := *c.Theme()
-	theme.FontSize *= interfaceFontScale(prefs.FontSize)
-	if prefs.Theme == store.ThemeSepia {
-		theme.Background = ui.Oklch(0.86, 0.025, 80)
-		theme.Text = ui.Oklch(0.24, 0.02, 70)
-		theme.Surface = ui.Oklch(0.82, 0.025, 80)
-		theme.TextMuted = ui.Oklch(0.44, 0.022, 70)
-		theme.Border = ui.Oklch(0.77, 0.02, 78)
-		theme.Danger = ui.Oklch(0.58, 0.22, 27)
-	}
-	return &theme
 }
 
 // indexOf returns the index of value, or zero when it is absent.

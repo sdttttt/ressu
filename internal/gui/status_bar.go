@@ -8,7 +8,6 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 // StatusBar draws the reader's bottom status bar with MyGO native UI.
@@ -24,7 +23,7 @@ func NewStatusBar(model *appstatus.Model) *StatusBar {
 // View builds one frame of the status bar.
 func (b *StatusBar) View(c *ui.Context) {
 	snapshot := b.model.Snapshot()
-	theme := statusTheme(c, snapshot)
+	theme := nativeTheme(c, snapshot.Theme, snapshot.FontSize)
 	fontScale := interfaceFontScale(snapshot.FontSize)
 	height := 28 * fontScale
 	spacing := 12 * fontScale
@@ -79,35 +78,6 @@ func (b *StatusBar) View(c *ui.Context) {
 			})
 		})
 	})
-}
-
-// statusTheme maps the app theme to the colors of the native status bar.
-func statusTheme(c *ui.Context, snapshot appstatus.Snapshot) *ui.Theme {
-	theme := *c.Theme()
-	theme.FontSize *= interfaceFontScale(snapshot.FontSize)
-	if snapshot.Theme != store.ThemeSepia {
-		return &theme
-	}
-
-	theme.Background = ui.Oklch(0.86, 0.025, 80)
-	theme.Text = ui.Oklch(0.24, 0.02, 70)
-	theme.Surface = ui.Oklch(0.82, 0.025, 80)
-	theme.TextMuted = ui.Oklch(0.44, 0.022, 70)
-	theme.Border = ui.Oklch(0.77, 0.02, 78)
-	theme.Danger = ui.Oklch(0.58, 0.22, 27)
-	return &theme
-}
-
-// interfaceFontScale converts the interface font preference to a scale.
-func interfaceFontScale(fontSize string) float32 {
-	switch fontSize {
-	case store.FontSizeMedium:
-		return 1.15
-	case store.FontSizeLarge:
-		return 1.3
-	default:
-		return 1
-	}
 }
 
 func divider(c *ui.Context, theme *ui.Theme, fontScale float32) {
