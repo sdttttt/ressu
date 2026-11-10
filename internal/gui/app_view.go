@@ -14,8 +14,8 @@ type AppView struct {
 }
 
 // NewAppView creates the main window's native layout.
-func NewAppView(statusModel *appstatus.Model) *AppView {
-	return &AppView{status: NewStatusBar(statusModel)}
+func NewAppView(statusModel *appstatus.Model, onAbout func()) *AppView {
+	return &AppView{status: NewStatusBar(statusModel, onAbout)}
 }
 
 // SetPage attaches the reader page shown above the status bar.

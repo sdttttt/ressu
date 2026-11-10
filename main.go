@@ -17,6 +17,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/sdttttt/ressu/internal/action"
+	"github.com/sdttttt/ressu/internal/buildinfo"
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/logging"
@@ -25,6 +26,11 @@ import (
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 	"github.com/sdttttt/ressu/internal/webendpoint"
+)
+
+const (
+	appDeveloper = "sdttttt"
+	appEmail     = "sendaihazuki@foxmail.com"
 )
 
 func main() {
@@ -99,6 +105,7 @@ func main() {
 		prefs := st.Prefs()
 		gui.NativeUI{}.ApplyTheme(prefs.Theme)
 		setMenu(hub, actions)
+		about := newAboutInfo(app.Version())
 		if _, err := openWindow(statusModel, pageReady, func() {
 			if !prefs.RefreshOnStart {
 				return
@@ -109,7 +116,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive); err != nil {
+		}, foreground, app.IsActive, about); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -118,6 +125,20 @@ func main() {
 		fatal("application run failed", err)
 	}
 	slog.Info("application stopped", "operation", "app.stop")
+}
+
+// newAboutInfo gathers the metadata shown by the native About window.
+func newAboutInfo(version string) gui.AboutInfo {
+	buildDate := "未知"
+	if date := buildinfo.Date(); !date.IsZero() {
+		buildDate = date.Format("2006-01-02")
+	}
+	return gui.AboutInfo{
+		Version:   version,
+		BuildDate: buildDate,
+		Developer: appDeveloper,
+		Email:     appEmail,
+	}
 }
 
 // fatal records a startup error and exits before the application becomes usable.
@@ -129,9 +150,16 @@ func fatal(message string, err error) {
 // openWindow creates the main window hidden and shows it once the page has
 // mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
-func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) (*mygo.Window, error) {
-	view := gui.NewAppView(statusModel)
-	win := mygo.NewWindow(mygo.WindowOptions{
+func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool, about gui.AboutInfo) (*mygo.Window, error) {
+	var win *mygo.Window
+	view := gui.NewAppView(statusModel, func() {
+		info := about
+		snapshot := statusModel.Snapshot()
+		info.Theme = snapshot.Theme
+		info.FontSize = snapshot.FontSize
+		gui.OpenAboutWindow(win, info)
+	})
+	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
 		Height:          800,

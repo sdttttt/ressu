@@ -61,9 +61,11 @@ internal/
     webendpoint.go         WebEndpoint（页面名 Feeds）、Posts、Settings、Status 绑定对象
   event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
+  buildinfo/               从 Go 构建元数据读取构建日期
   gui/                     MyGO 原生界面：状态栏、图片查看器、设置窗口
     app_view.go            主窗原生布局：嵌入阅读页与底部状态栏
-    status_bar.go, image_viewer.go, settings_window.go, native.go
+    about_window.go, status_bar.go, image_viewer.go, settings_window.go, native.go
+    assets/                原生窗口内嵌图片资源
 webview/                   前端源码和独立构建配置
   index.html               Vite 入口，lang="zh-CN"
   vite.config.ts           Solid + Tailwind 插件、~ 别名、root 指回 webview/、固定 5173
@@ -217,6 +219,15 @@ bun install
   `PaneSizes` 和 `SidebarCollapsed`，避免覆盖页面侧的布局改动。
 - 原生控件是即时模式：构造器写入指针，用 `Element.Changed()` 判断变化，用
   `c.Invalidate()` 触发重绘；不要把 `ui.Context` 或控件存进状态或后台 goroutine。
+
+## 原生关于窗口
+
+- 状态栏版本号是普通文本，点击由 `Element.OnClick` 绑定，不使用按钮控件；`main.go`
+  组装元数据并在点击时补入当前主题和字号。
+- 点击后打开 `internal/gui/about_window.go` 的单例子窗口，显示版本、嵌入头像、开发者、
+  构建日期、邮箱和说明文字；邮箱使用 `mailto:` 链接，窗口只通过系统标题栏关闭。
+- 构建日期由 `internal/buildinfo.Date` 从 Go 的 `vcs.time` 读取；缺少 VCS 信息时回退到
+  可执行文件的修改时间。
 
 ## 订阅刷新流程
 
@@ -400,7 +411,8 @@ bun install
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
   `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验；`action` 用假 `UI`
-  覆盖外链校验和偏好草稿保存；`gui` 用 `ui.NewTester` 渲染原生设置窗口。
+  覆盖外链校验和偏好草稿保存；`gui` 用 `ui.NewTester` 渲染原生设置、关于窗口并验证状态栏
+  版本点击。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。

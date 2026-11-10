@@ -12,12 +12,13 @@ import (
 
 // StatusBar draws the reader's bottom status bar with MyGO native UI.
 type StatusBar struct {
-	model *appstatus.Model
+	model   *appstatus.Model
+	onAbout func()
 }
 
 // NewStatusBar draws the state kept by model.
-func NewStatusBar(model *appstatus.Model) *StatusBar {
-	return &StatusBar{model: model}
+func NewStatusBar(model *appstatus.Model, onAbout func()) *StatusBar {
+	return &StatusBar{model: model, onAbout: onAbout}
 }
 
 // View builds one frame of the status bar.
@@ -72,8 +73,12 @@ func (b *StatusBar) View(c *ui.Context) {
 					if snapshot.CurrentFeed != nil && snapshot.CurrentFeed.LastFetchedAt != nil {
 						divider(c, theme, fontScale)
 					}
-					ui.Textf(c, "v%s", snapshot.Version).
+					version := ui.Textf(c, "v%s", snapshot.Version).
 						TextColor(theme.TextMuted).FontFeatures("tnum")
+					if b.onAbout != nil {
+						version.Cursor(ui.CursorPointer).Tooltip("关于 Ressu").
+							Focusable().OnClick(b.onAbout)
+					}
 				}
 			})
 		})
