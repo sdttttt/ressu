@@ -13,7 +13,7 @@ import (
 // The fixtures are complete responses from feeds that had previously failed
 // or produced overly permissive article HTML in production.
 //
-//go:embed 12306.xml 3dm.xml els.xml yystv.xml
+//go:embed 12306.xml 3dm.xml 818.xml els.xml yystv.xml
 var realFeedFixtures embed.FS
 
 func TestHTMLCleansRealRSSFeeds(t *testing.T) {
@@ -34,6 +34,12 @@ func TestHTMLCleansRealRSSFeeds(t *testing.T) {
 			feedURL:         "https://www.3dmgame.com/news/",
 			firstTitle:      "蕾卡的移动工坊",
 			firstContentTag: `src="https://img.3dmgame.com/`,
+		},
+		{
+			name:            "818.xml",
+			feedURL:         "https://nga.178.com/thread.php?fid=818",
+			firstTitle:      "所以爻爻前面都一直在藏分吗",
+			firstContentTag: "怎么突然全配置打赢火花了",
 		},
 		{
 			name:            "els.xml",
