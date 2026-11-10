@@ -170,12 +170,14 @@ bun install
 回调给原生层：
 
 - `internal/service` 只有业务逻辑，不 import `mygo`，也不 import `internal/gui`。
-- `internal/action` 持有 service、Hub 和 `UI` 回调接口，负责文件对话框、剪贴板、外链、
-  截图、原生主题与状态广播。
+- `internal/action` 是所有页面和原生界面能力的唯一应用入口，持有 service、Hub 和 `UI`
+  回调接口，负责文件对话框、剪贴板、外链、截图、原生主题与状态广播。需要暴露给界面层
+  的能力必须先定义成 `AppActions` 方法。
 - `internal/gui` 同时承载原生界面和 `NativeUI` 副作用实现；MyGO 对话框、shell、剪贴板、
   主题和窗口截图封装在这里。
-- `internal/webendpoint` 只做 MyGO 绑定适配：用 `mygo.CallerWindow(ctx)`、
-  `mygo.CallerPage(ctx)` 取出调用方窗口/页面后转交 action，不含业务判断。
+- `internal/webendpoint` 只持有 `*action.AppActions`，负责 MyGO 绑定适配：用
+  `mygo.CallerWindow(ctx)`、`mygo.CallerPage(ctx)` 取出调用方窗口/页面后转交 action。
+  它不得直接持有或调用 `service`，不得复制业务逻辑，也不得自行拼装 UI 副作用。
 - `internal/gui` 只依赖 `gui.SettingsCallbacks` 和 `store`，不 import `service`。
 - 绑定对象上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入，TypeScript 中
   省略：`Feeds.Add(ctx, url)` 生成 `Feeds.add(url)`。
@@ -375,10 +377,10 @@ bun install
 ## 常见改动路径
 
 - 新增后端调用：先在 `internal/service` 写业务逻辑（不碰 MyGO），再在
-  `internal/action` 加动作方法，必要时把新的系统交互封装成 `internal/gui` 方法并实现
-  `action.UI`；在
-  `internal/webendpoint` 的对应绑定对象上暴露导出方法；需要时通过 `internal/event.Hub`
-  广播变更；运行 `bun run generate`；在对应的 `stores/feeds.ts`、`posts.ts` 或
+  `internal/action` 增加 `AppActions` 方法；必要时把新的系统交互封装成 `internal/gui`
+  方法并实现 `action.UI`。只有 `AppActions` 负责事件广播和 UI 副作用，最后在
+  `internal/webendpoint` 的对应绑定对象上增加只做参数/调用方窗口适配并转发到 action 的
+  导出方法；运行 `bun run generate`；在对应的 `stores/feeds.ts`、`posts.ts` 或
   `settings.ts` 动作中调用，处理错误和本地状态，最后从 `stores/app.ts` 导出。
 - 新增事件：在 `internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，
   在状态变化处调用；重新生成后在 `stores/events.ts` 的 dispatcher 加分支。不要新增第二个

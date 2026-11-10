@@ -36,7 +36,9 @@ type UI interface {
 	ApplyTheme(string)
 }
 
-// AppActions coordinates services, broadcasts, and native UI effects.
+// AppActions is the single application-level entry for capabilities exposed to
+// the WebView and native interfaces. Web bindings forward here instead of
+// calling services directly.
 type AppActions struct {
 	feeds    *service.Feeds
 	posts    *service.Posts
