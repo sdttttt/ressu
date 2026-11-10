@@ -179,7 +179,7 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 
 	hot := ui.Box(c).Absolute().Top(0).Left(0).
 		Bottom(statusBarHeight(snapshot.FontSize)).
-		Width(feedSidebarHotZoneWidth).Background(theme.Background)
+		Width(feedSidebarHotZoneWidth).Background(ui.Transparent)
 	hotHovered := hot.Hovered()
 	s.beginShow(hotHovered)
 
@@ -196,6 +196,7 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 		Radius(12).
 		Background(theme.Background).
 		Border(1, theme.Border).
+		Clip().
 		Shadow(0, 8, 24, 0, ui.RGBA(0, 0, 0, 0.18)).
 		Children(func() {
 			s.View(c)
@@ -360,6 +361,9 @@ func (s *FeedSidebar) drawFeed(
 				ui.Badge(c, unreadText(feed.Unread))
 			}
 		})
+	if !selected && row.Hovered() {
+		row.Background(theme.SurfaceHover)
+	}
 	if row.Clicked() {
 		s.runAsync(func() { s.callbacks.Select(feed.ID) })
 	}
