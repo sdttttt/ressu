@@ -6,10 +6,13 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
+const nativeFontFamily = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`
+
 // nativeTheme maps an app theme preference to the colors used by native UI.
 func nativeTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	theme := *c.Theme()
 	theme.FontSize *= interfaceFontScale(fontSize)
+	theme.Font = nativeFontFamily
 	if appearance == store.ThemeSepia {
 		applySepiaTheme(&theme)
 	}

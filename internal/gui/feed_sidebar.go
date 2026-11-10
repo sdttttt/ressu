@@ -389,9 +389,9 @@ func (s *FeedSidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Fe
 	case ok && !icon.missing:
 		ui.Image(c, icon.source).Size(16, 16)
 	case ok && icon.missing:
-		ui.Text(c, "📡").TextColor(theme.TextMuted)
+		ui.Icon(c, feedSidebarRss).Size(16, 16).TextColor(theme.TextMuted)
 	default:
-		ui.Text(c, "📡").TextColor(theme.TextMuted)
+		ui.Icon(c, feedSidebarRss).Size(16, 16).TextColor(theme.TextMuted)
 		s.loadIcon(feed.ID)
 	}
 }
