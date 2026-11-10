@@ -1,39 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatDateTime,
-  formatPostDate,
-  formatReadingTime,
-  formatWordCount,
-  formatRelative,
-  truncate,
-} from "~/lib/format";
+import { formatDateTime, formatReadingTime, formatWordCount, formatRelative } from "~/lib/format";
 
 const now = new Date(2026, 4, 20, 15, 30, 0);
-
-describe("formatPostDate", () => {
-  it("shows the time for a post published today", () => {
-    const today = new Date(2026, 4, 20, 9, 5, 0).toISOString();
-    expect(formatPostDate(today, now)).toMatch(/^\d{1,2}:\d{2}$/);
-  });
-
-  it("shows the day and the month for a post from this year", () => {
-    const earlier = new Date(2026, 2, 8, 9, 5, 0).toISOString();
-    const text = formatPostDate(earlier, now);
-    expect(text).toContain("8");
-    expect(text).not.toMatch(/:/);
-  });
-
-  it("shows the year for an older post", () => {
-    const older = new Date(2023, 11, 1, 9, 5, 0).toISOString();
-    expect(formatPostDate(older, now)).toContain("2023");
-  });
-
-  it("returns nothing for a missing or invalid date", () => {
-    expect(formatPostDate("", now)).toBe("");
-    expect(formatPostDate("not a date", now)).toBe("");
-  });
-});
 
 describe("formatDateTime", () => {
   it("keeps the time", () => {
@@ -86,13 +55,5 @@ describe("formatRelative", () => {
 
     expect(formatRelative(boundary.toISOString(), now)).not.toBe("30 天前");
     expect(formatRelative(older.toISOString(), now)).toContain("2026");
-  });
-});
-
-describe("truncate", () => {
-  it("cuts long text with an ellipsis", () => {
-    expect(truncate("abcdef", 3)).toBe("abc…");
-    expect(truncate("abc", 3)).toBe("abc");
-    expect(truncate("  spaced  ", 10)).toBe("spaced");
   });
 });

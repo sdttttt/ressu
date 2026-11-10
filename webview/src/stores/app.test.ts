@@ -181,7 +181,7 @@ describe("sidebar preference", () => {
       starredOnly: false,
       search: "",
       offset: 0,
-      limit: app.PAGE_SIZE,
+      limit: 100,
       sortOrder: "desc",
     });
   });
@@ -236,7 +236,7 @@ describe("selectFeed", () => {
       starredOnly: false,
       search: "",
       offset: 0,
-      limit: app.PAGE_SIZE,
+      limit: 100,
       sortOrder: "desc",
     });
 
@@ -249,7 +249,7 @@ describe("selectFeed", () => {
       starredOnly: false,
       search: "",
       offset: 0,
-      limit: app.PAGE_SIZE,
+      limit: 100,
       sortOrder: "desc",
     });
   });
@@ -895,9 +895,6 @@ describe("sidebar overlay", () => {
     app.hideSidebar();
     vi.advanceTimersByTime(200);
     expect(app.app.sidebar).toEqual({ collapsed: true, visible: false });
-
-    app.showSidebar();
-    expect(app.app.sidebar).toEqual({ collapsed: true, visible: true });
 
     await app.expandSidebar();
     expect(app.app.sidebar).toEqual({ collapsed: false, visible: false });

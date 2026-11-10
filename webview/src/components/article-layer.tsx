@@ -4,7 +4,7 @@ import { createEffect } from "solid-js";
 import { cn } from "~/lib/utils";
 
 /** How long an article layer's slide takes, in milliseconds. */
-export const SLIDE_MS = 300;
+const SLIDE_MS = 300;
 
 /** How an article layer behaves inside the pane while the stack swaps. */
 export type LayerKind = "base" | "enter" | "cover-down" | "exit-up";

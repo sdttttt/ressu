@@ -15,14 +15,13 @@ export {
   removeFeed,
   selectFeed,
 } from "~/stores/feeds";
-export { ensureFeedIcon, forgetFeedIcon, syncFeedIcons } from "~/stores/icons";
+export { ensureFeedIcon, syncFeedIcons } from "~/stores/icons";
 export { start } from "~/stores/lifecycle";
 export {
   loadMorePosts,
   loadPosts,
   markAllRead,
   openImage,
-  PAGE_SIZE,
   selectPost,
   setPostSearch,
   setOpenPostRead,
@@ -55,5 +54,4 @@ export {
   openDialog,
   requestSidebar,
   setFeedFilter,
-  showSidebar,
 } from "~/stores/ui";

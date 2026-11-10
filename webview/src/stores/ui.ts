@@ -54,7 +54,7 @@ export async function expandSidebar(): Promise<void> {
 }
 
 /** Shows the floating feed sidebar while the docked sidebar stays hidden. */
-export function showSidebar(): void {
+function showSidebar(): void {
   clearSidebarTimers();
   setAppState("sidebar", "visible", true);
   sidebarShownAt = Date.now();

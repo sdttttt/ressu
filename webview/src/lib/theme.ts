@@ -1,5 +1,3 @@
-export type Theme = "system" | "light" | "dark" | "sepia";
-
 const darkQuery = "(prefers-color-scheme: dark)";
 
 /** Whether a theme asks for the dark appearance right now. */

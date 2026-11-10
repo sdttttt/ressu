@@ -53,17 +53,6 @@ export function syncFeedIcons(previous: Feed[], next: Feed[]): void {
   });
 }
 
-/** Removes a feed's locally cached icon. */
-export function forgetFeedIcon(feedID: number): void {
-  requests.delete(feedID);
-  setState("icons", (icons) => {
-    if (!(feedID in icons)) return icons;
-    const updated = { ...icons };
-    delete updated[feedID];
-    return updated;
-  });
-}
-
 /** Loads one icon through Go and stores a data URL in local state. */
 async function loadFeedIcon(feedID: number, cached?: FeedIconView): Promise<void> {
   if (!cached) {

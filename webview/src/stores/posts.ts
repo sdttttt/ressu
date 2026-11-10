@@ -5,7 +5,7 @@ import { messageOf } from "~/stores/errors";
 import { closeSnapshot } from "~/stores/snapshot-actions";
 
 /** How many posts a page of the list holds. */
-export const PAGE_SIZE = 100;
+const PAGE_SIZE = 100;
 
 /** How long to wait for typing to settle before searching titles. */
 const SEARCH_DEBOUNCE_MS = 300;
