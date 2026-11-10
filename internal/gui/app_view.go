@@ -9,13 +9,21 @@ import (
 
 // AppView places the reader page above the native status bar.
 type AppView struct {
-	page   *mygo.WebView
-	status *StatusBar
+	page          *mygo.WebView
+	status        *StatusBar
+	notifications *Notifications
 }
 
 // NewAppView creates the main window's native layout.
-func NewAppView(statusModel *appstatus.Model, onAbout func()) *AppView {
-	return &AppView{status: NewStatusBar(statusModel, onAbout)}
+func NewAppView(
+	statusModel *appstatus.Model,
+	onAbout func(),
+	notifications *Notifications,
+) *AppView {
+	return &AppView{
+		status:        NewStatusBar(statusModel, onAbout),
+		notifications: notifications,
+	}
 }
 
 // SetPage attaches the reader page shown above the status bar.
@@ -34,4 +42,7 @@ func (a *AppView) View(c *ui.Context) {
 		ui.WebView(c, a.page).Grow(1)
 		a.status.View(c)
 	})
+	if a.notifications != nil {
+		a.notifications.draw(c)
+	}
 }

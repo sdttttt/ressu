@@ -10,6 +10,8 @@ import (
 	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
+const statusBarContentHeight = 28
+
 // StatusBar draws the reader's bottom status bar with MyGO native UI.
 type StatusBar struct {
 	model   *appstatus.Model
@@ -26,7 +28,7 @@ func (b *StatusBar) View(c *ui.Context) {
 	snapshot := b.model.Snapshot()
 	theme := nativeTheme(c, snapshot.Theme, snapshot.FontSize)
 	fontScale := interfaceFontScale(snapshot.FontSize)
-	height := 28 * fontScale
+	height := statusBarContentHeight * fontScale
 	spacing := 12 * fontScale
 	gap := 8 * fontScale
 	indicator := 12 * fontScale
@@ -83,6 +85,10 @@ func (b *StatusBar) View(c *ui.Context) {
 			})
 		})
 	})
+}
+
+func statusBarHeight(fontSize string) float32 {
+	return 1 + statusBarContentHeight*interfaceFontScale(fontSize)
 }
 
 func divider(c *ui.Context, theme *ui.Theme, fontScale float32) {

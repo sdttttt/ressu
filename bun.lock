@@ -12,7 +12,6 @@
         "lucide-solid": "^1.70.0",
         "mygo-runtime": "^0.8.3",
         "solid-js": "^1.9.18",
-        "solid-sonner": "^0.3.3",
         "tailwind-merge": "^3.7.0",
       },
       "devDependencies": {
@@ -512,8 +511,6 @@
     "solid-prevent-scroll": ["solid-prevent-scroll@0.1.11", "https://registry.npmmirror.com/solid-prevent-scroll/-/solid-prevent-scroll-0.1.11.tgz", { "dependencies": { "@corvu/utils": "~0.4.2" }, "peerDependencies": { "solid-js": "^1.8" } }, "sha512-2PComVCDHaQN/5t7ogEqUYeHasritZKXZ8Sb/VLkl0Web8o9YhEwOo8LSujJEahvMlYCNyKt0zRJeHldOAeWZg=="],
 
     "solid-refresh": ["solid-refresh@0.6.3", "https://registry.npmmirror.com/solid-refresh/-/solid-refresh-0.6.3.tgz", { "dependencies": { "@babel/generator": "^7.23.6", "@babel/helper-module-imports": "^7.22.15", "@babel/types": "^7.23.6" }, "peerDependencies": { "solid-js": "^1.3" } }, "sha512-F3aPsX6hVw9ttm5LYlth8Q15x6MlI/J3Dn+o3EQyRTtTxidepSTwAYdozt01/YA+7ObcciagGEyXIopGZzQtbA=="],
-
-    "solid-sonner": ["solid-sonner@0.3.3", "https://registry.npmmirror.com/solid-sonner/-/solid-sonner-0.3.3.tgz", { "peerDependencies": { "solid-js": "^1.6.0" } }, "sha512-zUaC3WFiEDAQUIz3arc7NH5tHgCGkEPf27k2Q5QE5dtW8MZMRIDSm3fASBW1dKfW31S/dbnpazVP0fkCENHWkA=="],
 
     "source-map-js": ["source-map-js@1.2.2", "https://registry.npmmirror.com/source-map-js/-/source-map-js-1.2.2.tgz", {}, "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw=="],
 

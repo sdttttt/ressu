@@ -1,5 +1,4 @@
-import { toast } from "solid-sonner";
-
+import { toast } from "~/lib/notifications";
 import { Feeds, Status, type FeedPreview } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";

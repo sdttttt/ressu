@@ -1,5 +1,4 @@
-import { toast } from "solid-sonner";
-
+import { toast } from "~/lib/notifications";
 import { applyFontSize, applyTheme } from "~/lib/theme";
 import { Feeds, Settings, Status } from "~/mygo";
 import { setAppState } from "~/stores/app-state";

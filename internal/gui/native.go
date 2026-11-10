@@ -22,7 +22,14 @@ type SettingsCallbacks struct {
 }
 
 // NativeUI exposes application-level native side effects to the action layer.
-type NativeUI struct{}
+type NativeUI struct {
+	notifications *Notifications
+}
+
+// NewNativeUI creates the native side-effect adapter.
+func NewNativeUI(notifications *Notifications) NativeUI {
+	return NativeUI{notifications: notifications}
+}
 
 // SelectOPMLImport shows the picker used while importing subscriptions.
 func (NativeUI) SelectOPMLImport(parent *Window) ([]string, error) {
@@ -113,5 +120,12 @@ func (NativeUI) ApplyTheme(theme string) {
 		mygo.Theme.SetSource(mygo.ThemeDark)
 	default:
 		mygo.Theme.SetSource(mygo.ThemeSystem)
+	}
+}
+
+// ShowNotification queues a native toast for the main window.
+func (n NativeUI) ShowNotification(notification Notification) {
+	if n.notifications != nil {
+		n.notifications.Show(notification)
 	}
 }

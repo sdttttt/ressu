@@ -1,5 +1,4 @@
-import { toast } from "solid-sonner";
-
+import { toast } from "~/lib/notifications";
 import { generateSnapshot } from "~/lib/snapshot";
 import { Posts } from "~/mygo";
 import { app as state, feedTitle, setAppState as setState } from "~/stores/app-state";

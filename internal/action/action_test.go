@@ -11,13 +11,14 @@ import (
 )
 
 type fakeUI struct {
-	openFiles    []string
-	savePath     string
-	openedPath   string
-	externalLink string
-	windowTitle  string
-	windowLink   string
-	theme        string
+	openFiles     []string
+	savePath      string
+	openedPath    string
+	externalLink  string
+	windowTitle   string
+	windowLink    string
+	theme         string
+	notifications []gui.Notification
 }
 
 func (f *fakeUI) SelectOPMLImport(*gui.Window) ([]string, error) {
@@ -63,6 +64,10 @@ func (f *fakeUI) WriteImage([]byte) error {
 
 func (f *fakeUI) ApplyTheme(theme string) {
 	f.theme = theme
+}
+
+func (f *fakeUI) ShowNotification(notification gui.Notification) {
+	f.notifications = append(f.notifications, notification)
 }
 
 func newTestActions(t *testing.T) (*AppActions, *fakeUI) {
@@ -152,5 +157,18 @@ func TestUpdateSettingsDraftPreservesLayout(t *testing.T) {
 	}
 	if ui.theme != store.ThemeSepia {
 		t.Errorf("native theme = %q; want sepia", ui.theme)
+	}
+}
+
+func TestNotifyForwardsThroughNativeUI(t *testing.T) {
+	actions, ui := newTestActions(t)
+
+	actions.Notify("warning", "刷新失败")
+
+	if len(ui.notifications) != 1 {
+		t.Fatalf("notifications = %d; want 1", len(ui.notifications))
+	}
+	if got := ui.notifications[0]; got.Type != "warning" || got.Title != "刷新失败" {
+		t.Errorf("notification = %#v; want warning/刷新失败", got)
 	}
 }

@@ -62,9 +62,9 @@ internal/
   event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
   buildinfo/               从 Go 构建元数据读取构建日期
-  gui/                     MyGO 原生界面：状态栏、图片查看器、设置窗口
-    app_view.go            主窗原生布局：嵌入阅读页与底部状态栏
-    about_window.go, status_bar.go, image_viewer.go, settings_window.go, native.go
+  gui/                     MyGO 原生界面：状态栏、通知、图片查看器和设置/关于窗口
+    app_view.go            主窗原生布局：嵌入阅读页、底部状态栏与原生通知
+    about_window.go, status_bar.go, image_viewer.go, settings_window.go, native.go, notifications.go
     assets/                原生窗口内嵌图片资源
 webview/                   前端源码和独立构建配置
   index.html               Vite 入口，lang="zh-CN"
@@ -73,12 +73,12 @@ webview/                   前端源码和独立构建配置
   tsconfig.json            strict、noEmit、jsx preserve、~/* 路径别名
   src/
     main.tsx               挂载 App，首帧前先按系统主题上色
-    app.tsx                三栏布局、对话框与 toast
+    app.tsx                三栏布局与对话框
     index.css              Tailwind 4 入口、主题 token、.post-body、.snapshot-*
     mygo.ts                生成的类型化客户端；被 git 忽略，不要编辑
     components/            页面组件、对话框、图标按钮和内联 shadcn 风格原语
     components/ui/         Kobalte/corvu + cva 的 UI 原语
-    lib/                   format、sanitize、snapshot、theme、commands、utils
+    lib/                   format、sanitize、snapshot、theme、commands、notifications、utils
     stores/
       app-state.ts         状态类型、默认值、Solid store、派生值
       app.ts               供组件使用的统一导出层
@@ -229,6 +229,17 @@ bun install
 - 构建日期由 `internal/buildinfo.Date` 从 Go 的 `vcs.time` 读取；缺少 VCS 信息时回退到
   可执行文件的修改时间。
 
+## 原生通知
+
+- 页面不再使用网页 toast 组件。所有 store 通过 `webview/src/lib/notifications.ts` 的
+  `toast` 外观调用 `Status.notify(level, message)`，再经 `webendpoint`、`AppActions.Notify`
+  和 `gui.NativeUI.ShowNotification` 进入原生队列。
+- 通知绑定在非 UI goroutine 上执行，不能直接操作 `ui.Context`。`internal/gui/notifications.go`
+  先加锁入队，并调用主窗口的 `Invalidate()`；`AppView.View` 在下一帧取出队列后调用
+  `ui.ToastViewportBase` 渲染。
+- 通知队列最多保留 32 条，类型只接受 `error`、`warning`、`info`、`success`；通知卡片固定在
+  状态栏上方的右下角，使用当前主题和字号，MyGO 最多同时显示 3 条。提示文案保持简体中文。
+
 ## 订阅刷新流程
 
 - `Feeds.Add` 先校验绝对 `http`/`https` URL、检查重复，再立即抓取一次并保存频道元数据与
@@ -241,7 +252,7 @@ bun install
 - `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`。304 映射为
   `rss.ErrNotModified`：保留文章，只清除错误并更新 `lastFetchedAt`。
 - 抓取失败会把错误写入 `Feed.LastError`，保留订阅和已存文章，并广播
-  `feeds.changed`；原生状态栏展示错误摘要，页面在 toast 中补充提示。
+  `feeds.changed`；原生状态栏展示错误摘要，页面通过原生通知补充提示。
 - 成功抓取后调用 `store.MergePosts`，再刷新频道元数据、校验器和 `lastFetchedAt`。合并完成
   后重新读取 Feed，因为未读数已经在事务中重算。
 - `Posts.List` 在服务端完成未读/星标筛选、搜索和分页。返回 `{posts,total,unread}`。
@@ -307,7 +318,7 @@ bun install
 - 组件不直接调用 `~/mygo`；事件和快照模块除外，它们分别封装订阅和底层截图调用。
 - 派生值使用普通函数，如 `currentFeed()`、`visibleFeeds()`、`totalUnread()`、
   `isSyncingFeed(id)`，不要引入 memo。
-- store 动作用 `messageOf(error)` 弹中文 toast。只有调用方需要按成功与否分支时才返回布尔值
+- store 动作用 `messageOf(error)` 弹中文通知。只有调用方需要按成功与否分支时才返回布尔值
   （例如 `addFeed`）；事件处理里的“发后不管”用 `void action()`。
 - 事件只在 `App` 的 `onMount` 中通过 `subscribe()` 订阅一次，并在 `onCleanup` 中退订。
   `stores/events.ts` 是唯一 dispatcher，按 `eid` 路由并丢弃 `revision` 不递增的事件。
@@ -356,7 +367,7 @@ bun install
 - 包注释写在主文件；每个导出标识符都要有以自身名字开头的文档注释。
 - 哨兵错误是包级 `errors.New` 值（`store.ErrNotFound`、`store.ErrDuplicate`、
   `rss.ErrNotModified`、`rss.ErrInvalidURL`、`service.ErrRefreshing`）。需要上下文时用 `%w`
-  包装，错误文本要短且可直接展示在中文 toast 里。
+  包装，错误文本要短且可直接展示在中文通知里。
 - 每个持久化或跨绑定字段都要有 camelCase `json` tag。
 - 跟随标准库风格：`slices`、`min`/`max`、泛型、`for i := range n`。改过的 Go 文件运行
   `gofmt -w`。
@@ -377,7 +388,8 @@ bun install
   `border-border`、`text-warning`、`bg-error`、`rounded-md` 等。不要写死颜色。
 - Tailwind 4 是 CSS-first：主题值在 `webview/src/index.css` 的 `@theme`/变量中，没有
   `tailwind.config.js`。
-- 图标来自 `lucide-solid`，toast 来自 `solid-sonner`。
+- 图标来自 `lucide-solid`；页面错误提示走 `~/lib/notifications` 的原生通知，不要引入
+  网页 toast 库。
 - 界面控件优先使用 `webview/src/components/ui/**`：输入用 `text-field`，数字用
   `number-field`，单选/多选用 `radio-group`/`toggle-group`，开关用 `switch`，提示用
   `tooltip`，计数用 `badge`，分隔用 `separator`。图标按钮用
@@ -411,8 +423,8 @@ bun install
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
   `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验；`action` 用假 `UI`
-  覆盖外链校验和偏好草稿保存；`gui` 用 `ui.NewTester` 渲染原生设置、关于窗口并验证状态栏
-  版本点击。
+  覆盖外链校验、偏好草稿保存和通知转发；`gui` 用 `ui.NewTester` 渲染原生通知、设置和关于
+  窗口，并验证状态栏版本点击。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。

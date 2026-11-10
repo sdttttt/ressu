@@ -85,7 +85,12 @@ func main() {
 		default:
 		}
 	})
-	actions := action.New(feeds, posts, settings, status, hub, gui.NativeUI{})
+	notifications := gui.NewNotifications(func() (string, string) {
+		snapshot := statusModel.Snapshot()
+		return snapshot.Theme, snapshot.FontSize
+	})
+	nativeUI := gui.NewNativeUI(notifications)
+	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
 		webendpoint.NewPosts(actions),
@@ -103,7 +108,7 @@ func main() {
 
 	app.WhenReady(func() {
 		prefs := st.Prefs()
-		gui.NativeUI{}.ApplyTheme(prefs.Theme)
+		nativeUI.ApplyTheme(prefs.Theme)
 		setMenu(hub, actions)
 		about := newAboutInfo(app.Version())
 		if _, err := openWindow(statusModel, pageReady, func() {
@@ -116,7 +121,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about); err != nil {
+		}, foreground, app.IsActive, about, notifications); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -150,7 +155,15 @@ func fatal(message string, err error) {
 // openWindow creates the main window hidden and shows it once the page has
 // mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
-func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool, about gui.AboutInfo) (*mygo.Window, error) {
+func openWindow(
+	statusModel *appstatus.Model,
+	pageReady <-chan struct{},
+	onReady func(),
+	foreground *service.ForegroundRefresher,
+	isActive func() bool,
+	about gui.AboutInfo,
+	notifications *gui.Notifications,
+) (*mygo.Window, error) {
 	var win *mygo.Window
 	view := gui.NewAppView(statusModel, func() {
 		info := about
@@ -158,7 +171,7 @@ func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		gui.OpenAboutWindow(win, info)
-	})
+	}, notifications)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
@@ -170,6 +183,7 @@ func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady
 		BackgroundColor: "light-dark(#ffffff, #101012)",
 		Content:         ui.View(view.View),
 	})
+	notifications.Attach(win)
 	statusModel.SetChanged(func() {
 		if !win.IsDestroyed() {
 			win.Invalidate()

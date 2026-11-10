@@ -10,7 +10,7 @@ import type {
   SyncState,
 } from "~/mygo";
 
-vi.mock("solid-sonner", () => ({
+vi.mock("~/lib/notifications", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
@@ -48,6 +48,7 @@ vi.mock("~/mygo", () => ({
   Status: {
     selectFeed: vi.fn(),
     pageReady: vi.fn(),
+    notify: vi.fn(),
   },
   events: {
     appEvent: { on: vi.fn(() => () => {}) },
@@ -119,7 +120,7 @@ beforeEach(() => {
 async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSummary[] } = {}) {
   const mygo = await import("~/mygo");
   const snapshot = await import("~/lib/snapshot");
-  const { toast } = await import("solid-sonner");
+  const { toast } = await import("~/lib/notifications");
   const app = await import("~/stores/app");
 
   const feeds = (options.feeds ?? [feedA, feedB]).map((feed) => ({ ...feed }));

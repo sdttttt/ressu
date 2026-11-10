@@ -34,6 +34,7 @@ type UI interface {
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
 	ApplyTheme(string)
+	ShowNotification(gui.Notification)
 }
 
 // AppActions is the single application-level entry for capabilities exposed to
@@ -318,4 +319,9 @@ func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
 // PageReady marks the reader page as ready to receive a full snapshot.
 func (a *AppActions) PageReady(ctx context.Context) {
 	a.status.PageReady(ctx)
+}
+
+// Notify shows a native application notification.
+func (a *AppActions) Notify(level, message string) {
+	a.ui.ShowNotification(gui.Notification{Type: level, Title: message})
 }

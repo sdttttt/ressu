@@ -192,3 +192,8 @@ func (s *Status) SelectFeed(ctx context.Context, feedID int64) {
 func (s *Status) PageReady(ctx context.Context) {
 	s.actions.PageReady(ctx)
 }
+
+// Notify shows a native application notification.
+func (s *Status) Notify(level, message string) {
+	s.actions.Notify(level, message)
+}

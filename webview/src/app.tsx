@@ -9,7 +9,6 @@ import ShortcutsDialog from "~/components/shortcuts-dialog";
 import SnapshotDialog from "~/components/snapshot-dialog";
 import { Resizable, ResizableHandle, ResizablePanel } from "~/components/ui/resizable";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Toaster } from "~/components/ui/sonner";
 import { installShortcuts, isMac } from "~/lib/commands";
 import { applyTheme, onSystemThemeChange } from "~/lib/theme";
 import { app, hideSidebar, keepSidebar, requestSidebar, savePaneSizes, start } from "~/stores/app";
@@ -122,7 +121,6 @@ export default function App() {
       <AddFeedDialog />
       <ShortcutsDialog />
       <SnapshotDialog />
-      <Toaster position="bottom-right" />
     </div>
   );
 }

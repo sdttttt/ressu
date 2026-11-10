@@ -1,5 +1,4 @@
-import { toast } from "solid-sonner";
-
+import { toast } from "~/lib/notifications";
 import { externalHref } from "~/lib/sanitize";
 import { applyFontSize, applyTheme } from "~/lib/theme";
 import { Settings, type Prefs } from "~/mygo";
