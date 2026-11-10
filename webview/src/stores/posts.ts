@@ -75,6 +75,15 @@ export async function togglePostSearch(): Promise<void> {
   if (hadSearch) await loadPosts(0);
 }
 
+/** Opens an article image in Go's child image viewer window. */
+export async function openImage(source: string, alt = ""): Promise<void> {
+  try {
+    await Posts.openImage(source, alt);
+  } catch (error) {
+    toast.error(`无法打开图片：${messageOf(error)}`);
+  }
+}
+
 /** Sorts posts oldest or newest first by reloading the result from Go. */
 export async function setPostSortOrder(sortOrder: SortOrder): Promise<void> {
   if (state.postSortOrder === sortOrder) return;

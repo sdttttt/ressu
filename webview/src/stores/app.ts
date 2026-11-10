@@ -22,6 +22,7 @@ export {
   loadMorePosts,
   loadPosts,
   markAllRead,
+  openImage,
   PAGE_SIZE,
   selectPost,
   setPostSearch,

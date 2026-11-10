@@ -1,11 +1,10 @@
 import { Camera, ExternalLink, Loader2, MailOpen, Newspaper, Star } from "lucide-solid";
-import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
 import ArticleLayer, { type LayerKind } from "~/components/article-layer";
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
-import ImagePreview, { type PreviewImage } from "~/components/image-preview";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -17,6 +16,7 @@ import {
   app,
   captureSnapshot,
   feedTitle,
+  openImage,
   openLink,
   setOpenPostRead,
   toggleStar,
@@ -141,7 +141,6 @@ function handleLinkClick(
 
 export default function PostView() {
   let articleRef: HTMLElement | undefined;
-  const [preview, setPreview] = createSignal<PreviewImage | null>(null);
 
   const bindArticle = (element: HTMLElement) => {
     articleRef = element;
@@ -153,12 +152,10 @@ export default function PostView() {
 
     const listener = (event: MouseEvent) =>
       handleLinkClick(event, element, (image) => {
-        setPreview({
-          src: image.currentSrc || image.getAttribute("src") || "",
-          alt: image.getAttribute("alt") ?? "",
-          rect: image.getBoundingClientRect(),
-          source: image,
-        });
+        void openImage(
+          image.currentSrc || image.getAttribute("src") || "",
+          image.getAttribute("alt") ?? "",
+        );
       });
     element.addEventListener("click", listener);
     onCleanup(() => element.removeEventListener("click", listener));
@@ -201,9 +198,6 @@ export default function PostView() {
             )}
           </For>
         </div>
-      </Show>
-      <Show when={preview()}>
-        {(image) => <ImagePreview image={image()} onClosed={() => setPreview(null)} />}
       </Show>
     </article>
   );

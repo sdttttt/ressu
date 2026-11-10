@@ -3,11 +3,15 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/egoist/mygo"
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/icon"
@@ -440,6 +444,89 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	f.broadcastFeeds()
 	f.hub.PostsChanged(appevent.PostsChanged{FeedID: id, New: added})
 	return added, nil
+}
+
+// ImportOPML shows a native file picker, reads the chosen OPML file and
+// subscribes to every feed it lists. Duplicates and unreachable feeds are
+// counted but do not stop the import.
+func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
+	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
+		Title: "选择 OPML 文件",
+		Filters: []mygo.FileFilter{
+			{Name: "OPML 订阅列表", Extensions: []string{"opml", "xml"}},
+		},
+	})
+	if err != nil {
+		slog.Warn("OPML picker failed", "operation", "feeds.importOPML", "error", err)
+		return ImportSummary{}, err
+	}
+	if len(paths) == 0 {
+		return ImportSummary{}, nil
+	}
+
+	file, err := os.Open(paths[0])
+	if err != nil {
+		slog.Error("OPML open failed", "operation", "feeds.importOPML", "error", err)
+		return ImportSummary{}, err
+	}
+	defer file.Close()
+
+	urls, err := rss.ReadOPML(file)
+	if err != nil {
+		slog.Warn("OPML parse failed", "operation", "feeds.importOPML", "error", err)
+		return ImportSummary{}, err
+	}
+
+	return f.importOPMLURLs(ctx, urls)
+}
+
+// ExportOPML shows a native save dialog and writes every subscription to the
+// chosen OPML file, whose path it returns. A cancelled dialog returns no path.
+func (f *Feeds) ExportOPML(ctx context.Context) (string, error) {
+	data, err := rss.ExportOPML(opmlFeeds(f.store.Feeds()))
+	if err != nil {
+		slog.Error("OPML encode failed", "operation", "feeds.exportOPML", "error", err)
+		return "", err
+	}
+
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
+		Parent:      mygo.CallerWindow(ctx),
+		Title:       "导出 OPML 文件",
+		DefaultPath: "ressu-subscriptions.opml",
+		Filters: []mygo.FileFilter{
+			{Name: "OPML 订阅列表", Extensions: []string{"opml"}},
+		},
+	})
+	if err != nil {
+		slog.Warn("OPML save picker failed", "operation", "feeds.exportOPML", "error", err)
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		slog.Error("OPML write failed", "operation", "feeds.exportOPML", "error", err)
+		return "", fmt.Errorf("could not save the OPML file: %w", err)
+	}
+	return path, nil
+}
+
+// importOPMLURLs subscribes to every URL in the list, counting results.
+func (f *Feeds) importOPMLURLs(ctx context.Context, urls []string) (ImportSummary, error) {
+	var summary ImportSummary
+	for _, feedURL := range urls {
+		if _, err := f.Add(ctx, "", feedURL); err != nil {
+			if err == store.ErrDuplicate {
+				summary.Skipped++
+			} else {
+				summary.Failed++
+				summary.Errors = append(summary.Errors, feedURL+": "+err.Error())
+			}
+			continue
+		}
+		summary.Imported++
+	}
+	return summary, nil
 }
 
 func toPosts(items []rss.Item) []store.Post {

@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sdttttt/ressu/internal/rss"
 	"golang.org/x/net/html"
+
+	"github.com/sdttttt/ressu/internal/rss"
 )
 
 // MaxBytes bounds the bytes kept for one downloaded icon.

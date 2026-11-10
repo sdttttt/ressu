@@ -1,11 +1,18 @@
 package service
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"os"
 	"slices"
 	"strings"
 
+	"github.com/egoist/mygo"
+
 	appevent "github.com/sdttttt/ressu/internal/event"
+	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -64,6 +71,26 @@ func (p *Posts) broadcastFeeds() {
 	if p.hub != nil {
 		p.hub.FeedsChanged(feedsSnapshot(p.store))
 	}
+}
+
+// OpenImage validates and loads an article image in Go, then shows it in a
+// child window. Remote images are opened only from the local cache; AVIF
+// falls back to a child WebView because the native image decoder cannot read
+// it.
+func (p *Posts) OpenImage(ctx context.Context, source string, alt string) error {
+	if p.media == nil {
+		return errors.New("the image viewer is unavailable")
+	}
+
+	entry, err := p.media.Get(ctx, source)
+	if err != nil {
+		return fmt.Errorf("could not load the image: %w", err)
+	}
+	data, err := p.media.Read(entry)
+	if err != nil {
+		return fmt.Errorf("could not load the image: %w", err)
+	}
+	return gui.OpenImageViewer(mygo.CallerWindow(ctx), data, entry.ViewerURL(), alt)
 }
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search
@@ -205,6 +232,85 @@ func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error)
 		return store.PostSummary{}, err
 	}
 	return post.ToSummary(), nil
+}
+
+// CaptureSnapshot captures the visible page for one scroll position.
+func (p *Posts) CaptureSnapshot(ctx context.Context, request SnapshotCaptureRequest) ([]byte, error) {
+	if err := request.validate(); err != nil {
+		return nil, err
+	}
+	if request.tileCount() > maxSnapshotTiles {
+		return nil, fmt.Errorf("the article is too long for one snapshot")
+	}
+	var data []byte
+	var err error
+	if page := mygo.CallerPage(ctx); page != nil && page.WebView() != nil {
+		data, err = page.WebView().CapturePage()
+	} else {
+		window := mygo.CallerWindow(ctx)
+		if window == nil || window.IsDestroyed() {
+			err = fmt.Errorf("the snapshot window is no longer available")
+		} else {
+			data, err = window.CapturePage()
+		}
+	}
+	if err != nil {
+		slog.Warn("snapshot capture failed",
+			"operation", "posts.captureSnapshot",
+			"error", err,
+		)
+		return nil, err
+	}
+	return data, nil
+}
+
+// StitchSnapshot joins visible-page captures into one complete PNG.
+func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byte, error) {
+	data, err := stitchSnapshot(tiles, geometryOf(tiles))
+	if err != nil {
+		slog.Warn("snapshot stitch failed", "operation", "posts.stitchSnapshot", "error", err)
+	}
+	return data, err
+}
+
+// SaveSnapshot shows a save dialog and writes a stitched snapshot to the
+// chosen path, which it returns. A cancelled dialog returns no path.
+func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) (string, error) {
+	if err := validateSnapshotImage(data); err != nil {
+		return "", err
+	}
+
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
+		Parent:      mygo.CallerWindow(ctx),
+		Title:       "保存文章快照",
+		DefaultPath: snapshotFileName(fileName),
+		Filters:     []mygo.FileFilter{{Name: "PNG 图片", Extensions: []string{"png"}}},
+	})
+	if err != nil {
+		slog.Warn("snapshot save picker failed", "operation", "posts.saveSnapshot", "error", err)
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		slog.Error("snapshot write failed", "operation", "posts.saveSnapshot", "error", err)
+		return "", fmt.Errorf("could not save the snapshot: %w", err)
+	}
+	return path, nil
+}
+
+// CopySnapshot puts a stitched snapshot on the clipboard.
+func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
+	if err := validateSnapshotImage(data); err != nil {
+		slog.Warn("invalid snapshot image", "operation", "posts.copySnapshot", "error", err)
+		return err
+	}
+	if err := mygo.Clipboard.WriteImage(data); err != nil {
+		slog.Warn("snapshot copy failed", "operation", "posts.copySnapshot", "error", err)
+		return err
+	}
+	return nil
 }
 
 func postMatches(post store.Post, needle string) bool {

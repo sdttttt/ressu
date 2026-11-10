@@ -7,7 +7,7 @@ import {
   Search,
   Star,
 } from "lucide-solid";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onCleanup, Show } from "solid-js";
 
 import { EmptyState } from "~/components/empty-state";
 import { IconButton } from "~/components/icon-button";
@@ -17,7 +17,7 @@ import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { formatPostDate, formatReadingTime, formatWordCount } from "~/lib/format";
+import { formatReadingTime, formatRelative, formatWordCount } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import type { PostSummary } from "~/mygo";
 import {
@@ -42,6 +42,10 @@ function activeFilters(): string[] {
 
 export default function PostList() {
   const [searchInput, setSearchInput] = createSignal(app.postSearch);
+  const [now, setNow] = createSignal(new Date());
+  const timeRefresh = setInterval(() => setNow(new Date()), 30_000);
+
+  onCleanup(() => clearInterval(timeRefresh));
 
   return (
     <section class="flex h-full min-h-0 flex-col bg-background">
@@ -149,7 +153,7 @@ export default function PostList() {
                   }
                 >
                   <div class="space-y-1">
-                    <For each={app.posts}>{(post) => <PostRow post={post} />}</For>
+                    <For each={app.posts}>{(post) => <PostRow post={post} now={now()} />}</For>
                   </div>
 
                   <Show when={app.posts.length < app.postTotal}>
@@ -179,7 +183,7 @@ export default function PostList() {
   );
 }
 
-function PostRow(props: { post: PostSummary }) {
+function PostRow(props: { post: PostSummary; now: Date }) {
   const selected = () =>
     app.current.postFeedId === props.post.feedId && app.current.guid === props.post.guid;
   const open = () => void selectPost(props.post.guid, props.post.feedId);
@@ -213,7 +217,7 @@ function PostRow(props: { post: PostSummary }) {
           <Show when={!props.post.read}>
             <span class="size-1.5 rounded-full bg-primary" aria-hidden="true" />
           </Show>
-          <span>{formatPostDate(props.post.publishedAt)}</span>
+          <span>{formatRelative(props.post.publishedAt, props.now)}</span>
           <Show when={props.post.author}>
             <span class="max-w-32 truncate">{props.post.author}</span>
           </Show>

@@ -3,9 +3,10 @@ package store
 import (
 	"encoding/json"
 
+	bolt "go.etcd.io/bbolt"
+
 	"github.com/sdttttt/ressu/internal/sanitize"
 	"github.com/sdttttt/ressu/internal/textmetrics"
-	bolt "go.etcd.io/bbolt"
 )
 
 // migrate upgrades stored data to the current schema version.
