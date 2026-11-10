@@ -21,7 +21,7 @@
 - 桌面构建 [egoist/mygo](https://github.com/egoist/mygo)
 - 前端 [solid.js](https://github.com/solidjs/solid)
 - 存储 [etcd-io/bbolt](https://github.com/etcd-io/bbolt)
-- 关于我在无意间被[codex](https://github.com/openai/codex)变成废柴这件事 
+- 关于我在无意间被[codex](https://github.com/openai/codex)变成废柴这件事
 
 ## LICENSE
 
