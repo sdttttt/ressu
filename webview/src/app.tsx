@@ -5,7 +5,6 @@ import AddFeedDialog from "~/components/add-feed-dialog";
 import FeedSidebar from "~/components/feed-sidebar";
 import PostList from "~/components/post-list";
 import PostView from "~/components/post-view";
-import SettingsDialog from "~/components/settings-dialog";
 import ShortcutsDialog from "~/components/shortcuts-dialog";
 import SnapshotDialog from "~/components/snapshot-dialog";
 import { Resizable, ResizableHandle, ResizablePanel } from "~/components/ui/resizable";
@@ -121,7 +120,6 @@ export default function App() {
       </Show>
 
       <AddFeedDialog />
-      <SettingsDialog />
       <ShortcutsDialog />
       <SnapshotDialog />
       <Toaster position="bottom-right" />

@@ -13,6 +13,7 @@ func TestEventValidate(t *testing.T) {
 	syncState := &appstatus.SyncState{Active: true, Total: 1}
 	feeds := &appstatus.FeedsSnapshot{}
 	appearance := &Appearance{Theme: "system", FontSize: "medium"}
+	prefs := &store.Prefs{}
 	selection := &Selection{}
 	posts := &PostsChanged{}
 
@@ -28,12 +29,14 @@ func TestEventValidate(t *testing.T) {
 		{"feeds", Event{EID: EventFeedsChanged, Feeds: feeds}, true},
 		{"posts", Event{EID: EventPostsChanged, Posts: posts}, true},
 		{"appearance", Event{EID: EventAppearanceChanged, Appearance: appearance}, true},
+		{"prefs", Event{EID: EventPrefsChanged, Prefs: prefs}, true},
 		{"selection", Event{EID: EventSelectionChanged, Selection: selection}, true},
 		{"command", Event{EID: EventUICommand, Command: "refresh"}, true},
 		{"missing sync", Event{EID: EventSyncStarted}, false},
 		{"missing feeds", Event{EID: EventFeedsChanged}, false},
 		{"missing posts", Event{EID: EventPostsChanged}, false},
 		{"missing appearance", Event{EID: EventAppearanceChanged}, false},
+		{"missing prefs", Event{EID: EventPrefsChanged}, false},
 		{"missing selection", Event{EID: EventSelectionChanged}, false},
 		{"empty command", Event{EID: EventUICommand}, false},
 		{"unknown", Event{EID: EventID("unknown")}, false},
@@ -73,11 +76,12 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	})
 	hub.SelectionChanged(1)
 	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge)
+	hub.PrefsChanged(store.Prefs{Theme: store.ThemeSepia, FontSize: store.FontSizeLarge})
 	hub.SyncStarted(appstatus.SyncState{Active: true, Total: 2})
 	hub.SyncProgress(appstatus.SyncState{Active: true, Done: 1, Total: 2, FeedID: 1, Feed: "A"})
 	hub.PublishSnapshot()
 
-	if len(emitted) != 6 {
+	if len(emitted) != 7 {
 		t.Fatalf("emitted = %d events", len(emitted))
 	}
 	for i, e := range emitted {
@@ -89,7 +93,13 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		}
 	}
 
-	snapshot := emitted[5]
+	prefsEvent := emitted[3]
+	if prefsEvent.EID != EventPrefsChanged || prefsEvent.Prefs == nil ||
+		prefsEvent.Prefs.Theme != store.ThemeSepia {
+		t.Fatalf("prefs event = %+v", prefsEvent)
+	}
+
+	snapshot := emitted[6]
 	if snapshot.EID != EventStateSnapshot || snapshot.Sync == nil || snapshot.Feeds == nil ||
 		snapshot.Appearance == nil || snapshot.Selection == nil {
 		t.Fatalf("snapshot = %+v", snapshot)
@@ -107,7 +117,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if snapshot.Selection.FeedID != 1 {
 		t.Errorf("snapshot selection = %+v", snapshot.Selection)
 	}
-	if snapshot.Posts != nil || snapshot.Command != "" {
+	if snapshot.Posts != nil || snapshot.Prefs != nil || snapshot.Command != "" {
 		t.Errorf("snapshot carried transient state: %+v", snapshot)
 	}
 

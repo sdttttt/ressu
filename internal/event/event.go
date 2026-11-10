@@ -8,6 +8,7 @@ import (
 	"time"
 
 	appstatus "github.com/sdttttt/ressu/internal/status"
+	"github.com/sdttttt/ressu/internal/store"
 )
 
 // EventID identifies how consumers should interpret an Event.
@@ -28,6 +29,8 @@ const (
 	EventPostsChanged EventID = "posts.changed"
 	// EventAppearanceChanged carries the theme and interface font size.
 	EventAppearanceChanged EventID = "appearance.changed"
+	// EventPrefsChanged carries the complete preferences.
+	EventPrefsChanged EventID = "prefs.changed"
 	// EventSelectionChanged carries the selected feed.
 	EventSelectionChanged EventID = "selection.changed"
 	// EventUICommand asks the page to run a native-menu command.
@@ -61,6 +64,7 @@ type Event struct {
 	Feeds      *appstatus.FeedsSnapshot `json:"feeds"`
 	Posts      *PostsChanged            `json:"posts"`
 	Appearance *Appearance              `json:"appearance"`
+	Prefs      *store.Prefs             `json:"prefs"`
 	Selection  *Selection               `json:"selection"`
 	Command    string                   `json:"command"`
 }
@@ -87,6 +91,10 @@ func (e Event) Validate() error {
 	case EventAppearanceChanged:
 		if e.Appearance == nil {
 			return fmt.Errorf("event %q is missing appearance", e.EID)
+		}
+	case EventPrefsChanged:
+		if e.Prefs == nil {
+			return fmt.Errorf("event %q is missing preferences", e.EID)
 		}
 	case EventSelectionChanged:
 		if e.Selection == nil {

@@ -42,6 +42,7 @@ import {
   isSyncingFeed,
   markAllRead,
   openDialog,
+  openSettings,
   refreshAll,
   refreshFeed,
   removeFeed,
@@ -102,7 +103,7 @@ export default function FeedSidebar() {
           <RefreshCw class={cn("size-4", app.sync.active && "animate-spin")} />
         </IconButton>
 
-        <IconButton label="设置" class="size-7" onClick={() => openDialog("settings")}>
+        <IconButton label="设置" class="size-7" onClick={() => void openSettings()}>
           <SettingsIcon class="size-4" />
         </IconButton>
       </div>

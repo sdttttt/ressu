@@ -42,9 +42,8 @@ vi.mock("~/mygo", () => ({
   Settings: {
     get: vi.fn(),
     update: vi.fn(),
-    dataDir: vi.fn(),
-    openDataDir: vi.fn(),
     openLink: vi.fn(),
+    openSettings: vi.fn(),
   },
   Status: {
     selectFeed: vi.fn(),
@@ -131,7 +130,6 @@ async function setup(options: { feeds?: Feed[]; unread?: number; posts?: PostSum
   vi.mocked(mygo.Feeds.list).mockResolvedValue(feedsSnapshot);
   vi.mocked(mygo.Settings.get).mockResolvedValue({ ...prefs });
   vi.mocked(mygo.Settings.update).mockImplementation(async (next) => next);
-  vi.mocked(mygo.Settings.dataDir).mockResolvedValue("C:/Users/me/AppData/Ressu");
   vi.mocked(mygo.Status.pageReady).mockResolvedValue(undefined);
   vi.mocked(mygo.Status.selectFeed).mockResolvedValue(undefined);
   vi.mocked(mygo.Posts.list).mockImplementation(async () => {
@@ -159,6 +157,7 @@ function makeEvent(
     feeds: null,
     posts: null,
     appearance: null,
+    prefs: null,
     selection: null,
     command: "",
     ...overrides,
@@ -176,7 +175,6 @@ describe("sidebar preference", () => {
     expect(app.app.totalUnread).toBe(1);
     expect(app.app.current.feedId).toBeNull();
     expect(app.app.posts).toHaveLength(1);
-    expect(app.app.dataDir).toBe("C:/Users/me/AppData/Ressu");
     expect(mygo.Posts.list).toHaveBeenLastCalledWith({
       feedId: 0,
       unreadOnly: false,
@@ -536,6 +534,25 @@ describe("applySync", () => {
     expect(app.app.totalUnread).toBe(5);
     expect(app.app.prefs.theme).toBe("dark");
     expect(app.app.prefs.fontSize).toBe("large");
+  });
+
+  it("applies preferences changed by native settings", async () => {
+    const { mygo, app } = await setup();
+    const { subscribe } = await import("~/stores/events");
+    subscribe();
+    await app.start();
+
+    const listener = vi.mocked(mygo.events.appEvent.on).mock.calls[0]?.[0];
+    listener!(
+      makeEvent("prefs.changed", {
+        revision: 2,
+        prefs: { ...prefs, theme: "sepia", fontSize: "large" },
+      }),
+    );
+
+    await vi.waitFor(() => expect(app.app.prefs.theme).toBe("sepia"));
+    expect(app.app.prefs.fontSize).toBe("large");
+    expect(document.documentElement.classList.contains("theme-sepia")).toBe(true);
   });
 
   it("ends the sync state after the last feed", async () => {

@@ -39,7 +39,7 @@ export {
   selectNeighbourFeed,
   toggleOpenPostRead,
 } from "~/stores/selection";
-export { openDataDir, openLink, savePaneSizes, updatePrefs } from "~/stores/settings";
+export { openLink, openSettings, savePaneSizes, updatePrefs } from "~/stores/settings";
 export {
   captureSnapshot,
   closeSnapshot,

@@ -32,7 +32,6 @@ func tilePNG(t *testing.T, viewportWidth, height, startRow int) []byte {
 }
 
 func TestCaptureSnapshotValidatesRequest(t *testing.T) {
-	posts := &Posts{}
 	requests := []SnapshotCaptureRequest{
 		{Offset: -1, Geometry: geometry(100, 100, 80, 200)},
 		{Offset: 200, Geometry: geometry(100, 100, 80, 200)},
@@ -51,8 +50,8 @@ func TestCaptureSnapshotValidatesRequest(t *testing.T) {
 		},
 	}
 	for _, request := range requests {
-		if _, err := posts.CaptureSnapshot(t.Context(), request); err == nil {
-			t.Errorf("CaptureSnapshot(%+v) should fail", request)
+		if err := ValidateSnapshotCapture(request); err == nil {
+			t.Errorf("ValidateSnapshotCapture(%+v) should fail", request)
 		}
 	}
 }
@@ -153,28 +152,19 @@ func TestSnapshotFileName(t *testing.T) {
 		{"", "文章快照.png"},
 	}
 	for _, testCase := range cases {
-		if got := snapshotFileName(testCase.title); got != testCase.want {
+		if got := SnapshotFileName(testCase.title); got != testCase.want {
 			t.Errorf("snapshotFileName(%q) = %q, want %q", testCase.title, got, testCase.want)
 		}
 	}
 }
 
 func TestSnapshotImageValidation(t *testing.T) {
-	posts := &Posts{}
-	broken := []byte("broken")
-	if err := posts.CopySnapshot(t.Context(), broken); err == nil {
-		t.Error("CopySnapshot(valid) should fail before the clipboard is used")
-	}
-	if _, err := posts.SaveSnapshot(t.Context(), "snapshot", broken); err == nil {
-		t.Error("SaveSnapshot(valid) should fail before a dialog is opened")
-	}
-
 	for name, data := range map[string][]byte{
 		"empty":  nil,
 		"broken": []byte("broken"),
 	} {
-		if err := validateSnapshotImage(data); err == nil {
-			t.Errorf("validateSnapshotImage(%s) should fail", name)
+		if err := ValidateSnapshotImage(data); err == nil {
+			t.Errorf("ValidateSnapshotImage(%s) should fail", name)
 		}
 	}
 }

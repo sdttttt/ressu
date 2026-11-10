@@ -24,7 +24,7 @@ MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态
 
 | 层     | 选择                                                                 |
 | ------ | -------------------------------------------------------------------- |
-| 外壳   | MyGO 0.8.1（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
+| 外壳   | MyGO 0.8.3（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
 | 后端   | Go 1.27.3，`mmcdole/gofeed` 1.5，bbolt 1.5                           |
 | 前端   | SolidJS 1.9，Kobalte 0.13 + corvu，Tailwind CSS 4                    |
 | 构建   | Vite 8 + `vite-plugin-solid`，目标 `es2022`                          |
@@ -40,9 +40,8 @@ MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态
 ## 目录结构
 
 ```text
-main.go                    应用入口：打开数据库、绑定服务、创建窗口、启动刷新
-app_view.go                主窗原生布局：嵌入阅读页与底部状态栏
-menu_darwin.go             macOS 系统菜单；菜单项通过统一事件广播 ui.command
+main.go                    应用入口：打开数据库、组装 action/webendpoint、创建窗口、启动刷新
+menu_darwin.go             macOS 系统菜单；设置直接打开原生窗口，其余动作广播 ui.command
 menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
 internal/
   rss/                     HTTP 抓取与 RSS/Atom/JSON Feed 解析
@@ -54,11 +53,17 @@ internal/
   store/                   bbolt 持久化、订阅与偏好缓存、未读计数
     store.go, model.go, icons.go, migrate.go
   media/                   正文图片安全下载、启动时清空重用的磁盘缓存和本地协议
-  service/                 暴露给页面的服务、事件与后台行为
+  service/                 业务逻辑、事件与后台行为；不依赖 mygo 或 gui
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
+  action/                  应用动作层：组合 service、UI 副作用与状态广播
+    action.go              AppActions、UI 回调、OPML/图片/快照/偏好/外链动作
+  webendpoint/             页面绑定适配层：只做 MyGO 调用与调用方窗口提取
+    webendpoint.go         WebEndpoint（页面名 Feeds）、Posts、Settings、Status 绑定对象
   event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
-  gui/                     MyGO 原生状态栏渲染
+  gui/                     MyGO 原生界面：状态栏、图片查看器、设置窗口
+    app_view.go            主窗原生布局：嵌入阅读页与底部状态栏
+    status_bar.go, image_viewer.go, settings_window.go, native.go
 webview/                   前端源码和独立构建配置
   index.html               Vite 入口，lang="zh-CN"
   vite.config.ts           Solid + Tailwind 插件、~ 别名、root 指回 webview/、固定 5173
@@ -79,7 +84,7 @@ webview/                   前端源码和独立构建配置
       icons.ts             订阅源图标状态、本地 data URL 渲染和失效
       posts.ts             文章分页、筛选、打开、已读和星标
       snapshot-actions.ts  快照生成、预览、保存和复制
-      settings.ts          偏好、面板宽度、外链和数据目录
+      settings.ts          偏好、面板宽度、外链和原生设置入口
       selection.ts         键盘选择、相邻订阅源和原文打开
       sync-events.ts       统一广播事件的状态应用辅助函数
       lifecycle.ts         启动加载
@@ -143,7 +148,8 @@ bun install
 `main.go` 的启动顺序：
 
 1. `mygo.App.SetName("Ressu")`，解析 `mygo.PathUserData`，执行 `store.Open(dir)`。
-2. 绑定 `Feeds`、`Posts`、`Settings` 三个服务。
+2. 创建 `action.AppActions`（组合 service、Hub 和原生 UI 适配器），再绑定
+   `webendpoint` 中的 `Feeds`、`Posts`、`Settings`、`Status` 四个适配对象。
 3. 创建 `ForegroundRefresher` 并挂到应用激活/失活和窗口焦点事件。
 4. `WhenReady` 中应用保存的主题、安装菜单、创建主窗口；只有
    `RefreshOnStart` 为真时才在窗口显示后自动刷新最近 5 分钟未抓取的订阅源。
@@ -158,28 +164,57 @@ bun install
 `RefreshStale` 只抓取 `LastFetchedAt` 为空或早于 5 分钟的订阅源，并复用全量刷新的单飞和
 并发逻辑；已有刷新时返回 `ErrRefreshing`。手动全量或单源刷新不受节流限制。
 
-## MyGO 绑定与事件
+## 分层与 MyGO 绑定
 
-- 服务上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入，TypeScript 中省略：
-  `Feeds.Add(ctx, url)` 生成 `Feeds.add(url)`。
+数据自上而下走 `webview -> webendpoint -> action -> service`，副作用自下而上由 `action`
+回调给原生层：
+
+- `internal/service` 只有业务逻辑，不 import `mygo`，也不 import `internal/gui`。
+- `internal/action` 持有 service、Hub 和 `UI` 回调接口，负责文件对话框、剪贴板、外链、
+  截图、原生主题与状态广播。
+- `internal/gui` 同时承载原生界面和 `NativeUI` 副作用实现；MyGO 对话框、shell、剪贴板、
+  主题和窗口截图封装在这里。
+- `internal/webendpoint` 只做 MyGO 绑定适配：用 `mygo.CallerWindow(ctx)`、
+  `mygo.CallerPage(ctx)` 取出调用方窗口/页面后转交 action，不含业务判断。
+- `internal/gui` 只依赖 `gui.SettingsCallbacks` 和 `store`，不 import `service`。
+- 绑定对象上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入，TypeScript 中
+  省略：`Feeds.Add(ctx, url)` 生成 `Feeds.add(url)`。
 - 参数和返回值必须可 JSON 序列化。可空时间用 `*time.Time`，对应 TypeScript
   `string | null`。
 - `mygo generate` 生成接口、`Feeds`/`Posts`/`Settings` 客户端和 `events.*`。生成文件里的
   JSON tag 会转成 camelCase，并保留 Go 文档注释。
 - Go 只声明一个广播通道 `app:event`，载荷是 `internal/event.Event`。所有 EID 共用同一
-  结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`selection` 或 `command`
-  中的哪一段，未使用字段为 `null` 或空字符串。
+  结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`prefs`、`selection` 或
+  `command` 中的哪一段，未使用字段为 `null` 或空字符串。
 - 事件由 `internal/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
   `status.Model`，最后广播。不要绕过 Hub 直接调用 `AppEvent.Broadcast`。
 - 主要 EID 有 `state.snapshot`、`sync.started`、`sync.progress`、`sync.finished`、
-  `feeds.changed`、`posts.changed`、`appearance.changed`、`selection.changed` 和
-  `ui.command`。`state.snapshot` 在 `Status.PageReady` 时补发完整状态。
+  `feeds.changed`、`posts.changed`、`appearance.changed`、`prefs.changed`、
+  `selection.changed` 和 `ui.command`。`state.snapshot` 在 `Status.PageReady` 时补发完整状态。
 - `feeds.changed` 携带完整订阅列表和总未读数；`posts.changed` 只携带 feed id 和新文章数。
-- macOS 原生菜单只广播命令字符串（`add-feed`、`refresh`、`settings`），不直接拥有对话框。
-  页面通过 `webview/src/stores/events.ts` 的单一 dispatcher 打开对话框或执行动作。
-  Windows/Linux 没有原生菜单栏。
+- `prefs.changed` 携带完整 `store.Prefs`，原生设置窗口保存后广播，页面据此同步偏好并在
+  `postsPerFeed` 变化时重载文章。
+- macOS 原生菜单的“设置”直接调用 `action.OpenSettings(window)` 打开原生设置窗口；
+  `add-feed`、`refresh` 仍广播命令字符串给页面，页面通过 `webview/src/stores/events.ts` 的
+  单一 dispatcher 执行动作。Windows/Linux 没有原生菜单栏。
 - 任何会改变订阅或未读状态的服务方法都应调用 Hub 的 `FeedsChanged`；多窗口依赖该事件
   保持一致。
+
+## 原生设置窗口
+
+偏好设置不再由页面里的对话框承载，而是 `internal/gui/settings_window.go` 的原生窗口：
+
+- 入口是 `Settings.openSettings()`（页面）或 macOS 菜单直接调用
+  `action.OpenSettings(window)`；`action` 把它转成 `UI.OpenSettings(parent, callbacks)`，
+  由 `internal/gui/native.go` 打开原生窗口。
+- 窗口是主窗口的子窗口（`Parent`），`StateKey: "settings"`，`UseContentSize` 580x720，
+  最小 480x560，内容可滚动；同时只允许存在一个实例。
+- 控件通过 `gui.SettingsCallbacks`（`Load`/`Save`/`DataDir`/`ExportOPML`/`OpenDataDir`）
+  读写数据，`gui` 因此不依赖 `service`。
+- 每次改动立即保存并广播 `prefs.changed`。保存时用 `action.UpdateSettingsDraft` 保留当前的
+  `PaneSizes` 和 `SidebarCollapsed`，避免覆盖页面侧的布局改动。
+- 原生控件是即时模式：构造器写入指针，用 `Element.Changed()` 判断变化，用
+  `c.Invalidate()` 触发重绘；不要把 `ui.Context` 或控件存进状态或后台 goroutine。
 
 ## 订阅刷新流程
 
@@ -263,20 +298,21 @@ bun install
   （例如 `addFeed`）；事件处理里的“发后不管”用 `void action()`。
 - 事件只在 `App` 的 `onMount` 中通过 `subscribe()` 订阅一次，并在 `onCleanup` 中退订。
   `stores/events.ts` 是唯一 dispatcher，按 `eid` 路由并丢弃 `revision` 不递增的事件。
-- 没有路由。普通对话框由 `app.dialog` 控制；快照预览使用独立的 `app.snapshot` 状态。
+- 没有路由。普通对话框由 `app.dialog` 控制（只剩 `addFeed` 和 `help`）；快照预览使用独立的
+  `app.snapshot` 状态。偏好设置在原生窗口里，页面通过 `Settings.openSettings()` 打开。
 - 三栏宽度保存在 `Prefs.PaneSizes`，拖拽停止 500ms 后由 `savePaneSizes` 写回。
 - 文章列表采用分页追加，筛选同时支持未读和星标。列表当前选中项保存在
   `app.current.guid`。
 - `commands.ts` 是快捷键的唯一注册表：每条命令声明绑定、分组、中文标签和动作。帮助对话框
   直接遍历同一数组，新增快捷键时也要同步 store 动作。macOS 的 mod 组合由原生菜单持有，
   页面用 `installShortcuts({ skipMod: isMac })` 跳过重复注册。
-- 主题有两层：Go 的 `Settings.Update` 调用 `ApplyTheme` 设置原生命中外观；前端
+- 主题有两层：`action.UpdatePreferences` 调用 `UI.ApplyTheme` 设置原生外观；前端
   `lib/theme.ts` 在 `<html>` 上切换 `dark` 和 `theme-sepia` 类。字号通过
   `--app-text-scale` 缩放根字体。
 - `sepia` 运行时类名必须是 `theme-sepia`。裸 `sepia` 会撞上 Tailwind 的 sepia 滤镜，
   给整页加 `filter: sepia(100%)` 并染掉所有图片。
-- 新增主题要同步 `store` 的主题常量与 `Normalize`、`service.ApplyTheme`、`theme.ts`
-  （`isDark`/`applyTheme`）和 `settings-dialog.tsx` 的选项。
+- 新增主题要同步 `store` 的主题常量与 `Normalize`、`internal/gui/native.go` 的 `ApplyTheme`、
+  `theme.ts`（`isDark`/`applyTheme`）和 `internal/gui/settings_window.go` 的选项。
 - 日期格式化集中在 `webview/src/lib/format.ts`，使用 `zh-CN` Intl；需要确定性的函数接受
   可选 `now` 参数。
 
@@ -338,18 +374,20 @@ bun install
 
 ## 常见改动路径
 
-- 新增后端调用：在 `Feeds`、`Posts` 或 `Settings` 加导出方法；需要时通过
-  `internal/event.Hub` 广播变更；运行 `bun run generate`；在对应的 `stores/feeds.ts`、
-  `posts.ts` 或 `settings.ts` 动作中调用，处理错误和本地状态，最后从 `stores/app.ts`
-  导出。
+- 新增后端调用：先在 `internal/service` 写业务逻辑（不碰 MyGO），再在
+  `internal/action` 加动作方法，必要时把新的系统交互封装成 `internal/gui` 方法并实现
+  `action.UI`；在
+  `internal/webendpoint` 的对应绑定对象上暴露导出方法；需要时通过 `internal/event.Hub`
+  广播变更；运行 `bun run generate`；在对应的 `stores/feeds.ts`、`posts.ts` 或
+  `settings.ts` 动作中调用，处理错误和本地状态，最后从 `stores/app.ts` 导出。
 - 新增事件：在 `internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，
   在状态变化处调用；重新生成后在 `stores/events.ts` 的 dispatcher 加分支。不要新增第二个
   `mygo.NewEvent` 通道。
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
-  `stores/app-state.ts` 里的 `defaultPrefs`；在 `settings-dialog.tsx` 加控件；若影响阅读则
-  更新 `stores/settings.ts`、相关功能模块和应用逻辑。
+  `stores/app-state.ts` 里的 `defaultPrefs`；在 `internal/gui/settings_window.go` 加原生控件；
+  若影响阅读则更新 `stores/settings.ts`、相关功能模块和应用逻辑。
 - 新增快捷键：在 `lib/commands.ts` 的 `commands` 数组加一条，并确保 store 已提供对应动作。
-- 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、前端 `theme.ts`、设置对话框和安全测试。
+- 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、前端 `theme.ts`、原生设置窗口和安全测试。
 - 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。
 
 ## 测试
@@ -359,7 +397,8 @@ bun install
   httptest 跑添加、刷新、304、自动刷新节流、新增、标记已读、筛选、分页、搜索和图标缓存；
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
-  `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验。
+  `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验；`action` 用假 `UI`
+  覆盖外链校验和偏好草稿保存；`gui` 用 `ui.NewTester` 渲染原生设置窗口。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。
@@ -403,10 +442,11 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
 - `post-view.tsx` 和快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；不要把抓取
   原文直接传给前端。嵌入 WebView 的快照必须通过 `Page.WebView().CapturePage()` 捕获。
-- 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`Settings.OpenLink`
-  再按偏好调用系统浏览器或创建应用内窗口；不要把原始 href 直接交给 shell 或窗口。
+- 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`action.OpenLink`
+  再校验一次绝对 `http`/`https` 地址，并按偏好调用系统浏览器或创建应用内窗口；不要把原始
+  href 直接交给 shell 或窗口。
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。
-- 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；设置对话框可打开数据目录。
+- 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；原生设置窗口可打开数据目录。
 - 没有账号、同步、遥测或统计。WebView 不直接加载订阅源图标；图标由 Go 缓存后以本地 data
   URL 渲染。正文远端图片默认由 Go 在 `Posts.Get` 中改写为 `ressu-media://`，通过本地缓存协议
   提供；用户可在设置中选择 Webview 直接加载。

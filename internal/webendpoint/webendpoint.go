@@ -1,0 +1,194 @@
+// Package webendpoint exposes application actions to the reader page through
+// MyGO bindings. It only adapts caller contexts and delegates to actions.
+package webendpoint
+
+import (
+	"context"
+
+	"github.com/egoist/mygo"
+
+	"github.com/sdttttt/ressu/internal/action"
+	"github.com/sdttttt/ressu/internal/service"
+	"github.com/sdttttt/ressu/internal/store"
+)
+
+// WebEndpoint is the page binding for subscription actions. It is exposed to
+// the page as Feeds.
+type WebEndpoint struct {
+	actions *action.AppActions
+}
+
+// NewWebEndpoint creates the subscription endpoint.
+func NewWebEndpoint(actions *action.AppActions) *WebEndpoint {
+	return &WebEndpoint{actions: actions}
+}
+
+// List returns the subscriptions and total unread count.
+func (w *WebEndpoint) List() service.FeedsSnapshot {
+	return w.actions.ListFeeds()
+}
+
+// Icon returns a feed's cached icon.
+func (w *WebEndpoint) Icon(ctx context.Context, id int64) (store.Icon, error) {
+	return w.actions.FeedIcon(ctx, id)
+}
+
+// Test validates and previews a subscription URL.
+func (w *WebEndpoint) Test(ctx context.Context, feedURL string) (service.FeedPreview, error) {
+	return w.actions.TestFeed(ctx, feedURL)
+}
+
+// Add subscribes to a feed.
+func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (store.Feed, error) {
+	return w.actions.AddFeed(ctx, title, feedURL)
+}
+
+// Remove deletes a subscription.
+func (w *WebEndpoint) Remove(id int64) error {
+	return w.actions.RemoveFeed(id)
+}
+
+// Refresh fetches one subscription.
+func (w *WebEndpoint) Refresh(ctx context.Context, id int64) (store.Feed, error) {
+	return w.actions.RefreshFeed(ctx, id)
+}
+
+// RefreshAll fetches every subscription.
+func (w *WebEndpoint) RefreshAll(ctx context.Context) (service.SyncSummary, error) {
+	return w.actions.RefreshAll(ctx)
+}
+
+// RefreshStale fetches subscriptions that have not been fetched recently.
+func (w *WebEndpoint) RefreshStale(ctx context.Context) (service.SyncSummary, error) {
+	return w.actions.RefreshStale(ctx)
+}
+
+// ImportOPML asks for an OPML file and imports its subscriptions.
+func (w *WebEndpoint) ImportOPML(ctx context.Context) (service.ImportSummary, error) {
+	return w.actions.ImportOPML(ctx, mygo.CallerWindow(ctx))
+}
+
+// ExportOPML asks where to save the subscriptions and writes an OPML file.
+func (w *WebEndpoint) ExportOPML(ctx context.Context) (string, error) {
+	return w.actions.ExportOPML(mygo.CallerWindow(ctx))
+}
+
+// Posts is the page binding for article actions.
+type Posts struct {
+	actions *action.AppActions
+}
+
+// NewPosts creates the article endpoint.
+func NewPosts(actions *action.AppActions) *Posts {
+	return &Posts{actions: actions}
+}
+
+// OpenImage loads an article image into the native viewer.
+func (p *Posts) OpenImage(ctx context.Context, source, alt string) error {
+	return p.actions.OpenImage(ctx, mygo.CallerWindow(ctx), source, alt)
+}
+
+// List returns a page of posts.
+func (p *Posts) List(query service.PostQuery) (service.PostPage, error) {
+	return p.actions.ListPosts(query)
+}
+
+// Get returns one complete post.
+func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
+	return p.actions.GetPost(feedID, guid)
+}
+
+// MarkRead changes one post's read state.
+func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
+	return p.actions.MarkPostRead(feedID, guid, read)
+}
+
+// MarkAllRead marks every post of a feed as read.
+func (p *Posts) MarkAllRead(feedID int64) (int, error) {
+	return p.actions.MarkAllPostsRead(feedID)
+}
+
+// ToggleStar changes one post's starred state.
+func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error) {
+	return p.actions.TogglePostStar(feedID, guid)
+}
+
+// CaptureSnapshot captures the visible page for one scroll position.
+func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCaptureRequest) ([]byte, error) {
+	return p.actions.CaptureSnapshot(ctx, request)
+}
+
+// StitchSnapshot joins page captures into one PNG.
+func (p *Posts) StitchSnapshot(ctx context.Context, tiles []service.SnapshotTile) ([]byte, error) {
+	return p.actions.StitchSnapshot(ctx, tiles)
+}
+
+// SaveSnapshot asks where to save a stitched snapshot.
+func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) (string, error) {
+	return p.actions.SaveSnapshot(mygo.CallerWindow(ctx), fileName, data)
+}
+
+// CopySnapshot puts a stitched snapshot on the clipboard.
+func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
+	return p.actions.CopySnapshot(data)
+}
+
+// Settings is the page binding for preferences and shell actions.
+type Settings struct {
+	actions *action.AppActions
+}
+
+// NewSettings creates the settings endpoint.
+func NewSettings(actions *action.AppActions) *Settings {
+	return &Settings{actions: actions}
+}
+
+// Get returns the current preferences.
+func (s *Settings) Get() store.Prefs {
+	return s.actions.Preferences()
+}
+
+// Update stores preferences.
+func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
+	return s.actions.UpdatePreferences(prefs)
+}
+
+// DataDir returns the app's data directory.
+func (s *Settings) DataDir() string {
+	return s.actions.DataDir()
+}
+
+// OpenDataDir shows the data directory in the file manager.
+func (s *Settings) OpenDataDir() error {
+	return s.actions.OpenDataDir()
+}
+
+// OpenLink opens an external link.
+func (s *Settings) OpenLink(ctx context.Context, link string) error {
+	return s.actions.OpenLink(link)
+}
+
+// OpenSettings opens the native settings window.
+func (s *Settings) OpenSettings(ctx context.Context) {
+	s.actions.OpenSettings(mygo.CallerWindow(ctx))
+}
+
+// Status is the page binding for native status state.
+type Status struct {
+	actions *action.AppActions
+}
+
+// NewStatus creates the status endpoint.
+func NewStatus(actions *action.AppActions) *Status {
+	return &Status{actions: actions}
+}
+
+// SelectFeed broadcasts the selected feed.
+func (s *Status) SelectFeed(ctx context.Context, feedID int64) {
+	s.actions.SelectFeed(ctx, feedID)
+}
+
+// PageReady marks the reader page as ready for a full snapshot.
+func (s *Status) PageReady(ctx context.Context) {
+	s.actions.PageReady(ctx)
+}

@@ -5,7 +5,6 @@ import { applyFontSize, applyTheme } from "~/lib/theme";
 import { Settings, type Prefs } from "~/mygo";
 import { app as state, setAppState as setState } from "~/stores/app-state";
 import { messageOf } from "~/stores/errors";
-import { loadPosts } from "~/stores/posts";
 
 /** Saves the preferences, applying what they change. */
 export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
@@ -14,9 +13,6 @@ export async function updatePrefs(patch: Partial<Prefs>): Promise<void> {
     setState("prefs", prefs);
     if (patch.theme !== undefined) applyTheme(prefs.theme);
     if (patch.fontSize !== undefined) applyFontSize(prefs.fontSize);
-    if (patch.postsPerFeed !== undefined) {
-      await loadPosts(0);
-    }
   } catch (error) {
     toast.error(messageOf(error));
   }
@@ -59,10 +55,10 @@ export async function openLink(href: string): Promise<void> {
   }
 }
 
-/** Shows the data directory in the file manager. */
-export async function openDataDir(): Promise<void> {
+/** Opens the native settings window. */
+export async function openSettings(): Promise<void> {
   try {
-    await Settings.openDataDir();
+    await Settings.openSettings();
   } catch (error) {
     toast.error(messageOf(error));
   }

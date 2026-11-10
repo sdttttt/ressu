@@ -16,6 +16,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/internal/action"
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
 	"github.com/sdttttt/ressu/internal/logging"
@@ -23,6 +24,7 @@ import (
 	"github.com/sdttttt/ressu/internal/service"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
+	"github.com/sdttttt/ressu/internal/webendpoint"
 )
 
 func main() {
@@ -69,6 +71,7 @@ func main() {
 	feeds := service.NewFeedsWithHub(st, hub)
 	hub.FeedsChanged(feeds.List())
 	posts := service.NewPostsWithMediaAndHub(st, articleMedia, hub)
+	settings := service.NewSettingsWithMedia(st, articleMedia)
 	pageReady := make(chan struct{}, 1)
 	status := service.NewStatus(hub, func() {
 		select {
@@ -76,11 +79,12 @@ func main() {
 		default:
 		}
 	})
+	actions := action.New(feeds, posts, settings, status, hub, gui.NativeUI{})
+	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
-		feeds,
-		posts,
-		service.NewSettingsWithMediaAndHub(st, articleMedia, hub),
-		status,
+		webendpoint.NewPosts(actions),
+		webendpoint.NewSettings(actions),
+		webendpoint.NewStatus(actions),
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
 		if _, err := feeds.RefreshStale(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
@@ -93,8 +97,8 @@ func main() {
 
 	app.WhenReady(func() {
 		prefs := st.Prefs()
-		service.ApplyTheme(prefs.Theme)
-		setMenu(hub)
+		gui.NativeUI{}.ApplyTheme(prefs.Theme)
+		setMenu(hub, actions)
 		if _, err := openWindow(statusModel, pageReady, func() {
 			if !prefs.RefreshOnStart {
 				return
@@ -126,7 +130,7 @@ func fatal(message string, err error) {
 // mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
 func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady func(), foreground *service.ForegroundRefresher, isActive func() bool) (*mygo.Window, error) {
-	view := &appView{status: gui.NewStatusBar(statusModel)}
+	view := gui.NewAppView(statusModel)
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
@@ -136,7 +140,7 @@ func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady
 		StateKey:        "main",
 		Hidden:          true,
 		BackgroundColor: "light-dark(#ffffff, #101012)",
-		Content:         ui.View(view.view),
+		Content:         ui.View(view.View),
 	})
 	statusModel.SetChanged(func() {
 		if !win.IsDestroyed() {
@@ -163,7 +167,7 @@ func openWindow(statusModel *appstatus.Model, pageReady <-chan struct{}, onReady
 		win.Destroy()
 		return nil, fmt.Errorf("create reader page: %w", err)
 	}
-	view.page = page
+	view.SetPage(page)
 	win.Invalidate()
 
 	timer := time.AfterFunc(5*time.Second, show)

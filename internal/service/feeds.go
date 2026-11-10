@@ -3,15 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/egoist/mygo"
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/icon"
@@ -446,32 +443,10 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	return added, nil
 }
 
-// ImportOPML shows a native file picker, reads the chosen OPML file and
-// subscribes to every feed it lists. Duplicates and unreachable feeds are
-// counted but do not stop the import.
-func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
-	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
-		Title: "选择 OPML 文件",
-		Filters: []mygo.FileFilter{
-			{Name: "OPML 订阅列表", Extensions: []string{"opml", "xml"}},
-		},
-	})
-	if err != nil {
-		slog.Warn("OPML picker failed", "operation", "feeds.importOPML", "error", err)
-		return ImportSummary{}, err
-	}
-	if len(paths) == 0 {
-		return ImportSummary{}, nil
-	}
-
-	file, err := os.Open(paths[0])
-	if err != nil {
-		slog.Error("OPML open failed", "operation", "feeds.importOPML", "error", err)
-		return ImportSummary{}, err
-	}
-	defer file.Close()
-
-	urls, err := rss.ReadOPML(file)
+// ImportOPML reads an OPML document and subscribes to every feed it lists.
+// Duplicates and unreachable feeds are counted but do not stop the import.
+func (f *Feeds) ImportOPML(ctx context.Context, reader io.Reader) (ImportSummary, error) {
+	urls, err := rss.ReadOPML(reader)
 	if err != nil {
 		slog.Warn("OPML parse failed", "operation", "feeds.importOPML", "error", err)
 		return ImportSummary{}, err
@@ -480,35 +455,14 @@ func (f *Feeds) ImportOPML(ctx context.Context) (ImportSummary, error) {
 	return f.importOPMLURLs(ctx, urls)
 }
 
-// ExportOPML shows a native save dialog and writes every subscription to the
-// chosen OPML file, whose path it returns. A cancelled dialog returns no path.
-func (f *Feeds) ExportOPML(ctx context.Context) (string, error) {
+// BuildOPML encodes every subscription as an OPML document.
+func (f *Feeds) BuildOPML() ([]byte, error) {
 	data, err := rss.ExportOPML(opmlFeeds(f.store.Feeds()))
 	if err != nil {
 		slog.Error("OPML encode failed", "operation", "feeds.exportOPML", "error", err)
-		return "", err
+		return nil, err
 	}
-
-	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
-		Parent:      mygo.CallerWindow(ctx),
-		Title:       "导出 OPML 文件",
-		DefaultPath: "ressu-subscriptions.opml",
-		Filters: []mygo.FileFilter{
-			{Name: "OPML 订阅列表", Extensions: []string{"opml"}},
-		},
-	})
-	if err != nil {
-		slog.Warn("OPML save picker failed", "operation", "feeds.exportOPML", "error", err)
-		return "", err
-	}
-	if path == "" {
-		return "", nil
-	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		slog.Error("OPML write failed", "operation", "feeds.exportOPML", "error", err)
-		return "", fmt.Errorf("could not save the OPML file: %w", err)
-	}
-	return path, nil
+	return data, nil
 }
 
 // importOPMLURLs subscribes to every URL in the list, counting results.

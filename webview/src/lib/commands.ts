@@ -2,6 +2,7 @@ import {
   app,
   moveSelection,
   openDialog,
+  openSettings,
   openSelectedPost,
   openSelectedPostInBrowser,
   refreshAll,
@@ -94,7 +95,7 @@ export const commands: Command[] = [
     binding: { key: ",", mod: true },
     group: "应用",
     label: "打开设置",
-    run: () => openDialog("settings"),
+    run: () => void openSettings(),
   },
   {
     id: "refresh-all",

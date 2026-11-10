@@ -1,7 +1,7 @@
 import { toast } from "solid-sonner";
 
 import { applyFontSize, applyTheme } from "~/lib/theme";
-import type { FeedsSnapshot, SyncState } from "~/mygo";
+import type { FeedsSnapshot, Prefs, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
 import { syncFeedIcons } from "~/stores/icons";
 import { loadPosts } from "~/stores/posts";
@@ -54,6 +54,15 @@ export function applyAppearance(theme: string, fontSize: string): void {
   setState("prefs", "fontSize", fontSize);
   applyTheme(theme);
   applyFontSize(fontSize);
+}
+
+/** Applies preferences changed by the native settings window or another page. */
+export async function applyPrefs(prefs: Prefs): Promise<void> {
+  const postsPerFeedChanged = prefs.postsPerFeed !== state.prefs.postsPerFeed;
+  setState("prefs", prefs);
+  applyTheme(prefs.theme);
+  applyFontSize(prefs.fontSize);
+  if (postsPerFeedChanged) await loadPosts(0);
 }
 
 /** Refreshes the list of the selected feed after its posts changed. */

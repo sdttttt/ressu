@@ -73,6 +73,17 @@ func (r SnapshotCaptureRequest) tileCount() int {
 	return 1 + (remaining+step-1)/step
 }
 
+// ValidateSnapshotCapture checks a capture request and its overall length.
+func ValidateSnapshotCapture(request SnapshotCaptureRequest) error {
+	if err := request.validate(); err != nil {
+		return err
+	}
+	if request.tileCount() > maxSnapshotTiles {
+		return fmt.Errorf("the article is too long for one snapshot")
+	}
+	return nil
+}
+
 // geometryOf returns the geometry saved with the first tile.
 func geometryOf(tiles []SnapshotTile) SnapshotGeometry {
 	if len(tiles) == 0 {
@@ -84,8 +95,8 @@ func geometryOf(tiles []SnapshotTile) SnapshotGeometry {
 // maxSnapshotImageBytes bounds a finished snapshot handed back by the page.
 const maxSnapshotImageBytes = 256 << 20
 
-// validateSnapshotImage rejects data the clipboard cannot reasonably accept.
-func validateSnapshotImage(data []byte) error {
+// ValidateSnapshotImage rejects data the clipboard cannot reasonably accept.
+func ValidateSnapshotImage(data []byte) error {
 	if len(data) == 0 {
 		return fmt.Errorf("the snapshot is empty")
 	}
@@ -209,9 +220,9 @@ func roundInt(value float64) int {
 // system's name limit.
 const maxFileNameRunes = 120
 
-// snapshotFileName turns a post title into a safe PNG file name, falling
+// SnapshotFileName turns a post title into a safe PNG file name, falling
 // back to a fixed name when nothing usable remains.
-func snapshotFileName(title string) string {
+func SnapshotFileName(title string) string {
 	name := strings.Map(func(r rune) rune {
 		if r == '/' || r == '\\' || r == ':' || r < 0x20 {
 			return -1

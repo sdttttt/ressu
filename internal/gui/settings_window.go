@@ -1,0 +1,270 @@
+package gui
+
+import (
+	"fmt"
+	"math"
+	"sync"
+	"time"
+
+	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
+
+	"github.com/sdttttt/ressu/internal/store"
+)
+
+const (
+	// settingsWidth is the initial content width of the settings window.
+	settingsWidth = 580
+
+	// settingsHeight is the initial content height of the settings window.
+	settingsHeight = 720
+)
+
+var settingsWindow struct {
+	sync.Mutex
+	window *Window
+}
+
+// OpenSettingsWindow opens the single native settings window.
+func OpenSettingsWindow(parent *Window, callbacks SettingsCallbacks) {
+	settingsWindow.Lock()
+	if window := settingsWindow.window; window != nil && !window.IsDestroyed() {
+		settingsWindow.Unlock()
+		window.Show()
+		window.Focus()
+		return
+	}
+	settingsWindow.Unlock()
+
+	view := &settingsView{callbacks: callbacks, prefs: callbacks.Load()}
+	options := mygo.WindowOptions{
+		Title:           "设置",
+		Width:           settingsWidth,
+		Height:          settingsHeight,
+		UseContentSize:  true,
+		MinWidth:        480,
+		MinHeight:       560,
+		Parent:          parent,
+		StateKey:        "settings",
+		BackgroundColor: "light-dark(#ffffff, #101012)",
+		Content:         ui.View(func(c *ui.Context) { view.draw(c) }),
+	}
+	window := mygo.NewWindow(options)
+	view.window = window
+
+	settingsWindow.Lock()
+	settingsWindow.window = window
+	settingsWindow.Unlock()
+	window.OnClosed(func() {
+		settingsWindow.Lock()
+		if settingsWindow.window == window {
+			settingsWindow.window = nil
+		}
+		settingsWindow.Unlock()
+	})
+}
+
+// settingsView keeps the editable preferences and the last save result.
+type settingsView struct {
+	callbacks SettingsCallbacks
+	prefs     store.Prefs
+	window    *Window
+	err       string
+	notice    string
+	noticeAt  time.Time
+}
+
+// draw renders one frame of the settings form.
+func (s *settingsView) draw(c *ui.Context) {
+	theme := settingsTheme(c, s.prefs)
+	changed := false
+
+	ui.Themed(c, theme).Fill().Children(func() {
+		ui.Scroll(c).Grow(1).MinHeight(0).Padding(20, 24).Children(func() {
+			ui.Form(c, func() {
+				ui.Fieldset(c, "外观", func() {
+					ui.Field(c, "主题", func() {
+						themes := []string{
+							store.ThemeSystem,
+							store.ThemeLight,
+							store.ThemeDark,
+							store.ThemeSepia,
+						}
+						selected := indexOf(themes, s.prefs.Theme)
+						if ui.Segmented(c, &selected, "跟随系统", "浅色", "深色", "护眼").
+							Label("主题").Changed() {
+							s.prefs.Theme = themes[selected]
+							changed = true
+						}
+					})
+					ui.Field(c, "界面字号", func() {
+						fontSizes := []string{
+							store.FontSizeSmall,
+							store.FontSizeMedium,
+							store.FontSizeLarge,
+						}
+						selected := indexOf(fontSizes, s.prefs.FontSize)
+						if ui.Segmented(c, &selected, "小", "中", "大").
+							Label("界面字号").Changed() {
+							s.prefs.FontSize = fontSizes[selected]
+							changed = true
+						}
+					})
+				})
+
+				ui.Fieldset(c, "阅读", func() {
+					ui.Field(c, "打开文章时标记为已读", func() {
+						if ui.Switch(c, &s.prefs.MarkReadOnOpen).Changed() {
+							changed = true
+						}
+					})
+					ui.Field(c, "启动时自动刷新", func() {
+						if ui.Switch(c, &s.prefs.RefreshOnStart).Changed() {
+							changed = true
+						}
+					})
+					ui.Field(c, "每个订阅源保留文章数", func() {
+						value := float64(s.prefs.PostsPerFeed)
+						if ui.NumberInput(c, &value, 50, 2000, 50).Changed() {
+							s.prefs.PostsPerFeed = int(math.Round(value))
+							changed = true
+						}
+					}).Description("范围 50–2000。")
+				})
+
+				ui.Fieldset(c, "远程资源", func() {
+					ui.Field(c, "正文图片", func() {
+						ui.RadioGroup(c, func() {
+							if ui.Radio(c, &s.prefs.RemoteResources,
+								store.ResourceAccessGoProxy, "由 Ressu 代理并缓存").Changed() {
+								changed = true
+							}
+							if ui.Radio(c, &s.prefs.RemoteResources,
+								store.ResourceAccessWebview, "由 WebView 直接加载").Changed() {
+								changed = true
+							}
+						})
+					}).Description("WebView 直接加载可能让订阅源获知你的网络地址。")
+					ui.Field(c, "图片缓存上限（MB）", func() {
+						value := float64(s.prefs.ImageCacheLimit)
+						if ui.NumberInput(c, &value, 32, 512, 16).Changed() {
+							s.prefs.ImageCacheLimit = int(math.Round(value))
+							changed = true
+						}
+					})
+				})
+
+				ui.Fieldset(c, "链接", func() {
+					ui.Field(c, "打开文章链接", func() {
+						ui.RadioGroup(c, func() {
+							if ui.Radio(c, &s.prefs.OpenLinks,
+								store.OpenLinksBrowser, "系统浏览器").Changed() {
+								changed = true
+							}
+							if ui.Radio(c, &s.prefs.OpenLinks,
+								store.OpenLinksWindow, "应用内窗口").Changed() {
+								changed = true
+							}
+						})
+					})
+				})
+
+				ui.Fieldset(c, "数据", func() {
+					ui.Column(c).Gap(8).Children(func() {
+						ui.Text(c, "数据目录").TextColor(theme.TextMuted)
+						ui.Text(c, s.callbacks.DataDir()).Selectable().Font("monospace")
+						ui.Row(c).Gap(8).Children(func() {
+							if ui.Button(c, "打开数据目录").Clicked() {
+								if err := s.callbacks.OpenDataDir(); err != nil {
+									s.fail(c, err)
+								}
+							}
+							if ui.Button(c, "导出 OPML…").Clicked() {
+								path, err := s.callbacks.ExportOPML(s.window)
+								if err != nil {
+									s.fail(c, err)
+								} else if path != "" {
+									s.succeed(c, "已导出订阅列表")
+								}
+							}
+						})
+					})
+				})
+			})
+		})
+
+		ui.Box(c).Height(1).Shrink(0).Background(theme.Border)
+		ui.Row(c).Shrink(0).Padding(12, 20).Gap(12).AlignItems(ui.Center).Children(func() {
+			switch {
+			case s.err != "":
+				ui.Text(c, s.err).TextColor(theme.Danger).Grow(1)
+			case s.notice != "" && time.Now().Before(s.noticeAt):
+				ui.Text(c, s.notice).TextColor(theme.TextMuted).Grow(1)
+			default:
+				ui.Textf(c, "更改会自动保存").TextColor(theme.TextMuted).Grow(1)
+				s.notice = ""
+			}
+			if ui.Button(c, "关闭").Clicked() && s.window != nil {
+				s.window.Close()
+			}
+		})
+	})
+
+	if changed {
+		s.save(c)
+	}
+}
+
+// save persists the current draft and refreshes the form with normalized
+// values.
+func (s *settingsView) save(c *ui.Context) {
+	stored, err := s.callbacks.Save(s.prefs)
+	if err != nil {
+		s.fail(c, err)
+		return
+	}
+	s.prefs = stored
+	s.err = ""
+	s.succeed(c, "已保存")
+}
+
+// succeed shows a short confirmation in the footer.
+func (s *settingsView) succeed(c *ui.Context, message string) {
+	s.err = ""
+	s.notice = message
+	s.noticeAt = time.Now().Add(2 * time.Second)
+	c.After(2*time.Second + 10*time.Millisecond)
+	c.Invalidate()
+}
+
+// fail shows an inline error and keeps the current draft editable.
+func (s *settingsView) fail(c *ui.Context, err error) {
+	s.notice = ""
+	s.err = fmt.Sprintf("操作失败：%v", err)
+	c.Invalidate()
+}
+
+// settingsTheme applies the preference font and sepia palette to native UI.
+func settingsTheme(c *ui.Context, prefs store.Prefs) *ui.Theme {
+	theme := *c.Theme()
+	theme.FontSize *= interfaceFontScale(prefs.FontSize)
+	if prefs.Theme == store.ThemeSepia {
+		theme.Background = ui.Oklch(0.86, 0.025, 80)
+		theme.Text = ui.Oklch(0.24, 0.02, 70)
+		theme.Surface = ui.Oklch(0.82, 0.025, 80)
+		theme.TextMuted = ui.Oklch(0.44, 0.022, 70)
+		theme.Border = ui.Oklch(0.77, 0.02, 78)
+		theme.Danger = ui.Oklch(0.58, 0.22, 27)
+	}
+	return &theme
+}
+
+// indexOf returns the index of value, or zero when it is absent.
+func indexOf(values []string, value string) int {
+	for i, candidate := range values {
+		if candidate == value {
+			return i
+		}
+	}
+	return 0
+}

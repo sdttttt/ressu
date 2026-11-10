@@ -1,7 +1,9 @@
 import { events, type Event as BroadcastEvent } from "~/mygo";
 import { refreshAll } from "~/stores/feeds";
+import { openSettings } from "~/stores/settings";
 import {
   applyAppearance,
+  applyPrefs,
   applySync,
   applySyncSnapshot,
   beginSync,
@@ -45,6 +47,9 @@ function handleEvent(event: BroadcastEvent): void {
     case "appearance.changed":
       if (event.appearance) applyAppearance(event.appearance.theme, event.appearance.fontSize);
       break;
+    case "prefs.changed":
+      if (event.prefs) void applyPrefs(event.prefs);
+      break;
     case "selection.changed":
       break;
     case "ui.command":
@@ -62,7 +67,7 @@ function handleCommand(command: string): void {
       void refreshAll();
       break;
     case "settings":
-      openDialog("settings");
+      void openSettings();
       break;
   }
 }

@@ -10,16 +10,11 @@ import { loadPosts } from "~/stores/posts";
 export async function start(): Promise<void> {
   void Status.pageReady().catch(() => undefined);
   try {
-    const [snapshot, prefs, dataDir] = await Promise.all([
-      Feeds.list(),
-      Settings.get(),
-      Settings.dataDir(),
-    ]);
+    const [snapshot, prefs] = await Promise.all([Feeds.list(), Settings.get()]);
     setAppState({
       feeds: snapshot.feeds,
       totalUnread: snapshot.unread,
       prefs,
-      dataDir,
       ready: true,
       sidebar: { collapsed: prefs.sidebarCollapsed, visible: false },
     });

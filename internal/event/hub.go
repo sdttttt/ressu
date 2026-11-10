@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo"
 
 	appstatus "github.com/sdttttt/ressu/internal/status"
+	"github.com/sdttttt/ressu/internal/store"
 )
 
 // AppEvent is the only event channel the Go side broadcasts to pages.
@@ -66,6 +67,11 @@ func (h *Hub) AppearanceChanged(theme, fontSize string) {
 		EID:        EventAppearanceChanged,
 		Appearance: &Appearance{Theme: theme, FontSize: fontSize},
 	})
+}
+
+// PrefsChanged broadcasts the complete preferences.
+func (h *Hub) PrefsChanged(prefs store.Prefs) {
+	h.Publish(Event{EID: EventPrefsChanged, Prefs: &prefs})
 }
 
 // SelectionChanged broadcasts the feed selected by the page.
