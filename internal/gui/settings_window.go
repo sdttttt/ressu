@@ -49,7 +49,7 @@ func OpenSettingsWindow(parent *Window, callbacks SettingsCallbacks) {
 		BackgroundColor: "light-dark(#ffffff, #101012)",
 		Content:         ui.View(func(c *ui.Context) { view.draw(c) }),
 	}
-	window := mygo.NewWindow(options)
+	window := newChildWindow(parent, options)
 	view.window = window
 
 	settingsWindow.Lock()

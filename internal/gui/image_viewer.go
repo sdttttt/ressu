@@ -116,12 +116,12 @@ func openImageViewer(parent *Window, content imageViewerContent, alt string) {
 	if content.image != nil {
 		var viewer *Window
 		options.Content = ui.View(func(c *ui.Context) { imageViewerView(c, &content, viewer) })
-		viewer = mygo.NewWindow(options)
+		viewer = newChildWindow(parent, options)
 		return
 	} else {
 		options.URL = content.url
 	}
-	mygo.NewWindow(options)
+	newChildWindow(parent, options)
 }
 
 // imageViewerView draws the image and its native viewer actions.
