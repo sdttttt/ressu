@@ -23,6 +23,8 @@ export default defineConfig({
   },
   server: {
     // The app loads this address during `mygo dev` (devUrl in mygo.config.ts).
+    // Node may fail to bind the localhost hostname on Windows, so pin IPv4.
+    host: "127.0.0.1",
     port: 5173,
     strictPort: true,
     // The development app and the packaged builds are not the page's.
