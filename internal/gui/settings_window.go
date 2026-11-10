@@ -144,7 +144,7 @@ func (s *settingsView) draw(c *ui.Context) {
 								changed = true
 							}
 						})
-					}).Description("Ressu代理: 客户端主动抓取资源，能缓解大部分资源限制问题，也可能因为指纹问题被限制").Description("WebView: 直接访问源地址，可能会因CORS等策略被拦截")
+					}).Description("Ressu代理: 客户端主动抓取资源，可能因为请求指纹等问题被限制").Description("WebView: 直接访问源地址，可能会因CORS等策略被拦截").Description("(总之这个功能槽点很多，默认使用WebView模式)")
 					ui.Field(c, "图片缓存上限（MB）", func() {
 						value := float64(s.prefs.ImageCacheLimit)
 						if ui.NumberInput(c, &value, 32, 512, 16).Changed() {
