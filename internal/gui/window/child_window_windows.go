@@ -1,13 +1,13 @@
 //go:build windows
 
-package gui
+package window
 
 import "github.com/egoist/mygo"
 
 // positionChildWindowOptions places a child window over its parent before
 // MyGO creates it. MyGO centers a window without X and Y on the primary
 // display on Windows, even when the window has a parent on another display.
-func positionChildWindowOptions(parent *Window, options *mygo.WindowOptions) {
+func positionChildWindowOptions(parent *mygo.Window, options *mygo.WindowOptions) {
 	if parent == nil || parent.IsDestroyed() {
 		return
 	}
@@ -35,7 +35,7 @@ func positionChildWindowOptions(parent *Window, options *mygo.WindowOptions) {
 // placeChildWindowOnParentDisplay corrects the position after creation.
 // StateKey restores a window's previous bounds after MyGO applies the initial
 // position, so a remembered settings window can still land on another display.
-func placeChildWindowOnParentDisplay(parent, child *Window) {
+func placeChildWindowOnParentDisplay(parent, child *mygo.Window) {
 	if parent == nil || child == nil || parent.IsDestroyed() || child.IsDestroyed() {
 		return
 	}

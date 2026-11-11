@@ -1,4 +1,4 @@
-package gui
+package dialog
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ func TestNotificationsDrawShowsToast(t *testing.T) {
 		Description: "共 2 个订阅源",
 	})
 
-	tester := ui.NewTester(notifications.draw, 640, 480)
+	tester := ui.NewTester(notifications.Draw, 640, 480)
 	for _, want := range []string{"已导出订阅源", "共 2 个订阅源", "×"} {
 		if !tester.HasText(want) {
 			t.Errorf("notification is missing %q", want)

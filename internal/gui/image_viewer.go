@@ -13,6 +13,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appwindow "github.com/sdttttt/ressu/internal/gui/window"
 	"github.com/sdttttt/ressu/internal/media"
 )
 
@@ -116,12 +117,12 @@ func openImageViewer(parent *Window, content imageViewerContent, alt string) {
 	if content.image != nil {
 		var viewer *Window
 		options.Content = ui.View(func(c *ui.Context) { imageViewerView(c, &content, viewer) })
-		viewer = newChildWindow(parent, options)
+		viewer = appwindow.New(parent, options)
 		return
 	} else {
 		options.URL = content.url
 	}
-	newChildWindow(parent, options)
+	appwindow.New(parent, options)
 }
 
 // imageViewerView draws the image and its native viewer actions.

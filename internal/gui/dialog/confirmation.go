@@ -1,4 +1,4 @@
-package gui
+package dialog
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 // ErrNoConfirmationSurface reports that no window can render confirmations.
@@ -44,27 +44,31 @@ type queuedConfirmation struct {
 
 // Confirmations renders GPU-native prompts inside the main window.
 type Confirmations struct {
-	mu          sync.Mutex
-	window      *Window
-	appearances func() store.Prefs
-	queued      []*queuedConfirmation
-	active      *queuedConfirmation
+	mu         sync.Mutex
+	window     *mygo.Window
+	appearance func() (theme, fontSize string)
+	queued     []*queuedConfirmation
+	active     *queuedConfirmation
 }
 
 // NewConfirmations creates the in-app confirmation host.
-func NewConfirmations(appearance func() store.Prefs) *Confirmations {
-	return &Confirmations{appearances: appearance}
+func NewConfirmations(appearance func() (theme, fontSize string)) *Confirmations {
+	return &Confirmations{appearance: appearance}
 }
 
 // Attach connects confirmation rendering to the main window.
-func (c *Confirmations) Attach(window *Window) {
+func (c *Confirmations) Attach(window *mygo.Window) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.window = window
 }
 
 // Confirm shows a prompt and reports whether the user accepted it.
-func (c *Confirmations) Confirm(ctx context.Context, parent *Window, request ConfirmationRequest) (bool, error) {
+func (c *Confirmations) Confirm(
+	ctx context.Context,
+	parent *mygo.Window,
+	request ConfirmationRequest,
+) (bool, error) {
 	request.Title = strings.TrimSpace(request.Title)
 	request.Description = strings.TrimSpace(request.Description)
 	if request.Title == "" || request.Description == "" {
@@ -201,8 +205,8 @@ func (c *Confirmations) invalidate() {
 	}
 }
 
-// draw renders the active confirmation prompt.
-func (c *Confirmations) draw(uiContext *ui.Context) {
+// Draw renders the active confirmation prompt.
+func (c *Confirmations) Draw(uiContext *ui.Context) {
 	c.mu.Lock()
 	confirmation := c.active
 	c.mu.Unlock()
@@ -214,8 +218,8 @@ func (c *Confirmations) draw(uiContext *ui.Context) {
 
 // drawConfirmation renders one modal and completes its pending request.
 func (c *Confirmations) drawConfirmation(uiContext *ui.Context, confirmation *queuedConfirmation) {
-	appearance := c.appearances()
-	theme := guitheme.New(uiContext, appearance.Theme, appearance.FontSize)
+	appearanceName, fontSize := c.appearance()
+	theme := guitheme.New(uiContext, appearanceName, fontSize)
 
 	ui.Themed(uiContext, theme).Children(func() {
 		modal := ui.Modal(uiContext, &confirmation.open, func() {

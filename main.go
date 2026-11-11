@@ -20,6 +20,7 @@ import (
 	"github.com/sdttttt/ressu/internal/buildinfo"
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
+	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/service"
@@ -104,12 +105,13 @@ func main() {
 		default:
 		}
 	})
-	notifications := gui.NewNotifications(func() (string, string) {
+	notifications := appdialog.NewNotifications(func() (string, string) {
 		snapshot := statusModel.Snapshot()
 		return snapshot.Theme, snapshot.FontSize
 	})
-	confirmations := gui.NewConfirmations(func() store.Prefs {
-		return st.Prefs()
+	confirmations := appdialog.NewConfirmations(func() (string, string) {
+		prefs := st.Prefs()
+		return prefs.Theme, prefs.FontSize
 	})
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
@@ -188,8 +190,8 @@ func openWindow(
 	foreground *service.ForegroundRefresher,
 	isActive func() bool,
 	about gui.AboutInfo,
-	notifications *gui.Notifications,
-	confirmations *gui.Confirmations,
+	notifications *appdialog.Notifications,
+	confirmations *appdialog.Confirmations,
 	sidebar *gui.FeedSidebar,
 	postHeader *gui.PostHeader,
 	postList *gui.PostList,

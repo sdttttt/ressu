@@ -10,6 +10,11 @@ import (
 // Family is the native interface font used across all windows.
 const Family = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`
 
+// StatusBarHeight returns the rendered status bar height for a font size.
+func StatusBarHeight(fontSize string) float32 {
+	return 1 + StatusBarContentHeight*FontScale(fontSize)
+}
+
 // New maps an app theme preference to the colors used by native UI.
 func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	base := ui.LightTheme()

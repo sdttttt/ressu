@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/sdttttt/ressu/internal/gui/assets"
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
+	appwindow "github.com/sdttttt/ressu/internal/gui/window"
 )
 
 const (
@@ -53,7 +54,7 @@ func OpenAboutWindow(parent *Window, info AboutInfo) {
 	aboutWindow.Unlock()
 
 	view := &aboutView{info: info}
-	window := newChildWindow(parent, mygo.WindowOptions{
+	window := appwindow.New(parent, mygo.WindowOptions{
 		Title:           "关于 Ressu",
 		Width:           aboutWidth,
 		Height:          aboutHeight,

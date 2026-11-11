@@ -4,6 +4,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
@@ -11,8 +12,8 @@ import (
 type AppView struct {
 	page          *mygo.WebView
 	status        *StatusBar
-	notifications *Notifications
-	confirmations *Confirmations
+	notifications *appdialog.Notifications
+	confirmations *appdialog.Confirmations
 	sidebar       *FeedSidebar
 	postHeader    *PostHeader
 	postList      *PostList
@@ -22,8 +23,8 @@ type AppView struct {
 func NewAppView(
 	statusModel *appstatus.Model,
 	onAbout func(),
-	notifications *Notifications,
-	confirmations *Confirmations,
+	notifications *appdialog.Notifications,
+	confirmations *appdialog.Confirmations,
 	sidebar *FeedSidebar,
 	postHeader *PostHeader,
 	postList *PostList,
@@ -94,9 +95,9 @@ func (a *AppView) View(c *ui.Context) {
 		a.status.View(c)
 	})
 	if a.notifications != nil {
-		a.notifications.draw(c)
+		a.notifications.Draw(c)
 	}
 	if a.confirmations != nil {
-		a.confirmations.draw(c)
+		a.confirmations.Draw(c)
 	}
 }

@@ -1,6 +1,6 @@
 //go:build windows
 
-package gui
+package window
 
 import (
 	"testing"

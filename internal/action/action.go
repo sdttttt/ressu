@@ -17,6 +17,7 @@ import (
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
+	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	"github.com/sdttttt/ressu/internal/service"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -44,11 +45,11 @@ type UI interface {
 	) error
 	OpenAddFeed(parent *gui.Window, callbacks gui.AddFeedCallbacks)
 	OpenSettings(parent *gui.Window, callbacks gui.SettingsCallbacks)
-	Confirm(ctx context.Context, parent *gui.Window, request gui.ConfirmationRequest) (bool, error)
+	Confirm(ctx context.Context, parent *gui.Window, request appdialog.ConfirmationRequest) (bool, error)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
 	ApplyTheme(string)
-	ShowNotification(gui.Notification)
+	ShowNotification(appdialog.Notification)
 	SelectNeighbourPost(delta int, onlyUnread bool)
 }
 
@@ -109,7 +110,7 @@ func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent *gui.Window, 
 	if err != nil {
 		return err
 	}
-	request := gui.ConfirmationRequest{
+	request := appdialog.ConfirmationRequest{
 		Title:        "取消订阅「" + feed.Title + "」？",
 		Description:  "这个订阅源已保存的文章会一并删除，操作无法撤销。",
 		ConfirmLabel: "取消订阅",
@@ -543,7 +544,7 @@ func (a *AppActions) PageReady(ctx context.Context) {
 
 // Notify shows a native application notification.
 func (a *AppActions) Notify(level, message string) {
-	a.ui.ShowNotification(gui.Notification{Type: level, Title: message})
+	a.ui.ShowNotification(appdialog.Notification{Type: level, Title: message})
 }
 
 // SelectNeighbourPost moves the native article list from a page shortcut.

@@ -1,10 +1,12 @@
-package gui
+// Package dialog renders reusable native confirmations and notifications.
+package dialog
 
 import (
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
@@ -22,7 +24,7 @@ type Notification struct {
 // Notifications queues native toasts until the main window can show them.
 type Notifications struct {
 	mu         sync.Mutex
-	window     *Window
+	window     *mygo.Window
 	appearance func() (theme, fontSize string)
 	pending    []Notification
 }
@@ -33,7 +35,7 @@ func NewNotifications(appearance func() (theme, fontSize string)) *Notifications
 }
 
 // Attach connects the queue to the window that draws native toasts.
-func (n *Notifications) Attach(window *Window) {
+func (n *Notifications) Attach(window *mygo.Window) {
 	n.mu.Lock()
 	n.window = window
 	pending := len(n.pending) > 0
@@ -60,7 +62,7 @@ func (n *Notifications) Show(notification Notification) {
 	n.invalidate(window)
 }
 
-func (n *Notifications) invalidate(window *Window) {
+func (n *Notifications) invalidate(window *mygo.Window) {
 	if window != nil && !window.IsDestroyed() {
 		window.Invalidate()
 	}
@@ -78,7 +80,7 @@ func normalizeNotification(notification Notification) Notification {
 	return notification
 }
 
-func (n *Notifications) draw(c *ui.Context) {
+func (n *Notifications) Draw(c *ui.Context) {
 	n.mu.Lock()
 	pending := n.pending
 	n.pending = nil
@@ -100,7 +102,7 @@ func (n *Notifications) draw(c *ui.Context) {
 	theme := guitheme.New(c, appearanceName, fontSize)
 
 	ui.ToastViewportBase(c, func(viewport ui.Element, toasts []ui.Toast) {
-		viewport.Bottom(statusBarHeight(fontSize)).Padding(theme.Space(4)).
+		viewport.Bottom(guitheme.StatusBarHeight(fontSize)).Padding(theme.Space(4)).
 			AlignItems(ui.End).Gap(theme.Space(2))
 		for _, toast := range toasts {
 			drawNotification(c, theme, toast)

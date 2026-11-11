@@ -11,6 +11,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
+	appwindow "github.com/sdttttt/ressu/internal/gui/window"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -82,7 +83,7 @@ func OpenAddFeedWindow(parent *Window, callbacks AddFeedCallbacks) {
 		BackgroundColor: "light-dark(#ffffff, #101012)",
 		Content:         ui.View(func(c *ui.Context) { view.draw(c) }),
 	}
-	window := newChildWindow(parent, options)
+	window := appwindow.New(parent, options)
 	view.window = window
 
 	addFeedWindow.Lock()

@@ -198,7 +198,7 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 	theme := feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
 
 	hot := ui.Box(c).Absolute().Top(0).Left(0).
-		Bottom(statusBarHeight(snapshot.FontSize)).
+		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)).
 		Width(feedSidebarHotZoneWidth).Background(ui.Transparent)
 	hotHovered := hot.Hovered()
 	s.beginShow(hotHovered)
@@ -210,7 +210,7 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 	panel := ui.Column(c).Key("floating-sidebar").
 		Absolute().
 		Top(feedSidebarFloatingInset).
-		Bottom(statusBarHeight(snapshot.FontSize)+feedSidebarFloatingInset).
+		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)+feedSidebarFloatingInset).
 		Left(feedSidebarFloatingInset).
 		Width(feedSidebarFloatingWidth).
 		Radius(12).

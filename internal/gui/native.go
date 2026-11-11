@@ -6,6 +6,7 @@ import (
 
 	"github.com/egoist/mygo"
 
+	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -23,13 +24,16 @@ type SettingsCallbacks struct {
 
 // NativeUI exposes application-level native side effects to the action layer.
 type NativeUI struct {
-	notifications *Notifications
-	confirmations *Confirmations
+	notifications *appdialog.Notifications
+	confirmations *appdialog.Confirmations
 	postList      *PostList
 }
 
 // NewNativeUI creates the native side-effect adapter.
-func NewNativeUI(notifications *Notifications, confirmations *Confirmations) *NativeUI {
+func NewNativeUI(
+	notifications *appdialog.Notifications,
+	confirmations *appdialog.Confirmations,
+) *NativeUI {
 	return &NativeUI{notifications: notifications, confirmations: confirmations}
 }
 
@@ -124,9 +128,13 @@ func (NativeUI) OpenAddFeed(parent *Window, callbacks AddFeedCallbacks) {
 }
 
 // Confirm shows an in-app confirmation for a destructive action.
-func (n NativeUI) Confirm(ctx context.Context, parent *Window, request ConfirmationRequest) (bool, error) {
+func (n NativeUI) Confirm(
+	ctx context.Context,
+	parent *Window,
+	request appdialog.ConfirmationRequest,
+) (bool, error) {
 	if n.confirmations == nil {
-		return false, ErrNoConfirmationSurface
+		return false, appdialog.ErrNoConfirmationSurface
 	}
 	return n.confirmations.Confirm(ctx, parent, request)
 }
@@ -161,7 +169,7 @@ func (NativeUI) ApplyTheme(theme string) {
 }
 
 // ShowNotification queues a native toast for the main window.
-func (n NativeUI) ShowNotification(notification Notification) {
+func (n NativeUI) ShowNotification(notification appdialog.Notification) {
 	if n.notifications != nil {
 		n.notifications.Show(notification)
 	}

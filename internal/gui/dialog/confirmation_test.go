@@ -1,16 +1,14 @@
-package gui
+package dialog
 
 import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
-
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 func TestConfirmationShowsChinesePromptAndConfirms(t *testing.T) {
-	confirmations := NewConfirmations(func() store.Prefs {
-		return store.DefaultPrefs()
+	confirmations := NewConfirmations(func() (string, string) {
+		return "system", "small"
 	})
 	request := ConfirmationRequest{
 		Title:        "取消订阅「测试源」？",
@@ -25,7 +23,7 @@ func TestConfirmationShowsChinesePromptAndConfirms(t *testing.T) {
 	}
 	confirmations.enqueue(confirmation)
 
-	tester := ui.NewTester(confirmations.draw, 520, 420)
+	tester := ui.NewTester(confirmations.Draw, 520, 420)
 	tester.Frame()
 	tester.Frame()
 	for _, text := range []string{
@@ -47,8 +45,8 @@ func TestConfirmationShowsChinesePromptAndConfirms(t *testing.T) {
 }
 
 func TestConfirmationCancelDismissesWithoutRemoval(t *testing.T) {
-	confirmations := NewConfirmations(func() store.Prefs {
-		return store.DefaultPrefs()
+	confirmations := NewConfirmations(func() (string, string) {
+		return "system", "small"
 	})
 	confirmation := &queuedConfirmation{
 		ConfirmationRequest: ConfirmationRequest{
@@ -62,7 +60,7 @@ func TestConfirmationCancelDismissesWithoutRemoval(t *testing.T) {
 	}
 	confirmations.enqueue(confirmation)
 
-	tester := ui.NewTester(confirmations.draw, 520, 420)
+	tester := ui.NewTester(confirmations.Draw, 520, 420)
 	tester.Frame()
 	tester.Click(confirmation.CancelLabel)
 	<-confirmation.done

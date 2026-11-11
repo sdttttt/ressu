@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
+	appwindow "github.com/sdttttt/ressu/internal/gui/window"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -52,7 +53,7 @@ func OpenSnapshotViewer(
 		return err
 	}
 
-	window := newChildWindow(parent, mygo.WindowOptions{
+	window := appwindow.New(parent, mygo.WindowOptions{
 		Title:           content.title,
 		Width:           snapshotViewerWidth,
 		Height:          snapshotViewerHeight,

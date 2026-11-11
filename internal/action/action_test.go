@@ -10,6 +10,7 @@ import (
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
+	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	"github.com/sdttttt/ressu/internal/service"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
@@ -27,9 +28,9 @@ type fakeUI struct {
 	snapshotTitle     string
 	snapshotParent    *gui.Window
 	snapshotCallbacks gui.SnapshotViewerCallbacks
-	notifications     []gui.Notification
+	notifications     []appdialog.Notification
 	addFeedOpened     bool
-	confirmation      *gui.ConfirmationRequest
+	confirmation      *appdialog.ConfirmationRequest
 	confirmed         bool
 	confirmCalled     bool
 }
@@ -87,7 +88,7 @@ func (f *fakeUI) OpenAddFeed(*gui.Window, gui.AddFeedCallbacks) {
 func (f *fakeUI) Confirm(
 	_ context.Context,
 	_ *gui.Window,
-	request gui.ConfirmationRequest,
+	request appdialog.ConfirmationRequest,
 ) (bool, error) {
 	f.confirmation = &request
 	f.confirmCalled = true
@@ -106,7 +107,7 @@ func (f *fakeUI) ApplyTheme(theme string) {
 	f.theme = theme
 }
 
-func (f *fakeUI) ShowNotification(notification gui.Notification) {
+func (f *fakeUI) ShowNotification(notification appdialog.Notification) {
 	f.notifications = append(f.notifications, notification)
 }
 
