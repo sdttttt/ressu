@@ -14,6 +14,7 @@ type AppView struct {
 	notifications *Notifications
 	confirmations *Confirmations
 	sidebar       *FeedSidebar
+	postHeader    *PostHeader
 	postList      *PostList
 }
 
@@ -24,6 +25,7 @@ func NewAppView(
 	notifications *Notifications,
 	confirmations *Confirmations,
 	sidebar *FeedSidebar,
+	postHeader *PostHeader,
 	postList *PostList,
 ) *AppView {
 	return &AppView{
@@ -31,6 +33,7 @@ func NewAppView(
 		notifications: notifications,
 		confirmations: confirmations,
 		sidebar:       sidebar,
+		postHeader:    postHeader,
 		postList:      postList,
 	}
 }
@@ -58,7 +61,12 @@ func (a *AppView) View(c *ui.Context) {
 					articleSplit = ui.SplitPercent(c, a.postList.splitPercent(), func() {
 						a.postList.View(c)
 					}, func() {
-						ui.WebView(c, a.page).Grow(1)
+						ui.Column(c).Fill().Children(func() {
+							if a.postHeader != nil {
+								a.postHeader.View(c)
+							}
+							ui.WebView(c, a.page).Grow(1)
+						})
 					}).Fill()
 					if articleSplit.Changed() {
 						a.postList.savePanePercent()

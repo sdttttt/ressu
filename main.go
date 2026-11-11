@@ -115,6 +115,7 @@ func main() {
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	sidebar := gui.NewFeedSidebar(statusModel, actions.SidebarCallbacks())
 	postList := gui.NewPostList(statusModel, actions.PostListCallbacks())
+	postHeader := gui.NewPostHeader(statusModel, actions.PostHeaderCallbacks())
 	nativeUI.SetPostList(postList)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
@@ -146,7 +147,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about, notifications, confirmations, sidebar, postList); err != nil {
+		}, foreground, app.IsActive, about, notifications, confirmations, sidebar, postHeader, postList); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -190,6 +191,7 @@ func openWindow(
 	notifications *gui.Notifications,
 	confirmations *gui.Confirmations,
 	sidebar *gui.FeedSidebar,
+	postHeader *gui.PostHeader,
 	postList *gui.PostList,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
@@ -199,7 +201,7 @@ func openWindow(
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		gui.OpenAboutWindow(win, info)
-	}, notifications, confirmations, sidebar, postList)
+	}, notifications, confirmations, sidebar, postHeader, postList)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,

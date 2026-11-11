@@ -385,6 +385,16 @@ func (a *AppActions) PostListCallbacks() gui.PostListCallbacks {
 	}
 }
 
+// PostHeaderCallbacks exposes native article header actions.
+func (a *AppActions) PostHeaderCallbacks() gui.PostHeaderCallbacks {
+	return gui.PostHeaderCallbacks{
+		ToggleStar: a.TogglePostStar,
+		MarkRead:   a.MarkPostRead,
+		OpenLink:   a.OpenLink,
+		Notify:     a.Notify,
+	}
+}
+
 func (a *AppActions) refreshAllWithNotice() {
 	if _, err := a.RefreshAll(context.Background()); err != nil {
 		if errors.Is(err, service.ErrRefreshing) {
@@ -470,8 +480,8 @@ func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
 }
 
 // SelectPost broadcasts the article selected by the native list.
-func (a *AppActions) SelectPost(feedID int64, guid string) {
-	a.status.SelectPost(context.Background(), feedID, guid)
+func (a *AppActions) SelectPost(post store.PostSummary) {
+	a.status.SelectPost(context.Background(), post)
 }
 
 // AddAndSelectFeed subscribes to a feed and broadcasts its selection.

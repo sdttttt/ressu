@@ -50,6 +50,7 @@ type Snapshot struct {
 	PostVersion      uint64
 	Post             store.PostSummary
 	CurrentPost      PostSelection
+	SelectedPost     store.PostSummary
 }
 
 // Model stores the service state mirrored by the native status bar.
@@ -66,6 +67,7 @@ type Model struct {
 	postsVersion     uint64
 	postVersion      uint64
 	post             store.PostSummary
+	selectedPost     store.PostSummary
 	theme            string
 	font             string
 	version          string
@@ -120,6 +122,7 @@ func (m *Model) SetCurrentFeed(feedID int64) {
 	m.current = feedID
 	if changed {
 		m.currentPost = PostSelection{}
+		m.selectedPost = store.PostSummary{}
 	}
 	callback := m.changed
 	m.mu.Unlock()
@@ -173,10 +176,11 @@ func (m *Model) SetListPercent(percent float32) {
 }
 
 // SetCurrentPost tells native UI which article the reader selected.
-func (m *Model) SetCurrentPost(selection PostSelection) {
+func (m *Model) SetCurrentPost(selection PostSelection, post store.PostSummary) {
 	m.mu.Lock()
-	changed := m.currentPost != selection
+	changed := m.currentPost != selection || m.selectedPost != post
 	m.currentPost = selection
+	m.selectedPost = post
 	callback := m.changed
 	m.mu.Unlock()
 	if changed && callback != nil {
@@ -200,6 +204,9 @@ func (m *Model) SetPostUpdated(post store.PostSummary) {
 	m.mu.Lock()
 	m.postVersion++
 	m.post = post
+	if m.currentPost.FeedID == post.FeedID && m.currentPost.GUID == post.GUID {
+		m.selectedPost = post
+	}
 	callback := m.changed
 	m.mu.Unlock()
 	if callback != nil {
@@ -229,6 +236,7 @@ func (m *Model) Snapshot() Snapshot {
 		PostVersion:      m.postVersion,
 		Post:             m.post,
 		CurrentPost:      m.currentPost,
+		SelectedPost:     m.selectedPost,
 	}
 	m.mu.RUnlock()
 

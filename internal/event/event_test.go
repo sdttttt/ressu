@@ -33,7 +33,7 @@ func TestEventValidate(t *testing.T) {
 		{"appearance", Event{EID: EventAppearanceChanged, Appearance: appearance}, true},
 		{"prefs", Event{EID: EventPrefsChanged, Prefs: prefs}, true},
 		{"selection", Event{EID: EventSelectionChanged, Selection: selection}, true},
-		{"post selected", Event{EID: EventPostSelected, PostSelection: postSelection}, true},
+		{"post selected", Event{EID: EventPostSelected, PostSelection: postSelection, Post: post}, true},
 		{"post updated", Event{EID: EventPostUpdated, Post: post}, true},
 		{"command", Event{EID: EventUICommand, Command: "refresh"}, true},
 		{"missing sync", Event{EID: EventSyncStarted}, false},
@@ -44,6 +44,7 @@ func TestEventValidate(t *testing.T) {
 		{"missing selection", Event{EID: EventSelectionChanged}, false},
 		{"missing post selected", Event{EID: EventPostSelected}, false},
 		{"empty post selection", Event{EID: EventPostSelected, PostSelection: &PostSelection{FeedID: 1}}, false},
+		{"post selected without summary", Event{EID: EventPostSelected, PostSelection: postSelection}, false},
 		{"missing post updated", Event{EID: EventPostUpdated}, false},
 		{"empty post update", Event{EID: EventPostUpdated, Post: &store.PostSummary{FeedID: 1}}, false},
 		{"empty command", Event{EID: EventUICommand}, false},
@@ -83,7 +84,10 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		Unread: 3,
 	})
 	hub.SelectionChanged(1)
-	hub.PostSelected(appstatus.PostSelection{FeedID: 1, GUID: "first"})
+	hub.PostSelected(
+		appstatus.PostSelection{FeedID: 1, GUID: "first"},
+		store.PostSummary{FeedID: 1, GUID: "first", Title: "First", Read: false},
+	)
 	hub.PostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Read: true, Starred: true})
 	hub.PostsChanged(PostsChanged{FeedID: 1, New: 2})
 	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge)
@@ -110,7 +114,8 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 
 	postSelectionEvent := emitted[2]
 	if postSelectionEvent.EID != EventPostSelected || postSelectionEvent.PostSelection == nil ||
-		postSelectionEvent.PostSelection.GUID != "first" {
+		postSelectionEvent.PostSelection.GUID != "first" ||
+		postSelectionEvent.Post == nil || postSelectionEvent.Post.Title != "First" {
 		t.Fatalf("post selection event = %+v", postSelectionEvent)
 	}
 	postEvent := emitted[3]
@@ -158,6 +163,10 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if modelSnapshot.CurrentPost.GUID != "first" || !modelSnapshot.Post.Read ||
 		modelSnapshot.PostVersion != 1 || modelSnapshot.PostsVersion != 1 {
 		t.Errorf("model post state = %+v", modelSnapshot)
+	}
+	if modelSnapshot.SelectedPost.GUID != "first" || !modelSnapshot.SelectedPost.Read ||
+		!modelSnapshot.SelectedPost.Starred {
+		t.Errorf("model selected post = %+v", modelSnapshot.SelectedPost)
 	}
 	if modelSnapshot.SidebarCollapsed || modelSnapshot.SidebarPercent != 18 {
 		t.Errorf("model layout = %+v; want docked 18%%", modelSnapshot)

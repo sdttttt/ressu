@@ -110,7 +110,8 @@ func (e Event) Validate() error {
 			return fmt.Errorf("event %q is missing selection", e.EID)
 		}
 	case EventPostSelected:
-		if e.PostSelection == nil || e.PostSelection.GUID == "" {
+		if e.PostSelection == nil || e.PostSelection.GUID == "" ||
+			e.Post == nil || e.Post.GUID == "" {
 			return fmt.Errorf("event %q is missing a post selection", e.EID)
 		}
 	case EventPostUpdated:

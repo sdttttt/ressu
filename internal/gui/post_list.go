@@ -26,7 +26,7 @@ const (
 // PostListCallbacks connects the native article list to application actions.
 type PostListCallbacks struct {
 	List           func(service.PostQuery) (service.PostPage, error)
-	Select         func(feedID int64, guid string)
+	Select         func(post store.PostSummary)
 	ToggleStar     func(feedID int64, guid string) (store.PostSummary, error)
 	MarkAllRead    func(feedID int64)
 	SetPanePercent func(percent float32)
@@ -360,7 +360,7 @@ func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 		}
 	})
 	if row.Clicked() {
-		l.runAsync(func() { l.callbacks.Select(post.FeedID, post.GUID) })
+		l.runAsync(func() { l.callbacks.Select(post) })
 	}
 	l.scrollPending(rowKey, row)
 }
@@ -441,7 +441,7 @@ func (l *PostList) SelectNeighbour(delta int, onlyUnread bool) {
 	l.mu.Unlock()
 
 	if callbacks.Select != nil {
-		callbacks.Select(post.FeedID, post.GUID)
+		callbacks.Select(post)
 	}
 	if invalidate != nil {
 		invalidate()
@@ -466,7 +466,7 @@ func (l *PostList) activateSelection() {
 	callbacks := l.callbacks
 	l.mu.Unlock()
 	if callbacks.Select != nil {
-		callbacks.Select(post.FeedID, post.GUID)
+		callbacks.Select(post)
 	}
 }
 

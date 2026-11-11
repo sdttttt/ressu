@@ -1,0 +1,68 @@
+package gui
+
+import (
+	"testing"
+	"time"
+
+	"github.com/egoist/mygo/ui"
+
+	appstatus "github.com/sdttttt/ressu/internal/status"
+	"github.com/sdttttt/ressu/internal/store"
+)
+
+func TestPostHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
+	model := appstatus.New("")
+	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	model.SetFeeds(appstatus.FeedsSnapshot{Feeds: []store.Feed{{ID: 1, Title: "A"}}, Unread: 1})
+	published := time.Date(2026, time.November, 9, 12, 0, 0, 0, time.UTC)
+	model.SetCurrentPost(
+		appstatus.PostSelection{FeedID: 1, GUID: "first"},
+		store.PostSummary{
+			FeedID:      1,
+			GUID:        "first",
+			Title:       "First article",
+			URL:         "https://example.com/first",
+			Author:      "Author",
+			WordCount:   3,
+			PublishedAt: published,
+			Starred:     true,
+		},
+	)
+	starred := make(chan bool, 1)
+	header := NewPostHeader(model, PostHeaderCallbacks{
+		ToggleStar: func(int64, string) (store.PostSummary, error) {
+			model.SetPostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Starred: false})
+			starred <- false
+			return store.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
+		},
+	})
+
+	tester := ui.NewTester(header.View, 680, 96)
+	tester.Frame()
+	for _, text := range []string{
+		"First article",
+		"Author",
+		"约 1 分钟 · 3 字",
+		"A",
+	} {
+		if !tester.HasText(text) {
+			t.Errorf("article header is missing %q", text)
+		}
+	}
+
+	if err := tester.Click("取消星标"); err != nil {
+		t.Fatalf("click starred action: %v", err)
+	}
+	select {
+	case starredValue := <-starred:
+		if starredValue {
+			t.Fatal("star action did not toggle the article")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("clicking the starred action did not toggle the star")
+	}
+	tester.Frame()
+	if !tester.HasText("加星标") {
+		t.Error("article header did not refresh its star action")
+	}
+}

@@ -40,6 +40,14 @@ func formatReadingMinutes(count int) string {
 	return fmt.Sprintf("约 %d 小时", minutes/60)
 }
 
+// formatDateTime formats an article timestamp with its absolute local time.
+func formatDateTime(value time.Time) string {
+	if value.IsZero() {
+		return ""
+	}
+	return value.In(time.Local).Format("2006年1月2日 15:04")
+}
+
 // formatWordCount formats an article word count.
 func formatWordCount(count int) string {
 	digits := strconv.Itoa(count)

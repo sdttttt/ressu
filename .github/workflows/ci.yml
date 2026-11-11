@@ -40,17 +40,11 @@ jobs:
       - name: Go tests
         run: go test ./...
 
-      - name: Generate the TypeScript client
-        run: bun run generate
+      - name: Check static reader script
+        run: node --check webview/static/reader.js
 
-      - name: Type check, lint and format
-        run: bun run check
-
-      - name: Frontend tests
-        run: bun run test
-
-      - name: Build the frontend
-        run: bun run build:web
+      - name: Verify application build
+        run: bun run build
 
   package:
     if: startsWith(github.ref, 'refs/tags/v')

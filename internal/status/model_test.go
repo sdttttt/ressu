@@ -71,11 +71,25 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		t.Fatalf("out-of-range sidebar percent was not clamped: %+v", layout)
 	}
 
-	model.SetCurrentPost(PostSelection{FeedID: 1, GUID: "first"})
+	selected := store.PostSummary{FeedID: 1, GUID: "first", Title: "First", Read: false}
+	model.SetCurrentPost(PostSelection{FeedID: 1, GUID: "first"}, selected)
 	select {
 	case <-changed:
 	case <-time.After(time.Second):
 		t.Fatal("SetCurrentPost did not notify")
+	}
+	if selected := model.Snapshot().SelectedPost; selected.GUID != "first" || selected.Read {
+		t.Fatalf("article header summary was not mirrored: %+v", selected)
+	}
+
+	model.SetPostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Title: "First", Read: true})
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("SetPostUpdated did not notify")
+	}
+	if selected := model.Snapshot().SelectedPost; !selected.Read {
+		t.Fatalf("post update did not refresh the selected summary: %+v", selected)
 	}
 
 	model.SetCurrentFeed(1)
@@ -96,5 +110,8 @@ func TestModelMirrorsStatusState(t *testing.T) {
 	}
 	if current := model.Snapshot().CurrentPost; current.GUID != "" {
 		t.Fatalf("changing the feed kept the article selection: %+v", current)
+	}
+	if selected := model.Snapshot().SelectedPost; selected.GUID != "" {
+		t.Fatalf("changing the feed kept the selected summary: %+v", selected)
 	}
 }

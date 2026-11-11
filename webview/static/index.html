@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ressu</title>
+    <link rel="stylesheet" href="./reader.css" />
+  </head>
+  <body>
+    <main id="reader" aria-live="polite">
+      <section id="empty" class="reader-state" hidden>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 11a9 9 0 0 1 9 9" />
+          <path d="M4 4a16 16 0 0 1 16 16" />
+          <circle cx="5" cy="19" r="1" />
+        </svg>
+        <h2>选择一篇文章</h2>
+        <p>左侧列表里的文章会显示在这里。</p>
+      </section>
+      <section id="loading" class="reader-state" hidden>
+        <span class="loading-line"></span>
+        <span class="loading-line short"></span>
+        <span class="loading-line shorter"></span>
+      </section>
+      <div id="article" data-post-scroll hidden>
+        <div id="post-body" class="post-body"></div>
+      </div>
+    </main>
+    <div id="help-backdrop" hidden>
+      <section id="help" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <h2 id="help-title">快捷键</h2>
+        <dl>
+          <div><dt><kbd>Space</kbd></dt><dd>向下滚动正文，到底时读下一篇</dd></div>
+          <div><dt><kbd>m</kbd></dt><dd>切换已读 / 未读</dd></div>
+          <div><dt><kbd>v</kbd></dt><dd>在浏览器中打开原文</dd></div>
+          <div><dt><kbd>h</kbd></dt><dd>上一个订阅源</dd></div>
+          <div><dt><kbd>l</kbd></dt><dd>下一个订阅源</dd></div>
+          <div><dt><kbd>?</kbd></dt><dd>显示快捷键帮助</dd></div>
+        </dl>
+      </section>
+    </div>
+    <script src="./reader.js"></script>
+  </body>
+</html>

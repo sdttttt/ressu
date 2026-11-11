@@ -16,7 +16,7 @@ func TestPostListShowsArticles(t *testing.T) {
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
 	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 1})
 	loaded := make(chan struct{}, 1)
-	selected := make(chan appstatus.PostSelection, 1)
+	selected := make(chan store.PostSummary, 1)
 	now := time.Now()
 	postList := NewPostList(model, PostListCallbacks{
 		List: func(query service.PostQuery) (service.PostPage, error) {
@@ -40,8 +40,8 @@ func TestPostListShowsArticles(t *testing.T) {
 				Unread: 1,
 			}, nil
 		},
-		Select: func(feedID int64, guid string) {
-			selected <- appstatus.PostSelection{FeedID: feedID, GUID: guid}
+		Select: func(post store.PostSummary) {
+			selected <- post
 		},
 	})
 
@@ -73,9 +73,9 @@ func TestPostListShowsArticles(t *testing.T) {
 		t.Fatalf("click first article: %v", err)
 	}
 	select {
-	case selection := <-selected:
-		if selection.FeedID != 1 || selection.GUID != "first" {
-			t.Errorf("selected post = %+v, want feed 1 guid first", selection)
+	case post := <-selected:
+		if post.FeedID != 1 || post.GUID != "first" || post.Title != "First article" {
+			t.Errorf("selected post = %+v, want feed 1 guid first", post)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("clicking an article did not select it")
@@ -87,7 +87,7 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
 	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 2})
 	loaded := make(chan struct{}, 1)
-	selected := make(chan appstatus.PostSelection, 8)
+	selected := make(chan store.PostSummary, 8)
 	starred := make(chan string, 1)
 	postList := NewPostList(model, PostListCallbacks{
 		List: func(service.PostQuery) (service.PostPage, error) {
@@ -102,10 +102,10 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 				Unread: 2,
 			}, nil
 		},
-		Select: func(feedID int64, guid string) {
-			selection := appstatus.PostSelection{FeedID: feedID, GUID: guid}
-			model.SetCurrentPost(selection)
-			selected <- selection
+		Select: func(post store.PostSummary) {
+			selection := appstatus.PostSelection{FeedID: post.FeedID, GUID: post.GUID}
+			model.SetCurrentPost(selection, post)
+			selected <- post
 		},
 		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {
 			starred <- guid
@@ -125,9 +125,9 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	expectSelection := func(guid string) {
 		t.Helper()
 		select {
-		case selection := <-selected:
-			if selection.GUID != guid {
-				t.Errorf("selected guid = %q, want %q", selection.GUID, guid)
+		case post := <-selected:
+			if post.GUID != guid {
+				t.Errorf("selected guid = %q, want %q", post.GUID, guid)
 			}
 		case <-time.After(time.Second):
 			t.Fatalf("pressing a shortcut did not select %q", guid)
@@ -171,7 +171,7 @@ func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 				Unread: 1,
 			}, nil
 		},
-		Select: func(int64, string) {
+		Select: func(store.PostSummary) {
 			selected <- struct{}{}
 		},
 		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {

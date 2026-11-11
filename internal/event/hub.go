@@ -83,8 +83,8 @@ func (h *Hub) SelectionChanged(feedID int64) {
 }
 
 // PostSelected broadcasts the article selected by a reader surface.
-func (h *Hub) PostSelected(selection appstatus.PostSelection) {
-	h.Publish(Event{EID: EventPostSelected, PostSelection: &selection})
+func (h *Hub) PostSelected(selection appstatus.PostSelection, post store.PostSummary) {
+	h.Publish(Event{EID: EventPostSelected, PostSelection: &selection, Post: &post})
 }
 
 // PostUpdated broadcasts an article's read or starred state.
@@ -167,7 +167,7 @@ func (h *Hub) applyLocked(e Event) {
 	case EventPostsChanged:
 		h.model.SetPostsChanged()
 	case EventPostSelected:
-		h.model.SetCurrentPost(*e.PostSelection)
+		h.model.SetCurrentPost(*e.PostSelection, *e.Post)
 	case EventPostUpdated:
 		h.model.SetPostUpdated(*e.Post)
 	}
