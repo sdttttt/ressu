@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appevent "github.com/sdttttt/ressu/internal/event"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
 // Status forwards page selection changes to native UI and other pages.
@@ -21,6 +22,11 @@ func NewStatus(hub *appevent.Hub, pageReady func()) *Status {
 // list.
 func (s *Status) SelectFeed(_ context.Context, feedID int64) {
 	s.hub.SelectionChanged(feedID)
+}
+
+// SelectPost records the article a reader selected.
+func (s *Status) SelectPost(_ context.Context, feedID int64, guid string) {
+	s.hub.PostSelected(appstatus.PostSelection{FeedID: feedID, GUID: guid})
 }
 
 // PageReady lets the app show once the page has mounted its splash, then

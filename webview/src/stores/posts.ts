@@ -45,6 +45,11 @@ export async function loadMorePosts(): Promise<void> {
   await loadPosts(state.posts.length);
 }
 
+/** Moves the native article list selection from a page shortcut. */
+export async function selectNeighbourPost(delta: 1 | -1, onlyUnread = false): Promise<void> {
+  await Posts.selectNeighbour(delta, onlyUnread);
+}
+
 /** Searches post titles after the user stops typing. */
 export function setPostSearch(value: string): void {
   clearTimeout(searchTimer);
@@ -170,6 +175,8 @@ export async function toggleStar(guid: string, feedId?: number): Promise<void> {
 }
 
 function setReadLocally(feedId: number, guid: string, read: boolean): void {
+  const previous = state.posts.find((post) => post.feedId === feedId && post.guid === guid)?.read;
   setState("posts", (post) => post.feedId === feedId && post.guid === guid, "read", read);
+  if (previous === undefined || previous === read) return;
   setState("postUnread", (unread) => Math.max(read ? unread - 1 : unread + 1, 0));
 }

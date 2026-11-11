@@ -16,6 +16,8 @@ func TestEventValidate(t *testing.T) {
 	prefs := &store.Prefs{}
 	selection := &Selection{}
 	posts := &PostsChanged{}
+	postSelection := &PostSelection{FeedID: 1, GUID: "first"}
+	post := &store.PostSummary{FeedID: 1, GUID: "first", Read: true}
 
 	tests := []struct {
 		name  string
@@ -31,6 +33,8 @@ func TestEventValidate(t *testing.T) {
 		{"appearance", Event{EID: EventAppearanceChanged, Appearance: appearance}, true},
 		{"prefs", Event{EID: EventPrefsChanged, Prefs: prefs}, true},
 		{"selection", Event{EID: EventSelectionChanged, Selection: selection}, true},
+		{"post selected", Event{EID: EventPostSelected, PostSelection: postSelection}, true},
+		{"post updated", Event{EID: EventPostUpdated, Post: post}, true},
 		{"command", Event{EID: EventUICommand, Command: "refresh"}, true},
 		{"missing sync", Event{EID: EventSyncStarted}, false},
 		{"missing feeds", Event{EID: EventFeedsChanged}, false},
@@ -38,6 +42,10 @@ func TestEventValidate(t *testing.T) {
 		{"missing appearance", Event{EID: EventAppearanceChanged}, false},
 		{"missing prefs", Event{EID: EventPrefsChanged}, false},
 		{"missing selection", Event{EID: EventSelectionChanged}, false},
+		{"missing post selected", Event{EID: EventPostSelected}, false},
+		{"empty post selection", Event{EID: EventPostSelected, PostSelection: &PostSelection{FeedID: 1}}, false},
+		{"missing post updated", Event{EID: EventPostUpdated}, false},
+		{"empty post update", Event{EID: EventPostUpdated, Post: &store.PostSummary{FeedID: 1}}, false},
 		{"empty command", Event{EID: EventUICommand}, false},
 		{"unknown", Event{EID: EventID("unknown")}, false},
 	}
@@ -75,6 +83,9 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		Unread: 3,
 	})
 	hub.SelectionChanged(1)
+	hub.PostSelected(appstatus.PostSelection{FeedID: 1, GUID: "first"})
+	hub.PostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Read: true, Starred: true})
+	hub.PostsChanged(PostsChanged{FeedID: 1, New: 2})
 	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge)
 	hub.PrefsChanged(store.Prefs{
 		Theme:     store.ThemeSepia,
@@ -85,7 +96,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	hub.SyncProgress(appstatus.SyncState{Active: true, Done: 1, Total: 2, FeedID: 1, Feed: "A"})
 	hub.PublishSnapshot()
 
-	if len(emitted) != 7 {
+	if len(emitted) != 10 {
 		t.Fatalf("emitted = %d events", len(emitted))
 	}
 	for i, e := range emitted {
@@ -97,7 +108,17 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		}
 	}
 
-	prefsEvent := emitted[3]
+	postSelectionEvent := emitted[2]
+	if postSelectionEvent.EID != EventPostSelected || postSelectionEvent.PostSelection == nil ||
+		postSelectionEvent.PostSelection.GUID != "first" {
+		t.Fatalf("post selection event = %+v", postSelectionEvent)
+	}
+	postEvent := emitted[3]
+	if postEvent.EID != EventPostUpdated || postEvent.Post == nil || !postEvent.Post.Starred {
+		t.Fatalf("post update event = %+v", postEvent)
+	}
+
+	prefsEvent := emitted[6]
 	if prefsEvent.EID != EventPrefsChanged || prefsEvent.Prefs == nil ||
 		prefsEvent.Prefs.Theme != store.ThemeSepia {
 		t.Fatalf("prefs event = %+v", prefsEvent)
@@ -106,7 +127,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		t.Fatalf("prefs pane sizes = %v; want [18 30]", prefsEvent.Prefs.PaneSizes)
 	}
 
-	snapshot := emitted[6]
+	snapshot := emitted[9]
 	if snapshot.EID != EventStateSnapshot || snapshot.Sync == nil || snapshot.Feeds == nil ||
 		snapshot.Appearance == nil || snapshot.Selection == nil {
 		t.Fatalf("snapshot = %+v", snapshot)
@@ -124,7 +145,8 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if snapshot.Selection.FeedID != 1 {
 		t.Errorf("snapshot selection = %+v", snapshot.Selection)
 	}
-	if snapshot.Posts != nil || snapshot.Prefs != nil || snapshot.Command != "" {
+	if snapshot.Posts != nil || snapshot.Prefs != nil || snapshot.PostSelection != nil ||
+		snapshot.Post != nil || snapshot.Command != "" {
 		t.Errorf("snapshot carried transient state: %+v", snapshot)
 	}
 
@@ -132,6 +154,10 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	if modelSnapshot.CurrentFeedID != 1 || modelSnapshot.FeedCount != 1 ||
 		modelSnapshot.Unread != 3 || modelSnapshot.Sync.Done != 1 {
 		t.Errorf("model snapshot = %+v", modelSnapshot)
+	}
+	if modelSnapshot.CurrentPost.GUID != "first" || !modelSnapshot.Post.Read ||
+		modelSnapshot.PostVersion != 1 || modelSnapshot.PostsVersion != 1 {
+		t.Errorf("model post state = %+v", modelSnapshot)
 	}
 	if modelSnapshot.SidebarCollapsed || modelSnapshot.SidebarPercent != 18 {
 		t.Errorf("model layout = %+v; want docked 18%%", modelSnapshot)

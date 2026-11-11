@@ -1,8 +1,8 @@
 # AGENTS.md
 
 Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
-MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态，底部状态栏由 MyGO 原生 UI
-直接渲染。面向用户的中文介绍在 `README.md`。
+MyGO 绑定把数据交给 SolidJS 页面；订阅源侧栏、文章列表和底部状态栏由 MyGO 原生 UI 直接
+渲染，页面只负责阅读区正文和对话框。面向用户的中文介绍在 `README.md`。
 
 本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
 的规则。
@@ -26,7 +26,7 @@ MyGO 绑定把数据交给 SolidJS 页面；页面只渲染阅读区本地状态
 | ------ | -------------------------------------------------------------------- |
 | 外壳   | MyGO 0.8.3（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
 | 后端   | Go 1.27.3，`mmcdole/gofeed` 1.5，bbolt 1.5                           |
-| 前端   | SolidJS 1.9，Kobalte 0.13 + corvu，Tailwind CSS 4                    |
+| 前端   | SolidJS 1.9，Kobalte 0.13，Tailwind CSS 4                            |
 | 构建   | Vite 8 + `vite-plugin-solid`，目标 `es2022`                          |
 | 状态   | 单个 Solid store；没有路由、Redux 或服务端渲染                       |
 | 工具链 | Bun、TypeScript 7、oxlint、oxfmt、Vitest 5                           |
@@ -62,8 +62,11 @@ internal/
   event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
   buildinfo/               从 Go 构建元数据读取构建日期
-  gui/                     MyGO 原生界面：状态栏、通知、图片查看器和设置/关于窗口
-    app_view.go            主窗原生布局：嵌入阅读页、底部状态栏与原生通知
+  gui/                     MyGO 原生界面：订阅源栏、文章列表、状态栏、通知和原生窗口
+    app_view.go            主窗原生布局：侧栏、文章列表、嵌入阅读页与状态栏
+    feed_sidebar.go        原生订阅源栏：搜索、选择、刷新、未读和右键菜单
+    post_list.go           原生文章列表：筛选、搜索、排序、分页和键盘选择
+    format.go              原生文章列表使用的相对时间与字数格式化
     about_window.go, status_bar.go, image_viewer.go, settings_window.go, native.go, notifications.go
     assets/                原生窗口内嵌图片资源
 webview/                   前端源码和独立构建配置
@@ -73,20 +76,20 @@ webview/                   前端源码和独立构建配置
   tsconfig.json            strict、noEmit、jsx preserve、~/* 路径别名
   src/
     main.tsx               挂载 App，首帧前先按系统主题上色
-    app.tsx                三栏布局与对话框
+    app.tsx                阅读区与对话框
     index.css              Tailwind 4 入口、主题 token、.post-body、.snapshot-*
     mygo.ts                生成的类型化客户端；被 git 忽略，不要编辑
     components/            页面组件、对话框、图标按钮和内联 shadcn 风格原语
-    components/ui/         Kobalte/corvu + cva 的 UI 原语
+    components/ui/         Kobalte + cva 的 UI 原语
     lib/                   format、sanitize、snapshot、theme、commands、notifications、utils
     stores/
       app-state.ts         状态类型、默认值、Solid store、派生值
       app.ts               供组件使用的统一导出层
       feeds.ts             订阅源选择、添加、删除和刷新
       icons.ts             订阅源图标状态、本地 data URL 渲染和失效
-      posts.ts             文章分页、筛选、打开、已读和星标
+      posts.ts             文章打开、已读、星标和原生列表选择桥接
       snapshot-actions.ts  快照生成、预览、保存和复制
-      settings.ts          偏好、面板宽度、外链和原生设置入口
+      settings.ts          外链和原生设置入口
       selection.ts         键盘选择、相邻订阅源和原文打开
       sync-events.ts       统一广播事件的状态应用辅助函数
       lifecycle.ts         启动加载
@@ -188,14 +191,17 @@ bun install
 - `mygo generate` 生成接口、`Feeds`/`Posts`/`Settings` 客户端和 `events.*`。生成文件里的
   JSON tag 会转成 camelCase，并保留 Go 文档注释。
 - Go 只声明一个广播通道 `app:event`，载荷是 `internal/event.Event`。所有 EID 共用同一
-  结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`prefs`、`selection` 或
-  `command` 中的哪一段，未使用字段为 `null` 或空字符串。
+  结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`prefs`、`selection`、
+  `postSelection`、`post` 或 `command` 中的哪一段，未使用字段为 `null` 或空字符串。
 - 事件由 `internal/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
   `status.Model`，最后广播。不要绕过 Hub 直接调用 `AppEvent.Broadcast`。
 - 主要 EID 有 `state.snapshot`、`sync.started`、`sync.progress`、`sync.finished`、
   `feeds.changed`、`posts.changed`、`appearance.changed`、`prefs.changed`、
-  `selection.changed` 和 `ui.command`。`state.snapshot` 在 `Status.PageReady` 时补发完整状态。
+  `selection.changed`、`post.selected`、`post.updated` 和 `ui.command`。
+  `state.snapshot` 在 `Status.PageReady` 时补发完整状态。
 - `feeds.changed` 携带完整订阅列表和总未读数；`posts.changed` 只携带 feed id 和新文章数。
+- `post.selected` 携带 `{feedId, guid}`，同步原生文章列表和页面阅读区；`post.updated`
+  携带 `store.PostSummary`，同步单篇文章的已读和星标状态。
 - `prefs.changed` 携带完整 `store.Prefs`，原生设置窗口保存后广播，页面据此同步偏好并在
   `postsPerFeed` 变化时重载文章。
 - macOS 原生菜单的“设置”直接调用 `action.OpenSettings(window)` 打开原生设置窗口；
@@ -203,6 +209,22 @@ bun install
   单一 dispatcher 执行动作。Windows/Linux 没有原生菜单栏。
 - 任何会改变订阅或未读状态的服务方法都应调用 Hub 的 `FeedsChanged`；多窗口依赖该事件
   保持一致。
+
+## 原生订阅源栏与文章列表
+
+- 主窗口由 `internal/gui/app_view.go` 组合两层原生 `ui.SplitPercent`：外层是订阅源栏和
+  阅读区，内层是文章列表和 WebView 正文。`Prefs.PaneSizes[0]` 是侧栏占整窗宽度的百分比，
+  `Prefs.PaneSizes[1]` 是文章列表占阅读区宽度的百分比；拖拽停止 500ms 后分别由
+  `action.SetSidebarPercent` 和 `action.SetListPercent` 保存。
+- `FeedSidebar` 和 `PostList` 都只持有 `status.Model` 快照与 `AppActions` 提供的回调。
+  原生文章列表自己维护筛选、搜索、排序和分页加载，每页 100 篇；选择文章时发布
+  `post.selected`，已读和星标变化由服务层发布 `post.updated`。
+- 原生界面主题从 `ui.LightTheme()`/`ui.DarkTheme()` 重新构建，不能复制嵌套
+  `ui.Themed` 里的 `c.Theme()` 后再缩放字号，否则会重复应用系统/应用字号。侧栏和文章
+  列表都以 13px 为基准字号，文章列表使用与旧 WebView 完全一致的 OKLCH 色彩 token。
+- 文章列表通过 `OnWindowShortcut` 处理 `j`/`k`/`n`/`p`/`Enter`/`s`；文本输入获得焦点时
+  跳过。页面 `commands.ts` 用 `native` 标记这些命令，让 WebView 不拦截按键；`Space`
+  仍由页面处理，滚到底部后通过 `Posts.selectNeighbour` 交给原生列表继续选择。
 
 ## 原生设置窗口
 
@@ -324,12 +346,12 @@ bun install
   `stores/events.ts` 是唯一 dispatcher，按 `eid` 路由并丢弃 `revision` 不递增的事件。
 - 没有路由。普通对话框由 `app.dialog` 控制（只剩 `addFeed` 和 `help`）；快照预览使用独立的
   `app.snapshot` 状态。偏好设置在原生窗口里，页面通过 `Settings.openSettings()` 打开。
-- 三栏宽度保存在 `Prefs.PaneSizes`，拖拽停止 500ms 后由 `savePaneSizes` 写回。
-- 文章列表采用分页追加，筛选同时支持未读和星标。列表当前选中项保存在
-  `app.current.guid`。
+- 订阅源栏和文章列表已是原生 UI；`app.current.guid` 只表示阅读区当前文章，原生列表的
+  选中项通过 `status.Model.CurrentPost` 镜像并随 `post.selected` 更新。
 - `commands.ts` 是快捷键的唯一注册表：每条命令声明绑定、分组、中文标签和动作。帮助对话框
   直接遍历同一数组，新增快捷键时也要同步 store 动作。macOS 的 mod 组合由原生菜单持有，
-  页面用 `installShortcuts({ skipMod: isMac })` 跳过重复注册。
+  页面用 `installShortcuts({ skipMod: isMac })` 跳过重复注册。由原生列表处理的命令加
+  `native: true`，页面只保留帮助信息，不注册按键处理。
 - 主题有两层：`action.UpdatePreferences` 调用 `UI.ApplyTheme` 设置原生外观；前端
   `lib/theme.ts` 在 `<html>` 上切换 `dark` 和 `theme-sepia` 类。字号通过
   `--app-text-scale` 缩放根字体。
@@ -411,7 +433,8 @@ bun install
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
   `stores/app-state.ts` 里的 `defaultPrefs`；在 `internal/gui/settings_window.go` 加原生控件；
   若影响阅读则更新 `stores/settings.ts`、相关功能模块和应用逻辑。
-- 新增快捷键：在 `lib/commands.ts` 的 `commands` 数组加一条，并确保 store 已提供对应动作。
+- 新增快捷键：在 `lib/commands.ts` 的 `commands` 数组加一条，并确保 store 或原生列表已
+  提供对应动作；原生列表负责的按键要标 `native: true`。
 - 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、前端 `theme.ts`、原生设置窗口和安全测试。
 - 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。
 
@@ -423,8 +446,8 @@ bun install
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
   `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验；`action` 用假 `UI`
-  覆盖外链校验、偏好草稿保存和通知转发；`gui` 用 `ui.NewTester` 渲染原生通知、设置和关于
-  窗口，并验证状态栏版本点击。
+  覆盖外链校验、偏好草稿保存和通知转发；`gui` 用 `ui.NewTester` 渲染原生订阅源栏、文章
+  列表、通知、设置和关于窗口，并验证状态栏版本点击。
 - 前端：`bun run test`。Vitest + jsdom，垫片在 `webview/test/setup.ts`。测试通过
   `vi.mock` 和固定夹具 mock `~/mygo`/`~/stores/app`；`restoreMocks: true` 已开启。
 - `setup.ts` 会把网络 API stub 成抛错，测试不得访问网络，也不应依赖打包好的应用。

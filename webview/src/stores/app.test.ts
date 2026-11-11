@@ -156,6 +156,8 @@ function makeEvent(
     appearance: null,
     prefs: null,
     selection: null,
+    postSelection: null,
+    post: null,
     command: "",
     ...overrides,
   };
@@ -203,6 +205,17 @@ describe("selectPost", () => {
 
     expect(app.app.post?.guid).toBe("guid-1");
     expect(mygo.Posts.markRead).toHaveBeenCalledWith(1, "guid-1", true);
+    expect(app.app.posts[0]?.read).toBe(true);
+    expect(app.app.postUnread).toBe(0);
+  });
+
+  it("does not decrement unread twice when the update event arrives first", async () => {
+    const { app, syncEvents } = await setup();
+    await app.start();
+
+    syncEvents.handlePostUpdated({ ...summary, read: true });
+    await app.selectPost("guid-1");
+
     expect(app.app.posts[0]?.read).toBe(true);
     expect(app.app.postUnread).toBe(0);
   });
@@ -771,21 +784,5 @@ describe("copySnapshot", () => {
     expect(mygo.Posts.copySnapshot).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith("无法生成快照：文章太长，无法生成一张快照");
     expect(app.app.snapshotting).toBe(false);
-  });
-});
-
-describe("savePaneSizes", () => {
-  it("converts article-pane sizes into preference percentages", async () => {
-    const { mygo, app } = await setup();
-    await app.start();
-    vi.useFakeTimers();
-
-    app.savePaneSizes([0.5, 0.75]);
-    await vi.runOnlyPendingTimersAsync();
-
-    expect(mygo.Settings.update).toHaveBeenCalledWith(
-      expect.objectContaining({ paneSizes: [18, 41] }),
-    );
-    vi.useRealTimers();
   });
 });

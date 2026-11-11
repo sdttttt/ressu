@@ -22,6 +22,7 @@ vi.mock("~/stores/app", () => {
     openSelectedPost: vi.fn(),
     openSelectedPostInBrowser: vi.fn(),
     refreshAll: vi.fn(),
+    selectNeighbourPost: vi.fn(),
     selectNeighbourFeed: vi.fn(),
     toggleOpenPostRead: vi.fn(),
     toggleStar: vi.fn(),
@@ -71,9 +72,9 @@ describe("installShortcuts", () => {
     const app = await store();
     const stop = installShortcuts();
 
-    press({ key: "j" });
+    press({ key: "R" });
 
-    expect(app.moveSelection).toHaveBeenCalledWith(1);
+    expect(app.refreshAll).toHaveBeenCalledTimes(1);
     stop();
   });
 
@@ -91,7 +92,7 @@ describe("installShortcuts", () => {
 
   it("marks the event handled for bare keys", () => {
     const stop = installShortcuts();
-    const event = new KeyboardEvent("keydown", { key: "s", cancelable: true });
+    const event = new KeyboardEvent("keydown", { key: "R", cancelable: true });
 
     window.dispatchEvent(event);
 
@@ -106,10 +107,11 @@ describe("installShortcuts", () => {
     input.focus();
     const stop = installShortcuts();
 
-    press({ key: "j", target: input });
-    press({ key: "s", target: input });
+    press({ key: "R", target: input });
+    press({ key: "?", target: input });
 
     expect(app.moveSelection).not.toHaveBeenCalled();
+    expect(app.refreshAll).not.toHaveBeenCalled();
     stop();
   });
 
@@ -132,10 +134,11 @@ describe("installShortcuts", () => {
     const { app: state } = await store();
     state.dialog.help = true;
 
-    press({ key: "j" });
+    press({ key: "R" });
     press({ key: "?" });
 
     expect(app.moveSelection).not.toHaveBeenCalled();
+    expect(app.refreshAll).not.toHaveBeenCalled();
     stop();
 
     state.dialog.help = false;
@@ -145,9 +148,9 @@ describe("installShortcuts", () => {
     const app = await store();
     const stop = installShortcuts();
 
-    press({ key: "j", composing: true });
+    press({ key: "R", composing: true });
 
-    expect(app.moveSelection).not.toHaveBeenCalled();
+    expect(app.refreshAll).not.toHaveBeenCalled();
     stop();
   });
 
@@ -172,16 +175,29 @@ describe("installShortcuts", () => {
     stop();
   });
 
-  it("stars the selected post with s", async () => {
+  it("leaves article-list keys for the native list", async () => {
     const app = await store();
     const stop = installShortcuts();
-    app.app.current.guid = "guid-1";
+    const event = new KeyboardEvent("keydown", { key: "s", cancelable: true });
 
-    press({ key: "s" });
+    window.dispatchEvent(event);
 
-    expect(app.toggleStar).toHaveBeenCalledWith("guid-1", 1);
+    expect(event.defaultPrevented).toBe(false);
+    expect(app.toggleStar).not.toHaveBeenCalled();
+    expect(app.moveSelection).not.toHaveBeenCalled();
     stop();
-    app.app.current.guid = null;
+  });
+
+  it("falls through to native selection at the end of an article", async () => {
+    const app = await store();
+    const stop = installShortcuts();
+    const event = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(app.selectNeighbourPost).toHaveBeenCalledWith(1, false);
+    stop();
   });
 
   it("shows the help dialog for ?", async () => {

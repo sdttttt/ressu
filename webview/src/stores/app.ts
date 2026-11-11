@@ -11,6 +11,7 @@ export {
   loadMorePosts,
   markAllRead,
   openImage,
+  selectNeighbourPost,
   selectPost,
   setPostSearch,
   setOpenPostRead,
@@ -26,7 +27,7 @@ export {
   selectNeighbourFeed,
   toggleOpenPostRead,
 } from "~/stores/selection";
-export { openLink, openSettings, savePaneSizes } from "~/stores/settings";
+export { openLink, openSettings } from "~/stores/settings";
 export {
   captureSnapshot,
   closeSnapshot,

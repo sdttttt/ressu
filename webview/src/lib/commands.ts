@@ -7,6 +7,7 @@ import {
   openSelectedPost,
   openSelectedPostInBrowser,
   refreshAll,
+  selectNeighbourPost,
   selectNeighbourFeed,
   toggleOpenPostRead,
   toggleStar,
@@ -24,6 +25,8 @@ type Command = {
   binding: Binding;
   group: CommandGroup;
   label: string;
+  /** Handled by the native article list, so the page leaves the key alone. */
+  native?: boolean;
   run: () => void;
 };
 
@@ -50,7 +53,7 @@ const scrollOrNext = (): void => {
   // No article pane yet: the first press starts the pipeline by opening the
   // first post. A pane still mounting has no height: wait.
   if (!box) {
-    void moveSelection(1);
+    void selectNeighbourPost(1, false);
     return;
   }
   if (box.clientHeight === 0) return;
@@ -61,8 +64,8 @@ const scrollOrNext = (): void => {
     return;
   }
   // The article is read to the bottom: continue with the next one, the
-  // NetNewsWire "space bar pipeline".
-  void moveSelection(1);
+  // NetNewsWire "space bar pipeline". The native list owns the loaded page.
+  void selectNeighbourPost(1, false);
 };
 
 const starSelected = (): void => {
@@ -117,6 +120,7 @@ export const commands: Command[] = [
     binding: { key: "j" },
     group: "文章列表",
     label: "选中下一篇文章并打开",
+    native: true,
     run: () => void moveSelection(1),
   },
   {
@@ -124,6 +128,7 @@ export const commands: Command[] = [
     binding: { key: "k" },
     group: "文章列表",
     label: "选中上一篇文章并打开",
+    native: true,
     run: () => void moveSelection(-1),
   },
   {
@@ -131,6 +136,7 @@ export const commands: Command[] = [
     binding: { key: "n" },
     group: "文章列表",
     label: "跳到下一篇未读",
+    native: true,
     run: () => void moveSelection(1, true),
   },
   {
@@ -138,6 +144,7 @@ export const commands: Command[] = [
     binding: { key: "p" },
     group: "文章列表",
     label: "跳到上一篇未读",
+    native: true,
     run: () => void moveSelection(-1, true),
   },
   {
@@ -145,6 +152,7 @@ export const commands: Command[] = [
     binding: { key: "Enter" },
     group: "文章列表",
     label: "打开选中的文章",
+    native: true,
     run: () => void openSelectedPost(),
   },
   {
@@ -152,6 +160,7 @@ export const commands: Command[] = [
     binding: { key: "s" },
     group: "文章列表",
     label: "切换星标",
+    native: true,
     run: starSelected,
   },
   {
@@ -227,6 +236,7 @@ export function installShortcuts(options: { skipMod?: boolean } = {}): () => voi
     const modHeld = event.ctrlKey || event.metaKey;
 
     for (const command of commands) {
+      if (command.native) continue;
       const mod = command.binding.mod === true;
       if (mod && options.skipMod) continue;
       if (mod !== modHeld) continue;

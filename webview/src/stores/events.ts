@@ -7,6 +7,8 @@ import {
   applySync,
   applySyncSnapshot,
   beginSync,
+  handlePostSelected,
+  handlePostUpdated,
   handlePostsChanged,
   handleSelectionChanged,
   replaceFeeds,
@@ -52,6 +54,12 @@ function handleEvent(event: BroadcastEvent): void {
       break;
     case "selection.changed":
       if (event.selection) void handleSelectionChanged(event.selection.feedId);
+      break;
+    case "post.selected":
+      if (event.postSelection) void handlePostSelected(event.postSelection);
+      break;
+    case "post.updated":
+      if (event.post) handlePostUpdated(event.post);
       break;
     case "ui.command":
       handleCommand(event.command);

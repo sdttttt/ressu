@@ -40,6 +40,7 @@ type UI interface {
 	WriteImage([]byte) error
 	ApplyTheme(string)
 	ShowNotification(gui.Notification)
+	SelectNeighbourPost(delta int, onlyUnread bool)
 }
 
 // AppActions is the single application-level entry for capabilities exposed to
@@ -372,6 +373,18 @@ func (a *AppActions) SidebarCallbacks() gui.FeedSidebarCallbacks {
 	}
 }
 
+// PostListCallbacks exposes native article list actions and layout updates.
+func (a *AppActions) PostListCallbacks() gui.PostListCallbacks {
+	return gui.PostListCallbacks{
+		List:           a.ListPosts,
+		Select:         a.SelectPost,
+		ToggleStar:     a.TogglePostStar,
+		MarkAllRead:    func(feedID int64) { a.markAllReadWithNotice(feedID) },
+		SetPanePercent: a.SetListPercent,
+		Notify:         a.Notify,
+	}
+}
+
 func (a *AppActions) refreshAllWithNotice() {
 	if _, err := a.RefreshAll(context.Background()); err != nil {
 		if errors.Is(err, service.ErrRefreshing) {
@@ -432,9 +445,33 @@ func (a *AppActions) SetSidebarPercent(percent float32) {
 	}
 }
 
+// SetListPercent stores the native article list's docked width percentage.
+func (a *AppActions) SetListPercent(percent float32) {
+	prefs := a.settings.Get()
+	listWidth := min(max(int(math.Round(float64(percent))), 18), 55)
+	sideWidth := 18
+	if len(prefs.PaneSizes) == 2 {
+		sideWidth = prefs.PaneSizes[0]
+	}
+	if len(prefs.PaneSizes) == 2 && prefs.PaneSizes[1] == listWidth {
+		return
+	}
+	prefs.PaneSizes = []int{sideWidth, listWidth}
+	if _, err := a.UpdatePreferences(prefs); err != nil {
+		slog.Warn("native list width save failed",
+			"operation", "action.postList.setPanePercent", "percent", percent, "error", err)
+		a.Notify("error", "保存文章栏宽度失败")
+	}
+}
+
 // SelectFeed broadcasts the feed selected by a page.
 func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
 	a.status.SelectFeed(ctx, feedID)
+}
+
+// SelectPost broadcasts the article selected by the native list.
+func (a *AppActions) SelectPost(feedID int64, guid string) {
+	a.status.SelectPost(context.Background(), feedID, guid)
 }
 
 // AddAndSelectFeed subscribes to a feed and broadcasts its selection.
@@ -455,4 +492,9 @@ func (a *AppActions) PageReady(ctx context.Context) {
 // Notify shows a native application notification.
 func (a *AppActions) Notify(level, message string) {
 	a.ui.ShowNotification(gui.Notification{Type: level, Title: message})
+}
+
+// SelectNeighbourPost moves the native article list from a page shortcut.
+func (a *AppActions) SelectNeighbourPost(delta int, onlyUnread bool) {
+	a.ui.SelectNeighbourPost(delta, onlyUnread)
 }

@@ -187,6 +187,11 @@ func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
 			"operation", "posts.markRead", "feedId", feedID, "error", err)
 		return err
 	}
+	if p.hub != nil {
+		if post, err := p.store.Post(feedID, guid); err == nil {
+			p.hub.PostUpdated(post.ToSummary())
+		}
+	}
 	p.broadcastFeeds()
 	return nil
 }
@@ -231,7 +236,11 @@ func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error)
 			"operation", "posts.toggleStar", "feedId", feedID, "error", err)
 		return store.PostSummary{}, err
 	}
-	return post.ToSummary(), nil
+	summary := post.ToSummary()
+	if p.hub != nil {
+		p.hub.PostUpdated(summary)
+	}
+	return summary, nil
 }
 
 // StitchSnapshot joins visible-page captures into one complete PNG.

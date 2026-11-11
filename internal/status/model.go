@@ -25,6 +25,12 @@ type FeedsSnapshot struct {
 	Unread int          `json:"unread"`
 }
 
+// PostSelection identifies the article selected by any reader surface.
+type PostSelection struct {
+	FeedID int64  `json:"feedId"`
+	GUID   string `json:"guid"`
+}
+
 // Snapshot is the state needed to draw the native status bar.
 type Snapshot struct {
 	Sync             SyncState
@@ -35,10 +41,15 @@ type Snapshot struct {
 	CurrentFeed      *store.Feed
 	SidebarCollapsed bool
 	SidebarPercent   float32
+	ListPercent      float32
 	Theme            string
 	FontSize         string
 	Version          string
 	RelativeStart    time.Time
+	PostsVersion     uint64
+	PostVersion      uint64
+	Post             store.PostSummary
+	CurrentPost      PostSelection
 }
 
 // Model stores the service state mirrored by the native status bar.
@@ -48,8 +59,13 @@ type Model struct {
 	feeds            []store.Feed
 	unread           int
 	current          int64
+	currentPost      PostSelection
 	sidebarCollapsed bool
 	sidebarPercent   float32
+	listPercent      float32
+	postsVersion     uint64
+	postVersion      uint64
+	post             store.PostSummary
 	theme            string
 	font             string
 	version          string
@@ -102,6 +118,9 @@ func (m *Model) SetCurrentFeed(feedID int64) {
 	m.mu.Lock()
 	changed := m.current != feedID
 	m.current = feedID
+	if changed {
+		m.currentPost = PostSelection{}
+	}
 	callback := m.changed
 	m.mu.Unlock()
 	if changed && callback != nil {
@@ -138,6 +157,56 @@ func (m *Model) SetLayout(collapsed bool, sidebarPercent float32) {
 	}
 }
 
+// SetListPercent mirrors the article list's docked width percentage.
+func (m *Model) SetListPercent(percent float32) {
+	if percent < 18 || percent > 55 {
+		percent = 30
+	}
+	m.mu.Lock()
+	changed := m.listPercent != percent
+	m.listPercent = percent
+	callback := m.changed
+	m.mu.Unlock()
+	if changed && callback != nil {
+		callback()
+	}
+}
+
+// SetCurrentPost tells native UI which article the reader selected.
+func (m *Model) SetCurrentPost(selection PostSelection) {
+	m.mu.Lock()
+	changed := m.currentPost != selection
+	m.currentPost = selection
+	callback := m.changed
+	m.mu.Unlock()
+	if changed && callback != nil {
+		callback()
+	}
+}
+
+// SetPostsChanged records that one feed's article list is stale.
+func (m *Model) SetPostsChanged() {
+	m.mu.Lock()
+	m.postsVersion++
+	callback := m.changed
+	m.mu.Unlock()
+	if callback != nil {
+		callback()
+	}
+}
+
+// SetPostUpdated mirrors one article's read or starred state.
+func (m *Model) SetPostUpdated(post store.PostSummary) {
+	m.mu.Lock()
+	m.postVersion++
+	m.post = post
+	callback := m.changed
+	m.mu.Unlock()
+	if callback != nil {
+		callback()
+	}
+}
+
 // Snapshot clones the state for one view frame.
 func (m *Model) Snapshot() Snapshot {
 	m.mu.RLock()
@@ -151,10 +220,15 @@ func (m *Model) Snapshot() Snapshot {
 		CurrentFeedID:    current,
 		SidebarCollapsed: m.sidebarCollapsed,
 		SidebarPercent:   m.sidebarPercent,
+		ListPercent:      m.listPercent,
 		Theme:            m.theme,
 		FontSize:         m.font,
 		Version:          m.version,
 		RelativeStart:    m.now(),
+		PostsVersion:     m.postsVersion,
+		PostVersion:      m.postVersion,
+		Post:             m.post,
+		CurrentPost:      m.currentPost,
 	}
 	m.mu.RUnlock()
 

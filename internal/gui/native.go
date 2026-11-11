@@ -25,11 +25,24 @@ type SettingsCallbacks struct {
 type NativeUI struct {
 	notifications *Notifications
 	confirmations *Confirmations
+	postList      *PostList
 }
 
 // NewNativeUI creates the native side-effect adapter.
-func NewNativeUI(notifications *Notifications, confirmations *Confirmations) NativeUI {
-	return NativeUI{notifications: notifications, confirmations: confirmations}
+func NewNativeUI(notifications *Notifications, confirmations *Confirmations) *NativeUI {
+	return &NativeUI{notifications: notifications, confirmations: confirmations}
+}
+
+// SetPostList connects the native article list to page-driven shortcuts.
+func (n *NativeUI) SetPostList(postList *PostList) {
+	n.postList = postList
+}
+
+// SelectNeighbourPost moves the native article list selection.
+func (n *NativeUI) SelectNeighbourPost(delta int, onlyUnread bool) {
+	if n.postList != nil {
+		n.postList.SelectNeighbour(delta, onlyUnread)
+	}
 }
 
 // SelectOPMLImport shows the picker used while importing subscriptions.

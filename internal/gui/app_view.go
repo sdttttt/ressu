@@ -14,6 +14,7 @@ type AppView struct {
 	notifications *Notifications
 	confirmations *Confirmations
 	sidebar       *FeedSidebar
+	postList      *PostList
 }
 
 // NewAppView creates the main window's native layout.
@@ -23,12 +24,14 @@ func NewAppView(
 	notifications *Notifications,
 	confirmations *Confirmations,
 	sidebar *FeedSidebar,
+	postList *PostList,
 ) *AppView {
 	return &AppView{
 		status:        NewStatusBar(statusModel, onAbout),
 		notifications: notifications,
 		confirmations: confirmations,
 		sidebar:       sidebar,
+		postList:      postList,
 	}
 }
 
@@ -43,22 +46,41 @@ func (a *AppView) View(c *ui.Context) {
 	ui.Column(c).Fill().Background(theme.Background).Children(func() {
 		if a.page == nil {
 			ui.Box(c).Grow(1).Background(theme.Background)
-		} else if a.sidebar != nil && !a.sidebar.isCollapsed() {
-			var split ui.Element
-			ui.Themed(c, a.sidebar.SidebarTheme(c)).FillWidth().Grow(1).Children(func() {
-				split = ui.SplitPercent(c, a.sidebar.splitPercent(), func() {
-					a.sidebar.View(c)
-				}, func() {
-					ui.WebView(c, a.page).Grow(1)
-				}).Fill()
-			})
-			if split.Changed() {
-				a.sidebar.savePanePercent()
-			}
 		} else {
-			ui.WebView(c, a.page).Grow(1)
-			if a.sidebar != nil {
-				a.sidebar.drawOverlay(c)
+			drawContent := func() {
+				if a.postList == nil {
+					ui.WebView(c, a.page).Grow(1)
+					return
+				}
+
+				ui.Themed(c, a.postList.PostListTheme(c)).Fill().Children(func() {
+					var articleSplit ui.Element
+					articleSplit = ui.SplitPercent(c, a.postList.splitPercent(), func() {
+						a.postList.View(c)
+					}, func() {
+						ui.WebView(c, a.page).Grow(1)
+					}).Fill()
+					if articleSplit.Changed() {
+						a.postList.savePanePercent()
+					}
+				})
+			}
+
+			if a.sidebar != nil && !a.sidebar.isCollapsed() {
+				var split ui.Element
+				ui.Themed(c, a.sidebar.SidebarTheme(c)).FillWidth().Grow(1).Children(func() {
+					split = ui.SplitPercent(c, a.sidebar.splitPercent(), func() {
+						a.sidebar.View(c)
+					}, drawContent).Fill()
+				})
+				if split.Changed() {
+					a.sidebar.savePanePercent()
+				}
+			} else {
+				drawContent()
+				if a.sidebar != nil {
+					a.sidebar.drawOverlay(c)
+				}
 			}
 		}
 		a.status.View(c)

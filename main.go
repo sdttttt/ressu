@@ -87,6 +87,11 @@ func main() {
 		sidebarPercent = float32(prefs.PaneSizes[0])
 	}
 	statusModel.SetLayout(prefs.SidebarCollapsed, sidebarPercent)
+	listPercent := float32(30)
+	if len(prefs.PaneSizes) == 2 {
+		listPercent = float32(prefs.PaneSizes[1])
+	}
+	statusModel.SetListPercent(listPercent)
 	hub := appevent.NewHub(statusModel)
 	feeds := service.NewFeedsWithHub(st, hub)
 	hub.FeedsChanged(feeds.List())
@@ -109,6 +114,8 @@ func main() {
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	sidebar := gui.NewFeedSidebar(statusModel, actions.SidebarCallbacks())
+	postList := gui.NewPostList(statusModel, actions.PostListCallbacks())
+	nativeUI.SetPostList(postList)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
 		webendpoint.NewPosts(actions),
@@ -139,7 +146,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about, notifications, confirmations, sidebar); err != nil {
+		}, foreground, app.IsActive, about, notifications, confirmations, sidebar, postList); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -183,6 +190,7 @@ func openWindow(
 	notifications *gui.Notifications,
 	confirmations *gui.Confirmations,
 	sidebar *gui.FeedSidebar,
+	postList *gui.PostList,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
 	view := gui.NewAppView(statusModel, func() {
@@ -191,7 +199,7 @@ func openWindow(
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		gui.OpenAboutWindow(win, info)
-	}, notifications, confirmations, sidebar)
+	}, notifications, confirmations, sidebar, postList)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
@@ -211,8 +219,15 @@ func openWindow(
 			win.Invalidate()
 		}
 	})
+	postList.Attach(win)
+	postList.SetInvalidate(func() {
+		if !win.IsDestroyed() {
+			win.Invalidate()
+		}
+	})
 	statusModel.SetChanged(func() {
 		sidebar.SyncLayout()
+		postList.SyncLayout()
 	})
 
 	var once sync.Once

@@ -56,9 +56,7 @@ export async function openSelectedPost(): Promise<void> {
 
 /** Opens the selected post's original page in a browser. */
 export async function openSelectedPostInBrowser(): Promise<void> {
-  const post = state.posts.find(
-    (item) => item.feedId === state.current.postFeedId && item.guid === state.current.guid,
-  );
+  const post = state.post;
   if (post) await openLink(post.url);
 }
 

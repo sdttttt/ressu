@@ -10,7 +10,18 @@ const nativeFontFamily = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "
 
 // nativeTheme maps an app theme preference to the colors used by native UI.
 func nativeTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := *c.Theme()
+	base := ui.LightTheme()
+	switch appearance {
+	case store.ThemeDark:
+		base = ui.DarkTheme()
+	case store.ThemeSepia:
+		base = ui.LightTheme()
+	case store.ThemeSystem:
+		if c.Theme().Dark {
+			base = ui.DarkTheme()
+		}
+	}
+	theme := *base
 	theme.FontSize *= interfaceFontScale(fontSize)
 	theme.Font = nativeFontFamily
 	if appearance == store.ThemeSepia {

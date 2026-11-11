@@ -118,6 +118,11 @@ func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error)
 	return p.actions.TogglePostStar(feedID, guid)
 }
 
+// SelectNeighbour moves the native article list selection.
+func (p *Posts) SelectNeighbour(_ context.Context, delta int, onlyUnread bool) {
+	p.actions.SelectNeighbourPost(delta, onlyUnread)
+}
+
 // CaptureSnapshot captures the visible page for one scroll position.
 func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCaptureRequest) ([]byte, error) {
 	return p.actions.CaptureSnapshot(ctx, request)

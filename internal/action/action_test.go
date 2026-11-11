@@ -93,6 +93,8 @@ func (f *fakeUI) ShowNotification(notification gui.Notification) {
 	f.notifications = append(f.notifications, notification)
 }
 
+func (f *fakeUI) SelectNeighbourPost(int, bool) {}
+
 func newTestActions(t *testing.T) (*AppActions, *fakeUI) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())

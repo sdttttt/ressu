@@ -1,22 +1,14 @@
 import { Rss } from "lucide-solid";
 import { Show, onCleanup, onMount } from "solid-js";
 
-import PostList from "~/components/post-list";
 import PostView from "~/components/post-view";
 import ShortcutsDialog from "~/components/shortcuts-dialog";
 import SnapshotDialog from "~/components/snapshot-dialog";
-import { Resizable, ResizableHandle, ResizablePanel } from "~/components/ui/resizable";
 import { Skeleton } from "~/components/ui/skeleton";
 import { installShortcuts, isMac } from "~/lib/commands";
 import { applyTheme, onSystemThemeChange } from "~/lib/theme";
-import { app, savePaneSizes, start } from "~/stores/app";
+import { app, start } from "~/stores/app";
 import { subscribe } from "~/stores/events";
-
-function articlePaneSizes(): [number, number] {
-  const [sidebar, list] = app.prefs.paneSizes;
-  const listSize = Math.min(Math.max(list / (100 - sidebar), 0.18), 0.55);
-  return [listSize, 1 - listSize];
-}
 
 export default function App() {
   onMount(() => {
@@ -40,25 +32,7 @@ export default function App() {
     <div class="flex h-full flex-col bg-background text-foreground">
       <Show when={app.ready} fallback={<Splash />}>
         <div class="relative min-h-0 flex-1">
-          <Resizable
-            class="flex h-full"
-            onSizesChange={(sizes) => {
-              const [first, second] = sizes;
-              if (first === undefined || second === undefined) return;
-              savePaneSizes(sizes);
-            }}
-            initialSizes={articlePaneSizes()}
-          >
-            <ResizablePanel initialSize={articlePaneSizes()[0]} minSize={0.18} maxSize={0.55}>
-              <PostList />
-            </ResizablePanel>
-
-            <ResizableHandle />
-
-            <ResizablePanel initialSize={articlePaneSizes()[1]} minSize={0.25}>
-              <PostView />
-            </ResizablePanel>
-          </Resizable>
+          <PostView />
         </div>
       </Show>
 

@@ -1,8 +1,8 @@
 import { toast } from "~/lib/notifications";
 import { applyFontSize, applyTheme } from "~/lib/theme";
-import type { FeedsSnapshot, Prefs, SyncState } from "~/mygo";
+import type { FeedsSnapshot, PostSelection, PostSummary, Prefs, SyncState } from "~/mygo";
 import { app as state, idleSync, setAppState as setState } from "~/stores/app-state";
-import { loadPosts } from "~/stores/posts";
+import { loadPosts, selectPost } from "~/stores/posts";
 
 /** Applies the feed list the Go side sent. */
 export async function replaceFeeds(snapshot: FeedsSnapshot): Promise<void> {
@@ -74,4 +74,31 @@ export async function handleSelectionChanged(feedId: number): Promise<void> {
   setState("current", { feedId, postFeedId: null, guid: null });
   setState("post", null);
   await loadPosts(0);
+}
+
+/** Opens the article selected by the native list. */
+export async function handlePostSelected(selection: PostSelection): Promise<void> {
+  if (state.current.postFeedId === selection.feedId && state.current.guid === selection.guid) {
+    return;
+  }
+  await selectPost(selection.guid, selection.feedId);
+}
+
+/** Applies article read and starred changes to the list and open reader. */
+export function handlePostUpdated(post: PostSummary): void {
+  const index = state.posts.findIndex(
+    (item) => item.feedId === post.feedId && item.guid === post.guid,
+  );
+  if (index >= 0) {
+    const previous = state.posts[index];
+    if (previous.read !== post.read) {
+      setState("postUnread", (unread) => Math.max(unread + (post.read ? -1 : 1), 0));
+    }
+    setState("posts", index, "read", post.read);
+    setState("posts", index, "starred", post.starred);
+  }
+
+  if (state.post?.feedId === post.feedId && state.post.guid === post.guid) {
+    setState("post", (current) => (current ? { ...current, ...post } : current));
+  }
 }

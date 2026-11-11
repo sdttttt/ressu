@@ -33,6 +33,10 @@ const (
 	EventPrefsChanged EventID = "prefs.changed"
 	// EventSelectionChanged carries the selected feed.
 	EventSelectionChanged EventID = "selection.changed"
+	// EventPostSelected carries the selected article.
+	EventPostSelected EventID = "post.selected"
+	// EventPostUpdated carries an article's read or starred state.
+	EventPostUpdated EventID = "post.updated"
 	// EventUICommand asks the page to run a native-menu command.
 	EventUICommand EventID = "ui.command"
 )
@@ -54,19 +58,24 @@ type Selection struct {
 	FeedID int64 `json:"feedId"`
 }
 
+// PostSelection is the article selected by the page.
+type PostSelection = appstatus.PostSelection
+
 // Event is the single payload used by every Go-to-frontend broadcast. EID
 // decides which fields consumers read; the other sections are null.
 type Event struct {
-	EID        EventID                  `json:"eid"`
-	Revision   uint64                   `json:"revision"`
-	OccurredAt time.Time                `json:"occurredAt"`
-	Sync       *appstatus.SyncState     `json:"sync"`
-	Feeds      *appstatus.FeedsSnapshot `json:"feeds"`
-	Posts      *PostsChanged            `json:"posts"`
-	Appearance *Appearance              `json:"appearance"`
-	Prefs      *store.Prefs             `json:"prefs"`
-	Selection  *Selection               `json:"selection"`
-	Command    string                   `json:"command"`
+	EID           EventID                  `json:"eid"`
+	Revision      uint64                   `json:"revision"`
+	OccurredAt    time.Time                `json:"occurredAt"`
+	Sync          *appstatus.SyncState     `json:"sync"`
+	Feeds         *appstatus.FeedsSnapshot `json:"feeds"`
+	Posts         *PostsChanged            `json:"posts"`
+	Appearance    *Appearance              `json:"appearance"`
+	Prefs         *store.Prefs             `json:"prefs"`
+	Selection     *Selection               `json:"selection"`
+	PostSelection *PostSelection           `json:"postSelection"`
+	Post          *store.PostSummary       `json:"post"`
+	Command       string                   `json:"command"`
 }
 
 // Validate reports whether the event contains the fields its EID needs.
@@ -99,6 +108,14 @@ func (e Event) Validate() error {
 	case EventSelectionChanged:
 		if e.Selection == nil {
 			return fmt.Errorf("event %q is missing selection", e.EID)
+		}
+	case EventPostSelected:
+		if e.PostSelection == nil || e.PostSelection.GUID == "" {
+			return fmt.Errorf("event %q is missing a post selection", e.EID)
+		}
+	case EventPostUpdated:
+		if e.Post == nil || e.Post.GUID == "" {
+			return fmt.Errorf("event %q is missing a post update", e.EID)
 		}
 	case EventUICommand:
 		if strings.TrimSpace(e.Command) == "" {

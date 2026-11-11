@@ -71,10 +71,30 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		t.Fatalf("out-of-range sidebar percent was not clamped: %+v", layout)
 	}
 
+	model.SetCurrentPost(PostSelection{FeedID: 1, GUID: "first"})
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("SetCurrentPost did not notify")
+	}
+
 	model.SetCurrentFeed(1)
 	select {
 	case <-changed:
 		t.Fatal("unchanged current feed notified")
 	default:
+	}
+	if current := model.Snapshot().CurrentPost; current.GUID != "first" {
+		t.Fatalf("unchanged feed cleared the article selection: %+v", current)
+	}
+
+	model.SetCurrentFeed(2)
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("changing the feed did not notify")
+	}
+	if current := model.Snapshot().CurrentPost; current.GUID != "" {
+		t.Fatalf("changing the feed kept the article selection: %+v", current)
 	}
 }

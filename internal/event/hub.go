@@ -82,6 +82,16 @@ func (h *Hub) SelectionChanged(feedID int64) {
 	})
 }
 
+// PostSelected broadcasts the article selected by a reader surface.
+func (h *Hub) PostSelected(selection appstatus.PostSelection) {
+	h.Publish(Event{EID: EventPostSelected, PostSelection: &selection})
+}
+
+// PostUpdated broadcasts an article's read or starred state.
+func (h *Hub) PostUpdated(post store.PostSummary) {
+	h.Publish(Event{EID: EventPostUpdated, Post: &post})
+}
+
 // UICommand asks every page to run a native-menu command.
 func (h *Hub) UICommand(command string) {
 	h.Publish(Event{EID: EventUICommand, Command: command})
@@ -147,8 +157,19 @@ func (h *Hub) applyLocked(e Event) {
 			sidebarPercent = float32(e.Prefs.PaneSizes[0])
 		}
 		h.model.SetLayout(e.Prefs.SidebarCollapsed, sidebarPercent)
+		listPercent := float32(30)
+		if len(e.Prefs.PaneSizes) == 2 {
+			listPercent = float32(e.Prefs.PaneSizes[1])
+		}
+		h.model.SetListPercent(listPercent)
 	case EventSelectionChanged:
 		h.model.SetCurrentFeed(e.Selection.FeedID)
+	case EventPostsChanged:
+		h.model.SetPostsChanged()
+	case EventPostSelected:
+		h.model.SetCurrentPost(*e.PostSelection)
+	case EventPostUpdated:
+		h.model.SetPostUpdated(*e.Post)
 	}
 }
 
