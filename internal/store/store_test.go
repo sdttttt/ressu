@@ -48,10 +48,20 @@ func TestOpenCreatesDatabase(t *testing.T) {
 }
 
 func TestPrefsNormalizeRemoteResources(t *testing.T) {
+	if prefs := DefaultPrefs(); prefs.RemoteResources != ResourceAccessWebview {
+		t.Errorf("default remote resources = %q, want %q", prefs.RemoteResources, ResourceAccessWebview)
+	}
+
 	prefs := Prefs{RemoteResources: "unexpected"}
 	prefs.Normalize()
 	if prefs.RemoteResources != ResourceAccessGoProxy {
 		t.Errorf("unknown remote resources = %q, want %q", prefs.RemoteResources, ResourceAccessGoProxy)
+	}
+
+	prefs = Prefs{RemoteResources: ResourceAccessGoProxy}
+	prefs.Normalize()
+	if prefs.RemoteResources != ResourceAccessGoProxy {
+		t.Errorf("goProxy remote resources = %q", prefs.RemoteResources)
 	}
 
 	prefs = Prefs{RemoteResources: ResourceAccessWebview}

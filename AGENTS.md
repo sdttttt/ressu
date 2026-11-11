@@ -438,8 +438,8 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
 - 订阅地址在 Go 侧由 `rss.ValidateURL` 再校验一次；不要只依赖前端校验。
 - 数据是本地未加密数据库，包含订阅、完整正文、已读/星标和偏好；原生设置窗口可打开数据目录。
 - 没有账号、同步、遥测或统计。WebView 不直接加载订阅源图标；图标由 Go 缓存后以本地 data
-  URL 渲染。正文远端图片默认由 Go 在 `Posts.Get` 中改写为 `ressu-media://`，通过本地缓存协议
-  提供；用户可在设置中选择 Webview 直接加载。
+  URL 渲染。正文远端图片默认由 Webview 直接加载；用户也可在设置中选择 Go 代理，由
+  `Posts.Get` 改写为 `ressu-media://` 并通过本地缓存协议提供。
 - webview 端禁止直接网络请求；代码评审必须确认没有 `fetch`、`XMLHttpRequest`、
   `WebSocket` 和 `EventSource`。需要远程数据时新增 Go 绑定。
 - `mygo build` 从 `mygo://localhost` 提供内嵌页面；页面没有 CSP meta 标签，因此 XSS 防护

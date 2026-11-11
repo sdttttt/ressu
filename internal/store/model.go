@@ -143,7 +143,7 @@ func DefaultPrefs() Prefs {
 		FontSize:         FontSizeMedium,
 		RefreshOnStart:   true,
 		MarkReadOnOpen:   true,
-		RemoteResources:  ResourceAccessGoProxy,
+		RemoteResources:  ResourceAccessWebview,
 		OpenLinks:        OpenLinksBrowser,
 		PostsPerFeed:     DefaultPostsPerFeed,
 		ImageCacheLimit:  DefaultImageCacheLimit,

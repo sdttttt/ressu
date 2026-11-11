@@ -102,6 +102,11 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 	if !ok {
 		t.Fatal("source URL could not be mapped")
 	}
+	prefs := st.Prefs()
+	prefs.RemoteResources = store.ResourceAccessGoProxy
+	if err := st.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
 	post, err := NewPostsWithMedia(st, articleMedia).Get(1, "photo")
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +125,7 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 		t.Fatalf("legacy posts service unexpectedly changed content: %s", withoutMedia.Content)
 	}
 
-	prefs := st.Prefs()
+	prefs = st.Prefs()
 	prefs.RemoteResources = store.ResourceAccessWebview
 	if err := st.SetPrefs(prefs); err != nil {
 		t.Fatal(err)
