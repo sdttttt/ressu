@@ -63,14 +63,23 @@ internal/
   event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
   status/                  原生状态栏与页面共享的服务状态模型
   buildinfo/               从 Go 构建元数据读取构建日期
-  gui/                     MyGO 原生界面：订阅源栏、文章列表、状态栏、通知和原生窗口
+  gui/                     MyGO 原生界面组合根：主窗布局、状态栏和原生副作用
     app_view.go            主窗原生布局：侧栏、文章列表、嵌入阅读页与状态栏
-    feed_sidebar.go        原生订阅源栏：搜索、选择、刷新、未读和右键菜单
-    post_list.go           原生文章列表：筛选、搜索、排序、分页和键盘选择
-    post_header.go         原生文章头部：标题、元信息、星标、已读和原文按钮
-    post_header_icons.go   文章头部使用的内嵌 SVG 图标
-    format.go              原生文章列表使用的相对时间与字数格式化
-    about_window.go, status_bar.go, image_viewer.go, settings_window.go, native.go, notifications.go
+    status_bar.go          原生状态栏与服务状态
+    native.go              NativeUI：对话框、shell、剪贴板、主题和窗口截图适配
+    about/                 原生关于窗口
+    addfeed/               原生添加订阅和 OPML 导入窗口
+    dialog/                可复用通知和确认队列
+    format/                原生界面使用的中文时间和字数格式化
+    icon/                  原生界面共享 SVG
+    postheader/            原生文章头部：标题、元信息、星标、已读和原文按钮
+    postlist/              原生文章列表：筛选、搜索、排序、分页和键盘选择
+    settings/              原生设置窗口
+    sidebar/               原生订阅源栏：搜索、选择、刷新、未读和右键菜单
+    theme/                 原生主题、字号、文章色板和状态栏高度契约
+    viewer/                图片和快照预览窗口
+    widget/                可复用原生控件
+    window/                子窗口创建适配
     assets/                原生窗口内嵌图片资源
 webview/static/            无构建前端源码，由 MyGO 开发时直供并在打包时内嵌
   index.html               阅读页入口，lang="zh-CN"
@@ -142,12 +151,13 @@ bun install
 - `internal/action` 是所有页面和原生界面能力的唯一应用入口，持有 service、Hub 和 `UI`
   回调接口，负责文件对话框、剪贴板、外链、截图、原生主题与状态广播。需要暴露给界面层
   的能力必须先定义成 `AppActions` 方法。
-- `internal/gui` 同时承载原生界面和 `NativeUI` 副作用实现；MyGO 对话框、shell、剪贴板、
-  主题和窗口截图封装在这里。
+- `internal/gui` 根包只做原生界面组合和 `NativeUI` 副作用实现；可复用的主题、格式化、图标、
+  控件、对话框和子窗口放在基础包，订阅源栏、文章列表、文章头部和各类窗口放在功能包。
 - `internal/webendpoint` 只持有 `*action.AppActions`，负责 MyGO 绑定适配：用
   `mygo.CallerWindow(ctx)`、`mygo.CallerPage(ctx)` 取出调用方窗口/页面后转交 action。
   它不得直接持有或调用 `service`，不得复制业务逻辑，也不得自行拼装 UI 副作用。
-- `internal/gui` 只依赖 `gui.SettingsCallbacks` 和 `store`，不 import `service`。
+- 原生功能组件通过回调或只读数据类型接入应用；`settings.Callbacks` 读写偏好。组件不得直接
+  访问数据库或实现业务规则。
 - 绑定对象上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入；静态页通过
   `globalThis.mygo.call` 调用时省略上下文，例如 `Feeds.Add(ctx, url)` 对应
   `runtime.call("Feeds.Add", url)`。
@@ -178,8 +188,8 @@ bun install
   阅读区，内层是文章列表和 WebView 正文。`Prefs.PaneSizes[0]` 是侧栏占整窗宽度的百分比，
   `Prefs.PaneSizes[1]` 是文章列表占阅读区宽度的百分比；拖拽停止 500ms 后分别由
   `action.SetSidebarPercent` 和 `action.SetListPercent` 保存。
-- `FeedSidebar`、`PostList` 和 `PostHeader` 都只持有 `status.Model` 快照与 `AppActions`
-  提供的回调。原生文章列表自己维护筛选、搜索、排序和分页加载，每页 100 篇；选择文章时携带
+- `sidebar.Sidebar`、`postlist.List` 和 `postheader.Header` 都只持有 `status.Model` 快照与
+  `AppActions` 提供的回调。原生文章列表自己维护筛选、搜索、排序和分页加载，每页 100 篇；选择文章时携带
   完整摘要发布 `post.selected`，已读和星标变化由服务层发布 `post.updated`。原生头部渲染
   当前摘要，并提供星标、已读/未读和原文操作。
 - 原生界面主题从 `ui.LightTheme()`/`ui.DarkTheme()` 重新构建，不能复制嵌套
@@ -191,15 +201,15 @@ bun install
 
 ## 原生设置窗口
 
-偏好设置不再由页面里的对话框承载，而是 `internal/gui/settings_window.go` 的原生窗口：
+偏好设置不再由页面里的对话框承载，而是 `internal/gui/settings` 的原生窗口：
 
 - 入口是静态页的 `Settings.OpenSettings` 命令或 macOS 菜单直接调用
   `action.OpenSettings(window)`；`action` 把它转成 `UI.OpenSettings(parent, callbacks)`，
   由 `internal/gui/native.go` 打开原生窗口。
 - 窗口是主窗口的子窗口（`Parent`），`StateKey: "settings"`，`UseContentSize` 580x720，
   最小 480x560，内容可滚动；同时只允许存在一个实例。
-- 控件通过 `gui.SettingsCallbacks`（`Load`/`Save`/`DataDir`/`ExportOPML`/`OpenDataDir`）
-  读写数据，`gui` 因此不依赖 `service`。
+- 控件通过 `settings.Callbacks`（`Load`/`Save`/`DataDir`/`ExportOPML`/`OpenDataDir`）
+  读写数据。
 - 每次改动立即保存并广播 `prefs.changed`。保存时用 `action.UpdateSettingsDraft` 保留当前的
   `PaneSizes` 和 `SidebarCollapsed`，避免覆盖页面侧的布局改动。
 - 原生控件是即时模式：构造器写入指针，用 `Element.Changed()` 判断变化，用
@@ -209,7 +219,7 @@ bun install
 
 - 状态栏版本号是普通文本，点击由 `Element.OnClick` 绑定，不使用按钮控件；`main.go`
   组装元数据并在点击时补入当前主题和字号。
-- 点击后打开 `internal/gui/about_window.go` 的单例子窗口，显示版本、嵌入头像、开发者、
+- 点击后打开 `internal/gui/about` 的单例子窗口，显示版本、嵌入头像、开发者、
   构建日期、邮箱和说明文字；邮箱使用 `mailto:` 链接，窗口只通过系统标题栏关闭。
 - 构建日期由 `internal/buildinfo.Date` 从 Go 的 `vcs.time` 读取；缺少 VCS 信息时回退到
   可执行文件的修改时间。
@@ -218,7 +228,7 @@ bun install
 
 - 页面不使用网页 toast 组件。静态页通过 `Status.Notify(level, message)` 调用，再经
   `webendpoint`、`AppActions.Notify` 和 `gui.NativeUI.ShowNotification` 进入原生队列。
-- 通知绑定在非 UI goroutine 上执行，不能直接操作 `ui.Context`。`internal/gui/notifications.go`
+- 通知绑定在非 UI goroutine 上执行，不能直接操作 `ui.Context`。`internal/gui/dialog`
   先加锁入队，并调用主窗口的 `Invalidate()`；`AppView.View` 在下一帧取出队列后调用
   `ui.ToastViewportBase` 渲染。
 - 通知队列最多保留 32 条，类型只接受 `error`、`warning`、`info`、`success`；通知卡片固定在
@@ -311,7 +321,7 @@ bun install
   `--app-text-scale` 缩放根字体。
 - `sepia` 运行时类名必须是 `theme-sepia`，避免与 WebView 内置滤镜语义混淆。
 - 新增主题要同步 `store` 的主题常量与 `Normalize`、`internal/gui/native.go` 的 `ApplyTheme`、
-  `reader.js`（`isDark`/`applyAppearanceFromPrefs`）和 `internal/gui/settings_window.go`
+  `reader.js`（`isDark`/`applyAppearanceFromPrefs`）和 `internal/gui/settings`
   的选项。
 - 需要展示日期时使用 `zh-CN` Intl；需要测试确定性时把 `now` 或时间值作为参数传入。
 
@@ -360,10 +370,10 @@ bun install
   在状态变化处调用；在 `reader.js` 的 dispatcher 加分支。不要新增第二个
   `mygo.NewEvent` 通道。
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
-  相关消费点；在 `internal/gui/settings_window.go` 加原生控件；若影响阅读则更新
+  相关消费点；在 `internal/gui/settings` 加原生控件；若影响阅读则更新
   `reader.js` 和应用逻辑。
-- 新增快捷键：先确认属于原生列表还是静态正文；原生快捷键接在 `post_list.go`，正文快捷键
-  接在 `reader.js`，帮助对话框保持中文说明完整。
+- 新增快捷键：先确认属于原生列表还是静态正文；原生列表快捷键接在 `internal/gui/postlist`，
+  静态正文快捷键接在 `reader.js`，帮助对话框保持中文说明完整。
 - 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、`reader.js`、原生设置窗口和安全测试。
 - 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。
 
@@ -375,8 +385,8 @@ bun install
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
   `icon` 覆盖图标候选、下载校验和体积上限；`foreground` 覆盖回前台刷新和窗口焦点兜底；
   `snapshot` 覆盖请求校验、拼接、错误分片、文件名和成品 PNG 校验；`action` 用假 `UI`
-  覆盖外链校验、偏好草稿保存和通知转发；`gui` 用 `ui.NewTester` 渲染原生订阅源栏、文章
-  列表、头部、通知、设置和关于窗口，并验证状态栏版本点击。
+  覆盖外链校验、偏好草稿保存和通知转发；`gui` 及其子包用 `ui.NewTester` 渲染原生订阅源栏、
+  文章列表、头部、通知、设置和关于窗口，并验证状态栏版本点击。
 - 静态页没有独立测试框架；语法可用 `node --check webview/static/reader.js` 检查，运行行为
   由打包后的应用手动验证。
 - 没有 E2E、浏览器自动化或覆盖率阈值。
