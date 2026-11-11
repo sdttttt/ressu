@@ -20,6 +20,7 @@ import (
 	"github.com/sdttttt/ressu/internal/buildinfo"
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
+	appabout "github.com/sdttttt/ressu/internal/gui/about"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
@@ -161,12 +162,12 @@ func main() {
 }
 
 // newAboutInfo gathers the metadata shown by the native About window.
-func newAboutInfo(version string) gui.AboutInfo {
+func newAboutInfo(version string) appabout.Info {
 	buildDate := "未知"
 	if date := buildinfo.Date(); !date.IsZero() {
 		buildDate = date.Format("2006-01-02")
 	}
-	return gui.AboutInfo{
+	return appabout.Info{
 		Version:   version,
 		BuildDate: buildDate,
 		Developer: appDeveloper,
@@ -189,7 +190,7 @@ func openWindow(
 	onReady func(),
 	foreground *service.ForegroundRefresher,
 	isActive func() bool,
-	about gui.AboutInfo,
+	about appabout.Info,
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
 	sidebar *gui.FeedSidebar,
@@ -202,7 +203,7 @@ func openWindow(
 		snapshot := statusModel.Snapshot()
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
-		gui.OpenAboutWindow(win, info)
+		appabout.Open(win, info)
 	}, notifications, confirmations, sidebar, postHeader, postList)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",

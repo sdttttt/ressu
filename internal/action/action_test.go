@@ -8,9 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/egoist/mygo"
+
 	appevent "github.com/sdttttt/ressu/internal/event"
-	"github.com/sdttttt/ressu/internal/gui"
+	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
+	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/service"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
@@ -26,8 +30,8 @@ type fakeUI struct {
 	theme             string
 	snapshotData      []byte
 	snapshotTitle     string
-	snapshotParent    *gui.Window
-	snapshotCallbacks gui.SnapshotViewerCallbacks
+	snapshotParent    *mygo.Window
+	snapshotCallbacks appviewer.SnapshotCallbacks
 	notifications     []appdialog.Notification
 	addFeedOpened     bool
 	confirmation      *appdialog.ConfirmationRequest
@@ -35,15 +39,15 @@ type fakeUI struct {
 	confirmCalled     bool
 }
 
-func (f *fakeUI) SelectOPMLImport(*gui.Window) ([]string, error) {
+func (f *fakeUI) SelectOPMLImport(*mygo.Window) ([]string, error) {
 	return f.openFiles, nil
 }
 
-func (f *fakeUI) SelectOPMLExport(*gui.Window, string) (string, error) {
+func (f *fakeUI) SelectOPMLExport(*mygo.Window, string) (string, error) {
 	return f.savePath, nil
 }
 
-func (f *fakeUI) SelectSnapshotSavePath(*gui.Window, string) (string, error) {
+func (f *fakeUI) SelectSnapshotSavePath(*mygo.Window, string) (string, error) {
 	return f.savePath, nil
 }
 
@@ -62,15 +66,15 @@ func (f *fakeUI) OpenLinkWindow(title, link string) {
 	f.windowLink = link
 }
 
-func (f *fakeUI) OpenImageViewer(*gui.Window, []byte, string, string) error {
+func (f *fakeUI) OpenImageViewer(*mygo.Window, []byte, string, string) error {
 	return nil
 }
 
 func (f *fakeUI) OpenSnapshotViewer(
-	parent *gui.Window,
+	parent *mygo.Window,
 	data []byte,
 	title string,
-	callbacks gui.SnapshotViewerCallbacks,
+	callbacks appviewer.SnapshotCallbacks,
 ) error {
 	f.snapshotData = data
 	f.snapshotTitle = title
@@ -79,15 +83,15 @@ func (f *fakeUI) OpenSnapshotViewer(
 	return nil
 }
 
-func (f *fakeUI) OpenSettings(*gui.Window, gui.SettingsCallbacks) {}
+func (f *fakeUI) OpenSettings(*mygo.Window, appsettings.Callbacks) {}
 
-func (f *fakeUI) OpenAddFeed(*gui.Window, gui.AddFeedCallbacks) {
+func (f *fakeUI) OpenAddFeed(*mygo.Window, appaddfeed.Callbacks) {
 	f.addFeedOpened = true
 }
 
 func (f *fakeUI) Confirm(
 	_ context.Context,
-	_ *gui.Window,
+	_ *mygo.Window,
 	request appdialog.ConfirmationRequest,
 ) (bool, error) {
 	f.confirmation = &request

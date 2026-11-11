@@ -1,4 +1,4 @@
-package gui
+package viewer
 
 import (
 	"errors"
@@ -24,9 +24,9 @@ const (
 	snapshotTitleRunes = 80
 )
 
-// SnapshotViewerCallbacks handles actions for a generated article snapshot.
-type SnapshotViewerCallbacks struct {
-	Save   func(parent *Window, data []byte, title string) (string, error)
+// SnapshotCallbacks handles actions for a generated article snapshot.
+type SnapshotCallbacks struct {
+	Save   func(parent *mygo.Window, data []byte, title string) (string, error)
 	Copy   func(data []byte) error
 	Notify func(level, message string)
 }
@@ -35,18 +35,18 @@ type SnapshotViewerCallbacks struct {
 type snapshotViewerContent struct {
 	image     imageViewerContent
 	title     string
-	callbacks SnapshotViewerCallbacks
-	parent    *Window
-	window    *Window
+	callbacks SnapshotCallbacks
+	parent    *mygo.Window
+	window    *mygo.Window
 	busy      bool
 }
 
-// OpenSnapshotViewer opens a native window showing a generated snapshot.
-func OpenSnapshotViewer(
-	parent *Window,
+// OpenSnapshot opens a native window showing a generated snapshot.
+func OpenSnapshot(
+	parent *mygo.Window,
 	data []byte,
 	title string,
-	callbacks SnapshotViewerCallbacks,
+	callbacks SnapshotCallbacks,
 ) error {
 	content, err := newSnapshotViewerContent(data, title, parent, callbacks)
 	if err != nil {
@@ -73,8 +73,8 @@ func OpenSnapshotViewer(
 func newSnapshotViewerContent(
 	data []byte,
 	title string,
-	parent *Window,
-	callbacks SnapshotViewerCallbacks,
+	parent *mygo.Window,
+	callbacks SnapshotCallbacks,
 ) (*snapshotViewerContent, error) {
 	image, err := newImageViewerContent(data, "")
 	if err != nil {

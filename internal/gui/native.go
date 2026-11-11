@@ -6,21 +6,12 @@ import (
 
 	"github.com/egoist/mygo"
 
+	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
+	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/store"
 )
-
-// Window is the native window type used by GUI entry points.
-type Window = mygo.Window
-
-// SettingsCallbacks are the operations a native settings surface may invoke.
-type SettingsCallbacks struct {
-	Load        func() store.Prefs
-	Save        func(store.Prefs) (store.Prefs, error)
-	DataDir     func() string
-	ExportOPML  func(parent *Window) (string, error)
-	OpenDataDir func() error
-}
 
 // NativeUI exposes application-level native side effects to the action layer.
 type NativeUI struct {
@@ -50,7 +41,7 @@ func (n *NativeUI) SelectNeighbourPost(delta int, onlyUnread bool) {
 }
 
 // SelectOPMLImport shows the picker used while importing subscriptions.
-func (NativeUI) SelectOPMLImport(parent *Window) ([]string, error) {
+func (NativeUI) SelectOPMLImport(parent *mygo.Window) ([]string, error) {
 	return mygo.Dialog.Open(mygo.OpenDialogOptions{
 		Parent: parent,
 		Title:  "选择 OPML 文件",
@@ -61,7 +52,7 @@ func (NativeUI) SelectOPMLImport(parent *Window) ([]string, error) {
 }
 
 // SelectOPMLExport shows the save picker used while exporting subscriptions.
-func (NativeUI) SelectOPMLExport(parent *Window, defaultPath string) (string, error) {
+func (NativeUI) SelectOPMLExport(parent *mygo.Window, defaultPath string) (string, error) {
 	return mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      parent,
 		Title:       "导出 OPML 文件",
@@ -73,7 +64,7 @@ func (NativeUI) SelectOPMLExport(parent *Window, defaultPath string) (string, er
 }
 
 // SelectSnapshotSavePath shows the save picker used by article snapshots.
-func (NativeUI) SelectSnapshotSavePath(parent *Window, defaultPath string) (string, error) {
+func (NativeUI) SelectSnapshotSavePath(parent *mygo.Window, defaultPath string) (string, error) {
 	return mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      parent,
 		Title:       "保存文章快照",
@@ -99,38 +90,38 @@ func (NativeUI) OpenLinkWindow(title, link string) {
 
 // OpenImageViewer opens the native article image viewer.
 func (NativeUI) OpenImageViewer(
-	parent *Window,
+	parent *mygo.Window,
 	data []byte,
 	viewerURL string,
 	alt string,
 ) error {
-	return OpenImageViewer(parent, data, viewerURL, alt)
+	return appviewer.OpenImage(parent, data, viewerURL, alt)
 }
 
 // OpenSnapshotViewer opens the native generated-snapshot window.
 func (NativeUI) OpenSnapshotViewer(
-	parent *Window,
+	parent *mygo.Window,
 	data []byte,
 	title string,
-	callbacks SnapshotViewerCallbacks,
+	callbacks appviewer.SnapshotCallbacks,
 ) error {
-	return OpenSnapshotViewer(parent, data, title, callbacks)
+	return appviewer.OpenSnapshot(parent, data, title, callbacks)
 }
 
 // OpenSettings opens the native settings window.
-func (NativeUI) OpenSettings(parent *Window, callbacks SettingsCallbacks) {
-	OpenSettingsWindow(parent, callbacks)
+func (NativeUI) OpenSettings(parent *mygo.Window, callbacks appsettings.Callbacks) {
+	appsettings.Open(parent, callbacks)
 }
 
 // OpenAddFeed opens the native add-feed window.
-func (NativeUI) OpenAddFeed(parent *Window, callbacks AddFeedCallbacks) {
-	OpenAddFeedWindow(parent, callbacks)
+func (NativeUI) OpenAddFeed(parent *mygo.Window, callbacks appaddfeed.Callbacks) {
+	appaddfeed.Open(parent, callbacks)
 }
 
 // Confirm shows an in-app confirmation for a destructive action.
 func (n NativeUI) Confirm(
 	ctx context.Context,
-	parent *Window,
+	parent *mygo.Window,
 	request appdialog.ConfirmationRequest,
 ) (bool, error) {
 	if n.confirmations == nil {

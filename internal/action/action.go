@@ -17,7 +17,10 @@ import (
 
 	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
+	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
+	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/service"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -30,22 +33,22 @@ var ErrNoSnapshotWindow = errors.New("no snapshot window")
 
 // UI is the set of native side effects an action may perform.
 type UI interface {
-	SelectOPMLImport(parent *gui.Window) ([]string, error)
-	SelectOPMLExport(parent *gui.Window, defaultPath string) (string, error)
-	SelectSnapshotSavePath(parent *gui.Window, defaultPath string) (string, error)
+	SelectOPMLImport(parent *mygo.Window) ([]string, error)
+	SelectOPMLExport(parent *mygo.Window, defaultPath string) (string, error)
+	SelectSnapshotSavePath(parent *mygo.Window, defaultPath string) (string, error)
 	OpenPath(string) error
 	OpenExternal(string) error
 	OpenLinkWindow(title, link string)
-	OpenImageViewer(parent *gui.Window, data []byte, viewerURL, alt string) error
+	OpenImageViewer(parent *mygo.Window, data []byte, viewerURL, alt string) error
 	OpenSnapshotViewer(
-		parent *gui.Window,
+		parent *mygo.Window,
 		data []byte,
 		title string,
-		callbacks gui.SnapshotViewerCallbacks,
+		callbacks appviewer.SnapshotCallbacks,
 	) error
-	OpenAddFeed(parent *gui.Window, callbacks gui.AddFeedCallbacks)
-	OpenSettings(parent *gui.Window, callbacks gui.SettingsCallbacks)
-	Confirm(ctx context.Context, parent *gui.Window, request appdialog.ConfirmationRequest) (bool, error)
+	OpenAddFeed(parent *mygo.Window, callbacks appaddfeed.Callbacks)
+	OpenSettings(parent *mygo.Window, callbacks appsettings.Callbacks)
+	Confirm(ctx context.Context, parent *mygo.Window, request appdialog.ConfirmationRequest) (bool, error)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
 	ApplyTheme(string)
@@ -105,7 +108,7 @@ func (a *AppActions) AddFeed(ctx context.Context, title, feedURL string) (store.
 }
 
 // ConfirmRemoveFeed asks before deleting a subscription and its posts.
-func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent *gui.Window, id int64) error {
+func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent *mygo.Window, id int64) error {
 	feed, err := a.feeds.Feed(id)
 	if err != nil {
 		return err
@@ -143,7 +146,7 @@ func (a *AppActions) RefreshStale(ctx context.Context) (service.SyncSummary, err
 }
 
 // ImportOPML asks for an OPML file and imports its subscriptions.
-func (a *AppActions) ImportOPML(ctx context.Context, parent *gui.Window) (service.ImportSummary, error) {
+func (a *AppActions) ImportOPML(ctx context.Context, parent *mygo.Window) (service.ImportSummary, error) {
 	paths, err := a.ui.SelectOPMLImport(parent)
 	if err != nil {
 		slog.Warn("OPML picker failed", "operation", "action.feeds.importOPML", "error", err)
@@ -163,7 +166,7 @@ func (a *AppActions) ImportOPML(ctx context.Context, parent *gui.Window) (servic
 }
 
 // ExportOPML asks where to save the subscriptions and writes an OPML file.
-func (a *AppActions) ExportOPML(parent *gui.Window) (string, error) {
+func (a *AppActions) ExportOPML(parent *mygo.Window) (string, error) {
 	data, err := a.feeds.BuildOPML()
 	if err != nil {
 		return "", err
@@ -184,7 +187,7 @@ func (a *AppActions) ExportOPML(parent *gui.Window) (string, error) {
 }
 
 // OpenImage loads an article image and opens it in the native viewer.
-func (a *AppActions) OpenImage(ctx context.Context, parent *gui.Window, source, alt string) error {
+func (a *AppActions) OpenImage(ctx context.Context, parent *mygo.Window, source, alt string) error {
 	image, err := a.posts.LoadImage(ctx, source)
 	if err != nil {
 		return err
@@ -245,7 +248,7 @@ func (a *AppActions) StitchSnapshot(
 
 // stitchSnapshot joins page captures and opens the native preview for parent.
 func (a *AppActions) stitchSnapshot(
-	parent *gui.Window,
+	parent *mygo.Window,
 	title string,
 	tiles []service.SnapshotTile,
 ) error {
@@ -253,8 +256,8 @@ func (a *AppActions) stitchSnapshot(
 	if err != nil {
 		return err
 	}
-	return a.ui.OpenSnapshotViewer(parent, data, title, gui.SnapshotViewerCallbacks{
-		Save: func(snapshotParent *gui.Window, snapshotData []byte, fileName string) (string, error) {
+	return a.ui.OpenSnapshotViewer(parent, data, title, appviewer.SnapshotCallbacks{
+		Save: func(snapshotParent *mygo.Window, snapshotData []byte, fileName string) (string, error) {
 			return a.SaveSnapshot(snapshotParent, fileName, snapshotData)
 		},
 		Copy:   a.CopySnapshot,
@@ -263,7 +266,7 @@ func (a *AppActions) stitchSnapshot(
 }
 
 // SaveSnapshot asks where to save a stitched snapshot and writes it.
-func (a *AppActions) SaveSnapshot(parent *gui.Window, fileName string, data []byte) (string, error) {
+func (a *AppActions) SaveSnapshot(parent *mygo.Window, fileName string, data []byte) (string, error) {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		return "", err
 	}
@@ -362,8 +365,8 @@ func (a *AppActions) OpenLink(link string) error {
 }
 
 // OpenSettings opens the native settings surface with action callbacks.
-func (a *AppActions) OpenSettings(parent *gui.Window) {
-	a.ui.OpenSettings(parent, gui.SettingsCallbacks{
+func (a *AppActions) OpenSettings(parent *mygo.Window) {
+	a.ui.OpenSettings(parent, appsettings.Callbacks{
 		Load:        a.settings.Get,
 		Save:        a.UpdateSettingsDraft,
 		DataDir:     a.settings.DataDir,
@@ -373,17 +376,17 @@ func (a *AppActions) OpenSettings(parent *gui.Window) {
 }
 
 // OpenAddFeed opens the native subscription surface.
-func (a *AppActions) OpenAddFeed(parent *gui.Window) {
-	a.ui.OpenAddFeed(parent, gui.AddFeedCallbacks{
+func (a *AppActions) OpenAddFeed(parent *mygo.Window) {
+	a.ui.OpenAddFeed(parent, appaddfeed.Callbacks{
 		Appearance: a.settings.Get,
-		Test: func(ctx context.Context, feedURL string) (gui.FeedPreview, error) {
+		Test: func(ctx context.Context, feedURL string) (appaddfeed.Preview, error) {
 			preview, err := a.TestFeed(ctx, feedURL)
-			return gui.FeedPreview(preview), err
+			return appaddfeed.Preview(preview), err
 		},
 		Add: a.AddAndSelectFeed,
-		ImportOPML: func(feedParent *gui.Window) (gui.ImportSummary, error) {
+		ImportOPML: func(feedParent *mygo.Window) (appaddfeed.Summary, error) {
 			summary, err := a.ImportOPML(context.Background(), feedParent)
-			return gui.ImportSummary(summary), err
+			return appaddfeed.Summary(summary), err
 		},
 	})
 }

@@ -1,4 +1,5 @@
-package gui
+// Package settings renders the native application preferences window.
+package settings
 
 import (
 	"fmt"
@@ -24,11 +25,20 @@ const (
 
 var settingsWindow struct {
 	sync.Mutex
-	window *Window
+	window *mygo.Window
 }
 
-// OpenSettingsWindow opens the single native settings window.
-func OpenSettingsWindow(parent *Window, callbacks SettingsCallbacks) {
+// Callbacks are the operations a native settings surface may invoke.
+type Callbacks struct {
+	Load        func() store.Prefs
+	Save        func(store.Prefs) (store.Prefs, error)
+	DataDir     func() string
+	ExportOPML  func(parent *mygo.Window) (string, error)
+	OpenDataDir func() error
+}
+
+// Open opens the single native settings window.
+func Open(parent *mygo.Window, callbacks Callbacks) {
 	settingsWindow.Lock()
 	if window := settingsWindow.window; window != nil && !window.IsDestroyed() {
 		settingsWindow.Unlock()
@@ -68,9 +78,9 @@ func OpenSettingsWindow(parent *Window, callbacks SettingsCallbacks) {
 
 // settingsView keeps the editable preferences and the last save result.
 type settingsView struct {
-	callbacks SettingsCallbacks
+	callbacks Callbacks
 	prefs     store.Prefs
-	window    *Window
+	window    *mygo.Window
 	err       string
 	notice    string
 	noticeAt  time.Time

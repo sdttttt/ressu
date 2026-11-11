@@ -1,4 +1,5 @@
-package gui
+// Package about renders the native application metadata window.
+package about
 
 import (
 	"sync"
@@ -20,7 +21,7 @@ const (
 
 var aboutWindow struct {
 	sync.Mutex
-	window *Window
+	window *mygo.Window
 }
 
 // aboutAvatar decodes the embedded portrait once for every About window.
@@ -32,8 +33,8 @@ var aboutAvatar = sync.OnceValue(func() *ui.Bitmap {
 	return bitmap
 })
 
-// AboutInfo is the metadata shown by the native About window.
-type AboutInfo struct {
+// Info is the metadata shown by the native About window.
+type Info struct {
 	Version   string
 	BuildDate string
 	Developer string
@@ -42,8 +43,8 @@ type AboutInfo struct {
 	FontSize  string
 }
 
-// OpenAboutWindow opens the single native About window.
-func OpenAboutWindow(parent *Window, info AboutInfo) {
+// Open opens the single native About window.
+func Open(parent *mygo.Window, info Info) {
 	aboutWindow.Lock()
 	if window := aboutWindow.window; window != nil && !window.IsDestroyed() {
 		aboutWindow.Unlock()
@@ -80,7 +81,7 @@ func OpenAboutWindow(parent *Window, info AboutInfo) {
 
 // aboutView draws the metadata in the About window.
 type aboutView struct {
-	info AboutInfo
+	info Info
 }
 
 // draw renders one frame of the About window.

@@ -1,4 +1,5 @@
-package gui
+// Package viewer renders native image and generated-snapshot previews.
+package viewer
 
 import (
 	"bytes"
@@ -41,9 +42,9 @@ type imageViewerContent struct {
 	clipboardReady bool
 }
 
-// OpenImageViewer renders validated image bytes in a child window. AVIF falls
+// OpenImage renders validated image bytes in a child window. AVIF falls
 // back to a child WebView because the native image decoder cannot read it.
-func OpenImageViewer(parent *Window, data []byte, fallbackURL string, alt string) error {
+func OpenImage(parent *mygo.Window, data []byte, fallbackURL string, alt string) error {
 	content, err := newImageViewerContent(data, fallbackURL)
 	if err != nil {
 		return err
@@ -102,7 +103,7 @@ func renderClipboardPNG(source ui.ImageSource) ([]byte, error) {
 }
 
 // openImageViewer creates the native viewer window for prepared content.
-func openImageViewer(parent *Window, content imageViewerContent, alt string) {
+func openImageViewer(parent *mygo.Window, content imageViewerContent, alt string) {
 	options := mygo.WindowOptions{
 		Title:           imageTitle(alt),
 		Width:           imageViewerWidth,
@@ -115,7 +116,7 @@ func openImageViewer(parent *Window, content imageViewerContent, alt string) {
 	}
 
 	if content.image != nil {
-		var viewer *Window
+		var viewer *mygo.Window
 		options.Content = ui.View(func(c *ui.Context) { imageViewerView(c, &content, viewer) })
 		viewer = appwindow.New(parent, options)
 		return
@@ -126,7 +127,7 @@ func openImageViewer(parent *Window, content imageViewerContent, alt string) {
 }
 
 // imageViewerView draws the image and its native viewer actions.
-func imageViewerView(c *ui.Context, content *imageViewerContent, viewer *Window) {
+func imageViewerView(c *ui.Context, content *imageViewerContent, viewer *mygo.Window) {
 	ui.Image(c, content.image).Fill().Fit(ui.Contain).ContextMenu(func(m *ui.Menu) {
 		copyItem := m.Item("复制图片")
 		pngData, err := content.clipboardPNG()
@@ -145,7 +146,7 @@ func imageViewerView(c *ui.Context, content *imageViewerContent, viewer *Window)
 
 // downloadImageViewerImage asks where to keep the image and writes its
 // validated bytes to the selected path.
-func downloadImageViewerImage(viewer *Window, content *imageViewerContent) {
+func downloadImageViewerImage(viewer *mygo.Window, content *imageViewerContent) {
 	extension := imageExtension(content.data)
 	savePath, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      viewer,
@@ -167,7 +168,7 @@ func downloadImageViewerImage(viewer *Window, content *imageViewerContent) {
 }
 
 // showImageSaveError reports a failed download without losing the viewer.
-func showImageSaveError(viewer *Window, err error) {
+func showImageSaveError(viewer *mygo.Window, err error) {
 	_, _ = mygo.Dialog.Message(mygo.MessageOptions{
 		Parent:  viewer,
 		Type:    mygo.MessageError,

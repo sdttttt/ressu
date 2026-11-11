@@ -1,4 +1,6 @@
-package gui
+// Package addfeed renders the native subscription discovery and OPML import
+// window.
+package addfeed
 
 import (
 	"context"
@@ -31,11 +33,11 @@ const (
 
 var addFeedWindow struct {
 	sync.Mutex
-	window *Window
+	window *mygo.Window
 }
 
-// FeedPreview is the native subscription preview.
-type FeedPreview struct {
+// Preview is the native subscription preview.
+type Preview struct {
 	Title       string `json:"title"`
 	SiteURL     string `json:"siteUrl"`
 	Description string `json:"description"`
@@ -43,24 +45,24 @@ type FeedPreview struct {
 	Language    string `json:"language"`
 }
 
-// ImportSummary reports the result of importing a subscription list.
-type ImportSummary struct {
+// Summary reports the result of importing a subscription list.
+type Summary struct {
 	Imported int      `json:"imported"`
 	Skipped  int      `json:"skipped"`
 	Failed   int      `json:"failed"`
 	Errors   []string `json:"errors"`
 }
 
-// AddFeedCallbacks are the operations a native add-feed surface may invoke.
-type AddFeedCallbacks struct {
+// Callbacks are the operations a native add-feed surface may invoke.
+type Callbacks struct {
 	Appearance func() store.Prefs
-	Test       func(context.Context, string) (FeedPreview, error)
+	Test       func(context.Context, string) (Preview, error)
 	Add        func(context.Context, string, string) (store.Feed, error)
-	ImportOPML func(parent *Window) (ImportSummary, error)
+	ImportOPML func(parent *mygo.Window) (Summary, error)
 }
 
-// OpenAddFeedWindow opens the single native subscription window.
-func OpenAddFeedWindow(parent *Window, callbacks AddFeedCallbacks) {
+// Open opens the single native subscription window.
+func Open(parent *mygo.Window, callbacks Callbacks) {
 	addFeedWindow.Lock()
 	if window := addFeedWindow.window; window != nil && !window.IsDestroyed() {
 		addFeedWindow.Unlock()
@@ -100,9 +102,9 @@ func OpenAddFeedWindow(parent *Window, callbacks AddFeedCallbacks) {
 
 // addFeedView keeps the subscription draft, preview, and operation state.
 type addFeedView struct {
-	callbacks    AddFeedCallbacks
+	callbacks    Callbacks
 	prefs        store.Prefs
-	window       *Window
+	window       *mygo.Window
 	url          string
 	title        string
 	testedURL    string
@@ -112,7 +114,7 @@ type addFeedView struct {
 	pending      bool
 	importing    bool
 	err          string
-	preview      *FeedPreview
+	preview      *Preview
 	previewDelta int
 }
 

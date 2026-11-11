@@ -1,4 +1,4 @@
-package gui
+package about
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 
 func TestAboutViewRendersMetadata(t *testing.T) {
 	view := &aboutView{
-		info: AboutInfo{
+		info: Info{
 			Version:   "26.11.8",
 			BuildDate: "2026-11-10",
 			Developer: "sdttttt",

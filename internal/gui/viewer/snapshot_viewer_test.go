@@ -1,4 +1,4 @@
-package gui
+package viewer
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -14,8 +15,8 @@ func TestSnapshotViewerRunsSaveAndCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	content, err := newSnapshotViewerContent(data, " 测试  文章 ", nil, SnapshotViewerCallbacks{
-		Save: func(parent *Window, gotData []byte, title string) (string, error) {
+	content, err := newSnapshotViewerContent(data, " 测试  文章 ", nil, SnapshotCallbacks{
+		Save: func(parent *mygo.Window, gotData []byte, title string) (string, error) {
 			if parent != nil || !slices.Equal(gotData, data) || title != "测试 文章" {
 				t.Fatalf("save callback = parent %v, %d bytes, title %q", parent, len(gotData), title)
 			}
@@ -50,8 +51,8 @@ func TestSnapshotViewerReportsFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	var notifications []string
-	content, err := newSnapshotViewerContent(data, "", nil, SnapshotViewerCallbacks{
-		Save: func(*Window, []byte, string) (string, error) {
+	content, err := newSnapshotViewerContent(data, "", nil, SnapshotCallbacks{
+		Save: func(*mygo.Window, []byte, string) (string, error) {
 			return "", errors.New("save failed")
 		},
 		Copy: func([]byte) error {
