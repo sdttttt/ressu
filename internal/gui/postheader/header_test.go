@@ -1,4 +1,4 @@
-package gui
+package postheader
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
-func TestPostHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
+func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
 	model.SetFeeds(appstatus.FeedsSnapshot{Feeds: []store.Feed{{ID: 1, Title: "A"}}, Unread: 1})
@@ -30,7 +30,7 @@ func TestPostHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	)
 	starred := make(chan bool, 1)
 	snapshotRequested := make(chan bool, 1)
-	header := NewPostHeader(model, PostHeaderCallbacks{
+	header := New(model, Callbacks{
 		ToggleStar: func(int64, string) (store.PostSummary, error) {
 			model.SetPostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Starred: false})
 			starred <- false

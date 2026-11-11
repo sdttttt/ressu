@@ -22,6 +22,7 @@ import (
 	"github.com/sdttttt/ressu/internal/gui"
 	appabout "github.com/sdttttt/ressu/internal/gui/about"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	"github.com/sdttttt/ressu/internal/logging"
@@ -120,7 +121,7 @@ func main() {
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	sidebar := appsidebar.New(statusModel, actions.SidebarCallbacks())
 	postList := apppostlist.New(statusModel, actions.PostListCallbacks())
-	postHeader := gui.NewPostHeader(statusModel, actions.PostHeaderCallbacks())
+	postHeader := apppostheader.New(statusModel, actions.PostHeaderCallbacks())
 	nativeUI.SetPostList(postList)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
@@ -196,7 +197,7 @@ func openWindow(
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
 	sidebar *appsidebar.Sidebar,
-	postHeader *gui.PostHeader,
+	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
 ) (*mygo.Window, error) {
 	var win *mygo.Window

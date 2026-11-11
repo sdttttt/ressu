@@ -16,9 +16,9 @@ import (
 	"github.com/egoist/mygo"
 
 	appevent "github.com/sdttttt/ressu/internal/event"
-	"github.com/sdttttt/ressu/internal/gui"
 	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
@@ -428,8 +428,8 @@ func (a *AppActions) PostListCallbacks() apppostlist.Callbacks {
 }
 
 // PostHeaderCallbacks exposes native article header actions.
-func (a *AppActions) PostHeaderCallbacks() gui.PostHeaderCallbacks {
-	return gui.PostHeaderCallbacks{
+func (a *AppActions) PostHeaderCallbacks() apppostheader.Callbacks {
+	return apppostheader.Callbacks{
 		ToggleStar:      a.TogglePostStar,
 		MarkRead:        a.MarkPostRead,
 		OpenLink:        a.OpenLink,

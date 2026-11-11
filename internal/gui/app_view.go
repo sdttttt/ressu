@@ -5,6 +5,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	appstatus "github.com/sdttttt/ressu/internal/status"
@@ -17,7 +18,7 @@ type AppView struct {
 	notifications *appdialog.Notifications
 	confirmations *appdialog.Confirmations
 	sidebar       *appsidebar.Sidebar
-	postHeader    *PostHeader
+	postHeader    *apppostheader.Header
 	postList      *apppostlist.List
 }
 
@@ -28,7 +29,7 @@ func NewAppView(
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
 	sidebar *appsidebar.Sidebar,
-	postHeader *PostHeader,
+	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
 ) *AppView {
 	return &AppView{

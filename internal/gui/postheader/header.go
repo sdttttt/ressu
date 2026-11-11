@@ -1,4 +1,5 @@
-package gui
+// Package postheader renders the selected article header.
+package postheader
 
 import (
 	"github.com/egoist/mygo/ui"
@@ -12,15 +13,15 @@ import (
 )
 
 const (
-	postHeaderTextSize       = 13
-	postHeaderMetaTextSize   = 10
-	postHeaderTitleTextSize  = 18
-	postHeaderTitleLineCount = 2
+	textSize       = 13
+	metaTextSize   = 10
+	titleTextSize  = 18
+	titleLineCount = 2
 )
 
-// PostHeaderCallbacks connects the native article header to application
+// Callbacks connects the native article header to application
 // actions.
-type PostHeaderCallbacks struct {
+type Callbacks struct {
 	ToggleStar      func(feedID int64, guid string) (store.PostSummary, error)
 	MarkRead        func(feedID int64, guid string, read bool) error
 	OpenLink        func(link string) error
@@ -28,20 +29,20 @@ type PostHeaderCallbacks struct {
 	Notify          func(level, message string)
 }
 
-// PostHeader renders metadata and actions for the selected article.
-type PostHeader struct {
+// Header renders metadata and actions for the selected article.
+type Header struct {
 	model     *appstatus.Model
-	callbacks PostHeaderCallbacks
+	callbacks Callbacks
 }
 
-// NewPostHeader creates the native header above the reading pane.
-func NewPostHeader(model *appstatus.Model, callbacks PostHeaderCallbacks) *PostHeader {
-	return &PostHeader{model: model, callbacks: callbacks}
+// New creates the native header above the reading pane.
+func New(model *appstatus.Model, callbacks Callbacks) *Header {
+	return &Header{model: model, callbacks: callbacks}
 }
 
 // View draws the selected article header, or nothing when no article is
 // selected.
-func (h *PostHeader) View(c *ui.Context) {
+func (h *Header) View(c *ui.Context) {
 	snapshot := h.model.Snapshot()
 	post := snapshot.SelectedPost
 	if post.GUID == "" {
@@ -68,7 +69,7 @@ func (h *PostHeader) View(c *ui.Context) {
 	ui.Box(c).FillWidth().Height(1).Background(palette.Border)
 }
 
-func (h *PostHeader) drawTitle(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
+func (h *Header) drawTitle(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
 	palette := apppostlist.NewPalette(*theme)
 	title := post.Title
 	if title == "" {
@@ -78,17 +79,17 @@ func (h *PostHeader) drawTitle(c *ui.Context, theme *ui.Theme, post store.PostSu
 	ui.Text(c, title).
 		FillWidth().
 		MinHeight(lineHeight).
-		MaxHeight(lineHeight * postHeaderTitleLineCount).
-		FontSize(h.scaled(theme, postHeaderTitleTextSize)).
+		MaxHeight(lineHeight * titleLineCount).
+		FontSize(h.scaled(theme, titleTextSize)).
 		FixedLineHeight(lineHeight).
 		FontWeight(600).
-		MaxLines(postHeaderTitleLineCount).
+		MaxLines(titleLineCount).
 		Wrap().
 		Ellipsis("…").
 		TextColor(palette.Foreground)
 }
 
-func (h *PostHeader) drawMeta(
+func (h *Header) drawMeta(
 	c *ui.Context,
 	theme *ui.Theme,
 	snapshot appstatus.Snapshot,
@@ -100,7 +101,7 @@ func (h *PostHeader) drawMeta(
 		if !first {
 			ui.Text(c, "·").
 				Shrink(0).
-				FontSize(h.scaled(theme, postHeaderMetaTextSize)).
+				FontSize(h.scaled(theme, metaTextSize)).
 				TextColor(palette.TextMuted.Alpha(0.6))
 		}
 		first = false
@@ -112,7 +113,7 @@ func (h *PostHeader) drawMeta(
 		separator()
 		ui.Text(c, value).
 			Shrink(1).
-			FontSize(h.scaled(theme, postHeaderMetaTextSize)).
+			FontSize(h.scaled(theme, metaTextSize)).
 			SingleLine().
 			Ellipsis("…").
 			TextColor(palette.TextMuted)
@@ -140,7 +141,7 @@ func (h *PostHeader) drawMeta(
 	})
 }
 
-func (h *PostHeader) drawActions(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
+func (h *Header) drawActions(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
 	starIcon := appicon.Star
 	starLabel := "加星标"
 	if post.Starred {
@@ -170,7 +171,7 @@ func (h *PostHeader) drawActions(c *ui.Context, theme *ui.Theme, post store.Post
 	})
 }
 
-func (h *PostHeader) iconButton(
+func (h *Header) iconButton(
 	c *ui.Context,
 	theme *ui.Theme,
 	icon *ui.SVG,
@@ -194,7 +195,7 @@ func (h *PostHeader) iconButton(
 	})
 }
 
-func (h *PostHeader) toggleStar(post store.PostSummary) {
+func (h *Header) toggleStar(post store.PostSummary) {
 	if h.callbacks.ToggleStar == nil {
 		return
 	}
@@ -205,7 +206,7 @@ func (h *PostHeader) toggleStar(post store.PostSummary) {
 	}()
 }
 
-func (h *PostHeader) markRead(post store.PostSummary, read bool) {
+func (h *Header) markRead(post store.PostSummary, read bool) {
 	if h.callbacks.MarkRead == nil {
 		return
 	}
@@ -216,7 +217,7 @@ func (h *PostHeader) markRead(post store.PostSummary, read bool) {
 	}()
 }
 
-func (h *PostHeader) openOriginal(post store.PostSummary) {
+func (h *Header) openOriginal(post store.PostSummary) {
 	if h.callbacks.OpenLink == nil || post.URL == "" {
 		return
 	}
@@ -227,14 +228,14 @@ func (h *PostHeader) openOriginal(post store.PostSummary) {
 	}()
 }
 
-func (h *PostHeader) notify(message string) {
+func (h *Header) notify(message string) {
 	if h.callbacks.Notify != nil {
 		h.callbacks.Notify("error", message)
 	}
 }
 
-func (h *PostHeader) scaled(theme *ui.Theme, size float32) float32 {
-	return size * theme.FontSize / postHeaderTextSize
+func (h *Header) scaled(theme *ui.Theme, size float32) float32 {
+	return size * theme.FontSize / textSize
 }
 
 func selectedFeedTitle(snapshot appstatus.Snapshot, feedID int64) string {
