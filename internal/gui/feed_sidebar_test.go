@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
@@ -50,5 +51,50 @@ func TestFeedSidebarMatchesWebviewTextSize(t *testing.T) {
 
 	if fontSize != feedSidebarTextSize {
 		t.Errorf("sidebar font size = %v, want %v", fontSize, feedSidebarTextSize)
+	}
+}
+
+func TestFeedSidebarClicksToggleSelectedFeed(t *testing.T) {
+	model := appstatus.New("")
+	model.SetFeeds(appstatus.FeedsSnapshot{
+		Feeds:  []store.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
+		Unread: 2,
+	})
+	selections := make(chan int64, 2)
+	sidebar := NewFeedSidebar(model, FeedSidebarCallbacks{
+		Icon: func(context.Context, int64) (store.Icon, error) {
+			return store.Icon{}, store.ErrNotFound
+		},
+		Select: func(feedID int64) {
+			selections <- feedID
+		},
+	})
+
+	tester := ui.NewTester(sidebar.View, 280, 520)
+	tester.Frame()
+	if err := tester.Click("测试源"); err != nil {
+		t.Fatalf("click feed: %v", err)
+	}
+	select {
+	case feedID := <-selections:
+		if feedID != 1 {
+			t.Fatalf("first selection = %d; want 1", feedID)
+		}
+		model.SetCurrentFeed(feedID)
+	case <-time.After(time.Second):
+		t.Fatal("first selection was not reported")
+	}
+	tester.Frame()
+
+	if err := tester.Click("测试源"); err != nil {
+		t.Fatalf("click selected feed: %v", err)
+	}
+	select {
+	case feedID := <-selections:
+		if feedID != aggregateFeedID {
+			t.Fatalf("second selection = %d; want %d", feedID, aggregateFeedID)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("second selection was not reported")
 	}
 }

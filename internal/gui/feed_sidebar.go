@@ -16,6 +16,8 @@ import (
 )
 
 const (
+	aggregateFeedID = 0
+
 	// Floating sidebar geometry, in DIPs.
 	feedSidebarHotZoneWidth  = 20
 	feedSidebarFloatingInset = 8
@@ -382,7 +384,11 @@ func (s *FeedSidebar) drawFeed(
 		row.Background(theme.SurfaceHover)
 	}
 	if row.Clicked() {
-		s.runAsync(func() { s.callbacks.Select(feed.ID) })
+		target := feed.ID
+		if selected {
+			target = aggregateFeedID
+		}
+		s.runAsync(func() { s.callbacks.Select(target) })
 	}
 	row.ContextMenu(func(menu *ui.Menu) {
 		if menu.Item("打开").Chosen() {
