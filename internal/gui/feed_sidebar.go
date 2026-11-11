@@ -23,9 +23,15 @@ const (
 	feedSidebarHideDelay     = 200 * time.Millisecond
 	feedSidebarPaneSaveDelay = 500 * time.Millisecond
 
+	// feedSidebarTextSize matches the webview's 13px list titles.
+	feedSidebarTextSize = 13
+
 	// Icons are revalidated weekly, matching the webview cache.
 	feedSidebarIconTTL = 7 * 24 * time.Hour
 )
+
+// nativeTextSize is MyGO's default text size before system text scaling.
+var nativeTextSize = ui.LightTheme().FontSize
 
 // FeedSidebarCallbacks connects the native sidebar to application actions.
 type FeedSidebarCallbacks struct {
@@ -111,7 +117,16 @@ func (s *FeedSidebar) SetInvalidate(invalidate func()) {
 // SidebarTheme returns the theme used by the sidebar and its splitter.
 func (s *FeedSidebar) SidebarTheme(c *ui.Context) *ui.Theme {
 	snapshot := s.model.Snapshot()
-	return nativeTheme(c, snapshot.Theme, snapshot.FontSize)
+	return feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
+}
+
+// feedSidebarTheme sizes the native sidebar text like the webview's list titles.
+func feedSidebarTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
+	theme := nativeTheme(c, appearance, fontSize)
+	if nativeTextSize > 0 {
+		theme.FontSize *= feedSidebarTextSize / nativeTextSize
+	}
+	return theme
 }
 
 // SyncLayout copies the mirrored sidebar layout into the splitter.
@@ -163,7 +178,7 @@ func (s *FeedSidebar) savePanePercent() {
 // View builds the docked sidebar content.
 func (s *FeedSidebar) View(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := nativeTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Background(theme.Background).Gap(8).Padding(10, 10).Children(func() {
 			s.drawHeader(c, theme, snapshot)
@@ -175,7 +190,7 @@ func (s *FeedSidebar) View(c *ui.Context) {
 // drawOverlay draws the collapsed sidebar's hover zone and floating panel.
 func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := nativeTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
 
 	hot := ui.Box(c).Absolute().Top(0).Left(0).
 		Bottom(statusBarHeight(snapshot.FontSize)).

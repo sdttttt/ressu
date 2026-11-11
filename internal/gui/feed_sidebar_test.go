@@ -36,3 +36,19 @@ func TestFeedSidebarShowsSubscriptionActions(t *testing.T) {
 		}
 	}
 }
+
+func TestFeedSidebarMatchesWebviewTextSize(t *testing.T) {
+	model := appstatus.New("")
+	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	sidebar := NewFeedSidebar(model, FeedSidebarCallbacks{})
+
+	var fontSize float32
+	tester := ui.NewTester(func(c *ui.Context) {
+		fontSize = sidebar.SidebarTheme(c).FontSize
+	}, 280, 520)
+	tester.Frame()
+
+	if fontSize != feedSidebarTextSize {
+		t.Errorf("sidebar font size = %v, want %v", fontSize, feedSidebarTextSize)
+	}
+}
