@@ -2,7 +2,7 @@
 
 Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
 MyGO 绑定把数据交给内嵌静态阅读页；订阅源侧栏、文章列表、文章头部和底部状态栏由
-MyGO 原生 UI 直接渲染，页面只负责阅读区正文、帮助对话框和快照分片采集。面向用户的中文介绍在
+MyGO 原生 UI 直接渲染，页面只负责阅读区正文和快照分片采集。面向用户的中文介绍在
 `README.md`。
 
 本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
@@ -83,7 +83,7 @@ internal/
     assets/                原生窗口内嵌图片资源
 webview/static/            无构建前端源码，由 MyGO 开发时直供并在打包时内嵌
   index.html               阅读页入口，lang="zh-CN"
-  reader.css               正文排版、主题 token、空态和帮助对话框样式
+  reader.css               正文排版、主题 token、空态和快照进度样式
   reader.js                绑定调用、事件应用、快捷键、链接和图片拦截
 resources/icon.png         MyGO 打包图标
 mygo.json                  MyGO CLI 配置
@@ -195,7 +195,8 @@ bun install
 - 原生界面主题从 `ui.LightTheme()`/`ui.DarkTheme()` 重新构建，不能复制嵌套
   `ui.Themed` 里的 `c.Theme()` 后再缩放字号，否则会重复应用系统/应用字号。侧栏和文章
   列表都以 13px 为基准字号，文章列表使用与旧 WebView 完全一致的 OKLCH 色彩 token。
-- 文章列表通过 `OnWindowShortcut` 处理 `j`/`k`/`n`/`p`/`Enter`/`s`；文本输入获得焦点时
+- 文章列表通过 `OnWindowShortcut` 处理 `j`/`k`/`n`/`p`/`Enter`/`s`；主窗口还处理
+  `h`/`l` 切换订阅源和 `?` 打开原生帮助 Modal；文本输入获得焦点时
   跳过。静态正文只处理 `Space`，滚到底部后通过 `Posts.SelectNeighbour` 交给原生列表继续
   选择。
 
@@ -312,10 +313,11 @@ bun install
   `revision` 不递增的事件。
 - 文章请求用递增 requestId 防止快速切换时旧响应覆盖新文章。`post.selected` 获取正文后，
   若偏好要求则自动标记已读。
-- 订阅源栏、文章列表、文章头部和偏好设置都是原生 UI；页面只渲染正文、空态、加载态、帮助
-  对话框和快照采集进度。
-- 页面快捷键只有 `Space`、`m`、`v`、`h`、`l` 和 `?`；原生列表已处理 `j`、`k`、`n`、`p`、
-  `Enter` 和 `s`，不要在页面重复注册。
+- 订阅源栏、文章列表、文章头部、帮助 Modal 和偏好设置都是原生 UI；页面只渲染正文、
+  空态、加载态和快照采集进度。
+- 页面直接处理的阅读快捷键只有 `Space`、`m` 和 `v`；原生窗口已处理 `j`、`k`、`n`、`p`、
+  `Enter`、`s`、`h`、`l` 和 `?`。WebView 持有焦点时，`reader.js` 只拦截 `h`、`l` 和 `?`，
+  并通过 `Status` 绑定转交给原生 GUI，避免物理按键丢失；不要在页面重复实现导航或帮助 UI。
 - 主题有两层：`action.UpdatePreferences` 调用 `UI.ApplyTheme` 设置原生外观；前端
   `reader.js` 在 `<html>` 上切换 `dark` 和 `theme-sepia` 类。字号通过
   `--app-text-scale` 缩放根字体。
@@ -372,8 +374,9 @@ bun install
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
   相关消费点；在 `internal/gui/settings` 加原生控件；若影响阅读则更新
   `reader.js` 和应用逻辑。
-- 新增快捷键：先确认属于原生列表还是静态正文；原生列表快捷键接在 `internal/gui/postlist`，
-  静态正文快捷键接在 `reader.js`，帮助对话框保持中文说明完整。
+- 新增快捷键：先确认属于原生列表、主窗口还是静态正文；列表快捷键接在 `internal/gui/postlist`，
+  跨界面快捷键接在 `internal/gui/app_view.go`，静态正文快捷键接在 `reader.js`。WebView 焦点下
+  需要转交原生行为的按键，必须调用 `Status` 绑定并 `preventDefault()`。
 - 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、`reader.js`、原生设置窗口和安全测试。
 - 新增界面文案：中文、语义 token、`~` 导入、默认导出；除非任务明确要求，不引入 i18n 层。
 

@@ -234,62 +234,6 @@ body {
   text-align: left;
 }
 
-#help-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  background: color-mix(in oklch, black 35%, transparent);
-}
-
-#help {
-  width: min(100%, 24rem);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--background);
-  padding: 1.25rem;
-}
-
-#help h2 {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-}
-
-#help dl {
-  display: grid;
-  gap: 0.7rem;
-  margin: 0;
-}
-
-#help dl > div {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-#help dt {
-  min-width: 4.5rem;
-}
-
-#help dd {
-  margin: 0;
-  color: var(--muted-foreground);
-}
-
-kbd {
-  display: inline-block;
-  min-width: 1.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  background: var(--muted);
-  padding: 0.15rem 0.35rem;
-  font: inherit;
-  font-size: 0.8rem;
-  text-align: center;
-}
-
 #snapshot-backdrop {
   position: fixed;
   inset: 0;

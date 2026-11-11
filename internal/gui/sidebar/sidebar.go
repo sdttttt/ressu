@@ -181,6 +181,30 @@ func (s *Sidebar) SavePanePercent() {
 	}
 }
 
+// SelectNeighbour selects the next or previous subscription without wrapping.
+func (s *Sidebar) SelectNeighbour(delta int) {
+	snapshot := s.model.Snapshot()
+	if len(snapshot.Feeds) == 0 {
+		return
+	}
+
+	index := slices.IndexFunc(snapshot.Feeds, func(feed store.Feed) bool {
+		return feed.ID == snapshot.CurrentFeedID
+	})
+	if index == -1 {
+		if delta < 0 {
+			index = len(snapshot.Feeds) - 1
+		} else {
+			index = 0
+		}
+	} else {
+		index = min(max(index+delta, 0), len(snapshot.Feeds)-1)
+	}
+
+	feedID := snapshot.Feeds[index].ID
+	s.runAsync(func() { s.callbacks.Select(feedID) })
+}
+
 // View builds the docked sidebar content.
 func (s *Sidebar) View(c *ui.Context) {
 	snapshot := s.model.Snapshot()

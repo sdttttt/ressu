@@ -117,11 +117,17 @@ func main() {
 		prefs := st.Prefs()
 		return prefs.Theme, prefs.FontSize
 	})
+	help := appdialog.NewHelp(func() (string, string) {
+		prefs := st.Prefs()
+		return prefs.Theme, prefs.FontSize
+	})
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
 	sidebar := appsidebar.New(statusModel, actions.SidebarCallbacks())
 	postList := apppostlist.New(statusModel, actions.PostListCallbacks())
 	postHeader := apppostheader.New(statusModel, actions.PostHeaderCallbacks())
+	nativeUI.SetHelp(help)
+	nativeUI.SetSidebar(sidebar)
 	nativeUI.SetPostList(postList)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
 	mygo.Bind(
@@ -153,7 +159,7 @@ func main() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about, notifications, confirmations, sidebar, postHeader, postList); err != nil {
+		}, foreground, app.IsActive, about, notifications, confirmations, help, sidebar, postHeader, postList); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -196,6 +202,7 @@ func openWindow(
 	about appabout.Info,
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
+	help *appdialog.Help,
 	sidebar *appsidebar.Sidebar,
 	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
@@ -207,7 +214,7 @@ func openWindow(
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		appabout.Open(win, info)
-	}, notifications, confirmations, sidebar, postHeader, postList)
+	}, notifications, confirmations, help, sidebar, postHeader, postList)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,
@@ -221,6 +228,7 @@ func openWindow(
 	})
 	notifications.Attach(win)
 	confirmations.Attach(win)
+	help.Attach(win)
 	sidebar.Attach(win)
 	sidebar.SetInvalidate(func() {
 		if !win.IsDestroyed() {

@@ -17,6 +17,7 @@ type AppView struct {
 	status        *StatusBar
 	notifications *appdialog.Notifications
 	confirmations *appdialog.Confirmations
+	help          *appdialog.Help
 	sidebar       *appsidebar.Sidebar
 	postHeader    *apppostheader.Header
 	postList      *apppostlist.List
@@ -28,6 +29,7 @@ func NewAppView(
 	onAbout func(),
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
+	help *appdialog.Help,
 	sidebar *appsidebar.Sidebar,
 	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
@@ -36,6 +38,7 @@ func NewAppView(
 		status:        NewStatusBar(statusModel, onAbout),
 		notifications: notifications,
 		confirmations: confirmations,
+		help:          help,
 		sidebar:       sidebar,
 		postHeader:    postHeader,
 		postList:      postList,
@@ -97,10 +100,28 @@ func (a *AppView) View(c *ui.Context) {
 		}
 		a.status.View(c)
 	})
+	a.installShortcuts(c)
 	if a.notifications != nil {
 		a.notifications.Draw(c)
 	}
 	if a.confirmations != nil {
 		a.confirmations.Draw(c)
+	}
+	if a.help != nil {
+		a.help.Draw(c)
+	}
+}
+
+// installShortcuts wires cross-surface navigation and the help modal.
+func (a *AppView) installShortcuts(c *ui.Context) {
+	if c.FocusTakesText() {
+		return
+	}
+	if a.help != nil {
+		c.OnWindowShortcut(ui.Shift, ui.KeySlash, a.help.Show)
+	}
+	if a.sidebar != nil {
+		c.OnWindowShortcut(0, ui.KeyH, func() { a.sidebar.SelectNeighbour(-1) })
+		c.OnWindowShortcut(0, ui.KeyL, func() { a.sidebar.SelectNeighbour(1) })
 	}
 }

@@ -192,6 +192,16 @@ func (s *Status) SelectFeed(ctx context.Context, feedID int64) {
 	s.actions.SelectFeed(ctx, feedID)
 }
 
+// SelectNeighbourFeed moves the native subscription selection.
+func (s *Status) SelectNeighbourFeed(_ context.Context, delta int) {
+	s.actions.SelectNeighbourFeed(delta)
+}
+
+// ShowHelp opens the native keyboard shortcut modal.
+func (s *Status) ShowHelp(_ context.Context) {
+	s.actions.ShowHelp()
+}
+
 // PageReady marks the reader page as ready for a full snapshot.
 func (s *Status) PageReady(ctx context.Context) {
 	s.actions.PageReady(ctx)

@@ -10,7 +10,6 @@
     revision: 0,
     post: null,
     request: 0,
-    feedId: 0,
     feeds: [],
     prefs: {
       theme: "system",
@@ -29,7 +28,6 @@
     body: document.getElementById("post-body"),
     empty: document.getElementById("empty"),
     loading: document.getElementById("loading"),
-    help: document.getElementById("help-backdrop"),
     snapshot: document.getElementById("snapshot-backdrop"),
     snapshotProgress: document.getElementById("snapshot-progress"),
     snapshotProgressText: document.getElementById("snapshot-progress-text"),
@@ -164,15 +162,6 @@
       showPane(state.post ? "article" : "empty");
       notifyError("无法打开文章", error);
     }
-  };
-
-  const selectNeighbourFeed = (delta) => {
-    if (state.feeds.length === 0) return;
-    const currentIndex = state.feeds.findIndex((feed) => feed.id === state.feedId);
-    const fallbackIndex = delta === 1 ? 0 : state.feeds.length - 1;
-    let index = currentIndex === -1 ? fallbackIndex : currentIndex + delta;
-    index = Math.max(0, Math.min(index, state.feeds.length - 1));
-    runtime.call("Status.SelectFeed", state.feeds[index].id).catch(() => {});
   };
 
   const scrollOrNext = () => {
@@ -393,6 +382,18 @@
     });
   };
 
+  const selectNeighbourFeed = (delta) => {
+    runtime.call("Status.SelectNeighbourFeed", delta).catch((error) => {
+      notifyError("无法切换订阅源", error);
+    });
+  };
+
+  const showHelp = () => {
+    runtime.call("Status.ShowHelp").catch((error) => {
+      notifyError("无法打开快捷键帮助", error);
+    });
+  };
+
   const handleKey = (event) => {
     if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
     if (!elements.snapshot.hidden) {
@@ -402,16 +403,8 @@
       }
       return;
     }
-    if (!elements.help.hidden && event.key !== "Escape") return;
 
     switch (event.key) {
-      case "?":
-        event.preventDefault();
-        elements.help.hidden = false;
-        break;
-      case "Escape":
-        elements.help.hidden = true;
-        break;
       case " ":
         event.preventDefault();
         scrollOrNext();
@@ -423,10 +416,16 @@
         if (state.post?.url) void openLink(state.post.url);
         break;
       case "h":
-        selectNeighbourFeed(-1);
+        event.preventDefault();
+        void selectNeighbourFeed(-1);
         break;
       case "l":
-        selectNeighbourFeed(1);
+        event.preventDefault();
+        void selectNeighbourFeed(1);
+        break;
+      case "?":
+        event.preventDefault();
+        void showHelp();
         break;
     }
   };
@@ -477,7 +476,6 @@
         applyPrefs(event.prefs);
         break;
       case "selection.changed":
-        state.feedId = event.selection?.feedId ?? 0;
         clearPost();
         break;
       case "post.selected":
@@ -544,9 +542,6 @@
     mediaQuery.addEventListener("change", onSystemThemeChange);
     window.addEventListener("keydown", handleKey);
     elements.body.addEventListener("click", handleBodyClick);
-    elements.help.addEventListener("click", (event) => {
-      if (event.target === elements.help) elements.help.hidden = true;
-    });
     window.addEventListener("unload", () => {
       unsubscribe();
       stopThemeWatch();

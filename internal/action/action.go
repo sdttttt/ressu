@@ -56,6 +56,8 @@ type UI interface {
 	ApplyTheme(string)
 	ShowNotification(appdialog.Notification)
 	SelectNeighbourPost(delta int, onlyUnread bool)
+	SelectNeighbourFeed(delta int)
+	ShowHelp()
 }
 
 // AppActions is the single application-level entry for capabilities exposed to
@@ -555,4 +557,14 @@ func (a *AppActions) Notify(level, message string) {
 // SelectNeighbourPost moves the native article list from a page shortcut.
 func (a *AppActions) SelectNeighbourPost(delta int, onlyUnread bool) {
 	a.ui.SelectNeighbourPost(delta, onlyUnread)
+}
+
+// SelectNeighbourFeed moves the native subscription selection from a page shortcut.
+func (a *AppActions) SelectNeighbourFeed(delta int) {
+	a.ui.SelectNeighbourFeed(delta)
+}
+
+// ShowHelp opens the native keyboard shortcut modal.
+func (a *AppActions) ShowHelp() {
+	a.ui.ShowHelp()
 }

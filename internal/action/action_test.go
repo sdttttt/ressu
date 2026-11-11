@@ -34,6 +34,8 @@ type fakeUI struct {
 	snapshotCallbacks appviewer.SnapshotCallbacks
 	notifications     []appdialog.Notification
 	addFeedOpened     bool
+	helpShown         bool
+	feedDelta         int
 	confirmation      *appdialog.ConfirmationRequest
 	confirmed         bool
 	confirmCalled     bool
@@ -116,6 +118,14 @@ func (f *fakeUI) ShowNotification(notification appdialog.Notification) {
 }
 
 func (f *fakeUI) SelectNeighbourPost(int, bool) {}
+
+func (f *fakeUI) SelectNeighbourFeed(delta int) {
+	f.feedDelta = delta
+}
+
+func (f *fakeUI) ShowHelp() {
+	f.helpShown = true
+}
 
 func newTestActions(t *testing.T) (*AppActions, *fakeUI) {
 	t.Helper()
@@ -297,6 +307,20 @@ func TestNotifyForwardsThroughNativeUI(t *testing.T) {
 	}
 	if got := ui.notifications[0]; got.Type != "warning" || got.Title != "刷新失败" {
 		t.Errorf("notification = %#v; want warning/刷新失败", got)
+	}
+}
+
+func TestPageShortcutsForwardThroughNativeUI(t *testing.T) {
+	actions, ui := newTestActions(t)
+
+	actions.ShowHelp()
+	actions.SelectNeighbourFeed(-1)
+
+	if !ui.helpShown {
+		t.Error("help shortcut was not forwarded")
+	}
+	if ui.feedDelta != -1 {
+		t.Errorf("feed delta = %d; want -1", ui.feedDelta)
 	}
 }
 

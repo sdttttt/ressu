@@ -10,6 +10,7 @@ import (
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
+	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -18,7 +19,9 @@ import (
 type NativeUI struct {
 	notifications *appdialog.Notifications
 	confirmations *appdialog.Confirmations
+	help          *appdialog.Help
 	postList      *apppostlist.List
+	sidebar       *appsidebar.Sidebar
 }
 
 // NewNativeUI creates the native side-effect adapter.
@@ -34,10 +37,37 @@ func (n *NativeUI) SetPostList(postList *apppostlist.List) {
 	n.postList = postList
 }
 
+// SetHelp connects the native keyboard shortcut modal to page actions.
+func (n *NativeUI) SetHelp(help *appdialog.Help) {
+	n.help = help
+}
+
+// SetSidebar connects the native subscription sidebar to page actions.
+func (n *NativeUI) SetSidebar(sidebar *appsidebar.Sidebar) {
+	n.sidebar = sidebar
+}
+
 // SelectNeighbourPost moves the native article list selection.
 func (n *NativeUI) SelectNeighbourPost(delta int, onlyUnread bool) {
 	if n.postList != nil {
 		n.postList.SelectNeighbour(delta, onlyUnread)
+	}
+}
+
+// SelectNeighbourFeed moves the native subscription selection.
+func (n *NativeUI) SelectNeighbourFeed(delta int) {
+	if n.help != nil && n.help.Visible() {
+		return
+	}
+	if n.sidebar != nil {
+		n.sidebar.SelectNeighbour(delta)
+	}
+}
+
+// ShowHelp opens the native keyboard shortcut modal.
+func (n *NativeUI) ShowHelp() {
+	if n.help != nil {
+		n.help.Show()
 	}
 }
 
