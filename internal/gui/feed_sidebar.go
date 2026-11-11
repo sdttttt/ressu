@@ -373,7 +373,9 @@ func (s *FeedSidebar) drawFeed(
 					Description(feed.LastError)
 			}
 			if feed.Unread > 0 {
-				ui.Badge(c, unreadText(feed.Unread))
+				ui.Box(c).PaddingStart(8).Children(func() {
+					ui.Badge(c, unreadText(feed.Unread))
+				})
 			}
 		})
 	if !selected && row.Hovered() {
