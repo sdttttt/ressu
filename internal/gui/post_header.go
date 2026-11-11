@@ -17,10 +17,11 @@ const (
 // PostHeaderCallbacks connects the native article header to application
 // actions.
 type PostHeaderCallbacks struct {
-	ToggleStar func(feedID int64, guid string) (store.PostSummary, error)
-	MarkRead   func(feedID int64, guid string, read bool) error
-	OpenLink   func(link string) error
-	Notify     func(level, message string)
+	ToggleStar      func(feedID int64, guid string) (store.PostSummary, error)
+	MarkRead        func(feedID int64, guid string, read bool) error
+	OpenLink        func(link string) error
+	RequestSnapshot func()
+	Notify          func(level, message string)
 }
 
 // PostHeader renders metadata and actions for the selected article.
@@ -158,6 +159,9 @@ func (h *PostHeader) drawActions(c *ui.Context, theme *ui.Theme, post store.Post
 	})
 	h.iconButton(c, theme, postHeaderExternalLink, "打开原文", false, post.URL != "", func() {
 		h.openOriginal(post)
+	})
+	h.iconButton(c, theme, postHeaderCamera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
+		h.callbacks.RequestSnapshot()
 	})
 }
 

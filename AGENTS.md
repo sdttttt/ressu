@@ -2,7 +2,8 @@
 
 Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
 MyGO 绑定把数据交给内嵌静态阅读页；订阅源侧栏、文章列表、文章头部和底部状态栏由
-MyGO 原生 UI 直接渲染，页面只负责阅读区正文和帮助对话框。面向用户的中文介绍在 `README.md`。
+MyGO 原生 UI 直接渲染，页面只负责阅读区正文、帮助对话框和快照分片采集。面向用户的中文介绍在
+`README.md`。
 
 本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
 的规则。
@@ -301,8 +302,8 @@ bun install
   `revision` 不递增的事件。
 - 文章请求用递增 requestId 防止快速切换时旧响应覆盖新文章。`post.selected` 获取正文后，
   若偏好要求则自动标记已读。
-- 订阅源栏、文章列表、文章头部和偏好设置都是原生 UI；页面只渲染正文、空态、加载态和帮助
-  对话框。
+- 订阅源栏、文章列表、文章头部和偏好设置都是原生 UI；页面只渲染正文、空态、加载态、帮助
+  对话框和快照采集进度。
 - 页面快捷键只有 `Space`、`m`、`v`、`h`、`l` 和 `?`；原生列表已处理 `j`、`k`、`n`、`p`、
   `Enter` 和 `s`，不要在页面重复注册。
 - 主题有两层：`action.UpdatePreferences` 调用 `UI.ApplyTheme` 设置原生外观；前端
@@ -316,10 +317,11 @@ bun install
 
 ## 文章快照
 
-快照入口当前已停用；`internal/action`、`internal/webendpoint`、`internal/service/snapshot.go`
-和相关测试保留，便于后续恢复。恢复时不能用当前窗口截图代替长文快照：仍需重建固定宽度、
-固定浅色的离屏快照卡片，等待图片解码，按滚动分片调用 `Posts.CaptureSnapshot`，再由
-`Posts.StitchSnapshot` 拼接。恢复前必须重新提供 UI 入口和前端卡片版式。
+快照入口在原生文章头部，动作层只广播 `ui.command: "snapshot"`；静态阅读页负责重建固定浅色
+的离屏快照卡片、等待图片解码并按滚动分片调用 `Posts.CaptureSnapshot`。随后页面调用
+`Posts.StitchSnapshot`，Go 拼接完成后打开原生快照预览窗口，由原生界面提供保存和复制。
+不能用当前窗口截图代替长文快照。卡片宽度取 `min(760, WebView 宽度)`，太窄时向用户提示；
+生成中阻断交互，文章切换时取消旧请求。保存成功后保留预览。
 
 ## 代码约定
 
@@ -412,7 +414,7 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   入库，并禁用 `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、
   `button` 以及 `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
-- `reader.js` 的正文容器和未来快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；
+- `reader.js` 的正文容器和快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；
   不要把抓取原文直接传给前端。嵌入 WebView 的快照必须通过 `Page.WebView().CapturePage()`
   捕获。
 - 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`action.OpenLink`

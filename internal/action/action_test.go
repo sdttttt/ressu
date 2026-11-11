@@ -16,18 +16,22 @@ import (
 )
 
 type fakeUI struct {
-	openFiles     []string
-	savePath      string
-	openedPath    string
-	externalLink  string
-	windowTitle   string
-	windowLink    string
-	theme         string
-	notifications []gui.Notification
-	addFeedOpened bool
-	confirmation  *gui.ConfirmationRequest
-	confirmed     bool
-	confirmCalled bool
+	openFiles         []string
+	savePath          string
+	openedPath        string
+	externalLink      string
+	windowTitle       string
+	windowLink        string
+	theme             string
+	snapshotData      []byte
+	snapshotTitle     string
+	snapshotParent    *gui.Window
+	snapshotCallbacks gui.SnapshotViewerCallbacks
+	notifications     []gui.Notification
+	addFeedOpened     bool
+	confirmation      *gui.ConfirmationRequest
+	confirmed         bool
+	confirmCalled     bool
 }
 
 func (f *fakeUI) SelectOPMLImport(*gui.Window) ([]string, error) {
@@ -58,6 +62,19 @@ func (f *fakeUI) OpenLinkWindow(title, link string) {
 }
 
 func (f *fakeUI) OpenImageViewer(*gui.Window, []byte, string, string) error {
+	return nil
+}
+
+func (f *fakeUI) OpenSnapshotViewer(
+	parent *gui.Window,
+	data []byte,
+	title string,
+	callbacks gui.SnapshotViewerCallbacks,
+) error {
+	f.snapshotData = data
+	f.snapshotTitle = title
+	f.snapshotCallbacks = callbacks
+	f.snapshotParent = parent
 	return nil
 }
 

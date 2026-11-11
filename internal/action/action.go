@@ -24,6 +24,9 @@ import (
 // ErrInvalidLink reports a link that is not an absolute HTTP or HTTPS URL.
 var ErrInvalidLink = errors.New("invalid link")
 
+// ErrNoSnapshotWindow reports that the snapshot caller window is unavailable.
+var ErrNoSnapshotWindow = errors.New("no snapshot window")
+
 // UI is the set of native side effects an action may perform.
 type UI interface {
 	SelectOPMLImport(parent *gui.Window) ([]string, error)
@@ -33,6 +36,12 @@ type UI interface {
 	OpenExternal(string) error
 	OpenLinkWindow(title, link string)
 	OpenImageViewer(parent *gui.Window, data []byte, viewerURL, alt string) error
+	OpenSnapshotViewer(
+		parent *gui.Window,
+		data []byte,
+		title string,
+		callbacks gui.SnapshotViewerCallbacks,
+	) error
 	OpenAddFeed(parent *gui.Window, callbacks gui.AddFeedCallbacks)
 	OpenSettings(parent *gui.Window, callbacks gui.SettingsCallbacks)
 	Confirm(ctx context.Context, parent *gui.Window, request gui.ConfirmationRequest) (bool, error)
@@ -220,9 +229,36 @@ func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.Snapsh
 	return data, err
 }
 
-// StitchSnapshot joins page captures into one PNG.
-func (a *AppActions) StitchSnapshot(ctx context.Context, tiles []service.SnapshotTile) ([]byte, error) {
-	return a.posts.StitchSnapshot(ctx, tiles)
+// StitchSnapshot joins page captures and opens the native snapshot preview.
+func (a *AppActions) StitchSnapshot(
+	ctx context.Context,
+	title string,
+	tiles []service.SnapshotTile,
+) error {
+	parent := mygo.CallerWindow(ctx)
+	if parent == nil {
+		return ErrNoSnapshotWindow
+	}
+	return a.stitchSnapshot(parent, title, tiles)
+}
+
+// stitchSnapshot joins page captures and opens the native preview for parent.
+func (a *AppActions) stitchSnapshot(
+	parent *gui.Window,
+	title string,
+	tiles []service.SnapshotTile,
+) error {
+	data, err := a.posts.StitchSnapshot(context.Background(), tiles)
+	if err != nil {
+		return err
+	}
+	return a.ui.OpenSnapshotViewer(parent, data, title, gui.SnapshotViewerCallbacks{
+		Save: func(snapshotParent *gui.Window, snapshotData []byte, fileName string) (string, error) {
+			return a.SaveSnapshot(snapshotParent, fileName, snapshotData)
+		},
+		Copy:   a.CopySnapshot,
+		Notify: a.Notify,
+	})
 }
 
 // SaveSnapshot asks where to save a stitched snapshot and writes it.
@@ -388,11 +424,17 @@ func (a *AppActions) PostListCallbacks() gui.PostListCallbacks {
 // PostHeaderCallbacks exposes native article header actions.
 func (a *AppActions) PostHeaderCallbacks() gui.PostHeaderCallbacks {
 	return gui.PostHeaderCallbacks{
-		ToggleStar: a.TogglePostStar,
-		MarkRead:   a.MarkPostRead,
-		OpenLink:   a.OpenLink,
-		Notify:     a.Notify,
+		ToggleStar:      a.TogglePostStar,
+		MarkRead:        a.MarkPostRead,
+		OpenLink:        a.OpenLink,
+		RequestSnapshot: a.RequestSnapshot,
+		Notify:          a.Notify,
 	}
+}
+
+// RequestSnapshot asks the reading page to generate the selected post snapshot.
+func (a *AppActions) RequestSnapshot() {
+	a.hub.UICommand("snapshot")
 }
 
 func (a *AppActions) refreshAllWithNotice() {

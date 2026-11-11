@@ -29,11 +29,15 @@ func TestPostHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 		},
 	)
 	starred := make(chan bool, 1)
+	snapshotRequested := make(chan bool, 1)
 	header := NewPostHeader(model, PostHeaderCallbacks{
 		ToggleStar: func(int64, string) (store.PostSummary, error) {
 			model.SetPostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Starred: false})
 			starred <- false
 			return store.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
+		},
+		RequestSnapshot: func() {
+			snapshotRequested <- true
 		},
 	})
 
@@ -64,5 +68,14 @@ func TestPostHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	tester.Frame()
 	if !tester.HasText("加星标") {
 		t.Error("article header did not refresh its star action")
+	}
+
+	if err := tester.Click("生成快照"); err != nil {
+		t.Fatalf("click snapshot action: %v", err)
+	}
+	select {
+	case <-snapshotRequested:
+	case <-time.After(time.Second):
+		t.Fatal("clicking the snapshot action did not request a snapshot")
 	}
 }

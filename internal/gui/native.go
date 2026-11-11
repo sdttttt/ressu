@@ -103,6 +103,16 @@ func (NativeUI) OpenImageViewer(
 	return OpenImageViewer(parent, data, viewerURL, alt)
 }
 
+// OpenSnapshotViewer opens the native generated-snapshot window.
+func (NativeUI) OpenSnapshotViewer(
+	parent *Window,
+	data []byte,
+	title string,
+	callbacks SnapshotViewerCallbacks,
+) error {
+	return OpenSnapshotViewer(parent, data, title, callbacks)
+}
+
 // OpenSettings opens the native settings window.
 func (NativeUI) OpenSettings(parent *Window, callbacks SettingsCallbacks) {
 	OpenSettingsWindow(parent, callbacks)

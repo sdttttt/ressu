@@ -128,19 +128,13 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCap
 	return p.actions.CaptureSnapshot(ctx, request)
 }
 
-// StitchSnapshot joins page captures into one PNG.
-func (p *Posts) StitchSnapshot(ctx context.Context, tiles []service.SnapshotTile) ([]byte, error) {
-	return p.actions.StitchSnapshot(ctx, tiles)
-}
-
-// SaveSnapshot asks where to save a stitched snapshot.
-func (p *Posts) SaveSnapshot(ctx context.Context, fileName string, data []byte) (string, error) {
-	return p.actions.SaveSnapshot(mygo.CallerWindow(ctx), fileName, data)
-}
-
-// CopySnapshot puts a stitched snapshot on the clipboard.
-func (p *Posts) CopySnapshot(ctx context.Context, data []byte) error {
-	return p.actions.CopySnapshot(data)
+// StitchSnapshot joins page captures and opens the native preview.
+func (p *Posts) StitchSnapshot(
+	ctx context.Context,
+	title string,
+	tiles []service.SnapshotTile,
+) error {
+	return p.actions.StitchSnapshot(ctx, title, tiles)
 }
 
 // Settings is the page binding for preferences and shell actions.
