@@ -73,7 +73,8 @@ func (h *PostHeader) drawTitle(c *ui.Context, theme *ui.Theme, post store.PostSu
 	lineHeight := h.scaled(theme, 22)
 	ui.Text(c, title).
 		FillWidth().
-		Height(lineHeight * postHeaderTitleLineCount).
+		MinHeight(lineHeight).
+		MaxHeight(lineHeight * postHeaderTitleLineCount).
 		FontSize(h.scaled(theme, postHeaderTitleTextSize)).
 		FixedLineHeight(lineHeight).
 		FontWeight(600).
@@ -113,7 +114,7 @@ func (h *PostHeader) drawMeta(
 			TextColor(palette.TextMuted)
 	}
 
-	ui.Row(c).FillWidth().Height(h.scaled(theme, 16)).AlignItems(ui.Center).
+	ui.Row(c).Padding(24, 0, 8, 0).FillWidth().Height(h.scaled(theme, 16)).AlignItems(ui.Center).
 		Gap(h.scaled(theme, 6)).Children(func() {
 		meta(formatDateTime(post.PublishedAt))
 		meta(post.Author)
