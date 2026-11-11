@@ -8,6 +8,7 @@ import (
 
 	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
 	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/store"
@@ -17,7 +18,7 @@ import (
 type NativeUI struct {
 	notifications *appdialog.Notifications
 	confirmations *appdialog.Confirmations
-	postList      *PostList
+	postList      *apppostlist.List
 }
 
 // NewNativeUI creates the native side-effect adapter.
@@ -29,7 +30,7 @@ func NewNativeUI(
 }
 
 // SetPostList connects the native article list to page-driven shortcuts.
-func (n *NativeUI) SetPostList(postList *PostList) {
+func (n *NativeUI) SetPostList(postList *apppostlist.List) {
 	n.postList = postList
 }
 

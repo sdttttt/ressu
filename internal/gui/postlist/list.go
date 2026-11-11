@@ -1,4 +1,5 @@
-package gui
+// Package postlist renders the native article list and its paging controls.
+package postlist
 
 import (
 	"fmt"
@@ -19,16 +20,19 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
+// nativeTextSize is MyGO's default text size before system text scaling.
+var nativeTextSize = ui.LightTheme().FontSize
+
 const (
-	postListPaneSaveDelay = 500 * time.Millisecond
-	postListTextSize      = 13
-	postListSearchDelay   = 300 * time.Millisecond
-	postListPageSize      = 100
-	postListTimeRefresh   = 30 * time.Second
+	paneSaveDelay = 500 * time.Millisecond
+	textSize      = 13
+	searchDelay   = 300 * time.Millisecond
+	pageSize      = 100
+	timeRefresh   = 30 * time.Second
 )
 
-// PostListCallbacks connects the native article list to application actions.
-type PostListCallbacks struct {
+// Callbacks connects the native article list to application actions.
+type Callbacks struct {
 	List           func(service.PostQuery) (service.PostPage, error)
 	Select         func(post store.PostSummary)
 	ToggleStar     func(feedID int64, guid string) (store.PostSummary, error)
@@ -37,11 +41,11 @@ type PostListCallbacks struct {
 	Notify         func(level, message string)
 }
 
-// PostList renders articles with the WebView list's visual contract.
-type PostList struct {
+// List renders articles with the WebView list's visual contract.
+type List struct {
 	mu         sync.Mutex
 	model      *appstatus.Model
-	callbacks  PostListCallbacks
+	callbacks  Callbacks
 	invalidate func()
 	window     *mygo.Window
 
@@ -65,15 +69,15 @@ type PostList struct {
 	pendingScroll      string
 }
 
-// NewPostList creates the native article list.
-func NewPostList(model *appstatus.Model, callbacks PostListCallbacks) *PostList {
+// New creates the native article list.
+func New(model *appstatus.Model, callbacks Callbacks) *List {
 	snapshot := model.Snapshot()
 	query := service.PostQuery{
 		FeedID:    snapshot.CurrentFeedID,
-		Limit:     postListPageSize,
+		Limit:     pageSize,
 		SortOrder: service.SortOrderDescending,
 	}
-	return &PostList{
+	return &List{
 		model:       model,
 		callbacks:   callbacks,
 		panePercent: snapshot.ListPercent,
@@ -82,27 +86,27 @@ func NewPostList(model *appstatus.Model, callbacks PostListCallbacks) *PostList 
 }
 
 // Attach connects the list to the main window.
-func (l *PostList) Attach(window *mygo.Window) {
+func (l *List) Attach(window *mygo.Window) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.window = window
 }
 
 // SetInvalidate installs the callback used after asynchronous updates.
-func (l *PostList) SetInvalidate(invalidate func()) {
+func (l *List) SetInvalidate(invalidate func()) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.invalidate = invalidate
 }
 
-// PostListTheme returns the theme used by the article list and splitter.
-func (l *PostList) PostListTheme(c *ui.Context) *ui.Theme {
+// Theme returns the theme used by the article list and splitter.
+func (l *List) Theme(c *ui.Context) *ui.Theme {
 	snapshot := l.model.Snapshot()
-	return postListTheme(c, snapshot.Theme, snapshot.FontSize)
+	return Theme(c, snapshot.Theme, snapshot.FontSize)
 }
 
 // SyncLayout copies the mirrored list layout into its splitter.
-func (l *PostList) SyncLayout() {
+func (l *List) SyncLayout() {
 	snapshot := l.model.Snapshot()
 	l.mu.Lock()
 	l.panePercent = snapshot.ListPercent
@@ -113,11 +117,11 @@ func (l *PostList) SyncLayout() {
 	}
 }
 
-func (l *PostList) splitPercent() *float32 {
+func (l *List) SplitPercent() *float32 {
 	return &l.panePercent
 }
 
-func (l *PostList) savePanePercent() {
+func (l *List) SavePanePercent() {
 	l.mu.Lock()
 	percent := l.panePercent
 	if l.paneSaveTimer != nil {
@@ -125,7 +129,7 @@ func (l *PostList) savePanePercent() {
 	}
 	callbacks := l.callbacks
 	invalidate := l.invalidate
-	l.paneSaveTimer = time.AfterFunc(postListPaneSaveDelay, func() {
+	l.paneSaveTimer = time.AfterFunc(paneSaveDelay, func() {
 		l.mu.Lock()
 		l.paneSaveTimer = nil
 		l.mu.Unlock()
@@ -138,21 +142,21 @@ func (l *PostList) savePanePercent() {
 }
 
 // View builds the article list content.
-func (l *PostList) View(c *ui.Context) {
+func (l *List) View(c *ui.Context) {
 	snapshot := l.model.Snapshot()
-	theme := postListTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
 	l.syncState(snapshot)
 	l.installShortcuts(c)
 
 	ui.Themed(c, theme).Fill().Children(func() {
-		ui.Column(c).Fill().Background(postListPalette(*theme).Background).Children(func() {
+		ui.Column(c).Fill().Background(NewPalette(*theme).Background).Children(func() {
 			l.drawHeader(c, theme, snapshot)
 			l.drawPosts(c, theme, snapshot)
 		})
 	})
 }
 
-func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
 	title := "聚合源"
 	for _, feed := range snapshot.Feeds {
 		if feed.ID == snapshot.CurrentFeedID {
@@ -160,7 +164,7 @@ func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus
 			break
 		}
 	}
-	palette := postListPalette(*theme)
+	palette := NewPalette(*theme)
 
 	ui.Column(c).FillWidth().Padding(l.scaled(theme, 8), l.scaled(theme, 12)).Children(func() {
 		ui.Text(c, title).
@@ -179,7 +183,7 @@ func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus
 					FontFeatures("tnum").
 					TextColor(palette.TextMuted)
 				ui.Box(c).Width(1).Height(l.scaled(theme, 12)).Background(palette.Border)
-				l.badge(c, theme, strconv.Itoa(postListUnread(snapshot))+" 未读", palette.Secondary, palette.SecondaryForeground)
+				l.badge(c, theme, strconv.Itoa(currentUnread(snapshot))+" 未读", palette.Secondary, palette.SecondaryForeground)
 			})
 
 			searchLabel := "搜索标题"
@@ -229,7 +233,7 @@ func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus
 	ui.Box(c).FillWidth().Height(1).Background(palette.Border)
 }
 
-func (l *PostList) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
 	ui.Scroll(c).Grow(1).Padding(l.scaled(theme, 8), l.scaled(theme, 8)).Children(func() {
 		if l.loading && len(l.posts) == 0 {
 			ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).Children(func() {
@@ -256,8 +260,8 @@ func (l *PostList) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.
 	})
 }
 
-func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot, post store.PostSummary) {
-	palette := postListPalette(*theme)
+func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot, post store.PostSummary) {
+	palette := NewPalette(*theme)
 	rowKey := postRowKey(post)
 	selected := snapshot.CurrentPost.FeedID == post.FeedID && snapshot.CurrentPost.GUID == post.GUID
 
@@ -369,15 +373,15 @@ func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 	l.scrollPending(rowKey, row)
 }
 
-func (l *PostList) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element {
+func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element {
 	return ui.Text(c, value).
 		FontSize(l.scaled(theme, 10)).
 		SingleLine().
-		TextColor(postListPalette(*theme).TextMuted).
+		TextColor(NewPalette(*theme).TextMuted).
 		FontFeatures("tnum")
 }
 
-func (l *PostList) scrollPending(rowKey string, row ui.Element) {
+func (l *List) scrollPending(rowKey string, row ui.Element) {
 	l.mu.Lock()
 	pending := l.pendingScroll == rowKey
 	if pending {
@@ -389,8 +393,8 @@ func (l *PostList) scrollPending(rowKey string, row ui.Element) {
 	}
 }
 
-func (l *PostList) installShortcuts(c *ui.Context) {
-	c.After(postListTimeRefresh)
+func (l *List) installShortcuts(c *ui.Context) {
+	c.After(timeRefresh)
 	if c.FocusTakesText() {
 		return
 	}
@@ -403,7 +407,7 @@ func (l *PostList) installShortcuts(c *ui.Context) {
 }
 
 // SelectNeighbour selects and reveals the next loaded article without wrapping.
-func (l *PostList) SelectNeighbour(delta int, onlyUnread bool) {
+func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 	snapshot := l.model.Snapshot()
 	direction := 1
 	if delta < 0 {
@@ -452,7 +456,7 @@ func (l *PostList) SelectNeighbour(delta int, onlyUnread bool) {
 	}
 }
 
-func (l *PostList) activateSelection() {
+func (l *List) activateSelection() {
 	snapshot := l.model.Snapshot()
 	l.mu.Lock()
 	if len(l.posts) == 0 {
@@ -474,7 +478,7 @@ func (l *PostList) activateSelection() {
 	}
 }
 
-func (l *PostList) toggleSelectedStar() {
+func (l *List) toggleSelectedStar() {
 	snapshot := l.model.Snapshot()
 	l.mu.Lock()
 	var post store.PostSummary
@@ -493,8 +497,8 @@ func (l *PostList) toggleSelectedStar() {
 	}
 }
 
-func (l *PostList) drawLoadMore(c *ui.Context, theme *ui.Theme) {
-	palette := postListPalette(*theme)
+func (l *List) drawLoadMore(c *ui.Context, theme *ui.Theme) {
+	palette := NewPalette(*theme)
 	label := fmt.Sprintf("加载更多（还有 %d 篇）", l.total-len(l.posts))
 	if l.loading {
 		label = "加载中…"
@@ -535,8 +539,8 @@ func (l *PostList) drawLoadMore(c *ui.Context, theme *ui.Theme) {
 	}
 }
 
-func (l *PostList) drawEmpty(c *ui.Context, theme *ui.Theme) {
-	palette := postListPalette(*theme)
+func (l *List) drawEmpty(c *ui.Context, theme *ui.Theme) {
+	palette := NewPalette(*theme)
 	filtered := l.query.UnreadOnly || l.query.StarredOnly
 	title := "暂时没有文章"
 	hint := "刷新订阅源后再来看看。"
@@ -562,8 +566,8 @@ func (l *PostList) drawEmpty(c *ui.Context, theme *ui.Theme) {
 	})
 }
 
-func (l *PostList) drawSkeletonRow(c *ui.Context, theme *ui.Theme) {
-	palette := postListPalette(*theme)
+func (l *List) drawSkeletonRow(c *ui.Context, theme *ui.Theme) {
+	palette := NewPalette(*theme)
 	ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).
 		Padding(l.scaled(theme, 8), l.scaled(theme, 10)).Children(func() {
 		ui.Box(c).Height(l.scaled(theme, 14)).WidthPercent(75.0).Background(palette.Primary.Alpha(0.1))
@@ -572,7 +576,7 @@ func (l *PostList) drawSkeletonRow(c *ui.Context, theme *ui.Theme) {
 	})
 }
 
-func (l *PostList) iconButton(
+func (l *List) iconButton(
 	c *ui.Context,
 	theme *ui.Theme,
 	icon *ui.SVG,
@@ -580,7 +584,7 @@ func (l *PostList) iconButton(
 	active bool,
 	action func(),
 ) ui.Element {
-	return widget.IconButton(c, postIconButtonColors(postListPalette(*theme)), widget.IconButtonOptions{
+	return widget.IconButton(c, IconButtonColors(NewPalette(*theme)), widget.IconButtonOptions{
 		Icon:     icon,
 		Label:    label,
 		Size:     l.scaled(theme, 28),
@@ -592,7 +596,7 @@ func (l *PostList) iconButton(
 	})
 }
 
-func (l *PostList) badge(c *ui.Context, theme *ui.Theme, label string, background, foreground ui.Color) {
+func (l *List) badge(c *ui.Context, theme *ui.Theme, label string, background, foreground ui.Color) {
 	ui.Row(c).
 		Height(l.scaled(theme, 16)).
 		Padding(0, l.scaled(theme, 6)).
@@ -606,7 +610,7 @@ func (l *PostList) badge(c *ui.Context, theme *ui.Theme, label string, backgroun
 	})
 }
 
-func (l *PostList) syncState(snapshot appstatus.Snapshot) {
+func (l *List) syncState(snapshot appstatus.Snapshot) {
 	l.mu.Lock()
 	if snapshot.PostVersion != l.appliedPostVersion {
 		l.appliedPostVersion = snapshot.PostVersion
@@ -634,7 +638,7 @@ func (l *PostList) syncState(snapshot appstatus.Snapshot) {
 	query := l.query
 	query.FeedID = snapshot.CurrentFeedID
 	query.Offset = 0
-	query.Limit = postListPageSize
+	query.Limit = pageSize
 	l.loadedQuery = query
 	l.loadVersion++
 	generation := l.loadVersion
@@ -667,7 +671,7 @@ func (l *PostList) syncState(snapshot appstatus.Snapshot) {
 	}()
 }
 
-func (l *PostList) setSortOrder() {
+func (l *List) setSortOrder() {
 	l.mu.Lock()
 	if l.query.SortOrder == service.SortOrderAscending {
 		l.query.SortOrder = service.SortOrderDescending
@@ -681,7 +685,7 @@ func (l *PostList) setSortOrder() {
 	}
 }
 
-func (l *PostList) setUnreadOnly(active bool) {
+func (l *List) setUnreadOnly(active bool) {
 	l.mu.Lock()
 	l.query.UnreadOnly = active
 	invalidate := l.invalidate
@@ -691,7 +695,7 @@ func (l *PostList) setUnreadOnly(active bool) {
 	}
 }
 
-func (l *PostList) setStarredOnly(active bool) {
+func (l *List) setStarredOnly(active bool) {
 	l.mu.Lock()
 	l.query.StarredOnly = active
 	invalidate := l.invalidate
@@ -701,7 +705,7 @@ func (l *PostList) setStarredOnly(active bool) {
 	}
 }
 
-func (l *PostList) setSearchOpen(open bool) {
+func (l *List) setSearchOpen(open bool) {
 	l.mu.Lock()
 	l.searchOpen = open
 	if !open {
@@ -719,7 +723,7 @@ func (l *PostList) setSearchOpen(open bool) {
 	}
 }
 
-func (l *PostList) setSearch(value string) {
+func (l *List) setSearch(value string) {
 	l.mu.Lock()
 	if l.searchTimer != nil {
 		l.searchTimer.Stop()
@@ -736,7 +740,7 @@ func (l *PostList) setSearch(value string) {
 		return
 	}
 	invalidate := l.invalidate
-	l.searchTimer = time.AfterFunc(postListSearchDelay, func() {
+	l.searchTimer = time.AfterFunc(searchDelay, func() {
 		l.mu.Lock()
 		l.search = query
 		l.query.Search = query
@@ -753,7 +757,7 @@ func (l *PostList) setSearch(value string) {
 	}
 }
 
-func (l *PostList) loadMore() {
+func (l *List) loadMore() {
 	l.mu.Lock()
 	if l.loading {
 		l.mu.Unlock()
@@ -761,7 +765,7 @@ func (l *PostList) loadMore() {
 	}
 	query := l.query
 	query.Offset = len(l.posts)
-	query.Limit = postListPageSize
+	query.Limit = pageSize
 	l.loadVersion++
 	generation := l.loadVersion
 	l.loading = true
@@ -793,7 +797,7 @@ func (l *PostList) loadMore() {
 	}()
 }
 
-func (l *PostList) toggleStar(post store.PostSummary) {
+func (l *List) toggleStar(post store.PostSummary) {
 	l.runAsync(func() {
 		if _, err := l.callbacks.ToggleStar(post.FeedID, post.GUID); err != nil && l.callbacks.Notify != nil {
 			l.callbacks.Notify("error", "无法修改星标："+err.Error())
@@ -801,7 +805,7 @@ func (l *PostList) toggleStar(post store.PostSummary) {
 	})
 }
 
-func (l *PostList) markAllRead(feedID int64) {
+func (l *List) markAllRead(feedID int64) {
 	l.runAsync(func() {
 		if l.callbacks.MarkAllRead != nil {
 			l.callbacks.MarkAllRead(feedID)
@@ -810,7 +814,7 @@ func (l *PostList) markAllRead(feedID int64) {
 	})
 }
 
-func (l *PostList) reload() {
+func (l *List) reload() {
 	l.mu.Lock()
 	l.forceReload = true
 	l.loadedVersion = 0
@@ -821,23 +825,23 @@ func (l *PostList) reload() {
 	}
 }
 
-func (l *PostList) runAsync(operation func()) {
+func (l *List) runAsync(operation func()) {
 	if operation == nil {
 		return
 	}
 	go operation()
 }
 
-func (l *PostList) scaled(theme *ui.Theme, size float32) float32 {
-	return size * theme.FontSize / postListTextSize
+func (l *List) scaled(theme *ui.Theme, size float32) float32 {
+	return size * theme.FontSize / textSize
 }
 
-func postListTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
+func Theme(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	theme := guitheme.New(c, appearance, fontSize)
 	if nativeTextSize > 0 {
-		theme.FontSize *= postListTextSize / nativeTextSize
+		theme.FontSize *= textSize / nativeTextSize
 	}
-	palette := postListPalette(*theme)
+	palette := NewPalette(*theme)
 	theme.Background = palette.Background
 	theme.Surface = ui.Transparent
 	theme.SurfaceHover = palette.Accent
@@ -849,9 +853,9 @@ func postListTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	return theme
 }
 
-func postListPalette(base ui.Theme) postPalette {
+func NewPalette(base ui.Theme) Palette {
 	if base.Dark {
-		return postPalette{
+		return Palette{
 			Background:          ui.Oklch(0.17, 0.005, 285),
 			Foreground:          ui.Oklch(0.93, 0.002, 285),
 			TextMuted:           ui.Oklch(0.68, 0.01, 285),
@@ -866,7 +870,7 @@ func postListPalette(base ui.Theme) postPalette {
 		}
 	}
 	if base.Background == ui.Oklch(0.86, 0.025, 80) {
-		return postPalette{
+		return Palette{
 			Background:          ui.Oklch(0.86, 0.025, 80),
 			Foreground:          ui.Oklch(0.24, 0.02, 70),
 			TextMuted:           ui.Oklch(0.44, 0.022, 70),
@@ -880,7 +884,7 @@ func postListPalette(base ui.Theme) postPalette {
 			Warning:             ui.Oklch(0.66, 0.13, 65),
 		}
 	}
-	return postPalette{
+	return Palette{
 		Background:          ui.Oklch(0.995, 0, 285),
 		Foreground:          ui.Oklch(0.22, 0.006, 285),
 		TextMuted:           ui.Oklch(0.53, 0.01, 285),
@@ -895,7 +899,7 @@ func postListPalette(base ui.Theme) postPalette {
 	}
 }
 
-type postPalette struct {
+type Palette struct {
 	Background          ui.Color
 	Foreground          ui.Color
 	TextMuted           ui.Color
@@ -909,7 +913,7 @@ type postPalette struct {
 	Warning             ui.Color
 }
 
-func postIconButtonColors(palette postPalette) widget.IconButtonColors {
+func IconButtonColors(palette Palette) widget.IconButtonColors {
 	return widget.IconButtonColors{
 		Rest:              palette.Foreground,
 		Active:            palette.Primary,
@@ -921,7 +925,7 @@ func postIconButtonColors(palette postPalette) widget.IconButtonColors {
 	}
 }
 
-func postRowBackground(palette postPalette, selected bool) ui.Color {
+func postRowBackground(palette Palette, selected bool) ui.Color {
 	if selected {
 		return palette.Accent
 	}
@@ -932,7 +936,7 @@ func postRowKey(post store.PostSummary) string {
 	return "post-" + formatPostID(post.FeedID) + "-" + post.GUID
 }
 
-func postListUnread(snapshot appstatus.Snapshot) int {
+func currentUnread(snapshot appstatus.Snapshot) int {
 	if snapshot.CurrentFeedID == service.AggregateFeedID {
 		return snapshot.Unread
 	}

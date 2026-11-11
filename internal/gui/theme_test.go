@@ -6,6 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
+	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -23,10 +25,10 @@ func TestComponentThemesIgnoreInheritedTextScale(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var sidebarSize, postListSize float32
 			view := func(c *ui.Context) {
-				outer := feedSidebarTheme(c, store.ThemeSystem, test.fontSize)
+				outer := appsidebar.Theme(c, store.ThemeSystem, test.fontSize)
 				ui.Themed(c, outer).Children(func() {
-					sidebarSize = feedSidebarTheme(c, store.ThemeSystem, test.fontSize).FontSize
-					postListSize = postListTheme(c, store.ThemeSystem, test.fontSize).FontSize
+					sidebarSize = appsidebar.Theme(c, store.ThemeSystem, test.fontSize).FontSize
+					postListSize = apppostlist.Theme(c, store.ThemeSystem, test.fontSize).FontSize
 				})
 			}
 

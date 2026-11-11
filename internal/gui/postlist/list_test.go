@@ -1,4 +1,4 @@
-package gui
+package postlist
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ func TestPostListShowsArticles(t *testing.T) {
 	loaded := make(chan struct{}, 1)
 	selected := make(chan store.PostSummary, 1)
 	now := time.Now()
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(query service.PostQuery) (service.PostPage, error) {
 			defer func() {
 				loaded <- struct{}{}
@@ -89,7 +89,7 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	loaded := make(chan struct{}, 1)
 	selected := make(chan store.PostSummary, 8)
 	starred := make(chan string, 1)
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(service.PostQuery) (service.PostPage, error) {
 			defer func() { loaded <- struct{}{} }()
 			return service.PostPage{
@@ -160,7 +160,7 @@ func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 	loaded := make(chan struct{}, 1)
 	selected := make(chan struct{}, 1)
 	starred := make(chan string, 1)
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(service.PostQuery) (service.PostPage, error) {
 			defer func() { loaded <- struct{}{} }()
 			return service.PostPage{
@@ -218,7 +218,7 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	})
 	model.SetCurrentFeed(7)
 	queries := make(chan service.PostQuery, 2)
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(query service.PostQuery) (service.PostPage, error) {
 			queries <- query
 			post := store.PostSummary{FeedID: 7, GUID: "first", Title: "First article"}
@@ -264,7 +264,7 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
 	queries := make(chan service.PostQuery, 3)
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(query service.PostQuery) (service.PostPage, error) {
 			queries <- query
 			return service.PostPage{}, nil
@@ -313,23 +313,23 @@ func TestPostListFilterIconButtons(t *testing.T) {
 func TestPostListMatchesWebviewTextSize(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	postList := NewPostList(model, PostListCallbacks{})
+	postList := New(model, Callbacks{})
 
 	var fontSize float32
 	tester := ui.NewTester(func(c *ui.Context) {
-		fontSize = postList.PostListTheme(c).FontSize
+		fontSize = postList.Theme(c).FontSize
 	}, 360, 520)
 	tester.Frame()
 
-	if fontSize != postListTextSize {
-		t.Errorf("article list font size = %v, want %v", fontSize, postListTextSize)
+	if fontSize != textSize {
+		t.Errorf("article list font size = %v, want %v", fontSize, textSize)
 	}
 }
 
 func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeLarge)
-	postList := NewPostList(model, PostListCallbacks{
+	postList := New(model, Callbacks{
 		List: func(service.PostQuery) (service.PostPage, error) {
 			return service.PostPage{}, nil
 		},

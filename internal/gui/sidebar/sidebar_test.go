@@ -1,4 +1,4 @@
-package gui
+package sidebar
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
-func TestFeedSidebarShowsSubscriptionActions(t *testing.T) {
+func TestSidebarShowsSubscriptionActions(t *testing.T) {
 	model := appstatus.New("")
 	model.SetFeeds(appstatus.FeedsSnapshot{
 		Feeds:  []store.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
 		Unread: 2,
 	})
-	sidebar := NewFeedSidebar(model, FeedSidebarCallbacks{
+	sidebar := New(model, Callbacks{
 		Icon: func(context.Context, int64) (store.Icon, error) {
 			return store.Icon{}, store.ErrNotFound
 		},
@@ -38,30 +38,30 @@ func TestFeedSidebarShowsSubscriptionActions(t *testing.T) {
 	}
 }
 
-func TestFeedSidebarMatchesWebviewTextSize(t *testing.T) {
+func TestSidebarMatchesWebviewTextSize(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	sidebar := NewFeedSidebar(model, FeedSidebarCallbacks{})
+	sidebar := New(model, Callbacks{})
 
 	var fontSize float32
 	tester := ui.NewTester(func(c *ui.Context) {
-		fontSize = sidebar.SidebarTheme(c).FontSize
+		fontSize = sidebar.Theme(c).FontSize
 	}, 280, 520)
 	tester.Frame()
 
-	if fontSize != feedSidebarTextSize {
-		t.Errorf("sidebar font size = %v, want %v", fontSize, feedSidebarTextSize)
+	if fontSize != textSize {
+		t.Errorf("sidebar font size = %v, want %v", fontSize, textSize)
 	}
 }
 
-func TestFeedSidebarClicksToggleSelectedFeed(t *testing.T) {
+func TestSidebarClicksToggleSelectedFeed(t *testing.T) {
 	model := appstatus.New("")
 	model.SetFeeds(appstatus.FeedsSnapshot{
 		Feeds:  []store.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
 		Unread: 2,
 	})
 	selections := make(chan int64, 2)
-	sidebar := NewFeedSidebar(model, FeedSidebarCallbacks{
+	sidebar := New(model, Callbacks{
 		Icon: func(context.Context, int64) (store.Icon, error) {
 			return store.Icon{}, store.ErrNotFound
 		},

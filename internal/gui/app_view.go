@@ -5,6 +5,8 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
+	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
@@ -14,9 +16,9 @@ type AppView struct {
 	status        *StatusBar
 	notifications *appdialog.Notifications
 	confirmations *appdialog.Confirmations
-	sidebar       *FeedSidebar
+	sidebar       *appsidebar.Sidebar
 	postHeader    *PostHeader
-	postList      *PostList
+	postList      *apppostlist.List
 }
 
 // NewAppView creates the main window's native layout.
@@ -25,9 +27,9 @@ func NewAppView(
 	onAbout func(),
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
-	sidebar *FeedSidebar,
+	sidebar *appsidebar.Sidebar,
 	postHeader *PostHeader,
-	postList *PostList,
+	postList *apppostlist.List,
 ) *AppView {
 	return &AppView{
 		status:        NewStatusBar(statusModel, onAbout),
@@ -57,9 +59,9 @@ func (a *AppView) View(c *ui.Context) {
 					return
 				}
 
-				ui.Themed(c, a.postList.PostListTheme(c)).Fill().Children(func() {
+				ui.Themed(c, a.postList.Theme(c)).Fill().Children(func() {
 					var articleSplit ui.Element
-					articleSplit = ui.SplitPercent(c, a.postList.splitPercent(), func() {
+					articleSplit = ui.SplitPercent(c, a.postList.SplitPercent(), func() {
 						a.postList.View(c)
 					}, func() {
 						ui.Column(c).Fill().Children(func() {
@@ -70,25 +72,25 @@ func (a *AppView) View(c *ui.Context) {
 						})
 					}).Fill()
 					if articleSplit.Changed() {
-						a.postList.savePanePercent()
+						a.postList.SavePanePercent()
 					}
 				})
 			}
 
-			if a.sidebar != nil && !a.sidebar.isCollapsed() {
+			if a.sidebar != nil && !a.sidebar.IsCollapsed() {
 				var split ui.Element
-				ui.Themed(c, a.sidebar.SidebarTheme(c)).FillWidth().Grow(1).Children(func() {
-					split = ui.SplitPercent(c, a.sidebar.splitPercent(), func() {
+				ui.Themed(c, a.sidebar.Theme(c)).FillWidth().Grow(1).Children(func() {
+					split = ui.SplitPercent(c, a.sidebar.SplitPercent(), func() {
 						a.sidebar.View(c)
 					}, drawContent).Fill()
 				})
 				if split.Changed() {
-					a.sidebar.savePanePercent()
+					a.sidebar.SavePanePercent()
 				}
 			} else {
 				drawContent()
 				if a.sidebar != nil {
-					a.sidebar.drawOverlay(c)
+					a.sidebar.DrawOverlay(c)
 				}
 			}
 		}

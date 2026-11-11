@@ -22,6 +22,8 @@ import (
 	"github.com/sdttttt/ressu/internal/gui"
 	appabout "github.com/sdttttt/ressu/internal/gui/about"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
+	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	"github.com/sdttttt/ressu/internal/logging"
 	"github.com/sdttttt/ressu/internal/media"
 	"github.com/sdttttt/ressu/internal/service"
@@ -116,8 +118,8 @@ func main() {
 	})
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
-	sidebar := gui.NewFeedSidebar(statusModel, actions.SidebarCallbacks())
-	postList := gui.NewPostList(statusModel, actions.PostListCallbacks())
+	sidebar := appsidebar.New(statusModel, actions.SidebarCallbacks())
+	postList := apppostlist.New(statusModel, actions.PostListCallbacks())
 	postHeader := gui.NewPostHeader(statusModel, actions.PostHeaderCallbacks())
 	nativeUI.SetPostList(postList)
 	mygo.BindAs("Feeds", webendpoint.NewWebEndpoint(actions))
@@ -193,9 +195,9 @@ func openWindow(
 	about appabout.Info,
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,
-	sidebar *gui.FeedSidebar,
+	sidebar *appsidebar.Sidebar,
 	postHeader *gui.PostHeader,
-	postList *gui.PostList,
+	postList *apppostlist.List,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
 	view := gui.NewAppView(statusModel, func() {

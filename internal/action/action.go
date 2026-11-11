@@ -19,7 +19,9 @@ import (
 	"github.com/sdttttt/ressu/internal/gui"
 	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
+	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
+	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/service"
 	"github.com/sdttttt/ressu/internal/store"
@@ -392,8 +394,8 @@ func (a *AppActions) OpenAddFeed(parent *mygo.Window) {
 }
 
 // SidebarCallbacks exposes native subscription actions and layout updates.
-func (a *AppActions) SidebarCallbacks() gui.FeedSidebarCallbacks {
-	return gui.FeedSidebarCallbacks{
+func (a *AppActions) SidebarCallbacks() appsidebar.Callbacks {
+	return appsidebar.Callbacks{
 		Icon:        a.FeedIcon,
 		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
 		RefreshAll:  func() { a.refreshAllWithNotice() },
@@ -414,8 +416,8 @@ func (a *AppActions) SidebarCallbacks() gui.FeedSidebarCallbacks {
 }
 
 // PostListCallbacks exposes native article list actions and layout updates.
-func (a *AppActions) PostListCallbacks() gui.PostListCallbacks {
-	return gui.PostListCallbacks{
+func (a *AppActions) PostListCallbacks() apppostlist.Callbacks {
+	return apppostlist.Callbacks{
 		List:           a.ListPosts,
 		Select:         a.SelectPost,
 		ToggleStar:     a.TogglePostStar,

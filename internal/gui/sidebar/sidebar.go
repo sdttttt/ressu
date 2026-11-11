@@ -1,4 +1,5 @@
-package gui
+// Package sidebar renders the native subscription list and floating overlay.
+package sidebar
 
 import (
 	"context"
@@ -22,24 +23,24 @@ const (
 	aggregateFeedID = 0
 
 	// Floating sidebar geometry, in DIPs.
-	feedSidebarHotZoneWidth  = 20
-	feedSidebarFloatingInset = 8
-	feedSidebarFloatingWidth = 300
-	feedSidebarHideDelay     = 200 * time.Millisecond
-	feedSidebarPaneSaveDelay = 500 * time.Millisecond
+	hotZoneWidth  = 20
+	floatingInset = 8
+	floatingWidth = 300
+	hideDelay     = 200 * time.Millisecond
+	paneSaveDelay = 500 * time.Millisecond
 
-	// feedSidebarTextSize matches the webview's 13px list titles.
-	feedSidebarTextSize = 13
+	// textSize matches the webview's 13px list titles.
+	textSize = 13
 
 	// Icons are revalidated weekly, matching the webview cache.
-	feedSidebarIconTTL = 7 * 24 * time.Hour
+	iconTTL = 7 * 24 * time.Hour
 )
 
 // nativeTextSize is MyGO's default text size before system text scaling.
 var nativeTextSize = ui.LightTheme().FontSize
 
-// FeedSidebarCallbacks connects the native sidebar to application actions.
-type FeedSidebarCallbacks struct {
+// Callbacks connects the native sidebar to application actions.
+type Callbacks struct {
 	Icon           func(context.Context, int64) (store.Icon, error)
 	Select         func(int64)
 	RefreshAll     func()
@@ -70,11 +71,11 @@ const (
 	sidebarHiding
 )
 
-// FeedSidebar renders subscriptions and their actions natively.
-type FeedSidebar struct {
+// Sidebar renders subscriptions and their actions natively.
+type Sidebar struct {
 	mu         sync.Mutex
 	model      *appstatus.Model
-	callbacks  FeedSidebarCallbacks
+	callbacks  Callbacks
 	invalidate func()
 	window     *mygo.Window
 
@@ -92,10 +93,10 @@ type FeedSidebar struct {
 	hideTimer *time.Timer
 }
 
-// NewFeedSidebar creates the native subscription sidebar.
-func NewFeedSidebar(model *appstatus.Model, callbacks FeedSidebarCallbacks) *FeedSidebar {
+// New creates the native subscription sidebar.
+func New(model *appstatus.Model, callbacks Callbacks) *Sidebar {
 	snapshot := model.Snapshot()
-	return &FeedSidebar{
+	return &Sidebar{
 		model:        model,
 		callbacks:    callbacks,
 		panePercent:  snapshot.SidebarPercent,
@@ -106,36 +107,36 @@ func NewFeedSidebar(model *appstatus.Model, callbacks FeedSidebarCallbacks) *Fee
 }
 
 // Attach connects the sidebar to the main window for child surfaces.
-func (s *FeedSidebar) Attach(window *mygo.Window) {
+func (s *Sidebar) Attach(window *mygo.Window) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.window = window
 }
 
 // SetInvalidate installs the callback used after asynchronous updates.
-func (s *FeedSidebar) SetInvalidate(invalidate func()) {
+func (s *Sidebar) SetInvalidate(invalidate func()) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.invalidate = invalidate
 }
 
-// SidebarTheme returns the theme used by the sidebar and its splitter.
-func (s *FeedSidebar) SidebarTheme(c *ui.Context) *ui.Theme {
+// Theme returns the theme used by the sidebar and its splitter.
+func (s *Sidebar) Theme(c *ui.Context) *ui.Theme {
 	snapshot := s.model.Snapshot()
-	return feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
+	return Theme(c, snapshot.Theme, snapshot.FontSize)
 }
 
-// feedSidebarTheme sizes the native sidebar text like the webview's list titles.
-func feedSidebarTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
+// Theme sizes the native sidebar text like the webview's list titles.
+func Theme(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	theme := guitheme.New(c, appearance, fontSize)
 	if nativeTextSize > 0 {
-		theme.FontSize *= feedSidebarTextSize / nativeTextSize
+		theme.FontSize *= textSize / nativeTextSize
 	}
 	return theme
 }
 
 // SyncLayout copies the mirrored sidebar layout into the splitter.
-func (s *FeedSidebar) SyncLayout() {
+func (s *Sidebar) SyncLayout() {
 	snapshot := s.model.Snapshot()
 	s.mu.Lock()
 	s.panePercent = snapshot.SidebarPercent
@@ -147,20 +148,20 @@ func (s *FeedSidebar) SyncLayout() {
 	}
 }
 
-// splitPercent exposes the docked sidebar's splitter position.
-func (s *FeedSidebar) splitPercent() *float32 {
+// SplitPercent exposes the docked sidebar's splitter position.
+func (s *Sidebar) SplitPercent() *float32 {
 	return &s.panePercent
 }
 
-// isCollapsed reports whether the reader currently uses the floating sidebar.
-func (s *FeedSidebar) isCollapsed() bool {
+// IsCollapsed reports whether the reader currently uses the floating sidebar.
+func (s *Sidebar) IsCollapsed() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.collapsed
 }
 
-// savePanePercent schedules a pane-width preference update after dragging.
-func (s *FeedSidebar) savePanePercent() {
+// SavePanePercent schedules a pane-width preference update after dragging.
+func (s *Sidebar) SavePanePercent() {
 	s.mu.Lock()
 	percent := s.panePercent
 	if s.paneSaveTimer != nil {
@@ -168,7 +169,7 @@ func (s *FeedSidebar) savePanePercent() {
 	}
 	callbacks := s.callbacks
 	invalidate := s.invalidate
-	s.paneSaveTimer = time.AfterFunc(feedSidebarPaneSaveDelay, func() {
+	s.paneSaveTimer = time.AfterFunc(paneSaveDelay, func() {
 		s.mu.Lock()
 		s.paneSaveTimer = nil
 		s.mu.Unlock()
@@ -181,9 +182,9 @@ func (s *FeedSidebar) savePanePercent() {
 }
 
 // View builds the docked sidebar content.
-func (s *FeedSidebar) View(c *ui.Context) {
+func (s *Sidebar) View(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Background(theme.Background).Gap(8).Padding(10, 10).Children(func() {
 			s.drawHeader(c, theme, snapshot)
@@ -192,14 +193,14 @@ func (s *FeedSidebar) View(c *ui.Context) {
 	})
 }
 
-// drawOverlay draws the collapsed sidebar's hover zone and floating panel.
-func (s *FeedSidebar) drawOverlay(c *ui.Context) {
+// DrawOverlay draws the collapsed sidebar's hover zone and floating panel.
+func (s *Sidebar) DrawOverlay(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := feedSidebarTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
 
 	hot := ui.Box(c).Absolute().Top(0).Left(0).
 		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)).
-		Width(feedSidebarHotZoneWidth).Background(ui.Transparent)
+		Width(hotZoneWidth).Background(ui.Transparent)
 	hotHovered := hot.Hovered()
 	s.beginShow(hotHovered)
 
@@ -209,10 +210,10 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 
 	panel := ui.Column(c).Key("floating-sidebar").
 		Absolute().
-		Top(feedSidebarFloatingInset).
-		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)+feedSidebarFloatingInset).
-		Left(feedSidebarFloatingInset).
-		Width(feedSidebarFloatingWidth).
+		Top(floatingInset).
+		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)+floatingInset).
+		Left(floatingInset).
+		Width(floatingWidth).
 		Radius(12).
 		Background(theme.Background).
 		Border(1, theme.Border).
@@ -256,7 +257,7 @@ func (s *FeedSidebar) drawOverlay(c *ui.Context) {
 	}
 }
 
-func (s *FeedSidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (s *Sidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
 	ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 		ui.Row(c).Grow(1).AlignItems(ui.Center).Gap(6).Children(func() {
 			ui.Text(c, "订阅源").FontWeight(600).Shrink(1).Ellipsis("…")
@@ -294,7 +295,7 @@ func (s *FeedSidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appsta
 	})
 }
 
-func (s *FeedSidebar) iconButton(
+func (s *Sidebar) iconButton(
 	c *ui.Context,
 	theme *ui.Theme,
 	icon *ui.SVG,
@@ -313,7 +314,7 @@ func (s *FeedSidebar) iconButton(
 	})
 }
 
-func (s *FeedSidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (s *Sidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
 	feeds := visibleSidebarFeeds(snapshot.Feeds, s.search)
 	if len(feeds) == 0 {
 		ui.Column(c).Grow(1).Center().Children(func() {
@@ -336,7 +337,7 @@ func (s *FeedSidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstat
 	})
 }
 
-func (s *FeedSidebar) drawFeed(
+func (s *Sidebar) drawFeed(
 	c *ui.Context,
 	theme *ui.Theme,
 	snapshot appstatus.Snapshot,
@@ -396,7 +397,7 @@ func (s *FeedSidebar) drawFeed(
 	})
 }
 
-func (s *FeedSidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Feed) {
+func (s *Sidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Feed) {
 	icon, ok := s.cachedIcon(feed)
 	switch {
 	case ok && !icon.missing:
@@ -409,7 +410,7 @@ func (s *FeedSidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Fe
 	}
 }
 
-func (s *FeedSidebar) loadIcon(feedID int64) {
+func (s *Sidebar) loadIcon(feedID int64) {
 	feed, ok := s.feedByID(feedID)
 	if !ok {
 		return
@@ -442,7 +443,7 @@ func (s *FeedSidebar) loadIcon(feedID int64) {
 	}()
 }
 
-func (s *FeedSidebar) cachedIcon(feed store.Feed) (sidebarIcon, bool) {
+func (s *Sidebar) cachedIcon(feed store.Feed) (sidebarIcon, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	icon, ok := s.icons[feed.ID]
@@ -452,10 +453,10 @@ func (s *FeedSidebar) cachedIcon(feed store.Feed) (sidebarIcon, bool) {
 	if icon.missing {
 		return icon, true
 	}
-	return icon, time.Since(icon.fetched) < feedSidebarIconTTL
+	return icon, time.Since(icon.fetched) < iconTTL
 }
 
-func (s *FeedSidebar) feedByID(feedID int64) (store.Feed, bool) {
+func (s *Sidebar) feedByID(feedID int64) (store.Feed, bool) {
 	for _, feed := range s.model.Snapshot().Feeds {
 		if feed.ID == feedID {
 			return feed, true
@@ -464,7 +465,7 @@ func (s *FeedSidebar) feedByID(feedID int64) (store.Feed, bool) {
 	return store.Feed{}, false
 }
 
-func (s *FeedSidebar) removeFeed(feedID int64) {
+func (s *Sidebar) removeFeed(feedID int64) {
 	s.mu.Lock()
 	window := s.window
 	callbacks := s.callbacks
@@ -472,14 +473,14 @@ func (s *FeedSidebar) removeFeed(feedID int64) {
 	s.runAsync(func() { callbacks.Remove(window, feedID) })
 }
 
-func (s *FeedSidebar) runAsync(operation func()) {
+func (s *Sidebar) runAsync(operation func()) {
 	if operation == nil {
 		return
 	}
 	go operation()
 }
 
-func (s *FeedSidebar) beginShow(hovered bool) {
+func (s *Sidebar) beginShow(hovered bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.collapsed {
@@ -496,31 +497,31 @@ func (s *FeedSidebar) beginShow(hovered bool) {
 	}
 }
 
-func (s *FeedSidebar) overlayState() sidebarOverlay {
+func (s *Sidebar) overlayState() sidebarOverlay {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.overlay
 }
 
-func (s *FeedSidebar) setOverlayState(state sidebarOverlay) {
+func (s *Sidebar) setOverlayState(state sidebarOverlay) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.overlay = state
 }
 
-func (s *FeedSidebar) setEntered(entered bool) {
+func (s *Sidebar) setEntered(entered bool) {
 	s.mu.Lock()
 	s.entered = entered
 	s.mu.Unlock()
 }
 
-func (s *FeedSidebar) scheduleHide() {
+func (s *Sidebar) scheduleHide() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.hideTimer != nil {
 		s.hideTimer.Stop()
 	}
-	s.hideTimer = time.AfterFunc(feedSidebarHideDelay, func() {
+	s.hideTimer = time.AfterFunc(hideDelay, func() {
 		s.mu.Lock()
 		s.overlay = sidebarHidden
 		s.entered = false
