@@ -159,7 +159,7 @@ jobs:
             exit 1
           fi
 
-          if ! grep -Fx "  version: \"$version\"," mygo.config.ts; then
-            echo "mygo.config.ts must set version to \"$version\"." >&2
+          if ! jq -e --arg version "$version" '.version == $version' mygo.json >/dev/null; then
+            echo "mygo.json must set version to \"$version\"." >&2
             exit 1
           fi

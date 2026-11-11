@@ -76,7 +76,7 @@ webview/static/            无构建前端源码，由 MyGO 开发时直供并�
   reader.css               正文排版、主题 token、空态和帮助对话框样式
   reader.js                绑定调用、事件应用、快捷键、链接和图片拦截
 resources/icon.png         MyGO 打包图标
-mygo.config.ts             MyGO CLI 配置
+mygo.json                  MyGO CLI 配置
 .github/workflows/ci.yml   测试、打包与 GitHub Release
 ```
 
@@ -398,12 +398,12 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   Ubuntu + Windows。步骤依次是 `bun install --frozen-lockfile`、`go test ./...`、
   `node --check webview/static/reader.js` 和 `bun run build`。
 - `release-version` 只对 `v*` tag 运行，校验 tag 符合 `vYY.M.N`，且与 `package.json`、
-  `mygo.config.ts` 的版本号一致。`M` 是 1–12 且不补零，`N` 从 1 开始。
+  `mygo.json` 的版本号一致。`M` 是 1–12 且不补零，`N` 从 1 开始。
 - `package` 依赖测试和版本校验，在 Windows、Linux、macOS 上分别构建
   `windows/amd64`、`linux/amd64`、`darwin/universal`，上传 `build/`。
 - `release` 汇总 DMG、Windows setup EXE、DEB、tar.gz，生成 `SHA256SUMS`，再发布 GitHub
   Release。tag 中含 `-` 时标记为预发布。
-- 发版时同时修改 `package.json` 与 `mygo.config.ts` 的版本号，并打对应 tag。
+- 发版时同时修改 `package.json` 与 `mygo.json` 的版本号，并打对应 tag。
 - 目前没有自动更新配置；MyGO 更新签名密钥应通过环境变量提供，不要提交到仓库。
 
 ## 安全
