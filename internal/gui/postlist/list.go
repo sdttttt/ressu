@@ -20,9 +20,6 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
-// nativeTextSize is MyGO's default text size before system text scaling.
-var nativeTextSize = ui.LightTheme().FontSize
-
 const (
 	paneSaveDelay = 500 * time.Millisecond
 	textSize      = 13
@@ -102,7 +99,7 @@ func (l *List) SetInvalidate(invalidate func()) {
 // Theme returns the theme used by the article list and splitter.
 func (l *List) Theme(c *ui.Context) *ui.Theme {
 	snapshot := l.model.Snapshot()
-	return Theme(c, snapshot.Theme, snapshot.FontSize)
+	return guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
 }
 
 // SyncLayout copies the mirrored list layout into its splitter.
@@ -144,12 +141,12 @@ func (l *List) SavePanePercent() {
 // View builds the article list content.
 func (l *List) View(c *ui.Context) {
 	snapshot := l.model.Snapshot()
-	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
+	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
 	l.syncState(snapshot)
 	l.installShortcuts(c)
 
 	ui.Themed(c, theme).Fill().Children(func() {
-		ui.Column(c).Fill().Background(NewPalette(*theme).Background).Children(func() {
+		ui.Column(c).Fill().Background(guitheme.NewPostPalette(*theme).Background).Children(func() {
 			l.drawHeader(c, theme, snapshot)
 			l.drawPosts(c, theme, snapshot)
 		})
@@ -164,7 +161,7 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Sna
 			break
 		}
 	}
-	palette := NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 
 	ui.Column(c).FillWidth().Padding(l.scaled(theme, 8), l.scaled(theme, 12)).Children(func() {
 		ui.Text(c, title).
@@ -261,7 +258,7 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snap
 }
 
 func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot, post store.PostSummary) {
-	palette := NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	rowKey := postRowKey(post)
 	selected := snapshot.CurrentPost.FeedID == post.FeedID && snapshot.CurrentPost.GUID == post.GUID
 
@@ -377,7 +374,7 @@ func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element
 	return ui.Text(c, value).
 		FontSize(l.scaled(theme, 10)).
 		SingleLine().
-		TextColor(NewPalette(*theme).TextMuted).
+		TextColor(guitheme.NewPostPalette(*theme).TextMuted).
 		FontFeatures("tnum")
 }
 
@@ -498,7 +495,7 @@ func (l *List) toggleSelectedStar() {
 }
 
 func (l *List) drawLoadMore(c *ui.Context, theme *ui.Theme) {
-	palette := NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	label := fmt.Sprintf("加载更多（还有 %d 篇）", l.total-len(l.posts))
 	if l.loading {
 		label = "加载中…"
@@ -540,7 +537,7 @@ func (l *List) drawLoadMore(c *ui.Context, theme *ui.Theme) {
 }
 
 func (l *List) drawEmpty(c *ui.Context, theme *ui.Theme) {
-	palette := NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	filtered := l.query.UnreadOnly || l.query.StarredOnly
 	title := "暂时没有文章"
 	hint := "刷新订阅源后再来看看。"
@@ -567,7 +564,7 @@ func (l *List) drawEmpty(c *ui.Context, theme *ui.Theme) {
 }
 
 func (l *List) drawSkeletonRow(c *ui.Context, theme *ui.Theme) {
-	palette := NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).
 		Padding(l.scaled(theme, 8), l.scaled(theme, 10)).Children(func() {
 		ui.Box(c).Height(l.scaled(theme, 14)).WidthPercent(75.0).Background(palette.Primary.Alpha(0.1))
@@ -584,7 +581,7 @@ func (l *List) iconButton(
 	active bool,
 	action func(),
 ) ui.Element {
-	return widget.IconButton(c, IconButtonColors(NewPalette(*theme)), widget.IconButtonOptions{
+	return widget.IconButton(c, guitheme.PostIconButtonColors(guitheme.NewPostPalette(*theme)), widget.IconButtonOptions{
 		Icon:     icon,
 		Label:    label,
 		Size:     l.scaled(theme, 28),
@@ -836,96 +833,7 @@ func (l *List) scaled(theme *ui.Theme, size float32) float32 {
 	return size * theme.FontSize / textSize
 }
 
-func Theme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := guitheme.New(c, appearance, fontSize)
-	if nativeTextSize > 0 {
-		theme.FontSize *= textSize / nativeTextSize
-	}
-	palette := NewPalette(*theme)
-	theme.Background = palette.Background
-	theme.Surface = ui.Transparent
-	theme.SurfaceHover = palette.Accent
-	theme.SurfacePressed = palette.Accent
-	theme.Text = palette.Foreground
-	theme.TextMuted = palette.TextMuted
-	theme.Border = palette.Border
-	theme.Scrollbar = palette.TextMuted.Alpha(0.4)
-	return theme
-}
-
-func NewPalette(base ui.Theme) Palette {
-	if base.Dark {
-		return Palette{
-			Background:          ui.Oklch(0.17, 0.005, 285),
-			Foreground:          ui.Oklch(0.93, 0.002, 285),
-			TextMuted:           ui.Oklch(0.68, 0.01, 285),
-			Secondary:           ui.Oklch(0.25, 0.006, 285),
-			Muted:               ui.Oklch(0.24, 0.006, 285),
-			SecondaryForeground: ui.Oklch(0.93, 0.002, 285),
-			Accent:              ui.Oklch(0.27, 0.008, 285),
-			AccentForeground:    ui.Oklch(0.95, 0.002, 285),
-			Border:              ui.Oklch(0.30, 0.006, 285),
-			Primary:             base.Accent,
-			Warning:             ui.Oklch(0.80, 0.14, 80),
-		}
-	}
-	if base.Background == ui.Oklch(0.86, 0.025, 80) {
-		return Palette{
-			Background:          ui.Oklch(0.86, 0.025, 80),
-			Foreground:          ui.Oklch(0.24, 0.02, 70),
-			TextMuted:           ui.Oklch(0.44, 0.022, 70),
-			Secondary:           ui.Oklch(0.82, 0.025, 80),
-			Muted:               ui.Oklch(0.82, 0.025, 80),
-			SecondaryForeground: ui.Oklch(0.28, 0.02, 70),
-			Accent:              ui.Oklch(0.80, 0.03, 78),
-			AccentForeground:    ui.Oklch(0.26, 0.02, 70),
-			Border:              ui.Oklch(0.77, 0.02, 78),
-			Primary:             base.Accent,
-			Warning:             ui.Oklch(0.66, 0.13, 65),
-		}
-	}
-	return Palette{
-		Background:          ui.Oklch(0.995, 0, 285),
-		Foreground:          ui.Oklch(0.22, 0.006, 285),
-		TextMuted:           ui.Oklch(0.53, 0.01, 285),
-		Secondary:           ui.Oklch(0.96, 0.002, 285),
-		Muted:               ui.Oklch(0.96, 0.002, 285),
-		SecondaryForeground: ui.Oklch(0.28, 0.006, 285),
-		Accent:              ui.Oklch(0.94, 0.004, 285),
-		AccentForeground:    ui.Oklch(0.25, 0.006, 285),
-		Border:              ui.Oklch(0.90, 0.003, 285),
-		Primary:             base.Accent,
-		Warning:             ui.Oklch(0.78, 0.15, 78),
-	}
-}
-
-type Palette struct {
-	Background          ui.Color
-	Foreground          ui.Color
-	TextMuted           ui.Color
-	Secondary           ui.Color
-	Muted               ui.Color
-	SecondaryForeground ui.Color
-	Accent              ui.Color
-	AccentForeground    ui.Color
-	Border              ui.Color
-	Primary             ui.Color
-	Warning             ui.Color
-}
-
-func IconButtonColors(palette Palette) widget.IconButtonColors {
-	return widget.IconButtonColors{
-		Rest:              palette.Foreground,
-		Active:            palette.Primary,
-		Accent:            palette.Warning,
-		Hover:             palette.AccentForeground,
-		HoverBackground:   palette.Accent,
-		PressedBackground: palette.Accent,
-		DisabledOpacity:   0.4,
-	}
-}
-
-func postRowBackground(palette Palette, selected bool) ui.Color {
+func postRowBackground(palette guitheme.PostPalette, selected bool) ui.Color {
 	if selected {
 		return palette.Accent
 	}

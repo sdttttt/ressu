@@ -6,7 +6,7 @@ import (
 
 	appformat "github.com/sdttttt/ressu/internal/gui/format"
 	appicon "github.com/sdttttt/ressu/internal/gui/icon"
-	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	"github.com/sdttttt/ressu/internal/gui/widget"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
@@ -49,8 +49,8 @@ func (h *Header) View(c *ui.Context) {
 		return
 	}
 
-	theme := apppostlist.Theme(c, snapshot.Theme, snapshot.FontSize)
-	palette := apppostlist.NewPalette(*theme)
+	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
+	palette := guitheme.NewPostPalette(*theme)
 	ui.Themed(c, theme).FillWidth().Children(func() {
 		ui.Column(c).FillWidth().
 			Padding(h.scaled(theme, 12), h.scaled(theme, 18), h.scaled(theme, 12), h.scaled(theme, 18)).
@@ -70,7 +70,7 @@ func (h *Header) View(c *ui.Context) {
 }
 
 func (h *Header) drawTitle(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
-	palette := apppostlist.NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	title := post.Title
 	if title == "" {
 		title = "无标题"
@@ -95,7 +95,7 @@ func (h *Header) drawMeta(
 	snapshot appstatus.Snapshot,
 	post store.PostSummary,
 ) {
-	palette := apppostlist.NewPalette(*theme)
+	palette := guitheme.NewPostPalette(*theme)
 	first := true
 	separator := func() {
 		if !first {
@@ -180,8 +180,8 @@ func (h *Header) iconButton(
 	enabled bool,
 	action func(),
 ) ui.Element {
-	palette := apppostlist.NewPalette(*theme)
-	colors := apppostlist.IconButtonColors(palette)
+	palette := guitheme.NewPostPalette(*theme)
+	colors := guitheme.PostIconButtonColors(palette)
 	colors.Rest = palette.TextMuted
 	return widget.IconButton(c, colors, widget.IconButtonOptions{
 		Icon:     icon,
