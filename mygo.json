@@ -2,7 +2,7 @@
   "name": "Ressu",
   "slug": "ressu",
   "identifier": "com.sdttttt.ressu",
-  "version": "26.11.8",
+  "version": "26.11.9",
   "copyright": "© 2026 sdttttt",
   "bindings": ".mygo/mygo.ts",
   "frontendDist": "webview/static",
