@@ -10,6 +10,10 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appformat "github.com/sdttttt/ressu/internal/gui/format"
+	appicon "github.com/sdttttt/ressu/internal/gui/icon"
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
+	"github.com/sdttttt/ressu/internal/gui/widget"
 	"github.com/sdttttt/ressu/internal/service"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
@@ -182,27 +186,27 @@ func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus
 			if l.searchOpen {
 				searchLabel = "关闭标题搜索"
 			}
-			l.iconButton(c, theme, postListSearch, searchLabel, l.searchOpen, func() {
+			l.iconButton(c, theme, appicon.Search, searchLabel, l.searchOpen, func() {
 				l.setSearchOpen(!l.searchOpen)
 			})
-			sortIcon := postListSortDescending
+			sortIcon := appicon.SortDescending
 			sortLabel := "按时间升序排列"
 			if l.query.SortOrder == service.SortOrderAscending {
-				sortIcon = postListSortAscending
+				sortIcon = appicon.SortAscending
 				sortLabel = "按时间降序排列"
 			}
 			l.iconButton(c, theme, sortIcon, sortLabel, false, func() {
 				l.setSortOrder()
 			})
 			ui.Row(c).AlignItems(ui.Center).Gap(l.scaled(theme, 4)).Children(func() {
-				l.iconButton(c, theme, postHeaderMail, "只看未读", l.query.UnreadOnly, func() {
+				l.iconButton(c, theme, appicon.Mail, "只看未读", l.query.UnreadOnly, func() {
 					l.setUnreadOnly(!l.query.UnreadOnly)
 				})
-				l.iconButton(c, theme, postListStar, "只看星标", l.query.StarredOnly, func() {
+				l.iconButton(c, theme, appicon.Star, "只看星标", l.query.StarredOnly, func() {
 					l.setStarredOnly(!l.query.StarredOnly)
 				})
 			})
-			l.iconButton(c, theme, postListCheckAll, "全部标记为已读", false, func() {
+			l.iconButton(c, theme, appicon.CheckAll, "全部标记为已读", false, func() {
 				l.markAllRead(snapshot.CurrentFeedID)
 			})
 		})
@@ -307,7 +311,7 @@ func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 						Radius(l.scaled(theme, 3)).
 						Background(palette.Primary)
 				}
-				l.metaText(c, theme, formatRelativeTime(post.PublishedAt, snapshot.RelativeStart))
+				l.metaText(c, theme, appformat.RelativeTime(post.PublishedAt, snapshot.RelativeStart))
 				if post.Author != "" {
 					l.metaText(c, theme, post.Author).
 						MaxWidth(l.scaled(theme, 128)).
@@ -315,7 +319,7 @@ func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 						Ellipsis("…")
 				}
 				if post.WordCount > 0 {
-					l.metaText(c, theme, formatReadingMinutes(post.WordCount)+" · "+formatWordCount(post.WordCount)).
+					l.metaText(c, theme, appformat.ReadingMinutes(post.WordCount)+" · "+appformat.WordCount(post.WordCount)).
 						Shrink(1).
 						Ellipsis("…")
 				}
@@ -336,9 +340,9 @@ func (l *PostList) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 			star.Background(ui.Transparent)
 		}
 		if post.Starred || hovered {
-			icon := postListStar
+			icon := appicon.Star
 			if post.Starred {
-				icon = postListStarFilled
+				icon = appicon.StarFilled
 			}
 			iconColor := palette.Foreground
 			if post.Starred {
@@ -542,7 +546,7 @@ func (l *PostList) drawEmpty(c *ui.Context, theme *ui.Theme) {
 	}
 	ui.Column(c).Fill().Center().Gap(l.scaled(theme, 8)).
 		Padding(l.scaled(theme, 40), l.scaled(theme, 24)).Children(func() {
-		ui.Icon(c, postListFile).
+		ui.Icon(c, appicon.File).
 			Size(l.scaled(theme, 36), l.scaled(theme, 36)).
 			TextColor(palette.TextMuted.Alpha(0.4))
 		ui.Text(c, title).
@@ -576,35 +580,16 @@ func (l *PostList) iconButton(
 	active bool,
 	action func(),
 ) ui.Element {
-	palette := postListPalette(*theme)
-	var button ui.Element
-	button = ui.ButtonBase(c).
-		Size(l.scaled(theme, 28), l.scaled(theme, 28)).
-		Radius(l.scaled(theme, 6)).Cursor(ui.CursorPointer).
-		Label(label).Tooltip(label)
-	hovered := button.Hovered()
-	pressed := button.Pressed()
-	iconColor := palette.Foreground
-	if active {
-		iconColor = palette.Primary
-	}
-	if hovered || pressed {
-		iconColor = palette.AccentForeground
-	}
-	button.Children(func() {
-		ui.Icon(c, icon).
-			Size(l.scaled(theme, 14), l.scaled(theme, 14)).
-			TextColor(iconColor)
+	return widget.IconButton(c, postIconButtonColors(postListPalette(*theme)), widget.IconButtonOptions{
+		Icon:     icon,
+		Label:    label,
+		Size:     l.scaled(theme, 28),
+		IconSize: l.scaled(theme, 14),
+		Radius:   l.scaled(theme, 6),
+		Enabled:  true,
+		Active:   active,
+		Action:   action,
 	})
-	if pressed || hovered {
-		button.Background(palette.Accent)
-	} else {
-		button.Background(ui.Transparent)
-	}
-	if button.Clicked() {
-		action()
-	}
-	return button
 }
 
 func (l *PostList) badge(c *ui.Context, theme *ui.Theme, label string, background, foreground ui.Color) {
@@ -848,7 +833,7 @@ func (l *PostList) scaled(theme *ui.Theme, size float32) float32 {
 }
 
 func postListTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := nativeTheme(c, appearance, fontSize)
+	theme := guitheme.New(c, appearance, fontSize)
 	if nativeTextSize > 0 {
 		theme.FontSize *= postListTextSize / nativeTextSize
 	}
@@ -922,6 +907,18 @@ type postPalette struct {
 	Border              ui.Color
 	Primary             ui.Color
 	Warning             ui.Color
+}
+
+func postIconButtonColors(palette postPalette) widget.IconButtonColors {
+	return widget.IconButtonColors{
+		Rest:              palette.Foreground,
+		Active:            palette.Primary,
+		Accent:            palette.Warning,
+		Hover:             palette.AccentForeground,
+		HoverBackground:   palette.Accent,
+		PressedBackground: palette.Accent,
+		DisabledOpacity:   0.4,
+	}
 }
 
 func postRowBackground(palette postPalette, selected bool) ui.Color {

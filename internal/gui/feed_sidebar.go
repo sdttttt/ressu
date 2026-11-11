@@ -11,6 +11,9 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appicon "github.com/sdttttt/ressu/internal/gui/icon"
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
+	"github.com/sdttttt/ressu/internal/gui/widget"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -124,7 +127,7 @@ func (s *FeedSidebar) SidebarTheme(c *ui.Context) *ui.Theme {
 
 // feedSidebarTheme sizes the native sidebar text like the webview's list titles.
 func feedSidebarTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := nativeTheme(c, appearance, fontSize)
+	theme := guitheme.New(c, appearance, fontSize)
 	if nativeTextSize > 0 {
 		theme.FontSize *= feedSidebarTextSize / nativeTextSize
 	}
@@ -264,28 +267,28 @@ func (s *FeedSidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appsta
 		collapseLabel := "恢复三栏布局"
 		collapseAction := func() { s.runAsync(func() { s.callbacks.SetCollapsed(false) }) }
 		if snapshot.SidebarCollapsed {
-			collapseIcon = feedSidebarChevronRight
+			collapseIcon = appicon.ChevronRight
 		} else {
-			collapseIcon = feedSidebarChevronLeft
+			collapseIcon = appicon.ChevronLeft
 			collapseLabel = "浮动显示订阅源"
 			collapseAction = func() { s.runAsync(func() { s.callbacks.SetCollapsed(true) }) }
 		}
-		s.iconButton(c, theme, collapseIcon, collapseLabel, collapseAction)
+		s.iconButton(c, theme, collapseIcon, collapseLabel, true, collapseAction)
 
-		search := s.iconButton(c, theme, feedSidebarSearch, "搜索订阅源", func() {
+		search := s.iconButton(c, theme, appicon.Search, "搜索订阅源", true, func() {
 			s.searchOpen = !s.searchOpen
 		})
 		ui.Popover(c, search, &s.searchOpen, func() {
 			ui.TextInput(c, &s.search).Placeholder("按名称或地址过滤").Height(32).Width(256)
 		})
 
-		s.iconButton(c, theme, feedSidebarPlus, "添加订阅源", func() {
+		s.iconButton(c, theme, appicon.Plus, "添加订阅源", true, func() {
 			s.runAsync(func() { s.callbacks.OpenAddFeed(s.window) })
 		})
-		s.iconButton(c, theme, feedSidebarRefresh, "刷新全部", func() {
+		s.iconButton(c, theme, appicon.Refresh, "刷新全部", !snapshot.Sync.Active, func() {
 			s.runAsync(s.callbacks.RefreshAll)
-		}).Disabled(snapshot.Sync.Active)
-		s.iconButton(c, theme, feedSidebarSettings, "设置", func() {
+		})
+		s.iconButton(c, theme, appicon.Settings, "设置", true, func() {
 			s.runAsync(func() { s.callbacks.OpenSettings(s.window) })
 		})
 	})
@@ -296,31 +299,18 @@ func (s *FeedSidebar) iconButton(
 	theme *ui.Theme,
 	icon *ui.SVG,
 	label string,
+	enabled bool,
 	action func(),
 ) ui.Element {
-	var button ui.Element
-	button = ui.ButtonBase(c).
-		Size(28, 28).
-		Radius(6).
-		Cursor(ui.CursorPointer).
-		Label(label).
-		Tooltip(label).
-		Children(func() {
-			ui.Icon(c, icon).Size(16, 16)
-		})
-
-	switch {
-	case button.Pressed():
-		button.Background(theme.SurfacePressed)
-	case button.Hovered():
-		button.Background(theme.SurfaceHover)
-	default:
-		button.Background(ui.Transparent)
-	}
-	if button.Clicked() {
-		action()
-	}
-	return button
+	return widget.IconButton(c, widget.ThemeIconButtonColors(theme), widget.IconButtonOptions{
+		Icon:     icon,
+		Label:    label,
+		Size:     28,
+		IconSize: 16,
+		Radius:   6,
+		Enabled:  enabled,
+		Action:   action,
+	})
 }
 
 func (s *FeedSidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
@@ -412,9 +402,9 @@ func (s *FeedSidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Fe
 	case ok && !icon.missing:
 		ui.Image(c, icon.source).Size(16, 16)
 	case ok && icon.missing:
-		ui.Icon(c, feedSidebarRss).Size(16, 16).TextColor(theme.TextMuted)
+		ui.Icon(c, appicon.RSS).Size(16, 16).TextColor(theme.TextMuted)
 	default:
-		ui.Icon(c, feedSidebarRss).Size(16, 16).TextColor(theme.TextMuted)
+		ui.Icon(c, appicon.RSS).Size(16, 16).TextColor(theme.TextMuted)
 		s.loadIcon(feed.ID)
 	}
 }

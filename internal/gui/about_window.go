@@ -6,6 +6,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/sdttttt/ressu/internal/gui/assets"
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 )
 
 const (
@@ -83,7 +84,7 @@ type aboutView struct {
 
 // draw renders one frame of the About window.
 func (a *aboutView) draw(c *ui.Context) {
-	theme := nativeTheme(c, a.info.Theme, a.info.FontSize)
+	theme := guitheme.New(c, a.info.Theme, a.info.FontSize)
 
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Padding(24, 28).Gap(12).Children(func() {

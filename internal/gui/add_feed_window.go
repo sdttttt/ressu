@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -116,7 +117,7 @@ type addFeedView struct {
 
 // draw renders one frame of the subscription form.
 func (s *addFeedView) draw(c *ui.Context) {
-	theme := nativeTheme(c, s.prefs.Theme, s.prefs.FontSize)
+	theme := guitheme.New(c, s.prefs.Theme, s.prefs.FontSize)
 
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Padding(20, 24).Children(func() {

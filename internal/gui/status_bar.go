@@ -7,6 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
@@ -26,8 +27,8 @@ func NewStatusBar(model *appstatus.Model, onAbout func()) *StatusBar {
 // View builds one frame of the status bar.
 func (b *StatusBar) View(c *ui.Context) {
 	snapshot := b.model.Snapshot()
-	theme := nativeTheme(c, snapshot.Theme, snapshot.FontSize)
-	fontScale := interfaceFontScale(snapshot.FontSize)
+	theme := guitheme.New(c, snapshot.Theme, snapshot.FontSize)
+	fontScale := guitheme.FontScale(snapshot.FontSize)
 	height := statusBarContentHeight * fontScale
 	spacing := 12 * fontScale
 	gap := 8 * fontScale
@@ -88,7 +89,7 @@ func (b *StatusBar) View(c *ui.Context) {
 }
 
 func statusBarHeight(fontSize string) float32 {
-	return 1 + statusBarContentHeight*interfaceFontScale(fontSize)
+	return 1 + statusBarContentHeight*guitheme.FontScale(fontSize)
 }
 
 func divider(c *ui.Context, theme *ui.Theme, fontScale float32) {

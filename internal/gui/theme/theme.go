@@ -1,4 +1,5 @@
-package gui
+// Package theme maps application appearance preferences to native UI themes.
+package theme
 
 import (
 	"github.com/egoist/mygo/ui"
@@ -6,10 +7,11 @@ import (
 	"github.com/sdttttt/ressu/internal/store"
 )
 
-const nativeFontFamily = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`
+// Family is the native interface font used across all windows.
+const Family = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`
 
-// nativeTheme maps an app theme preference to the colors used by native UI.
-func nativeTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
+// New maps an app theme preference to the colors used by native UI.
+func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	base := ui.LightTheme()
 	switch appearance {
 	case store.ThemeDark:
@@ -21,17 +23,18 @@ func nativeTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
 			base = ui.DarkTheme()
 		}
 	}
-	theme := *base
-	theme.FontSize *= interfaceFontScale(fontSize)
-	theme.Font = nativeFontFamily
+
+	nativeTheme := *base
+	nativeTheme.FontSize *= FontScale(fontSize)
+	nativeTheme.Font = Family
 	if appearance == store.ThemeSepia {
-		applySepiaTheme(&theme)
+		ApplySepia(&nativeTheme)
 	}
-	return &theme
+	return &nativeTheme
 }
 
-// applySepiaTheme replaces the dark native palette with warm light colors.
-func applySepiaTheme(theme *ui.Theme) {
+// ApplySepia replaces the dark native palette with warm light colors.
+func ApplySepia(theme *ui.Theme) {
 	accent := ui.Oklch(0.53, 0.09, 65)
 	theme.Dark = false
 	theme.Background = ui.Oklch(0.86, 0.025, 80)
@@ -53,8 +56,8 @@ func applySepiaTheme(theme *ui.Theme) {
 	theme.Scrollbar = ui.Oklch(0.42, 0.02, 70).Alpha(0.32)
 }
 
-// interfaceFontScale converts the interface font preference to a scale.
-func interfaceFontScale(fontSize string) float32 {
+// FontScale converts the interface font preference to a scale.
+func FontScale(fontSize string) float32 {
 	switch fontSize {
 	case store.FontSizeMedium:
 		return 1.15

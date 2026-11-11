@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -76,7 +77,7 @@ type settingsView struct {
 
 // draw renders one frame of the settings form.
 func (s *settingsView) draw(c *ui.Context) {
-	theme := nativeTheme(c, s.prefs.Theme, s.prefs.FontSize)
+	theme := guitheme.New(c, s.prefs.Theme, s.prefs.FontSize)
 	changed := false
 
 	ui.Themed(c, theme).Fill().Children(func() {

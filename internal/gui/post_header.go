@@ -3,6 +3,9 @@ package gui
 import (
 	"github.com/egoist/mygo/ui"
 
+	appformat "github.com/sdttttt/ressu/internal/gui/format"
+	appicon "github.com/sdttttt/ressu/internal/gui/icon"
+	"github.com/sdttttt/ressu/internal/gui/widget"
 	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -116,10 +119,10 @@ func (h *PostHeader) drawMeta(
 
 	ui.Row(c).Padding(24, 0, 8, 0).FillWidth().Height(h.scaled(theme, 16)).AlignItems(ui.Center).
 		Gap(h.scaled(theme, 6)).Children(func() {
-		meta(formatDateTime(post.PublishedAt))
+		meta(appformat.DateTime(post.PublishedAt))
 		meta(post.Author)
 		if post.WordCount > 0 {
-			meta(formatReadingMinutes(post.WordCount) + " · " + formatWordCount(post.WordCount))
+			meta(appformat.ReadingMinutes(post.WordCount) + " · " + appformat.WordCount(post.WordCount))
 		}
 		if feedTitle := selectedFeedTitle(snapshot, post.FeedID); feedTitle != "" {
 			separator()
@@ -137,31 +140,31 @@ func (h *PostHeader) drawMeta(
 }
 
 func (h *PostHeader) drawActions(c *ui.Context, theme *ui.Theme, post store.PostSummary) {
-	starIcon := postListStar
+	starIcon := appicon.Star
 	starLabel := "加星标"
 	if post.Starred {
-		starIcon = postListStarFilled
+		starIcon = appicon.StarFilled
 		starLabel = "取消星标"
 	}
 	h.iconButton(c, theme, starIcon, starLabel, post.Starred, true, func() {
 		h.toggleStar(post)
 	})
 
-	readIcon := postHeaderMail
+	readIcon := appicon.Mail
 	readLabel := "标记为已读"
 	read := true
 	if post.Read {
-		readIcon = postHeaderMailOpen
+		readIcon = appicon.MailOpen
 		readLabel = "标记为未读"
 		read = false
 	}
 	h.iconButton(c, theme, readIcon, readLabel, false, true, func() {
 		h.markRead(post, read)
 	})
-	h.iconButton(c, theme, postHeaderExternalLink, "打开原文", false, post.URL != "", func() {
+	h.iconButton(c, theme, appicon.ExternalLink, "打开原文", false, post.URL != "", func() {
 		h.openOriginal(post)
 	})
-	h.iconButton(c, theme, postHeaderCamera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
+	h.iconButton(c, theme, appicon.Camera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
 		h.callbacks.RequestSnapshot()
 	})
 }
@@ -176,37 +179,18 @@ func (h *PostHeader) iconButton(
 	action func(),
 ) ui.Element {
 	palette := postListPalette(*theme)
-	var button ui.Element
-	button = ui.ButtonBase(c).
-		Size(h.scaled(theme, 28), h.scaled(theme, 28)).
-		Radius(h.scaled(theme, 6)).Cursor(ui.CursorPointer).
-		Label(label).Tooltip(label).Disabled(!enabled)
-	hovered := button.Hovered() && enabled
-	pressed := button.Pressed() && enabled
-	iconColor := palette.TextMuted
-	if accent {
-		iconColor = palette.Warning
-	}
-	if hovered || pressed {
-		iconColor = palette.AccentForeground
-	}
-	button.Children(func() {
-		ui.Icon(c, icon).
-			Size(h.scaled(theme, 14), h.scaled(theme, 14)).
-			TextColor(iconColor)
+	colors := postIconButtonColors(palette)
+	colors.Rest = palette.TextMuted
+	return widget.IconButton(c, colors, widget.IconButtonOptions{
+		Icon:     icon,
+		Label:    label,
+		Size:     h.scaled(theme, 28),
+		IconSize: h.scaled(theme, 14),
+		Radius:   h.scaled(theme, 6),
+		Enabled:  enabled,
+		Accent:   accent,
+		Action:   action,
 	})
-	if pressed || hovered {
-		button.Background(palette.Accent)
-	} else {
-		button.Background(ui.Transparent)
-	}
-	if !enabled {
-		button.Opacity(0.4)
-	}
-	if button.Clicked() && enabled {
-		action()
-	}
-	return button
 }
 
 func (h *PostHeader) toggleStar(post store.PostSummary) {

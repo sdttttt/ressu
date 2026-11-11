@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 )
 
 const maxPendingNotifications = 32
@@ -95,7 +97,7 @@ func (n *Notifications) draw(c *ui.Context) {
 		appearance = func() (string, string) { return "", "" }
 	}
 	appearanceName, fontSize := appearance()
-	theme := nativeTheme(c, appearanceName, fontSize)
+	theme := guitheme.New(c, appearanceName, fontSize)
 
 	ui.ToastViewportBase(c, func(viewport ui.Element, toasts []ui.Toast) {
 		viewport.Bottom(statusBarHeight(fontSize)).Padding(theme.Space(4)).

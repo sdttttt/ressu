@@ -8,6 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -214,7 +215,7 @@ func (c *Confirmations) draw(uiContext *ui.Context) {
 // drawConfirmation renders one modal and completes its pending request.
 func (c *Confirmations) drawConfirmation(uiContext *ui.Context, confirmation *queuedConfirmation) {
 	appearance := c.appearances()
-	theme := nativeTheme(uiContext, appearance.Theme, appearance.FontSize)
+	theme := guitheme.New(uiContext, appearance.Theme, appearance.FontSize)
 
 	ui.Themed(uiContext, theme).Children(func() {
 		modal := ui.Modal(uiContext, &confirmation.open, func() {

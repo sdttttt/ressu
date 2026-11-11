@@ -1,4 +1,6 @@
-package gui
+// Package format renders native UI values in Chinese with webview-compatible
+// formatting.
+package format
 
 import (
 	"fmt"
@@ -7,8 +9,8 @@ import (
 	"time"
 )
 
-// formatRelativeTime formats an article time exactly like the webview list.
-func formatRelativeTime(value time.Time, now time.Time) string {
+// RelativeTime formats an article time exactly like the webview list.
+func RelativeTime(value time.Time, now time.Time) string {
 	if value.IsZero() {
 		return ""
 	}
@@ -31,8 +33,8 @@ func formatRelativeTime(value time.Time, now time.Time) string {
 	return value.In(time.Local).Format("2006年1月2日")
 }
 
-// formatReadingMinutes estimates reading time from an article word count.
-func formatReadingMinutes(count int) string {
+// ReadingMinutes estimates reading time from an article word count.
+func ReadingMinutes(count int) string {
 	minutes := max(1, int(math.Ceil(float64(count)/250)))
 	if minutes < 60 {
 		return fmt.Sprintf("约 %d 分钟", minutes)
@@ -40,16 +42,16 @@ func formatReadingMinutes(count int) string {
 	return fmt.Sprintf("约 %d 小时", minutes/60)
 }
 
-// formatDateTime formats an article timestamp with its absolute local time.
-func formatDateTime(value time.Time) string {
+// DateTime formats an article timestamp with its absolute local time.
+func DateTime(value time.Time) string {
 	if value.IsZero() {
 		return ""
 	}
 	return value.In(time.Local).Format("2006年1月2日 15:04")
 }
 
-// formatWordCount formats an article word count.
-func formatWordCount(count int) string {
+// WordCount formats an article word count.
+func WordCount(count int) string {
 	digits := strconv.Itoa(count)
 	for index := len(digits) - 3; index > 0; index -= 3 {
 		digits = digits[:index] + "," + digits[index:]
