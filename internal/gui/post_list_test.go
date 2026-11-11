@@ -260,6 +260,56 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	}
 }
 
+func TestPostListFilterIconButtons(t *testing.T) {
+	model := appstatus.New("")
+	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	queries := make(chan service.PostQuery, 3)
+	postList := NewPostList(model, PostListCallbacks{
+		List: func(query service.PostQuery) (service.PostPage, error) {
+			queries <- query
+			return service.PostPage{}, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	var initial service.PostQuery
+	select {
+	case initial = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	if initial.UnreadOnly || initial.StarredOnly {
+		t.Fatalf("initial query = %+v, want filters off", initial)
+	}
+
+	if err := tester.Click("只看未读"); err != nil {
+		t.Fatalf("click unread filter: %v", err)
+	}
+	var unread service.PostQuery
+	select {
+	case unread = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("clicking the unread filter did not query posts")
+	}
+	if !unread.UnreadOnly || unread.StarredOnly {
+		t.Errorf("unread query = %+v, want unread only", unread)
+	}
+
+	if err := tester.Click("只看星标"); err != nil {
+		t.Fatalf("click starred filter: %v", err)
+	}
+	var starred service.PostQuery
+	select {
+	case starred = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("clicking the starred filter did not query posts")
+	}
+	if !starred.UnreadOnly || !starred.StarredOnly {
+		t.Errorf("starred query = %+v, want both filters on", starred)
+	}
+}
+
 func TestPostListMatchesWebviewTextSize(t *testing.T) {
 	model := appstatus.New("")
 	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)

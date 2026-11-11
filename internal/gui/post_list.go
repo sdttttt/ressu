@@ -195,10 +195,10 @@ func (l *PostList) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus
 				l.setSortOrder()
 			})
 			ui.Row(c).AlignItems(ui.Center).Gap(l.scaled(theme, 4)).Children(func() {
-				l.filterButton(c, theme, "未读", l.query.UnreadOnly, func() {
+				l.iconButton(c, theme, postHeaderMail, "只看未读", l.query.UnreadOnly, func() {
 					l.setUnreadOnly(!l.query.UnreadOnly)
 				})
-				l.filterButton(c, theme, "星标", l.query.StarredOnly, func() {
+				l.iconButton(c, theme, postListStar, "只看星标", l.query.StarredOnly, func() {
 					l.setStarredOnly(!l.query.StarredOnly)
 				})
 			})
@@ -598,45 +598,6 @@ func (l *PostList) iconButton(
 	})
 	if pressed || hovered {
 		button.Background(palette.Accent)
-	} else {
-		button.Background(ui.Transparent)
-	}
-	if button.Clicked() {
-		action()
-	}
-	return button
-}
-
-func (l *PostList) filterButton(
-	c *ui.Context,
-	theme *ui.Theme,
-	label string,
-	active bool,
-	action func(),
-) ui.Element {
-	palette := postListPalette(*theme)
-	var button ui.Element
-	button = ui.ButtonBase(c).
-		Height(l.scaled(theme, 28)).
-		Padding(l.scaled(theme, 8), 0).
-		Radius(l.scaled(theme, 6)).Cursor(ui.CursorPointer).
-		Label(label)
-	hovered := button.Hovered()
-	button.Children(func() {
-		text := ui.Text(c, label).FontSize(l.scaled(theme, 11)).FontWeight(500)
-		switch {
-		case active:
-			text.TextColor(palette.AccentForeground)
-		case hovered:
-			text.TextColor(palette.TextMuted)
-		default:
-			text.TextColor(palette.Foreground)
-		}
-	})
-	if active {
-		button.Background(palette.Accent)
-	} else if hovered {
-		button.Background(palette.Muted)
 	} else {
 		button.Background(ui.Transparent)
 	}
