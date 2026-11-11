@@ -10,7 +10,7 @@ MyGO 原生 UI 直接渲染，页面只负责阅读区正文和快照分片采�
 
 ## 快速约束
 
-- 包管理器固定为 Bun，锁文件是 `bun.lock`。不要引入 `package-lock.json` 或 `pnpm-lock.yaml`。
+- 工具链只使用 Go：MyGO CLI 由 `go.mod` 的 `tool` 指令固定。不要引入 Bun、npm 或 pnpm 配置。
 - Go 代码、标识符、代码注释、文档注释和提交信息用英文；界面字符串、toast、README 和
   `AGENTS.md` 用简体中文。
 - 提交遵循 Conventional Commits，例如 `feat: ...`、`fix(ui): ...`、`docs: ...`。破坏性
@@ -25,17 +25,17 @@ MyGO 原生 UI 直接渲染，页面只负责阅读区正文和快照分片采�
 
 | 层     | 选择                                                                 |
 | ------ | -------------------------------------------------------------------- |
-| 外壳   | MyGO 0.8.3（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
+| 外壳   | MyGO 0.9.0（`github.com/egoist/mygo`），Go，无 cgo，使用系统 WebView |
 | 后端   | Go 1.27.3，`mmcdole/gofeed` 1.5，bbolt 1.5                           |
 | 前端   | 无框架静态 HTML/CSS/JS，内嵌系统 WebView                             |
 | 构建   | MyGO 内嵌 `webview/static`                                           |
 | 状态   | 静态阅读页内的局部状态；没有路由、Redux 或服务端渲染                  |
-| 工具链 | Bun、Go test、Vet                                                    |
+| 工具链 | Go test、Vet、Go tool directive                                      |
 | 存储   | 用户数据目录下的 bbolt 单文件数据库 `ressu.db`                       |
 | 平台   | 以 Windows 为主，同时支持 Linux 与 macOS                             |
 | 许可证 | 0BSD                                                                 |
 
-仓库没有 `Cargo.toml` 或 `pyproject.toml`。两个清单是 `package.json` 和 `go.mod`
+仓库没有 `Cargo.toml` 或 `pyproject.toml`。唯一的清单是 `go.mod`
 （`module github.com/sdttttt/ressu`）。
 
 ## 目录结构
@@ -90,35 +90,37 @@ mygo.json                  MyGO CLI 配置
 .github/workflows/ci.yml   测试、打包与 GitHub Release
 ```
 
-`build/`、`.mygo/`、`coverage/` 和 `node_modules/`
+`build/`、`.mygo/` 和 `coverage/`
 都是生成物或本地依赖，已被 git 忽略。
 
 ## 构建与测试
 
-首次安装：
+首次准备环境：
 
 ```sh
-bun install
+go mod download
+go tool mygo doctor
 ```
 
 | 命令                 | 作用                                                     |
 | -------------------- | -------------------------------------------------------- |
-| `bun run dev`        | `mygo dev`：构建并运行 `.mygo/dev` 下的开发版             |
+| `go tool mygo dev`   | 构建并运行 `.mygo/dev` 下的开发版                         |
 | `go test ./...`      | Go 单测与 httptest 集成测试                              |
 | `go vet ./...`       | Go 静态检查                                              |
-| `bun run build`      | `mygo build`：内嵌静态前端、编译并打包到 `build/`        |
-| `bunx mygo vet`      | MyGO 的 Go vet 与原生 UI 生命周期检查；未接入 CI         |
-| `bunx mygo doctor`   | 检查开发环境                                             |
+| `go tool mygo build` | 内嵌静态前端、编译并打包到 `build/`                       |
+| `go tool mygo vet`   | MyGO 的 Go vet 与原生 UI 生命周期检查；未接入 CI          |
+| `go tool mygo doctor` | 检查开发环境                                              |
 
 注意：
 
-- 全新克隆后先 `bun install`，供 MyGO CLI 使用。
+- MyGO CLI 版本和模块版本一起由 `go.mod` 管理。
+- 更新 MyGO 时运行 `go get -tool github.com/egoist/mygo/cmd/mygo@latest`。
 - 运行中的 `mygo dev` 可能与 `mygo generate` 冲突并导致生成超时；重新生成前先退出开发版。
 - `mygo dev` 监听 Go 改动并重建应用；开发终端里 `r` 重建、
   `c` 清屏、`q` 退出。
-- `bun run build` 不传 `-platform` 时使用 MyGO 的默认目标；发布必须显式传入目标平台。CI
+- `go tool mygo build` 不传 `-platform` 时使用 MyGO 的默认目标；发布必须显式传入目标平台。CI
   分别构建 `windows/amd64`、`linux/amd64`、`darwin/universal`。
-- 环境要求：Go 1.27.3+、Bun、系统 WebView。Windows 10 需要 WebView2 Runtime；
+- 环境要求：Go 1.27.3+、系统 WebView。Windows 10 需要 WebView2 Runtime；
   Linux 需要 WebKitGTK 4.1 与 AppIndicator 相关包。
 
 ## 启动与后台刷新
@@ -399,7 +401,7 @@ bun install
 ```sh
 go test ./...
 go vet ./...
-bun run build
+go tool mygo build
 ```
 
 Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许本地监听，否则会出现
@@ -410,15 +412,15 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
 `.github/workflows/ci.yml`：
 
 - `test` 在推送 `master`/`develop`、推送 `v*` tag 和向这两个分支提 PR 时运行，矩阵为
-  Ubuntu + Windows。步骤依次是 `bun install --frozen-lockfile`、`go test ./...`、
-  `node --check webview/static/reader.js` 和 `bun run build`。
-- `release-version` 只对 `v*` tag 运行，校验 tag 符合 `vYY.M.N`，且与 `package.json`、
+  Ubuntu + Windows。步骤依次是 `go test ./...`、
+  `node --check webview/static/reader.js` 和 `go tool mygo build`。
+- `release-version` 只对 `v*` tag 运行，校验 tag 符合 `vYY.M.N`，且与
   `mygo.json` 的版本号一致。`M` 是 1–12 且不补零，`N` 从 1 开始。
 - `package` 依赖测试和版本校验，在 Windows、Linux、macOS 上分别构建
   `windows/amd64`、`linux/amd64`、`darwin/universal`，上传 `build/`。
 - `release` 汇总 DMG、Windows setup EXE、DEB、tar.gz，生成 `SHA256SUMS`，再发布 GitHub
   Release。tag 中含 `-` 时标记为预发布。
-- 发版时同时修改 `package.json` 与 `mygo.json` 的版本号，并打对应 tag。
+- 发版时修改 `mygo.json` 的版本号，并打对应 tag。
 - 目前没有自动更新配置；MyGO 更新签名密钥应通过环境变量提供，不要提交到仓库。
 
 ## 安全

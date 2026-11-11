@@ -23,20 +23,6 @@ jobs:
           go-version: "1.27"
           cache: true
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Replace lockfile registry URLs
-        shell: bash
-        run: |
-          sed 's#https://registry\.npmmirror\.com#https://registry.npmjs.org#g' \
-            bun.lock > bun.lock.tmp
-          mv bun.lock.tmp bun.lock
-
-      - name: Install the frontend's dependencies
-        run: bun install --frozen-lockfile
-
       - name: Go tests
         run: go test ./...
 
@@ -44,7 +30,7 @@ jobs:
         run: node --check webview/static/reader.js
 
       - name: Verify application build
-        run: bun run build
+        run: go tool mygo build
 
   package:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -71,28 +57,14 @@ jobs:
           go-version: "1.27"
           cache: true
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - name: Install Linux webview packages
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-0 libayatana-appindicator3-1
 
-      - name: Replace lockfile registry URLs
-        shell: bash
-        run: |
-          sed 's#https://registry\.npmmirror\.com#https://registry.npmjs.org#g' \
-            bun.lock > bun.lock.tmp
-          mv bun.lock.tmp bun.lock
-
-      - name: Install the frontend's dependencies
-        run: bun install --frozen-lockfile
-
       - name: Package
-        run: bun run build -- -platform ${{ matrix.platform }}
+        run: go tool mygo build -platform ${{ matrix.platform }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -153,12 +125,6 @@ jobs:
           fi
 
           version="${TAG_NAME#v}"
-          package_version="$(jq -er '.version' package.json)"
-          if [ "$package_version" != "$version" ]; then
-            echo "package.json version is $package_version; expected $version." >&2
-            exit 1
-          fi
-
           if ! jq -e --arg version "$version" '.version == $version' mygo.json >/dev/null; then
             echo "mygo.json must set version to \"$version\"." >&2
             exit 1
