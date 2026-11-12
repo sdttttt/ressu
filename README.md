@@ -2,9 +2,6 @@
 
 一个随处可见，普通，没有什么特点的传统 **RSS 阅读器**。
 
-<img width="2175" height="1227" alt="图片" src="https://github.com/user-attachments/assets/8f3e30ee-479e-4d92-af2b-73a2d748e1e7" />
-
-
 <img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
 
 ## Feature
