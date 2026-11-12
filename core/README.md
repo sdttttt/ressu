@@ -16,9 +16,75 @@ Ressu 阅读器的后端核心。
 | `service`     | 业务入口：订阅增删刷新、文章列表/搜索/分页、偏好、快照拼接      |
 | `event`       | 统一事件 DTO 与串行发布器 Hub（sink 注入，发布者不带传输层）    |
 | `status`      | 服务状态的内存镜像模型（供状态栏等只读消费）                    |
-| `logging`     | 可选的日志文件封装                                              |
+| `logging`     | 可选的日志文件封装；`Debug` 仅在 `debug` build tag 下输出        |
 | `textmetrics` | 正文字数统计                                                    |
 | `limitreader` | 带体积上限的 `io.Reader`                                        |
+
+`service` 不 import `mygo` 或任何 GUI 包；`event` 的 sink 注入设计保证发布器不依赖传输层。
+
+## 订阅源抓取与解析
+
+- `rss.ValidateURL` 只接受带 host 的绝对 `http`/`https` URL；`file:`、`javascript:` 和相对
+  地址都返回 `ErrInvalidURL`。
+- `rss.Fetch` 发送 `User-Agent: Ressu/0.1 (+https://github.com/sdttttt/ressu)`、偏向订阅源的
+  `Accept`，以及可用的 `If-None-Match`/`If-Modified-Since`。请求和读取 body 共享 15 秒超时；
+  响应最多读取 16 MiB；非 200/304 状态直接报错。
+- `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
+  链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。频道和文章里的相对链接按订阅源
+  地址解析为绝对地址，摘要去掉 HTML、折叠空白并截断。
+- 正文在 `core/sanitize` 基于 bluemonday 清洗后入库；链接和媒体地址按文章地址补全。
+  损坏 XML 或不是订阅源的页面返回错误，由服务层展示给用户。
+- 订阅源图标由 `core/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon 链接，最后
+  `/favicon.ico`。只允许位图、http/https、256KB 以内，并通过 bbolt 缓存。
+
+## 刷新流程与事件
+
+- `Feeds.Add` 先校验 URL、检查重复，再立即抓取一次并保存频道元数据与首批文章；成功后
+  广播 `feeds.changed` 和 `posts.changed`。
+- `Feeds.RefreshAll` 用手动全量刷新，`maxConcurrent = 2` 信号量并发，每个订阅完成广播
+  `sync.progress`，批次开始/结束广播 `sync.started`/`sync.finished`。
+- `Feeds.RefreshStale` 供启动和回前台自动刷新：只抓 `LastFetchedAt` 为空或早于 5 分钟的
+  订阅源，复用全量刷新的单飞与并发逻辑；已有刷新时返回 `ErrRefreshing`。
+- `refreshOne` 把 ETag 与 Last-Modified 交给 `rss.Fetch`；304 映射为 `rss.ErrNotModified`
+  （保留文章，只清除错误并更新 `lastFetchedAt`）。失败把错误写入 `Feed.LastError` 并广播
+  `feeds.changed`，订阅和已存文章保留。
+- 成功抓取后调用 `store.MergePosts`，再刷新频道元数据与校验器；合并后重新读取 Feed，
+  因为未读数已在事务中重算。
+- OPML：`core/rss/opml.go` 负责解析（跳过无 `xmlUrl` 的目录）和导出；
+  `core/service/opml.go` 汇总导入结果（`ImportSummary`），导入复用 `Feeds.Add`。
+- `Posts.List` 在服务端完成未读/星标筛选、搜索和分页，返回 `{posts,total,unread}`；
+  默认每页 100、上限 500。未读数由文章推导并保存在 `Feed.Unread`：合并时重算，单条已读
+  变化时增减，全部已读时清零。
+- `Posts.Get` 按偏好 `MarkReadOnOpen` 自动标已读（失败不阻塞阅读）并广播
+  `post.updated`；`Posts.ToggleRead` 翻转已读并返回最新摘要。
+- 事件由 `core/event.Hub` 串行发布：先分配递增 `revision`、更新时间，再更新 `status.Model`
+  镜像，最后交给 sink。任何改变订阅或未读状态的服务方法都应广播。
+
+## 持久化
+
+数据库是单文件 bbolt（`ressu.db`，文件模式 0600）：
+
+| 桶         | 键                | 值                                                      |
+| ---------- | ----------------- | ------------------------------------------------------- |
+| `feeds`    | 8 字节大端订阅 id | 整个 `Feed` 的 JSON：元数据、ETag/Last-Modified、未读数 |
+| `posts`    | 订阅 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                           |
+| `settings` | `prefs`           | 整个 `Prefs` 的 JSON                                    |
+| `icons`    | 订阅 id（嵌套桶） | `data` 键存原始图片字节；`meta` 键存缓存元数据 JSON     |
+
+- `Store` 在内存缓存订阅和偏好，文章每次从数据库读取；一把互斥锁串行化写操作；返回的
+  slice 会克隆。bbolt 的文件锁意味着同一数据目录只能有一个进程打开数据库。
+- `settings/schemaVersion` 记录数据库版本；修改持久化结构必须兼容旧记录，或在
+  `store/migrate.go` 加入迁移。
+- `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
+  按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读；它在一个事务里重写该
+  订阅的整个文章桶。`UpdatePost` 和 `MarkAllRead` 只写受影响的数据。
+- `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
+- `Prefs.Normalize` 替换越界值：未知主题回落 `system`，未知字号回落 `medium`，
+  `postSort` 不是 `fetched` 就回落 `published`，`openLinks` 不是 `window` 就变成
+  `browser`，`remoteResources` 不是 `webview` 就回落 `goProxy`，`postsPerFeed` 限制在
+  50–2000（默认 500），`imageCacheLimit` 限制在 32–512 MB（默认 256），面板宽度恢复
+  `[18,30]`。偏好默认值只以 `store.DefaultPrefs` 为准。
+- `Post.Content` 是入库前清洗后的 HTML，`Post.Summary` 是截到 280 个字符的纯文本。
 
 ## 示例代码
 
