@@ -6,7 +6,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/internal/store"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 func TestSettingsViewRendersPreferences(t *testing.T) {

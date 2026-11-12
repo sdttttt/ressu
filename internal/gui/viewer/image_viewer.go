@@ -14,8 +14,8 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/core/media"
 	appwindow "github.com/sdttttt/ressu/internal/gui/window"
-	"github.com/sdttttt/ressu/internal/media"
 )
 
 const (

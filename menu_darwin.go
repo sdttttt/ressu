@@ -5,9 +5,9 @@ package main
 import (
 	"github.com/egoist/mygo"
 
+	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/service"
 	"github.com/sdttttt/ressu/internal/action"
-	appevent "github.com/sdttttt/ressu/internal/event"
-	"github.com/sdttttt/ressu/internal/service"
 )
 
 // setMenu installs the system menu bar, which macOS owns.
@@ -25,7 +25,7 @@ func newMenu(hub *appevent.Hub, actions *action.AppActions) *mygo.Menu {
 			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: sendCommand(hub, service.CommandRefresh)},
 			mygo.Separator(),
 			{Label: "Settings…", Accelerator: "CmdOrCtrl+,", Click: func(_ *mygo.MenuItem, window *mygo.Window) {
-				actions.OpenSettings(window)
+				actions.OpenSettings(action.NewWindowHandle(window))
 			}},
 			mygo.Separator(),
 			{Role: mygo.RoleClose},

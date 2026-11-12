@@ -8,16 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/egoist/mygo"
-
-	appevent "github.com/sdttttt/ressu/internal/event"
-	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
-	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
-	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
-	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
-	"github.com/sdttttt/ressu/internal/service"
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
+	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/service"
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 type fakeUI struct {
@@ -30,28 +24,28 @@ type fakeUI struct {
 	theme                 string
 	snapshotData          []byte
 	snapshotTitle         string
-	snapshotParent        *mygo.Window
-	snapshotCallbacks     appviewer.SnapshotCallbacks
-	snapshotCaptureParent *mygo.Window
-	snapshotCaptureClosed *mygo.Window
-	notifications         []appdialog.Notification
+	snapshotParent        WindowHandle
+	snapshotCallbacks     SnapshotViewerCallbacks
+	snapshotCaptureParent WindowHandle
+	snapshotCaptureClosed WindowHandle
+	notifications         []Notification
 	addFeedOpened         bool
 	helpShown             bool
 	feedDelta             int
-	confirmation          *appdialog.ConfirmationRequest
+	confirmation          *ConfirmationRequest
 	confirmed             bool
 	confirmCalled         bool
 }
 
-func (f *fakeUI) SelectOPMLImport(*mygo.Window) ([]string, error) {
+func (f *fakeUI) SelectOPMLImport(WindowHandle) ([]string, error) {
 	return f.openFiles, nil
 }
 
-func (f *fakeUI) SelectOPMLExport(*mygo.Window, string) (string, error) {
+func (f *fakeUI) SelectOPMLExport(WindowHandle, string) (string, error) {
 	return f.savePath, nil
 }
 
-func (f *fakeUI) SelectSnapshotSavePath(*mygo.Window, string) (string, error) {
+func (f *fakeUI) SelectSnapshotSavePath(WindowHandle, string) (string, error) {
 	return f.savePath, nil
 }
 
@@ -70,15 +64,15 @@ func (f *fakeUI) OpenLinkWindow(title, link string) {
 	f.windowLink = link
 }
 
-func (f *fakeUI) OpenImageViewer(*mygo.Window, []byte, string, string) error {
+func (f *fakeUI) OpenImageViewer(WindowHandle, []byte, string, string) error {
 	return nil
 }
 
 func (f *fakeUI) OpenSnapshotViewer(
-	parent *mygo.Window,
+	parent WindowHandle,
 	data []byte,
 	title string,
-	callbacks appviewer.SnapshotCallbacks,
+	callbacks SnapshotViewerCallbacks,
 ) error {
 	f.snapshotData = data
 	f.snapshotTitle = title
@@ -87,24 +81,24 @@ func (f *fakeUI) OpenSnapshotViewer(
 	return nil
 }
 
-func (f *fakeUI) OpenSettings(*mygo.Window, appsettings.Callbacks) {}
+func (f *fakeUI) OpenSettings(WindowHandle, SettingsCallbacks) {}
 
-func (f *fakeUI) OpenAddFeed(*mygo.Window, appaddfeed.Callbacks) {
+func (f *fakeUI) OpenAddFeed(WindowHandle, AddFeedCallbacks) {
 	f.addFeedOpened = true
 }
 
-func (f *fakeUI) OpenSnapshotCapture(parent *mygo.Window) {
+func (f *fakeUI) OpenSnapshotCapture(parent WindowHandle) {
 	f.snapshotCaptureParent = parent
 }
 
-func (f *fakeUI) CloseSnapshotCapture(window *mygo.Window) {
+func (f *fakeUI) CloseSnapshotCapture(window WindowHandle) {
 	f.snapshotCaptureClosed = window
 }
 
 func (f *fakeUI) Confirm(
 	_ context.Context,
-	_ *mygo.Window,
-	request appdialog.ConfirmationRequest,
+	_ WindowHandle,
+	request ConfirmationRequest,
 ) (bool, error) {
 	f.confirmation = &request
 	f.confirmCalled = true
@@ -123,7 +117,7 @@ func (f *fakeUI) ApplyTheme(theme string) {
 	f.theme = theme
 }
 
-func (f *fakeUI) ShowNotification(notification appdialog.Notification) {
+func (f *fakeUI) ShowNotification(notification Notification) {
 	f.notifications = append(f.notifications, notification)
 }
 
@@ -175,7 +169,7 @@ func TestOpenLinkRejectsUnsafeURL(t *testing.T) {
 func TestOpenAddFeedUsesNativeUI(t *testing.T) {
 	actions, ui := newTestActions(t)
 
-	actions.OpenAddFeed(nil)
+	actions.OpenAddFeed(WindowHandle{})
 
 	if !ui.addFeedOpened {
 		t.Error("OpenAddFeed did not reach the native UI")
@@ -190,7 +184,7 @@ func TestConfirmRemoveFeedDeletesAfterConfirmation(t *testing.T) {
 	}
 	ui.confirmed = true
 
-	if err := actions.ConfirmRemoveFeed(context.Background(), nil, feed.ID); err != nil {
+	if err := actions.ConfirmRemoveFeed(context.Background(), WindowHandle{}, feed.ID); err != nil {
 		t.Fatal(err)
 	}
 	if !ui.confirmCalled {
@@ -214,7 +208,7 @@ func TestConfirmRemoveFeedKeepsFeedWhenCanceled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actions.ConfirmRemoveFeed(context.Background(), nil, feed.ID); err != nil {
+	if err := actions.ConfirmRemoveFeed(context.Background(), WindowHandle{}, feed.ID); err != nil {
 		t.Fatal(err)
 	}
 	if !ui.confirmCalled {
@@ -228,7 +222,7 @@ func TestConfirmRemoveFeedKeepsFeedWhenCanceled(t *testing.T) {
 func TestConfirmRemoveFeedRejectsMissingFeed(t *testing.T) {
 	actions, ui, _ := newRemovalTestActions(t)
 
-	if err := actions.ConfirmRemoveFeed(context.Background(), nil, 1); !errors.Is(err, store.ErrNotFound) {
+	if err := actions.ConfirmRemoveFeed(context.Background(), WindowHandle{}, 1); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("ConfirmRemoveFeed(1) = %v; want ErrNotFound", err)
 	}
 	if ui.confirmCalled {
@@ -334,22 +328,6 @@ func TestPageShortcutsForwardThroughNativeUI(t *testing.T) {
 	}
 }
 
-func TestSidebarCallbacksPersistLayout(t *testing.T) {
-	actions, _ := newTestActions(t)
-	callbacks := actions.SidebarCallbacks()
-
-	callbacks.SetCollapsed(true)
-	callbacks.SetPanePercent(27)
-
-	prefs := actions.Preferences()
-	if !prefs.SidebarCollapsed {
-		t.Error("collapsed preference was not stored")
-	}
-	if len(prefs.PaneSizes) != 2 || prefs.PaneSizes[0] != 27 || prefs.PaneSizes[1] != 30 {
-		t.Errorf("pane sizes = %v; want [27 30]", prefs.PaneSizes)
-	}
-}
-
 func TestSetSidebarPercentClampsPreference(t *testing.T) {
 	actions, _ := newTestActions(t)
 
@@ -388,7 +366,7 @@ func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
 	})
 
 	model := appstatus.New("")
-	hub := appevent.NewHub(model)
+	hub := appevent.NewHub(model, nil)
 	actions := New(
 		service.NewFeedsWithHub(st, hub),
 		service.NewPosts(st),

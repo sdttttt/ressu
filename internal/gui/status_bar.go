@@ -7,8 +7,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	appstatus "github.com/sdttttt/ressu/core/status"
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
-	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
 // StatusBar draws the reader's bottom status bar with MyGO native UI.

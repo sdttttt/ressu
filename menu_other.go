@@ -5,8 +5,8 @@ package main
 import (
 	"github.com/egoist/mygo"
 
+	appevent "github.com/sdttttt/ressu/core/event"
 	"github.com/sdttttt/ressu/internal/action"
-	appevent "github.com/sdttttt/ressu/internal/event"
 )
 
 // setMenu removes the native menu bar, so no menu row sits above the page.

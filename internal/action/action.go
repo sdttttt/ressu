@@ -13,51 +13,94 @@ import (
 	"os"
 	"strings"
 
-	"github.com/egoist/mygo"
-
-	appevent "github.com/sdttttt/ressu/internal/event"
-	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
-	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
-	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
-	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
-	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
-	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
-	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
-	"github.com/sdttttt/ressu/internal/service"
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
+	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/service"
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 // ErrInvalidLink reports a link that is not an absolute HTTP or HTTPS URL.
 var ErrInvalidLink = errors.New("invalid link")
 
-// ErrNoSnapshotWindow reports that the snapshot caller window is unavailable.
-var ErrNoSnapshotWindow = errors.New("no snapshot window")
+// WindowHandle identifies the native window an action targets. It carries an
+// opaque toolkit reference so this layer stays UI-framework agnostic; the gui
+// adapters unwrap it back into toolkit windows.
+type WindowHandle struct {
+	native any
+}
+
+// NewWindowHandle wraps a toolkit-native window reference.
+func NewWindowHandle(native any) WindowHandle {
+	return WindowHandle{native: native}
+}
+
+// Native returns the wrapped toolkit window reference.
+func (h WindowHandle) Native() any { return h.native }
+
+// Notification is one native toast request.
+type Notification struct {
+	Type  string
+	Title string
+}
+
+// ConfirmationRequest asks the user before a destructive action.
+type ConfirmationRequest struct {
+	Title        string
+	Description  string
+	ConfirmLabel string
+	CancelLabel  string
+	Destructive  bool
+}
+
+// SnapshotViewerCallbacks are the operations a snapshot preview may invoke.
+type SnapshotViewerCallbacks struct {
+	Save   func(parent WindowHandle, data []byte, fileName string) (string, error)
+	Copy   func(data []byte) error
+	Notify func(level, message string)
+}
+
+// SettingsCallbacks are the operations a native settings surface may invoke.
+type SettingsCallbacks struct {
+	Load        func() store.Prefs
+	Save        func(prefs store.Prefs) (store.Prefs, error)
+	DataDir     func() string
+	ExportOPML  func(parent WindowHandle) (string, error)
+	OpenDataDir func() error
+}
+
+// AddFeedCallbacks are the operations a native subscription surface may
+// invoke.
+type AddFeedCallbacks struct {
+	Appearance func() store.Prefs
+	Test       func(ctx context.Context, feedURL string) (service.FeedPreview, error)
+	Add        func(ctx context.Context, title, feedURL string) (store.Feed, error)
+	ImportOPML func(ctx context.Context, parent WindowHandle) (service.ImportSummary, error)
+}
 
 // UI is the set of native side effects an action may perform.
 type UI interface {
-	SelectOPMLImport(parent *mygo.Window) ([]string, error)
-	SelectOPMLExport(parent *mygo.Window, defaultPath string) (string, error)
-	SelectSnapshotSavePath(parent *mygo.Window, defaultPath string) (string, error)
+	SelectOPMLImport(parent WindowHandle) ([]string, error)
+	SelectOPMLExport(parent WindowHandle, defaultPath string) (string, error)
+	SelectSnapshotSavePath(parent WindowHandle, defaultPath string) (string, error)
 	OpenPath(string) error
 	OpenExternal(string) error
 	OpenLinkWindow(title, link string)
-	OpenImageViewer(parent *mygo.Window, data []byte, viewerURL, alt string) error
+	OpenImageViewer(parent WindowHandle, data []byte, viewerURL, alt string) error
 	OpenSnapshotViewer(
-		parent *mygo.Window,
+		parent WindowHandle,
 		data []byte,
 		title string,
-		callbacks appviewer.SnapshotCallbacks,
+		callbacks SnapshotViewerCallbacks,
 	) error
-	OpenAddFeed(parent *mygo.Window, callbacks appaddfeed.Callbacks)
-	OpenSettings(parent *mygo.Window, callbacks appsettings.Callbacks)
-	OpenSnapshotCapture(parent *mygo.Window)
-	CloseSnapshotCapture(window *mygo.Window)
-	Confirm(ctx context.Context, parent *mygo.Window, request appdialog.ConfirmationRequest) (bool, error)
+	OpenAddFeed(parent WindowHandle, callbacks AddFeedCallbacks)
+	OpenSettings(parent WindowHandle, callbacks SettingsCallbacks)
+	OpenSnapshotCapture(parent WindowHandle)
+	CloseSnapshotCapture(window WindowHandle)
+	Confirm(ctx context.Context, parent WindowHandle, request ConfirmationRequest) (bool, error)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
 	ApplyTheme(string)
-	ShowNotification(appdialog.Notification)
+	ShowNotification(Notification)
 	SelectNeighbourPost(delta int, onlyUnread bool)
 	SelectNeighbourFeed(delta int)
 	ShowHelp()
@@ -115,12 +158,12 @@ func (a *AppActions) AddFeed(ctx context.Context, title, feedURL string) (store.
 }
 
 // ConfirmRemoveFeed asks before deleting a subscription and its posts.
-func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent *mygo.Window, id int64) error {
+func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle, id int64) error {
 	feed, err := a.feeds.Feed(id)
 	if err != nil {
 		return err
 	}
-	request := appdialog.ConfirmationRequest{
+	request := ConfirmationRequest{
 		Title:        "取消订阅「" + feed.Title + "」？",
 		Description:  "这个订阅源已保存的文章会一并删除，操作无法撤销。",
 		ConfirmLabel: "取消订阅",
@@ -153,7 +196,7 @@ func (a *AppActions) RefreshStale(ctx context.Context) (service.SyncSummary, err
 }
 
 // ImportOPML asks for an OPML file and imports its subscriptions.
-func (a *AppActions) ImportOPML(ctx context.Context, parent *mygo.Window) (service.ImportSummary, error) {
+func (a *AppActions) ImportOPML(ctx context.Context, parent WindowHandle) (service.ImportSummary, error) {
 	paths, err := a.ui.SelectOPMLImport(parent)
 	if err != nil {
 		slog.Warn("OPML picker failed", "operation", "action.feeds.importOPML", "error", err)
@@ -173,7 +216,7 @@ func (a *AppActions) ImportOPML(ctx context.Context, parent *mygo.Window) (servi
 }
 
 // ExportOPML asks where to save the subscriptions and writes an OPML file.
-func (a *AppActions) ExportOPML(parent *mygo.Window) (string, error) {
+func (a *AppActions) ExportOPML(parent WindowHandle) (string, error) {
 	data, err := a.feeds.BuildOPML()
 	if err != nil {
 		return "", err
@@ -194,7 +237,7 @@ func (a *AppActions) ExportOPML(parent *mygo.Window) (string, error) {
 }
 
 // OpenImage loads an article image and opens it in the native viewer.
-func (a *AppActions) OpenImage(ctx context.Context, parent *mygo.Window, source, alt string) error {
+func (a *AppActions) OpenImage(ctx context.Context, parent WindowHandle, source, alt string) error {
 	image, err := a.posts.LoadImage(ctx, source)
 	if err != nil {
 		return err
@@ -240,36 +283,23 @@ func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.Snapsh
 	return data, err
 }
 
-// StitchSnapshot joins page captures and opens the native snapshot preview.
-// The caller is the capture window; the preview parents to the main window
-// and the capture window closes once the preview is open.
+// StitchSnapshot joins page captures and opens the native snapshot preview
+// for parent.
 func (a *AppActions) StitchSnapshot(
-	ctx context.Context,
+	parent WindowHandle,
 	title string,
 	tiles []service.SnapshotTile,
 ) error {
-	caller := mygo.CallerWindow(ctx)
-	if caller == nil {
-		return ErrNoSnapshotWindow
-	}
-	parent := caller
-	if owner := caller.Parent(); owner != nil && !owner.IsDestroyed() {
-		parent = owner
-	}
-	err := a.stitchSnapshot(parent, title, tiles)
-	if err == nil && parent != caller && !caller.IsDestroyed() {
-		caller.Close()
-	}
-	return err
+	return a.stitchSnapshot(parent, title, tiles)
 }
 
 // OpenSnapshotCapture opens the single snapshot capture window.
-func (a *AppActions) OpenSnapshotCapture(parent *mygo.Window) {
+func (a *AppActions) OpenSnapshotCapture(parent WindowHandle) {
 	a.ui.OpenSnapshotCapture(parent)
 }
 
 // CancelSnapshotCapture closes the snapshot capture window.
-func (a *AppActions) CancelSnapshotCapture(window *mygo.Window) {
+func (a *AppActions) CancelSnapshotCapture(window WindowHandle) {
 	a.ui.CloseSnapshotCapture(window)
 }
 
@@ -292,7 +322,7 @@ func (a *AppActions) SnapshotTarget() (appstatus.PostSelection, string, bool) {
 
 // stitchSnapshot joins page captures and opens the native preview for parent.
 func (a *AppActions) stitchSnapshot(
-	parent *mygo.Window,
+	parent WindowHandle,
 	title string,
 	tiles []service.SnapshotTile,
 ) error {
@@ -300,8 +330,8 @@ func (a *AppActions) stitchSnapshot(
 	if err != nil {
 		return err
 	}
-	return a.ui.OpenSnapshotViewer(parent, data, title, appviewer.SnapshotCallbacks{
-		Save: func(snapshotParent *mygo.Window, snapshotData []byte, fileName string) (string, error) {
+	return a.ui.OpenSnapshotViewer(parent, data, title, SnapshotViewerCallbacks{
+		Save: func(snapshotParent WindowHandle, snapshotData []byte, fileName string) (string, error) {
 			return a.SaveSnapshot(snapshotParent, fileName, snapshotData)
 		},
 		Copy:   a.CopySnapshot,
@@ -310,7 +340,7 @@ func (a *AppActions) stitchSnapshot(
 }
 
 // SaveSnapshot asks where to save a stitched snapshot and writes it.
-func (a *AppActions) SaveSnapshot(parent *mygo.Window, fileName string, data []byte) (string, error) {
+func (a *AppActions) SaveSnapshot(parent WindowHandle, fileName string, data []byte) (string, error) {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		return "", err
 	}
@@ -409,8 +439,8 @@ func (a *AppActions) OpenLink(link string) error {
 }
 
 // OpenSettings opens the native settings surface with action callbacks.
-func (a *AppActions) OpenSettings(parent *mygo.Window) {
-	a.ui.OpenSettings(parent, appsettings.Callbacks{
+func (a *AppActions) OpenSettings(parent WindowHandle) {
+	a.ui.OpenSettings(parent, SettingsCallbacks{
 		Load:        a.settings.Get,
 		Save:        a.UpdateSettingsDraft,
 		DataDir:     a.settings.DataDir,
@@ -420,96 +450,23 @@ func (a *AppActions) OpenSettings(parent *mygo.Window) {
 }
 
 // OpenAddFeed opens the native subscription surface.
-func (a *AppActions) OpenAddFeed(parent *mygo.Window) {
-	a.ui.OpenAddFeed(parent, appaddfeed.Callbacks{
+func (a *AppActions) OpenAddFeed(parent WindowHandle) {
+	a.ui.OpenAddFeed(parent, AddFeedCallbacks{
 		Appearance: a.settings.Get,
-		Test: func(ctx context.Context, feedURL string) (appaddfeed.Preview, error) {
-			preview, err := a.TestFeed(ctx, feedURL)
-			return appaddfeed.Preview(preview), err
-		},
-		Add: a.AddAndSelectFeed,
-		ImportOPML: func(feedParent *mygo.Window) (appaddfeed.Summary, error) {
-			summary, err := a.ImportOPML(context.Background(), feedParent)
-			return appaddfeed.Summary(summary), err
-		},
+		Test:       a.TestFeed,
+		Add:        a.AddAndSelectFeed,
+		ImportOPML: a.ImportOPML,
 	})
 }
 
-// SidebarCallbacks exposes native subscription actions and layout updates.
-func (a *AppActions) SidebarCallbacks() appsidebar.Callbacks {
-	return appsidebar.Callbacks{
-		Icon:        a.FeedIcon,
-		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
-		RefreshAll:  func() { a.refreshAllWithNotice() },
-		RefreshFeed: func(feedID int64) { a.refreshFeedWithNotice(feedID) },
-		MarkAllRead: func(feedID int64) { a.markAllReadWithNotice(feedID) },
-		Remove: func(parent *mygo.Window, feedID int64) {
-			if err := a.ConfirmRemoveFeed(context.Background(), parent, feedID); err != nil {
-				slog.Warn("native feed removal failed",
-					"operation", "action.sidebar.remove", "feedID", feedID, "error", err)
-				a.Notify("error", "取消订阅失败")
-			}
-		},
-		OpenAddFeed:    a.OpenAddFeed,
-		OpenSettings:   a.OpenSettings,
-		SetCollapsed:   a.SetSidebarCollapsed,
-		SetPanePercent: a.SetSidebarPercent,
-	}
-}
-
-// PostListCallbacks exposes native article list actions and layout updates.
-func (a *AppActions) PostListCallbacks() apppostlist.Callbacks {
-	return apppostlist.Callbacks{
-		List:           a.ListPosts,
-		Select:         a.SelectPost,
-		ToggleStar:     a.TogglePostStar,
-		MarkAllRead:    func(feedID int64) { a.markAllReadWithNotice(feedID) },
-		SetPanePercent: a.SetListPercent,
-		Notify:         a.Notify,
-	}
-}
-
-// PostHeaderCallbacks exposes native article header actions.
-func (a *AppActions) PostHeaderCallbacks() apppostheader.Callbacks {
-	return apppostheader.Callbacks{
-		ToggleStar:      a.TogglePostStar,
-		MarkRead:        a.MarkPostRead,
-		OpenLink:        a.OpenLink,
-		RequestSnapshot: a.RequestSnapshot,
-		Notify:          a.Notify,
-	}
+// Notify shows a native application notification.
+func (a *AppActions) Notify(level, message string) {
+	a.ui.ShowNotification(Notification{Type: level, Title: message})
 }
 
 // RequestSnapshot asks the reading page to generate the selected post snapshot.
 func (a *AppActions) RequestSnapshot() {
 	a.hub.UICommand("snapshot")
-}
-
-func (a *AppActions) refreshAllWithNotice() {
-	if _, err := a.RefreshAll(context.Background()); err != nil {
-		if errors.Is(err, service.ErrRefreshing) {
-			return
-		}
-		slog.Warn("native refresh all failed",
-			"operation", "action.sidebar.refreshAll", "error", err)
-		a.Notify("error", "刷新订阅源失败")
-	}
-}
-
-func (a *AppActions) refreshFeedWithNotice(feedID int64) {
-	if _, err := a.RefreshFeed(context.Background(), feedID); err != nil {
-		slog.Warn("native feed refresh failed",
-			"operation", "action.sidebar.refreshFeed", "feedID", feedID, "error", err)
-		a.Notify("error", "刷新订阅源失败")
-	}
-}
-
-func (a *AppActions) markAllReadWithNotice(feedID int64) {
-	if _, err := a.MarkAllPostsRead(feedID); err != nil {
-		slog.Warn("native mark all read failed",
-			"operation", "action.sidebar.markAllRead", "feedID", feedID, "error", err)
-		a.Notify("error", "标记已读失败")
-	}
 }
 
 // SetSidebarCollapsed stores the native sidebar's collapsed preference.
@@ -589,11 +546,6 @@ func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL string
 // PageReady marks the reader page as ready to receive a full snapshot.
 func (a *AppActions) PageReady(ctx context.Context) {
 	a.status.PageReady(ctx)
-}
-
-// Notify shows a native application notification.
-func (a *AppActions) Notify(level, message string) {
-	a.ui.ShowNotification(appdialog.Notification{Type: level, Title: message})
 }
 
 // SelectNeighbourPost moves the native article list from a page shortcut.

@@ -4,7 +4,7 @@ package theme
 import (
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/internal/store"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 // Family is the native interface font used across all windows.

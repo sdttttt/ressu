@@ -10,9 +10,9 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/core/store"
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	appwindow "github.com/sdttttt/ressu/internal/gui/window"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 const (

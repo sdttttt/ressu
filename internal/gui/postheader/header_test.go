@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {

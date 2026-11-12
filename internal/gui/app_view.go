@@ -4,11 +4,11 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appstatus "github.com/sdttttt/ressu/core/status"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
-	appstatus "github.com/sdttttt/ressu/internal/status"
 )
 
 // AppView places the reader page above the native status bar.

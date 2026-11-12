@@ -35,8 +35,11 @@ MyGO 原生 UI 直接渲染，页面只负责阅读区正文，快照采集在�
 | 平台   | 以 Windows 为主，同时支持 Linux 与 macOS                             |
 | 许可证 | 0BSD                                                                 |
 
-仓库没有 `Cargo.toml` 或 `pyproject.toml`。唯一的清单是 `go.mod`
-（`module github.com/sdttttt/ressu`）。
+仓库没有 `Cargo.toml` 或 `pyproject.toml`。清单是两个 Go module：根
+`go.mod`（`module github.com/sdttttt/ressu`，桌面壳）和 `core/go.mod`
+（`module github.com/sdttttt/ressu/core`，阅读器后端）。根 module 通过
+`replace github.com/sdttttt/ressu/core => ./core` 引用后端；`core` 不得依赖
+`mygo` 或 `internal/gui`，保证可以单独被 Web 服务、CLI 或移动端前端复用。
 
 ## 目录结构
 
@@ -44,7 +47,7 @@ MyGO 原生 UI 直接渲染，页面只负责阅读区正文，快照采集在�
 main.go                    应用入口：打开数据库、组装 action/webendpoint、创建窗口、启动刷新
 menu_darwin.go             macOS 系统菜单；设置直接打开原生窗口，其余动作广播 ui.command
 menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
-internal/
+core/                    独立 Go module（github.com/sdttttt/ressu/core）：阅读器后端，零 mygo 依赖
   rss/                     HTTP 抓取与 RSS/Atom/JSON Feed 解析
     fetch.go               ValidateURL、Fetch、ETag/If-Modified-Since、超时与体积上限
     parse.go               Parse、Meta/Item、相对链接解析、plainText/truncate
@@ -56,15 +59,20 @@ internal/
   media/                   正文图片安全下载、启动时清空重用的磁盘缓存和本地协议
   service/                 业务逻辑、事件与后台行为；不依赖 mygo 或 gui
     feeds.go, posts.go, settings.go, snapshot.go, events.go, foreground.go
-  action/                  应用动作层：组合 service、UI 副作用与状态广播
-    action.go              AppActions、UI 回调、OPML/图片/快照/偏好/外链动作
-  webendpoint/             页面绑定适配层：只做 MyGO 调用与调用方窗口提取
-    webendpoint.go         WebEndpoint（页面名 Feeds）、Posts、Settings、Status 绑定对象
-  event/                   统一广播 DTO、eid、串行发布器和原生状态镜像
+  event/                   统一广播 DTO、eid、串行发布器和原生状态镜像；不依赖 mygo
   status/                  原生状态栏与页面共享的服务状态模型
+  logging/                 日志文件封装
+  textmetrics/             正文字数统计
+  limitreader/             带体积上限的 io.Reader
+internal/
+  action/                  应用动作层：组合 service、UI 副作用与状态广播；不依赖 mygo 或 gui
+    action.go              AppActions、视图无关 UI 接口与 DTO、OPML/图片/快照/偏好/外链动作
+  webendpoint/             页面绑定适配层：只做 MyGO 调用与调用方窗口提取，声明 app:event 通道
+    webendpoint.go         WebEndpoint（页面名 Feeds）、Posts、Settings、Status 绑定对象
   buildinfo/               从 Go 构建元数据读取构建日期
   gui/                     MyGO 原生界面组合根：主窗布局、状态栏和原生副作用
     app_view.go            主窗原生布局：侧栏、文章列表、嵌入阅读页与状态栏
+    callbacks.go           侧栏、文章列表、文章头部的回调组装，把原生 UI 接到 AppActions
     status_bar.go          原生状态栏与服务状态
     native.go              NativeUI：对话框、shell、剪贴板、主题和窗口截图适配
     about/                 原生关于窗口
@@ -109,8 +117,9 @@ go tool mygo doctor
 | 命令                 | 作用                                                     |
 | -------------------- | -------------------------------------------------------- |
 | `go tool mygo dev`   | 构建并运行 `.mygo/dev` 下的开发版                         |
-| `go test ./...`      | Go 单测与 httptest 集成测试                              |
-| `go vet ./...`       | Go 静态检查                                              |
+| `go test ./...`      | 壳 module 单测与集成测试                                 |
+| `go test ./...`（`core/` 内） | 后端 module 单测与 httptest 集成测试        |
+| `go vet ./...`       | Go 静态检查（两个 module 分别运行）                      |
 | `go tool mygo build` | 内嵌静态前端、编译并打包到 `build/`                       |
 | `go tool mygo vet`   | MyGO 的 Go vet 与原生 UI 生命周期检查；未接入 CI          |
 | `go tool mygo doctor` | 检查开发环境                                              |
@@ -143,7 +152,7 @@ go tool mygo doctor
 `window-state.json`。窗口先以 `Hidden` 创建，在 `OnReadyToShow` 中显示；5 秒内页面仍未
 就绪也会兜底显示，避免空白窗口。
 
-`internal/service/foreground.go` 记录应用是否真正离开前台。应用失活后再次激活时，会异步
+`core/service/foreground.go` 记录应用是否真正离开前台。应用失活后再次激活时，会异步
 执行一次 `RefreshStale`；窗口失焦/聚焦只在应用本身失活/激活时作为兜底信号。
 `RefreshStale` 只抓取 `LastFetchedAt` 为空或早于 5 分钟的订阅源，并复用全量刷新的单飞和
 并发逻辑；已有刷新时返回 `ErrRefreshing`。手动全量或单源刷新不受节流限制。
@@ -153,25 +162,36 @@ go tool mygo doctor
 数据自上而下走 `webview -> webendpoint -> action -> service`，副作用自下而上由 `action`
 回调给原生层：
 
-- `internal/service` 只有业务逻辑，不 import `mygo`，也不 import `internal/gui`。
+- `core/service` 只有业务逻辑，不 import `mygo`，也不 import `internal/gui`。
 - `internal/action` 是所有页面和原生界面能力的唯一应用入口，持有 service、Hub 和 `UI`
   回调接口，负责文件对话框、剪贴板、外链、截图、原生主题与状态广播。需要暴露给界面层
-  的能力必须先定义成 `AppActions` 方法。
-- `internal/gui` 根包只做原生界面组合和 `NativeUI` 副作用实现；可复用的主题、格式化、图标、
-  控件、对话框和子窗口放在基础包，订阅源栏、文章列表、文章头部和各类窗口放在功能包。
-- `internal/webendpoint` 只持有 `*action.AppActions`，负责 MyGO 绑定适配：用
-  `mygo.CallerWindow(ctx)`、`mygo.CallerPage(ctx)` 取出调用方窗口/页面后转交 action。
-  它不得直接持有或调用 `service`，不得复制业务逻辑，也不得自行拼装 UI 副作用。
+  的能力必须先定义成 `AppActions` 方法。`action` 与 `core/event` 同样不 import
+  `mygo`/`internal/gui`：`UI` 接口只使用视图无关类型（`WindowHandle` 不透明窗口句柄、
+  `Notification`、`ConfirmationRequest` 等 DTO），`gui.NativeUI` 负责解包句柄并适配各
+  原生窗口的回调结构体。
+- `internal/gui` 根包只做原生界面组合和 `NativeUI` 副作用实现；侧栏、文章列表、文章头部
+  的回调组装集中在根包的 `callbacks.go`。可复用的主题、格式化、图标、控件、对话框和子
+  窗口放在基础包，订阅源栏、文章列表、文章头部和各类窗口放在功能包。
+- `internal/webendpoint` 持有 `*action.AppActions` 和唯一的广播通道 `AppEvent`，负责
+  MyGO 绑定适配：用 `mygo.CallerWindow(ctx)`、`mygo.CallerPage(ctx)` 取出调用方窗口/
+  页面后转交 action。它不得直接持有或调用 `service`，不得复制业务逻辑，也不得自行拼装
+  UI 副作用。
 - 原生功能组件通过回调或只读数据类型接入应用；`settings.Callbacks` 读写偏好。组件不得直接
   访问数据库或实现业务规则。
 - 绑定对象上的导出方法都能被页面调用。首参 `context.Context` 由 MyGO 注入；静态页通过
   `globalThis.mygo.call` 调用时省略上下文，例如 `Feeds.Add(ctx, url)` 对应
   `runtime.call("Feeds.Add", url)`。
 - 参数和返回值必须可 JSON 序列化。可空时间用 `*time.Time`，页面收到 `string | null`。
-- Go 只声明一个广播通道 `app:event`，载荷是 `internal/event.Event`。所有 EID 共用同一
+- Go 只声明一个广播通道 `app:event`，载荷是 `core/event.Event`；通道由
+  `internal/webendpoint` 创建并以 sink 形式注入 `event.Hub`，`core/event` 本身不依赖
+  MyGO。所有 EID 共用同一
   结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`prefs`、`selection`、
   `postSelection`、`post` 或 `command` 中的哪一段，未使用字段为 `null` 或空字符串。
-- 事件由 `internal/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
+- EID 分两类：`sync.*`、`feeds.changed`、`posts.changed`、`selection.changed`、
+  `post.selected` 和 `post.updated` 是领域事件，只由 service 层发布，任何前端都要消费；
+  `appearance.changed`、`prefs.changed` 和 `ui.command` 是视图事件，由桌面壳（action、
+  菜单）发布，移植其他前端时可以忽略。
+- 事件由 `core/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
   `status.Model`，最后广播。不要绕过 Hub 直接调用 `AppEvent.Broadcast`。
 - 主要 EID 有 `state.snapshot`、`sync.started`、`sync.progress`、`sync.finished`、
   `feeds.changed`、`posts.changed`、`appearance.changed`、`prefs.changed`、
@@ -182,7 +202,8 @@ go tool mygo doctor
   阅读区；`post.updated` 携带 `store.PostSummary`，同步单篇文章的已读和星标状态。
 - `prefs.changed` 携带完整 `store.Prefs`，原生设置窗口保存后广播，页面据此同步偏好并在
   `postsPerFeed` 变化时重载文章。
-- macOS 原生菜单的“设置”直接调用 `action.OpenSettings(window)` 打开原生设置窗口；
+- macOS 原生菜单的“设置”直接调用 `action.OpenSettings(action.NewWindowHandle(window))`
+  打开原生设置窗口；
   `add-feed`、`refresh` 仍广播命令字符串给页面，页面在 `reader.js` 的单一 dispatcher 中
   执行动作。Windows/Linux 没有原生菜单栏。
 - 任何会改变订阅或未读状态的服务方法都应调用 Hub 的 `FeedsChanged`；多窗口依赖该事件
@@ -302,10 +323,10 @@ go tool mygo doctor
 - `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
   链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。
 - 频道和文章里的相对链接会按订阅源地址解析为绝对地址。摘要会去掉 HTML、折叠空白并截断。
-- 正文在 `internal/sanitize` 基于 bluemonday 清洗，随后存入数据库。链接和媒体地址会按
+- 正文在 `core/sanitize` 基于 bluemonday 清洗，随后存入数据库。链接和媒体地址会按
   文章地址补全为绝对地址。
 - 损坏 XML 或不是订阅源的页面返回错误，服务层把错误展示给用户。
-- 订阅源图标由 `internal/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon
+- 订阅源图标由 `core/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon
   链接，最后 `/favicon.ico`。只允许位图、http/https、256KB 以内，并通过 bbolt 缓存。
 - `Feeds.Icon` 使用 7 天 TTL 和按订阅源 singleflight；显式图标地址变化时缓存失效。
 
@@ -374,12 +395,12 @@ Go 拼接完成后以主窗口为 `Parent` 打开原生快照预览窗口并关�
 
 ## 常见改动路径
 
-- 新增后端调用：先在 `internal/service` 写业务逻辑（不碰 MyGO），再在
+- 新增后端调用：先在 `core/service` 写业务逻辑（不碰 MyGO），再在
   `internal/action` 增加 `AppActions` 方法；必要时把新的系统交互封装成 `internal/gui`
   方法并实现 `action.UI`。只有 `AppActions` 负责事件广播和 UI 副作用，最后在
   `internal/webendpoint` 的对应绑定对象上增加只做参数/调用方窗口适配并转发到 action 的
   导出方法；在 `reader.js` 的对应交互中调用，处理错误和局部状态。
-- 新增事件：在 `internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，
+- 新增事件：在 `core/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，
   在状态变化处调用；在 `reader.js` 的 dispatcher 加分支。不要新增第二个
   `mygo.NewEvent` 通道。
 - 新增偏好：修改 `store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` 和前端
@@ -393,7 +414,7 @@ Go 拼接完成后以主窗口为 `Parent` 打开原生快照预览窗口并关�
 
 ## 测试
 
-- Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `internal/rss/testdata/`；`store` 覆盖
+- Go：`go test ./...`。`rss` 是表驱动测试，夹具在 `core/rss/testdata/`；`store` 覆盖
   数据库创建、重复拒绝、合并语义、裁剪、全部已读、删除、重开和图标缓存；`service` 用
   httptest 跑添加、刷新、304、自动刷新节流、新增、标记已读、筛选、分页、搜索和图标缓存；
   `event` 覆盖 EID 字段校验、revision 顺序、并发发布和完整状态快照；
@@ -410,6 +431,7 @@ Go 拼接完成后以主窗口为 `Parent` 打开原生快照预览窗口并关�
 ```sh
 go test ./...
 go vet ./...
+(cd core && go test ./... && go vet ./...)
 go tool mygo build
 ```
 
@@ -421,7 +443,8 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
 `.github/workflows/ci.yml`：
 
 - `test` 在推送 `master`/`develop`、推送 `v*` tag 和向这两个分支提 PR 时运行，矩阵为
-  Ubuntu + Windows。步骤依次是 `go test ./...`、
+  Ubuntu + Windows。步骤依次是根 module `go test ./...`、`core` module
+  `go test ./...`（`working-directory: core`）、
   `node --check webview/static/reader.js` 和 `go tool mygo build`。
 - `release-version` 只对 `v*` tag 运行，校验 tag 符合 `vYY.M.N`，且与
   `mygo.json` 的版本号一致。`M` 是 1–12 且不补零，`N` 从 1 开始。
@@ -434,7 +457,7 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
 
 ## 安全
 
-- 订阅源内容不可信。正文必须在 Go 端经过 `internal/sanitize` 的 bluemonday 策略清洗后
+- 订阅源内容不可信。正文必须在 Go 端经过 `core/sanitize` 的 bluemonday 策略清洗后
   入库，并禁用 `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、
   `button` 以及 `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。

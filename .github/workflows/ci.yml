@@ -26,6 +26,10 @@ jobs:
       - name: Go tests
         run: go test ./...
 
+      - name: Core module tests
+        run: go test ./...
+        working-directory: core
+
       - name: Check static reader script
         run: node --check webview/static/reader.js
 

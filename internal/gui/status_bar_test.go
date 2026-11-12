@@ -5,7 +5,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/internal/status"
+	appstatus "github.com/sdttttt/ressu/core/status"
 )
 
 func TestStatusBarVersionOpensAbout(t *testing.T) {

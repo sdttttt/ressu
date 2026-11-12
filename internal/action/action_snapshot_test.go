@@ -2,15 +2,13 @@ package action
 
 import (
 	"bytes"
-	"context"
-	"errors"
 	"image"
 	"image/png"
 	"path/filepath"
 	"testing"
 
-	"github.com/sdttttt/ressu/internal/service"
-	"github.com/sdttttt/ressu/internal/store"
+	"github.com/sdttttt/ressu/core/service"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 func TestStitchSnapshotOpensNativeViewer(t *testing.T) {
@@ -39,7 +37,7 @@ func TestStitchSnapshotOpensNativeViewer(t *testing.T) {
 		},
 	}}
 
-	if err := actions.stitchSnapshot(nil, "文章 标题", tiles); err != nil {
+	if err := actions.stitchSnapshot(WindowHandle{}, "文章 标题", tiles); err != nil {
 		t.Fatal(err)
 	}
 	if len(ui.snapshotData) == 0 || ui.snapshotTitle != "文章 标题" {
@@ -65,28 +63,11 @@ func TestStitchSnapshotRejectsInvalidTiles(t *testing.T) {
 
 	ui := &fakeUI{}
 	actions := New(nil, service.NewPosts(st), service.NewSettings(st), nil, nil, ui)
-	if err := actions.stitchSnapshot(nil, "", nil); err == nil {
-		t.Fatal("stitchSnapshot(nil, \"\", nil) did not fail")
+	if err := actions.stitchSnapshot(WindowHandle{}, "", nil); err == nil {
+		t.Fatal("stitchSnapshot(WindowHandle{}, \"\", nil) did not fail")
 	}
 	if ui.snapshotData != nil {
 		t.Error("invalid captures opened the snapshot viewer")
-	}
-}
-
-func TestStitchSnapshotRequiresCallerWindow(t *testing.T) {
-	st, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := st.Close(); err != nil {
-			t.Error(err)
-		}
-	})
-	actions := New(nil, service.NewPosts(st), service.NewSettings(st), nil, nil, &fakeUI{})
-
-	if err := actions.StitchSnapshot(context.Background(), "", nil); !errors.Is(err, ErrNoSnapshotWindow) {
-		t.Fatalf("StitchSnapshot without caller = %v; want ErrNoSnapshotWindow", err)
 	}
 }
 

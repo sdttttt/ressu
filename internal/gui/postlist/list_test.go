@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/internal/service"
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
+	"github.com/sdttttt/ressu/core/service"
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 )
 
 func TestPostListShowsArticles(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/core/store"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 func TestComponentThemesIgnoreInheritedTextScale(t *testing.T) {

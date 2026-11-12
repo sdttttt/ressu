@@ -7,10 +7,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
 )
 
 func TestAppViewRendersNativeHelpAndFeedShortcuts(t *testing.T) {

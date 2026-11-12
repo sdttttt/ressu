@@ -4,13 +4,22 @@ package webendpoint
 
 import (
 	"context"
+	"errors"
 
 	"github.com/egoist/mygo"
 
+	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/service"
+	"github.com/sdttttt/ressu/core/store"
 	"github.com/sdttttt/ressu/internal/action"
-	"github.com/sdttttt/ressu/internal/service"
-	"github.com/sdttttt/ressu/internal/store"
 )
+
+// AppEvent is the only event channel the Go side broadcasts to pages. The Hub
+// sinks into it so the event package stays free of UI-framework imports.
+var AppEvent = mygo.NewEvent[appevent.Event]("app:event")
+
+// ErrNoSnapshotWindow reports that the snapshot caller window is unavailable.
+var ErrNoSnapshotWindow = errors.New("no snapshot window")
 
 // WebEndpoint is the page binding for subscription actions. It is exposed to
 // the page as Feeds.
@@ -45,12 +54,12 @@ func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (store.Fee
 
 // OpenAddFeed opens the native subscription surface.
 func (w *WebEndpoint) OpenAddFeed(ctx context.Context) {
-	w.actions.OpenAddFeed(mygo.CallerWindow(ctx))
+	w.actions.OpenAddFeed(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // ConfirmRemove asks before deleting a subscription and its posts.
 func (w *WebEndpoint) ConfirmRemove(ctx context.Context, id int64) error {
-	return w.actions.ConfirmRemoveFeed(ctx, mygo.CallerWindow(ctx), id)
+	return w.actions.ConfirmRemoveFeed(ctx, action.NewWindowHandle(mygo.CallerWindow(ctx)), id)
 }
 
 // Refresh fetches one subscription.
@@ -70,12 +79,12 @@ func (w *WebEndpoint) RefreshStale(ctx context.Context) (service.SyncSummary, er
 
 // ImportOPML asks for an OPML file and imports its subscriptions.
 func (w *WebEndpoint) ImportOPML(ctx context.Context) (service.ImportSummary, error) {
-	return w.actions.ImportOPML(ctx, mygo.CallerWindow(ctx))
+	return w.actions.ImportOPML(ctx, action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // ExportOPML asks where to save the subscriptions and writes an OPML file.
 func (w *WebEndpoint) ExportOPML(ctx context.Context) (string, error) {
-	return w.actions.ExportOPML(mygo.CallerWindow(ctx))
+	return w.actions.ExportOPML(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // Posts is the page binding for article actions.
@@ -90,7 +99,7 @@ func NewPosts(actions *action.AppActions) *Posts {
 
 // OpenImage loads an article image into the native viewer.
 func (p *Posts) OpenImage(ctx context.Context, source, alt string) error {
-	return p.actions.OpenImage(ctx, mygo.CallerWindow(ctx), source, alt)
+	return p.actions.OpenImage(ctx, action.NewWindowHandle(mygo.CallerWindow(ctx)), source, alt)
 }
 
 // List returns a page of posts.
@@ -129,12 +138,26 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCap
 }
 
 // StitchSnapshot joins page captures and opens the native preview.
+// The caller is the capture window; the preview parents to the main window
+// and the capture window closes once the preview is open.
 func (p *Posts) StitchSnapshot(
 	ctx context.Context,
 	title string,
 	tiles []service.SnapshotTile,
 ) error {
-	return p.actions.StitchSnapshot(ctx, title, tiles)
+	caller := mygo.CallerWindow(ctx)
+	if caller == nil {
+		return ErrNoSnapshotWindow
+	}
+	parent := caller
+	if owner := caller.Parent(); owner != nil && !owner.IsDestroyed() {
+		parent = owner
+	}
+	err := p.actions.StitchSnapshot(action.NewWindowHandle(parent), title, tiles)
+	if err == nil && parent != caller && !caller.IsDestroyed() {
+		caller.Close()
+	}
+	return err
 }
 
 // SnapshotTarget identifies the article the capture window renders.
@@ -156,7 +179,7 @@ func NewSnapshot(actions *action.AppActions) *Snapshot {
 
 // Open opens the single snapshot capture window over the caller window.
 func (s *Snapshot) Open(ctx context.Context) {
-	s.actions.OpenSnapshotCapture(mygo.CallerWindow(ctx))
+	s.actions.OpenSnapshotCapture(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // Selected returns the article the capture window should render.
@@ -174,7 +197,7 @@ func (s *Snapshot) Selected() SnapshotTarget {
 
 // Cancel closes the snapshot capture window.
 func (s *Snapshot) Cancel(ctx context.Context) {
-	s.actions.CancelSnapshotCapture(mygo.CallerWindow(ctx))
+	s.actions.CancelSnapshotCapture(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // Settings is the page binding for preferences and shell actions.
@@ -214,7 +237,7 @@ func (s *Settings) OpenLink(ctx context.Context, link string) error {
 
 // OpenSettings opens the native settings window.
 func (s *Settings) OpenSettings(ctx context.Context) {
-	s.actions.OpenSettings(mygo.CallerWindow(ctx))
+	s.actions.OpenSettings(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // Status is the page binding for native status state.

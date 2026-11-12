@@ -16,20 +16,20 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/logging"
+	"github.com/sdttttt/ressu/core/media"
+	"github.com/sdttttt/ressu/core/service"
+	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/store"
 	"github.com/sdttttt/ressu/internal/action"
 	"github.com/sdttttt/ressu/internal/buildinfo"
-	appevent "github.com/sdttttt/ressu/internal/event"
 	"github.com/sdttttt/ressu/internal/gui"
 	appabout "github.com/sdttttt/ressu/internal/gui/about"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
-	"github.com/sdttttt/ressu/internal/logging"
-	"github.com/sdttttt/ressu/internal/media"
-	"github.com/sdttttt/ressu/internal/service"
-	appstatus "github.com/sdttttt/ressu/internal/status"
-	"github.com/sdttttt/ressu/internal/store"
 	"github.com/sdttttt/ressu/internal/webendpoint"
 )
 
@@ -98,7 +98,7 @@ func main() {
 	}
 	statusModel.SetListPercent(listPercent)
 	statusModel.SetPostSort(prefs.PostSort)
-	hub := appevent.NewHub(statusModel)
+	hub := appevent.NewHub(statusModel, webendpoint.AppEvent.Broadcast)
 	feeds := service.NewFeedsWithHub(st, hub)
 	hub.FeedsChanged(feeds.List())
 	posts := service.NewPostsWithMediaAndHub(st, articleMedia, hub)
@@ -124,9 +124,9 @@ func main() {
 	})
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
 	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
-	sidebar := appsidebar.New(statusModel, actions.SidebarCallbacks())
-	postList := apppostlist.New(statusModel, actions.PostListCallbacks())
-	postHeader := apppostheader.New(statusModel, actions.PostHeaderCallbacks())
+	sidebar := appsidebar.New(statusModel, gui.SidebarCallbacks(actions))
+	postList := apppostlist.New(statusModel, gui.PostListCallbacks(actions))
+	postHeader := apppostheader.New(statusModel, gui.PostHeaderCallbacks(actions))
 	nativeUI.SetHelp(help)
 	nativeUI.SetSidebar(sidebar)
 	nativeUI.SetPostList(postList)
