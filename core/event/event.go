@@ -4,7 +4,6 @@ package event
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	appstatus "github.com/sdttttt/ressu/core/status"
@@ -42,8 +41,6 @@ const (
 	EventAppearanceChanged EventID = "appearance.changed"
 	// EventPrefsChanged carries the complete preferences.
 	EventPrefsChanged EventID = "prefs.changed"
-	// EventUICommand asks the page to run a native-menu command.
-	EventUICommand EventID = "ui.command"
 )
 
 // PostsChanged says which feed's posts changed, and how many are new.
@@ -84,7 +81,6 @@ type Event struct {
 	// Only EventPostSelected sets it.
 	Direction int                `json:"direction"`
 	Post      *store.PostSummary `json:"post"`
-	Command   string             `json:"command"`
 }
 
 // Validate reports whether the event contains the fields its EID needs.
@@ -126,10 +122,6 @@ func (e Event) Validate() error {
 	case EventPostUpdated:
 		if e.Post == nil || e.Post.GUID == "" {
 			return fmt.Errorf("event %q is missing a post update", e.EID)
-		}
-	case EventUICommand:
-		if strings.TrimSpace(e.Command) == "" {
-			return fmt.Errorf("event %q is missing a command", e.EID)
 		}
 	default:
 		return fmt.Errorf("unknown event id %q", e.EID)

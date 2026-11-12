@@ -52,11 +52,13 @@ func PostListCallbacks(a *action.AppActions) apppostlist.Callbacks {
 // PostHeaderCallbacks wires the native article header to application actions.
 func PostHeaderCallbacks(a *action.AppActions) apppostheader.Callbacks {
 	return apppostheader.Callbacks{
-		ToggleStar:      a.TogglePostStar,
-		MarkRead:        a.MarkPostRead,
-		OpenLink:        a.OpenLink,
-		RequestSnapshot: a.RequestSnapshot,
-		Notify:          a.Notify,
+		ToggleStar: a.TogglePostStar,
+		MarkRead:   a.MarkPostRead,
+		OpenLink:   a.OpenLink,
+		RequestSnapshot: func(parent *mygo.Window) {
+			a.RequestSnapshot(action.NewWindowHandle(parent))
+		},
+		Notify: a.Notify,
 	}
 }
 

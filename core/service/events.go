@@ -16,10 +16,3 @@ type FeedsSnapshot = appstatus.FeedsSnapshot
 
 // PostsChanged says which feed's posts changed, and how many are new.
 type PostsChanged = appevent.PostsChanged
-
-// Commands the menu sends to the page.
-const (
-	CommandAddFeed  = "add-feed"
-	CommandRefresh  = "refresh"
-	CommandSettings = "settings"
-)

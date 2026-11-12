@@ -45,7 +45,7 @@ MyGO 原生 UI 直接渲染，页面只负责阅读区正文，快照采集在�
 
 ```text
 main.go                    应用入口：打开数据库、组装 action/webendpoint、创建窗口、启动刷新
-menu_darwin.go             macOS 系统菜单；设置直接打开原生窗口，其余动作广播 ui.command
+menu_darwin.go             macOS 系统菜单；菜单项直接调用 action（设置、添加订阅、全部刷新）
 menu_other.go              Windows/Linux：SetMenu(nil)，移除原生菜单栏
 core/                    独立 Go module（github.com/sdttttt/ressu/core）：阅读器后端，零 mygo 依赖
   rss/                     HTTP 抓取与 RSS/Atom/JSON Feed 解析
@@ -186,26 +186,24 @@ go tool mygo doctor
   `internal/webendpoint` 创建并以 sink 形式注入 `event.Hub`，`core/event` 本身不依赖
   MyGO。所有 EID 共用同一
   结构；`eid` 决定读取 `sync`、`feeds`、`posts`、`appearance`、`prefs`、`selection`、
-  `postSelection`、`post` 或 `command` 中的哪一段，未使用字段为 `null` 或空字符串。
+  `postSelection` 或 `post` 中的哪一段，未使用字段为 `null` 或空字符串。
 - EID 分两类：`sync.*`、`feeds.changed`、`posts.changed`、`selection.changed`、
   `post.selected` 和 `post.updated` 是领域事件，只由 service 层发布，任何前端都要消费；
-  `appearance.changed`、`prefs.changed` 和 `ui.command` 是视图事件，由桌面壳（action、
+  `appearance.changed` 和 `prefs.changed` 是视图事件，由桌面壳（action、
   菜单）发布，移植其他前端时可以忽略。
 - 事件由 `core/event.Hub` 串行发布：先分配单调递增的 `revision`、更新时间，再更新
   `status.Model`，最后广播。不要绕过 Hub 直接调用 `AppEvent.Broadcast`。
 - 主要 EID 有 `state.snapshot`、`sync.started`、`sync.progress`、`sync.finished`、
   `feeds.changed`、`posts.changed`、`appearance.changed`、`prefs.changed`、
-  `selection.changed`、`post.selected`、`post.updated` 和 `ui.command`。
+  `selection.changed`、`post.selected` 和 `post.updated`。
   `state.snapshot` 在 `Status.PageReady` 时补发完整状态。
 - `feeds.changed` 携带完整订阅列表和总未读数；`posts.changed` 只携带 feed id 和新文章数。
 - `post.selected` 携带选择键和 `store.PostSummary`，同步原生文章列表、原生文章头部和页面
   阅读区；`post.updated` 携带 `store.PostSummary`，同步单篇文章的已读和星标状态。
 - `prefs.changed` 携带完整 `store.Prefs`，原生设置窗口保存后广播，页面据此同步偏好并在
   `postsPerFeed` 变化时重载文章。
-- macOS 原生菜单的“设置”直接调用 `action.OpenSettings(action.NewWindowHandle(window))`
-  打开原生设置窗口；
-  `add-feed`、`refresh` 仍广播命令字符串给页面，页面在 `reader.js` 的单一 dispatcher 中
-  执行动作。Windows/Linux 没有原生菜单栏。
+- macOS 原生菜单项（设置、添加订阅、全部刷新）直接调用对应的 `action` 方法，不再经过
+  页面广播。Windows/Linux 没有原生菜单栏。
 - 任何会改变订阅或未读状态的服务方法都应调用 Hub 的 `FeedsChanged`；多窗口依赖该事件
   保持一致。
 
@@ -231,8 +229,8 @@ go tool mygo doctor
 
 偏好设置不再由页面里的对话框承载，而是 `internal/gui/settings` 的原生窗口：
 
-- 入口是静态页的 `Settings.OpenSettings` 命令或 macOS 菜单直接调用
-  `action.OpenSettings(window)`；`action` 把它转成 `UI.OpenSettings(parent, callbacks)`，
+- 入口是原生订阅源栏的菜单或 macOS 菜单直接调用 `action.OpenSettings(window)`；
+  `action` 把它转成 `UI.OpenSettings(parent, callbacks)`，
   由 `internal/gui/native.go` 打开原生窗口。
 - 窗口是主窗口的子窗口（`Parent`），`StateKey: "settings"`，`UseContentSize` 580x720，
   最小 480x560，内容可滚动；同时只允许存在一个实例。
@@ -356,8 +354,8 @@ go tool mygo doctor
 
 ## 文章快照
 
-快照入口在原生文章头部，动作层只广播 `ui.command: "snapshot"`；阅读页收到命令后调用
-`Snapshot.Open`，由 `internal/gui/snapshotcap` 打开单例的采集子窗口（`Parent` 为主窗口，
+快照入口在原生文章头部，头部回调经 `action.RequestSnapshot(parent)` 直接打开采集窗口；
+`internal/gui/snapshotcap` 打开单例的采集子窗口（`Parent` 为主窗口，
 `StateKey: "snapshot-capture"`，纯页面窗口加载 `/snapshot.html`）。采集页启动时用
 `Snapshot.Selected` 读取当前选中文章，用 `Posts.Get` 取正文后重建固定浅色、760px 居中的
 快照卡片，等待图片解码并按滚动分片调用 `Posts.CaptureSnapshot`（`gui.NativeUI.CapturePage`

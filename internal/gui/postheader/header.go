@@ -2,6 +2,9 @@
 package postheader
 
 import (
+	"sync"
+
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	appstatus "github.com/sdttttt/ressu/core/status"
@@ -25,7 +28,7 @@ type Callbacks struct {
 	ToggleStar      func(feedID int64, guid string) (store.PostSummary, error)
 	MarkRead        func(feedID int64, guid string, read bool) error
 	OpenLink        func(link string) error
-	RequestSnapshot func()
+	RequestSnapshot func(parent *mygo.Window)
 	Notify          func(level, message string)
 }
 
@@ -33,11 +36,21 @@ type Callbacks struct {
 type Header struct {
 	model     *appstatus.Model
 	callbacks Callbacks
+
+	mu     sync.Mutex
+	window *mygo.Window
 }
 
 // New creates the native header above the reading pane.
 func New(model *appstatus.Model, callbacks Callbacks) *Header {
 	return &Header{model: model, callbacks: callbacks}
+}
+
+// Attach connects the header to the main window for child surfaces.
+func (h *Header) Attach(window *mygo.Window) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.window = window
 }
 
 // View draws the selected article header, or nothing when no article is
@@ -167,7 +180,10 @@ func (h *Header) drawActions(c *ui.Context, theme *ui.Theme, post store.PostSumm
 		h.openOriginal(post)
 	})
 	h.iconButton(c, theme, appicon.Camera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
-		h.callbacks.RequestSnapshot()
+		h.mu.Lock()
+		window := h.window
+		h.mu.Unlock()
+		h.callbacks.RequestSnapshot(window)
 	})
 }
 

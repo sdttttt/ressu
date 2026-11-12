@@ -101,6 +101,14 @@ func TestAddRefreshAndRead(t *testing.T) {
 	if !strings.Contains(full.Content, "第一篇 的摘要") {
 		t.Errorf("content = %q", full.Content)
 	}
+	// Opening an article marks it read when the preference is on.
+	feed, err = st.Feed(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Unread != 1 {
+		t.Errorf("unread after open = %d", feed.Unread)
+	}
 
 	// A refresh with the same validators gets a 304 and keeps the posts.
 	summary, err := feeds.RefreshAll(ctx)
@@ -129,19 +137,19 @@ func TestAddRefreshAndRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if feed.Unread != 3 {
+	if feed.Unread != 2 {
 		t.Errorf("unread = %d", feed.Unread)
 	}
 
 	// Marking one read lowers the count.
-	if err := posts.MarkRead(feed.ID, "a", true); err != nil {
+	if err := posts.MarkRead(feed.ID, "b", true); err != nil {
 		t.Fatal(err)
 	}
 	feed, err = st.Feed(feed.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if feed.Unread != 2 {
+	if feed.Unread != 1 {
 		t.Errorf("unread after read = %d", feed.Unread)
 	}
 
@@ -150,7 +158,7 @@ func TestAddRefreshAndRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Total != 2 || page.Unread != 2 {
+	if page.Total != 1 || page.Unread != 1 {
 		t.Errorf("unread page = %+v", page)
 	}
 
@@ -159,7 +167,7 @@ func TestAddRefreshAndRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if changed != 2 {
+	if changed != 1 {
 		t.Errorf("changed = %d", changed)
 	}
 	if st.Unread() != 0 {

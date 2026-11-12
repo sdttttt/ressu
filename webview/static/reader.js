@@ -10,11 +10,9 @@
     revision: 0,
     post: null,
     request: 0,
-    feeds: [],
     prefs: {
       theme: "system",
       fontSize: "medium",
-      markReadOnOpen: true,
     },
   };
 
@@ -246,14 +244,6 @@
     }
   };
 
-  const markRead = async (post) => {
-    try {
-      await runtime.call("Posts.MarkRead", post.feedId, post.guid, true);
-    } catch (error) {
-      notifyError("标记已读失败", error);
-    }
-  };
-
   const samePost = (first, second) =>
     first.feedId === second.feedId && first.guid === second.guid;
 
@@ -267,7 +257,7 @@
    * immediately and slides while its body still loads, so quick keyboard
    * runs keep animating instead of waiting on `Posts.Get`.
    */
-  const openPost = (selection, direction, markReadOnOpen) => {
+  const openPost = (selection, direction) => {
     const requestId = ++state.request;
     const covered = topLayer();
 
@@ -288,17 +278,16 @@
     }
 
     const entering = createLayer(selection, direction > 0 ? "enter" : "cover-down", swap);
-    void loadIntoLayer(entering, requestId, markReadOnOpen);
+    void loadIntoLayer(entering, requestId);
   };
 
-  const loadIntoLayer = async (layer, requestId, markReadOnOpen) => {
+  const loadIntoLayer = async (layer, requestId) => {
     try {
       const post = await runtime.call("Posts.Get", layer.selection.feedId, layer.selection.guid);
       if (requestId !== state.request) return;
       if (!stack.layers.includes(layer)) return;
       layer.body.innerHTML = post.content || post.summary;
       state.post = post;
-      if (markReadOnOpen && !post.read) await markRead(post);
     } catch (error) {
       if (requestId !== state.request) return;
       restoreCovered(layer);
@@ -341,7 +330,7 @@
   const toggleRead = () => {
     const post = state.post;
     if (!post) return;
-    runtime.call("Posts.MarkRead", post.feedId, post.guid, !post.read).catch((error) => {
+    runtime.call("Posts.ToggleRead", post.feedId, post.guid).catch((error) => {
       notifyError("更新阅读状态失败", error);
     });
   };
@@ -410,21 +399,13 @@
     void openLink(href);
   };
 
-  const replaceFeeds = (snapshot) => {
-    if (snapshot) state.feeds = snapshot.feeds;
-  };
-
   const handleEvent = (event) => {
     if (event.revision <= state.revision) return;
     state.revision = event.revision;
 
     switch (event.eid) {
       case "state.snapshot":
-        replaceFeeds(event.feeds);
         if (event.appearance) applyAppearance(event.appearance);
-        break;
-      case "feeds.changed":
-        replaceFeeds(event.feeds);
         break;
       case "appearance.changed":
         applyAppearance(event.appearance);
@@ -437,46 +418,8 @@
         break;
       case "post.selected":
         if (event.postSelection) {
-          openPost(event.postSelection, event.direction || 0, state.prefs.markReadOnOpen);
+          openPost(event.postSelection, event.direction || 0);
         }
-        break;
-      case "post.updated":
-        if (
-          state.post &&
-          event.post &&
-          state.post.feedId === event.post.feedId &&
-          state.post.guid === event.post.guid
-        ) {
-          Object.assign(state.post, event.post);
-        }
-        break;
-      case "ui.command":
-        handleCommand(event.command);
-        break;
-    }
-  };
-
-  const handleCommand = (command) => {
-    switch (command) {
-      case "add-feed":
-        runtime.call("Feeds.OpenAddFeed").catch((error) => {
-          notifyError("无法打开添加订阅源", error);
-        });
-        break;
-      case "refresh":
-        runtime.call("Feeds.RefreshAll").catch((error) => {
-          notifyError("刷新订阅源失败", error);
-        });
-        break;
-      case "snapshot":
-        runtime.call("Snapshot.Open").catch((error) => {
-          notifyError("无法生成快照", error);
-        });
-        break;
-      case "settings":
-        runtime.call("Settings.OpenSettings").catch((error) => {
-          notifyError("无法打开设置", error);
-        });
         break;
     }
   };

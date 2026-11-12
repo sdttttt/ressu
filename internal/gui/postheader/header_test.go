@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	appstatus "github.com/sdttttt/ressu/core/status"
@@ -36,7 +37,7 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 			starred <- false
 			return store.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
 		},
-		RequestSnapshot: func() {
+		RequestSnapshot: func(*mygo.Window) {
 			snapshotRequested <- true
 		},
 	})

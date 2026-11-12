@@ -149,7 +149,7 @@ func main() {
 	app.WhenReady(func() {
 		prefs := st.Prefs()
 		nativeUI.ApplyTheme(prefs.Theme)
-		setMenu(hub, actions)
+		setMenu(actions)
 		about := newAboutInfo(app.Version())
 		if _, err := openWindow(statusModel, pageReady, func() {
 			if !prefs.RefreshOnStart {
@@ -232,6 +232,7 @@ func openWindow(
 	confirmations.Attach(win)
 	help.Attach(win)
 	sidebar.Attach(win)
+	postHeader.Attach(win)
 	sidebar.SetInvalidate(func() {
 		if !win.IsDestroyed() {
 			win.Invalidate()

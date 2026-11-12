@@ -92,11 +92,6 @@ func (h *Hub) PostUpdated(post store.PostSummary) {
 	h.Publish(Event{EID: EventPostUpdated, Post: &post})
 }
 
-// UICommand asks every page to run a native-menu command.
-func (h *Hub) UICommand(command string) {
-	h.Publish(Event{EID: EventUICommand, Command: command})
-}
-
 // SelectedPost reports the article a reader surface selected last.
 func (h *Hub) SelectedPost() (appstatus.PostSelection, store.PostSummary) {
 	h.mu.Lock()

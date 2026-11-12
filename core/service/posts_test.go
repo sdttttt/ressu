@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	appevent "github.com/sdttttt/ressu/core/event"
 	"github.com/sdttttt/ressu/core/media"
+	appstatus "github.com/sdttttt/ressu/core/status"
 	"github.com/sdttttt/ressu/core/store"
 )
 
@@ -137,5 +139,120 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 	if !strings.Contains(webviewPost.Content, "https://cdn.example.com/photo.png") ||
 		strings.Contains(webviewPost.Content, mediaURL) {
 		t.Fatalf("Webview content = %s", webviewPost.Content)
+	}
+}
+
+func addPostForReadTest(t *testing.T, st *store.Store) store.Feed {
+	t.Helper()
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.MergePosts(feed.ID, []store.Post{{
+		GUID:        "a",
+		Title:       "第一篇",
+		PublishedAt: time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	return feed
+}
+
+func TestGetMarksUnreadReadWhenPreferenceOn(t *testing.T) {
+	st := openStore(t)
+	feed := addPostForReadTest(t, st)
+
+	var updated []store.PostSummary
+	hub := appevent.NewHub(appstatus.New("test"), func(e appevent.Event) error {
+		if e.EID == appevent.EventPostUpdated {
+			updated = append(updated, *e.Post)
+		}
+		return nil
+	})
+	posts := NewPostsWithHub(st, hub)
+
+	post, err := posts.Get(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !post.Read {
+		t.Error("Get should mark the unread post read")
+	}
+	stored, err := st.Post(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stored.Read {
+		t.Error("the stored post should be read")
+	}
+	if st.Unread() != 0 {
+		t.Errorf("store unread = %d", st.Unread())
+	}
+	if len(updated) != 1 || !updated[0].Read {
+		t.Errorf("post.updated events = %+v", updated)
+	}
+
+	// Reading an already read post publishes nothing.
+	if _, err := posts.Get(feed.ID, "a"); err != nil {
+		t.Fatal(err)
+	}
+	if len(updated) != 1 {
+		t.Errorf("post.updated events after re-read = %+v", updated)
+	}
+}
+
+func TestGetKeepsUnreadWhenPreferenceOff(t *testing.T) {
+	st := openStore(t)
+	feed := addPostForReadTest(t, st)
+	prefs := st.Prefs()
+	prefs.MarkReadOnOpen = false
+	if err := st.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+
+	post, err := NewPosts(st).Get(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if post.Read {
+		t.Error("Get should keep the post unread when the preference is off")
+	}
+	if st.Unread() != 1 {
+		t.Errorf("store unread = %d", st.Unread())
+	}
+}
+
+func TestToggleReadFlipsState(t *testing.T) {
+	st := openStore(t)
+	feed := addPostForReadTest(t, st)
+
+	var updated []store.PostSummary
+	hub := appevent.NewHub(appstatus.New("test"), func(e appevent.Event) error {
+		if e.EID == appevent.EventPostUpdated {
+			updated = append(updated, *e.Post)
+		}
+		return nil
+	})
+	posts := NewPostsWithHub(st, hub)
+
+	summary, err := posts.ToggleRead(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !summary.Read {
+		t.Error("ToggleRead should mark the post read")
+	}
+	summary, err = posts.ToggleRead(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Read {
+		t.Error("ToggleRead should mark the post unread again")
+	}
+	if st.Unread() != 1 {
+		t.Errorf("store unread = %d", st.Unread())
+	}
+	if len(updated) != 2 || updated[0].Read == updated[1].Read {
+		t.Errorf("post.updated events = %+v", updated)
 	}
 }

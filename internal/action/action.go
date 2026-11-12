@@ -261,6 +261,11 @@ func (a *AppActions) MarkPostRead(feedID int64, guid string, read bool) error {
 	return a.posts.MarkRead(feedID, guid, read)
 }
 
+// TogglePostRead flips one post's read state.
+func (a *AppActions) TogglePostRead(feedID int64, guid string) (store.PostSummary, error) {
+	return a.posts.ToggleRead(feedID, guid)
+}
+
 // MarkAllPostsRead marks every post of a feed as read.
 func (a *AppActions) MarkAllPostsRead(feedID int64) (int, error) {
 	return a.posts.MarkAllRead(feedID)
@@ -466,9 +471,9 @@ func (a *AppActions) Notify(level, message string) {
 	a.ui.ShowNotification(Notification{Type: level, Title: message})
 }
 
-// RequestSnapshot asks the reading page to generate the selected post snapshot.
-func (a *AppActions) RequestSnapshot() {
-	a.hub.UICommand("snapshot")
+// RequestSnapshot opens the capture window for the selected post snapshot.
+func (a *AppActions) RequestSnapshot(parent WindowHandle) {
+	a.ui.OpenSnapshotCapture(parent)
 }
 
 // SetSidebarCollapsed stores the native sidebar's collapsed preference.

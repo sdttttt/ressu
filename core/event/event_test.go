@@ -35,7 +35,6 @@ func TestEventValidate(t *testing.T) {
 		{"selection", Event{EID: EventSelectionChanged, Selection: selection}, true},
 		{"post selected", Event{EID: EventPostSelected, PostSelection: postSelection, Post: post}, true},
 		{"post updated", Event{EID: EventPostUpdated, Post: post}, true},
-		{"command", Event{EID: EventUICommand, Command: "refresh"}, true},
 		{"missing sync", Event{EID: EventSyncStarted}, false},
 		{"missing feeds", Event{EID: EventFeedsChanged}, false},
 		{"missing posts", Event{EID: EventPostsChanged}, false},
@@ -47,7 +46,6 @@ func TestEventValidate(t *testing.T) {
 		{"post selected without summary", Event{EID: EventPostSelected, PostSelection: postSelection}, false},
 		{"missing post updated", Event{EID: EventPostUpdated}, false},
 		{"empty post update", Event{EID: EventPostUpdated, Post: &store.PostSummary{FeedID: 1}}, false},
-		{"empty command", Event{EID: EventUICommand}, false},
 		{"unknown", Event{EID: EventID("unknown")}, false},
 	}
 
@@ -152,7 +150,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		t.Errorf("snapshot selection = %+v", snapshot.Selection)
 	}
 	if snapshot.Posts != nil || snapshot.Prefs != nil || snapshot.PostSelection != nil ||
-		snapshot.Post != nil || snapshot.Command != "" {
+		snapshot.Post != nil {
 		t.Errorf("snapshot carried transient state: %+v", snapshot)
 	}
 

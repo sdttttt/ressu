@@ -3,26 +3,32 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"log/slog"
+
 	"github.com/egoist/mygo"
 
-	appevent "github.com/sdttttt/ressu/core/event"
 	"github.com/sdttttt/ressu/core/service"
 	"github.com/sdttttt/ressu/internal/action"
 )
 
 // setMenu installs the system menu bar, which macOS owns.
-func setMenu(hub *appevent.Hub, actions *action.AppActions) {
-	mygo.App.SetMenu(newMenu(hub, actions))
+func setMenu(actions *action.AppActions) {
+	mygo.App.SetMenu(newMenu(actions))
 }
 
-// newMenu builds the menu bar. Its items send commands to the page, which owns
-// the dialogs they open, except Settings, which opens natively.
-func newMenu(hub *appevent.Hub, actions *action.AppActions) *mygo.Menu {
+// newMenu builds the menu bar. Its items call application actions directly.
+func newMenu(actions *action.AppActions) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Role: mygo.RoleAppMenu},
 		{Label: "File", Submenu: []*mygo.MenuItem{
-			{Label: "Add Feed…", Accelerator: "CmdOrCtrl+N", Click: sendCommand(hub, service.CommandAddFeed)},
-			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: sendCommand(hub, service.CommandRefresh)},
+			{Label: "Add Feed…", Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, window *mygo.Window) {
+				actions.OpenAddFeed(action.NewWindowHandle(window))
+			}},
+			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
+				refreshAllWithNotice(actions)
+			}},
 			mygo.Separator(),
 			{Label: "Settings…", Accelerator: "CmdOrCtrl+,", Click: func(_ *mygo.MenuItem, window *mygo.Window) {
 				actions.OpenSettings(action.NewWindowHandle(window))
@@ -36,8 +42,13 @@ func newMenu(hub *appevent.Hub, actions *action.AppActions) *mygo.Menu {
 	})
 }
 
-func sendCommand(hub *appevent.Hub, name string) func(*mygo.MenuItem, *mygo.Window) {
-	return func(*mygo.MenuItem, *mygo.Window) {
-		hub.UICommand(name)
+func refreshAllWithNotice(actions *action.AppActions) {
+	if _, err := actions.RefreshAll(context.Background()); err != nil {
+		if errors.Is(err, service.ErrRefreshing) {
+			return
+		}
+		slog.Warn("menu refresh all failed",
+			"operation", "app.menu.refreshAll", "error", err)
+		actions.Notify("error", "刷新订阅源失败")
 	}
 }

@@ -73,6 +73,11 @@ func NewPosts(st *store.Store) *Posts {
 	return NewPostsWithMediaAndHub(st, nil, nil)
 }
 
+// NewPostsWithHub serves posts and publishes changes through hub.
+func NewPostsWithHub(st *store.Store, hub *appevent.Hub) *Posts {
+	return NewPostsWithMediaAndHub(st, nil, hub)
+}
+
 // NewPostsWithMedia serves posts whose remote images are rewritten to local
 // protocol URLs before they cross the binding boundary.
 func NewPostsWithMedia(st *store.Store, mediaCache *media.Cache) *Posts {
@@ -187,13 +192,28 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 	return PostPage{Posts: matches[offset:end], Total: total, Unread: unread}, nil
 }
 
-// Get returns one post with its body.
+// Get returns one post with its body. When the preferences ask for it, an
+// unread post is marked read before it is returned; a failed update does not
+// block reading.
 func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 	post, err := p.store.Post(feedID, guid)
 	if err != nil {
 		slog.Warn("post lookup failed",
 			"operation", "posts.get", "feedId", feedID, "error", err)
 		return store.Post{}, err
+	}
+	if !post.Read && p.store.Prefs().MarkReadOnOpen {
+		updated, err := p.store.UpdatePost(feedID, guid, func(post *store.Post) { post.Read = true })
+		if err != nil {
+			slog.Warn("post read state update failed",
+				"operation", "posts.get", "feedId", feedID, "error", err)
+		} else {
+			post = updated
+			if p.hub != nil {
+				p.hub.PostUpdated(post.ToSummary())
+			}
+			p.broadcastFeeds()
+		}
 	}
 	if p.media != nil && p.store.Prefs().RemoteResources == store.ResourceAccessGoProxy {
 		post.Content = p.media.RewriteHTML(post.Content, post.URL)
@@ -215,6 +235,21 @@ func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
 	}
 	p.broadcastFeeds()
 	return nil
+}
+
+// ToggleRead flips one post's read state and returns its new summary.
+func (p *Posts) ToggleRead(feedID int64, guid string) (store.PostSummary, error) {
+	post, err := p.store.UpdatePost(feedID, guid, func(post *store.Post) { post.Read = !post.Read })
+	if err != nil {
+		slog.Warn("post read state update failed",
+			"operation", "posts.toggleRead", "feedId", feedID, "error", err)
+		return store.PostSummary{}, err
+	}
+	if p.hub != nil {
+		p.hub.PostUpdated(post.ToSummary())
+	}
+	p.broadcastFeeds()
+	return post.ToSummary(), nil
 }
 
 // MarkAllRead marks every post of a feed read, and returns how many changed.

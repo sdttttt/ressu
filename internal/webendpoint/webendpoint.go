@@ -112,14 +112,14 @@ func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 	return p.actions.GetPost(feedID, guid)
 }
 
-// MarkRead changes one post's read state.
-func (p *Posts) MarkRead(feedID int64, guid string, read bool) error {
-	return p.actions.MarkPostRead(feedID, guid, read)
-}
-
 // MarkAllRead marks every post of a feed as read.
 func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 	return p.actions.MarkAllPostsRead(feedID)
+}
+
+// ToggleRead flips one post's read state.
+func (p *Posts) ToggleRead(feedID int64, guid string) (store.PostSummary, error) {
+	return p.actions.TogglePostRead(feedID, guid)
 }
 
 // ToggleStar changes one post's starred state.
@@ -175,11 +175,6 @@ type Snapshot struct {
 // NewSnapshot creates the snapshot endpoint.
 func NewSnapshot(actions *action.AppActions) *Snapshot {
 	return &Snapshot{actions: actions}
-}
-
-// Open opens the single snapshot capture window over the caller window.
-func (s *Snapshot) Open(ctx context.Context) {
-	s.actions.OpenSnapshotCapture(action.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
 // Selected returns the article the capture window should render.
