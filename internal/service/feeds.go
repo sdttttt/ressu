@@ -17,7 +17,7 @@ import (
 )
 
 // maxConcurrent bounds how many feeds are fetched at once.
-const maxConcurrent = 4
+const maxConcurrent = 2
 
 // autoRefreshInterval is how long a successful fetch suppresses automatic
 // refreshes of the same feed.
