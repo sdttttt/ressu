@@ -183,7 +183,9 @@ func TestSelectionPillSlidesBetweenFeeds(t *testing.T) {
 	if !ok {
 		t.Fatal("the second feed row is missing")
 	}
-	if pillEnd.Y-rowEnd.Y != offset {
-		t.Errorf("the pill did not slide to the second row: offset %v, want %v", pillEnd.Y-rowEnd.Y, offset)
+	// Text baselines snap fractionally per row, so compare within a small
+	// tolerance rather than exactly.
+	if offsetEnd := pillEnd.Y - rowEnd.Y; offsetEnd < offset-0.01 || offsetEnd > offset+0.01 {
+		t.Errorf("the pill did not slide to the second row: offset %v, want %v", offsetEnd, offset)
 	}
 }
