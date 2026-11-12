@@ -395,9 +395,7 @@ func (s *Sidebar) drawFeed(
 				})
 			}
 		})
-	if !selected && row.Hovered() {
-		row.Background(theme.SurfaceHover)
-	}
+
 	if row.Clicked() {
 		target := feed.ID
 		if selected {
