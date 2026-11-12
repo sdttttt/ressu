@@ -104,6 +104,17 @@ func (h *Hub) UICommand(command string) {
 	h.Publish(Event{EID: EventUICommand, Command: command})
 }
 
+// SelectedPost reports the article a reader surface selected last.
+func (h *Hub) SelectedPost() (appstatus.PostSelection, store.PostSummary) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.model == nil {
+		return appstatus.PostSelection{}, store.PostSummary{}
+	}
+	snapshot := h.model.Snapshot()
+	return snapshot.CurrentPost, snapshot.SelectedPost
+}
+
 // PublishSnapshot broadcasts the complete current state.
 func (h *Hub) PublishSnapshot() {
 	if h == nil || h.model == nil {

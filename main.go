@@ -133,6 +133,7 @@ func main() {
 	mygo.Bind(
 		webendpoint.NewPosts(actions),
 		webendpoint.NewSettings(actions),
+		webendpoint.NewSnapshot(actions),
 		webendpoint.NewStatus(actions),
 	)
 	foreground := service.NewForegroundRefresher(func(ctx context.Context) {

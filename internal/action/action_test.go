@@ -21,24 +21,26 @@ import (
 )
 
 type fakeUI struct {
-	openFiles         []string
-	savePath          string
-	openedPath        string
-	externalLink      string
-	windowTitle       string
-	windowLink        string
-	theme             string
-	snapshotData      []byte
-	snapshotTitle     string
-	snapshotParent    *mygo.Window
-	snapshotCallbacks appviewer.SnapshotCallbacks
-	notifications     []appdialog.Notification
-	addFeedOpened     bool
-	helpShown         bool
-	feedDelta         int
-	confirmation      *appdialog.ConfirmationRequest
-	confirmed         bool
-	confirmCalled     bool
+	openFiles             []string
+	savePath              string
+	openedPath            string
+	externalLink          string
+	windowTitle           string
+	windowLink            string
+	theme                 string
+	snapshotData          []byte
+	snapshotTitle         string
+	snapshotParent        *mygo.Window
+	snapshotCallbacks     appviewer.SnapshotCallbacks
+	snapshotCaptureParent *mygo.Window
+	snapshotCaptureClosed *mygo.Window
+	notifications         []appdialog.Notification
+	addFeedOpened         bool
+	helpShown             bool
+	feedDelta             int
+	confirmation          *appdialog.ConfirmationRequest
+	confirmed             bool
+	confirmCalled         bool
 }
 
 func (f *fakeUI) SelectOPMLImport(*mygo.Window) ([]string, error) {
@@ -89,6 +91,14 @@ func (f *fakeUI) OpenSettings(*mygo.Window, appsettings.Callbacks) {}
 
 func (f *fakeUI) OpenAddFeed(*mygo.Window, appaddfeed.Callbacks) {
 	f.addFeedOpened = true
+}
+
+func (f *fakeUI) OpenSnapshotCapture(parent *mygo.Window) {
+	f.snapshotCaptureParent = parent
+}
+
+func (f *fakeUI) CloseSnapshotCapture(window *mygo.Window) {
+	f.snapshotCaptureClosed = window
 }
 
 func (f *fakeUI) Confirm(

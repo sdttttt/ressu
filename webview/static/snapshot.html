@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文章快照</title>
+    <link rel="stylesheet" href="./snapshot.css" />
+  </head>
+  <body>
+    <main id="stage" aria-live="polite"></main>
+    <div id="veil" hidden></div>
+    <div id="hud" class="hud" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <p id="hud-text">正在准备文章快照…</p>
+    </div>
+    <section id="error" class="error" hidden>
+      <p id="error-text"></p>
+      <button id="error-close" type="button">关闭</button>
+    </section>
+    <script src="./snapshot.js"></script>
+  </body>
+</html>

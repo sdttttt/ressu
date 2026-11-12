@@ -2,7 +2,7 @@
 
 Ressu 是一个免费的桌面 RSS 阅读器。Go 进程负责抓取、解析、持久化和搜索订阅数据，再通过
 MyGO 绑定把数据交给内嵌静态阅读页；订阅源侧栏、文章列表、文章头部和底部状态栏由
-MyGO 原生 UI 直接渲染，页面只负责阅读区正文和快照分片采集。面向用户的中文介绍在
+MyGO 原生 UI 直接渲染，页面只负责阅读区正文，快照采集在独立的子窗口页面里进行。面向用户的中文介绍在
 `README.md`。
 
 本文件是仓库级开发说明。开始改动前先读它；子目录里的 `AGENTS.md` 若存在，优先遵守更具体
@@ -76,6 +76,7 @@ internal/
     postlist/              原生文章列表：筛选、搜索、排序、分页和键盘选择
     settings/              原生设置窗口
     sidebar/               原生订阅源栏：搜索、选择、刷新、未读和右键菜单
+    snapshotcap/           快照采集子窗口：单例页面窗口，固定卡片宽度截图
     theme/                 原生主题、字号、文章色板和状态栏高度契约
     viewer/                图片和快照预览窗口
     widget/                可复用原生控件
@@ -83,8 +84,11 @@ internal/
     assets/                原生窗口内嵌图片资源
 webview/static/            无构建前端源码，由 MyGO 开发时直供并在打包时内嵌
   index.html               阅读页入口，lang="zh-CN"
-  reader.css               正文排版、主题 token、空态和快照进度样式
+  reader.css               正文排版、主题 token、空态和文章滑动动画样式
   reader.js                绑定调用、事件应用、快捷键、链接和图片拦截
+  snapshot.html            快照采集页入口，独立子窗口加载
+  snapshot.css             快照卡片固定浅色样式和采集进度样式
+  snapshot.js              快照卡片重建、滚动分片采集和拼接调用
 resources/icon.png         MyGO 打包图标
 mygo.json                  MyGO CLI 配置
 .github/workflows/ci.yml   测试、打包与 GitHub Release
@@ -315,8 +319,8 @@ go tool mygo doctor
   `revision` 不递增的事件。
 - 文章请求用递增 requestId 防止快速切换时旧响应覆盖新文章。`post.selected` 获取正文后，
   若偏好要求则自动标记已读。
-- 订阅源栏、文章列表、文章头部、帮助 Modal 和偏好设置都是原生 UI；页面只渲染正文、
-  空态、加载态和快照采集进度。
+- 订阅源栏、文章列表、文章头部、帮助 Modal 和偏好设置都是原生 UI；阅读页只渲染正文、
+  空态和加载态；快照采集进度由采集子窗口自己的页面渲染。
 - 页面直接处理的阅读快捷键只有 `Space`、`m` 和 `v`；原生窗口已处理 `j`、`k`、`n`、`p`、
   `Enter`、`s`、`h`、`l` 和 `?`。WebView 持有焦点时，`reader.js` 只拦截 `h`、`l` 和 `?`，
   并通过 `Status` 绑定转交给原生 GUI，避免物理按键丢失；不要在页面重复实现导航或帮助 UI。
@@ -331,11 +335,16 @@ go tool mygo doctor
 
 ## 文章快照
 
-快照入口在原生文章头部，动作层只广播 `ui.command: "snapshot"`；静态阅读页负责重建固定浅色
-的离屏快照卡片、等待图片解码并按滚动分片调用 `Posts.CaptureSnapshot`。随后页面调用
-`Posts.StitchSnapshot`，Go 拼接完成后打开原生快照预览窗口，由原生界面提供保存和复制。
-不能用当前窗口截图代替长文快照。卡片宽度取 `min(760, WebView 宽度)`，太窄时向用户提示；
-生成中阻断交互，文章切换时取消旧请求。保存成功后保留预览。
+快照入口在原生文章头部，动作层只广播 `ui.command: "snapshot"`；阅读页收到命令后调用
+`Snapshot.Open`，由 `internal/gui/snapshotcap` 打开单例的采集子窗口（`Parent` 为主窗口，
+`StateKey: "snapshot-capture"`，纯页面窗口加载 `/snapshot.html`）。采集页启动时用
+`Snapshot.Selected` 读取当前选中文章，用 `Posts.Get` 取正文后重建固定浅色、760px 居中的
+快照卡片，等待图片解码并按滚动分片调用 `Posts.CaptureSnapshot`（`gui.NativeUI.CapturePage`
+对纯页面窗口回退为 `Window.CapturePage`）。随后页面调用 `Posts.StitchSnapshot`，
+Go 拼接完成后以主窗口为 `Parent` 打开原生快照预览窗口并关闭采集窗口，由原生界面提供保存和
+复制。不能用当前窗口截图代替长文快照。拼接按几何信息里的 `cardLeft` 从整窗截图中裁出居中
+卡片，卡片宽度不再受阅读区分栏宽度影响；生成中阻断交互，Esc 或错误页的关闭按钮经
+`Snapshot.Cancel` 关窗。保存成功后保留预览。
 
 ## 代码约定
 
@@ -429,9 +438,9 @@ Go 集成测试会绑定本地 httptest 端口。在受限沙箱中需要允许�
   入库，并禁用 `script`、`style`、`iframe`、`object`、`embed`、`form`、`input`、
   `button` 以及 `style`、`srcset`、`onerror`、`onload`。它还会把链接改为绝对地址并加
   `target="_blank" rel="noopener noreferrer"`，图片改为懒加载。
-- `reader.js` 的正文容器和快照卡片里的 `innerHTML` 只允许接收数据库中已清洗的正文；
-  不要把抓取原文直接传给前端。嵌入 WebView 的快照必须通过 `Page.WebView().CapturePage()`
-  捕获。
+- `reader.js` 的正文容器和 `snapshot.js` 的快照卡片里的 `innerHTML` 只允许接收数据库中
+  已清洗的正文；不要把抓取原文直接传给前端。嵌入 WebView 的快照必须通过
+  `Page.WebView().CapturePage()` 或纯页面窗口的 `Window.CapturePage()` 捕获。
 - 打开外链前必须经过 `externalHref()`，只允许 `http:`/`https:`。`action.OpenLink`
   再校验一次绝对 `http`/`https` 地址，并按偏好调用系统浏览器或创建应用内窗口；不要把原始
   href 直接交给 shell 或窗口。

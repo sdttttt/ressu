@@ -33,18 +33,21 @@ func tilePNG(t *testing.T, viewportWidth, height, startRow int) []byte {
 
 func TestCaptureSnapshotValidatesRequest(t *testing.T) {
 	requests := []SnapshotCaptureRequest{
-		{Offset: -1, Geometry: geometry(100, 100, 80, 200)},
-		{Offset: 200, Geometry: geometry(100, 100, 80, 200)},
-		{Offset: 0, Geometry: geometry(0, 100, 80, 200)},
-		{Offset: 0, Geometry: geometry(100, 0, 80, 200)},
-		{Offset: 0, Geometry: geometry(100, 100, 0, 200)},
-		{Offset: 0, Geometry: geometry(100, 100, 101, 200)},
+		{Offset: -1, Geometry: geometry(100, 100, 80, 0, 200)},
+		{Offset: 200, Geometry: geometry(100, 100, 80, 0, 200)},
+		{Offset: 0, Geometry: geometry(0, 100, 80, 0, 200)},
+		{Offset: 0, Geometry: geometry(100, 0, 80, 0, 200)},
+		{Offset: 0, Geometry: geometry(100, 100, 0, 0, 200)},
+		{Offset: 0, Geometry: geometry(100, 100, 101, 0, 200)},
+		{Offset: 0, Geometry: geometry(100, 100, 80, 30, 200)},
+		{Offset: 0, Geometry: geometry(100, 100, 80, -1, 200)},
 		{
 			Offset: 0,
 			Geometry: geometry(
 				100,
 				10,
 				80,
+				0,
 				maxSnapshotTiles*10+100,
 			),
 		},
@@ -56,17 +59,18 @@ func TestCaptureSnapshotValidatesRequest(t *testing.T) {
 	}
 }
 
-func geometry(viewportWidth, viewportHeight, cardWidth, contentHeight int) SnapshotGeometry {
+func geometry(viewportWidth, viewportHeight, cardWidth, cardLeft, contentHeight int) SnapshotGeometry {
 	return SnapshotGeometry{
 		ViewportWidth:  viewportWidth,
 		ViewportHeight: viewportHeight,
 		CardWidth:      cardWidth,
+		CardLeft:       cardLeft,
 		ContentHeight:  contentHeight,
 	}
 }
 
 func TestStitchSnapshot(t *testing.T) {
-	sharedGeometry := geometry(8, 2, 8, 4)
+	sharedGeometry := geometry(8, 2, 8, 0, 4)
 	tiles := []SnapshotTile{
 		{Offset: 0, PNG: tilePNG(t, 16, 4, 0), Geometry: sharedGeometry},
 		{Offset: 2, PNG: tilePNG(t, 16, 4, 4), Geometry: sharedGeometry},
@@ -96,8 +100,48 @@ func TestStitchSnapshot(t *testing.T) {
 	}
 }
 
+// TestStitchSnapshotCropsCenteredCard covers the capture window layout: the
+// card is centered inside a wider viewport, so stitching must crop starting
+// at the card's physical offset, not at the capture's left edge.
+func TestStitchSnapshotCropsCenteredCard(t *testing.T) {
+	geometry := geometry(8, 2, 4, 2, 2)
+
+	// One full-viewport capture at scale 2 (16x4 pixels): the card occupies
+	// pixels [4, 12) and is red; the margins on both sides stay black.
+	img := image.NewNRGBA(image.Rect(0, 0, 16, 4))
+	for x := 4; x < 12; x++ {
+		for y := range 4 {
+			img.Set(x, y, color.NRGBA{R: 7, A: 255})
+		}
+	}
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, img); err != nil {
+		t.Fatal(err)
+	}
+
+	encoded, err := stitchSnapshot([]SnapshotTile{
+		{Offset: 0, PNG: buffer.Bytes(), Geometry: geometry},
+	}, geometry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := png.Decode(bytes.NewReader(encoded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Bounds().Dx() != 8 || decoded.Bounds().Dy() != 4 {
+		t.Fatalf("bounds = %v, want 8x4", decoded.Bounds())
+	}
+	for _, point := range []image.Point{{X: 0, Y: 0}, {X: 7, Y: 3}} {
+		red, _, _, alpha := decoded.At(point.X, point.Y).RGBA()
+		if red != 7*0x101 || alpha != 0xffff {
+			t.Errorf("pixel %v red = %d, want red 7", point, red)
+		}
+	}
+}
+
 func TestStitchSnapshotRejectsBadTiles(t *testing.T) {
-	sharedGeometry := geometry(8, 2, 8, 3)
+	sharedGeometry := geometry(8, 2, 8, 0, 3)
 	valid := tilePNG(t, 16, 4, 0)
 	cases := []struct {
 		name  string
@@ -114,11 +158,14 @@ func TestStitchSnapshotRejectsBadTiles(t *testing.T) {
 		}},
 		{"changed geometry", []SnapshotTile{
 			{Offset: 0, PNG: valid, Geometry: sharedGeometry},
-			{Offset: 1, PNG: valid, Geometry: geometry(8, 3, 8, 3)},
+			{Offset: 1, PNG: valid, Geometry: geometry(8, 3, 8, 0, 3)},
 		}},
 		{"changed size", []SnapshotTile{
 			{Offset: 0, PNG: valid, Geometry: sharedGeometry},
 			{Offset: 1, PNG: tilePNG(t, 15, 4, 2), Geometry: sharedGeometry},
+		}},
+		{"card outside capture", []SnapshotTile{
+			{Offset: 0, PNG: tilePNG(t, 3, 4, 0), Geometry: geometry(4, 2, 2, 2, 3)},
 		}},
 	}
 	for _, testCase := range cases {

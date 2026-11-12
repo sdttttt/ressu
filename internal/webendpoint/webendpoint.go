@@ -137,6 +137,46 @@ func (p *Posts) StitchSnapshot(
 	return p.actions.StitchSnapshot(ctx, title, tiles)
 }
 
+// SnapshotTarget identifies the article the capture window renders.
+type SnapshotTarget struct {
+	FeedID    int64  `json:"feedId"`
+	GUID      string `json:"guid"`
+	FeedTitle string `json:"feedTitle"`
+}
+
+// Snapshot is the page binding of the snapshot capture window.
+type Snapshot struct {
+	actions *action.AppActions
+}
+
+// NewSnapshot creates the snapshot endpoint.
+func NewSnapshot(actions *action.AppActions) *Snapshot {
+	return &Snapshot{actions: actions}
+}
+
+// Open opens the single snapshot capture window over the caller window.
+func (s *Snapshot) Open(ctx context.Context) {
+	s.actions.OpenSnapshotCapture(mygo.CallerWindow(ctx))
+}
+
+// Selected returns the article the capture window should render.
+func (s *Snapshot) Selected() SnapshotTarget {
+	selection, feedTitle, ok := s.actions.SnapshotTarget()
+	if !ok {
+		return SnapshotTarget{}
+	}
+	return SnapshotTarget{
+		FeedID:    selection.FeedID,
+		GUID:      selection.GUID,
+		FeedTitle: feedTitle,
+	}
+}
+
+// Cancel closes the snapshot capture window.
+func (s *Snapshot) Cancel(ctx context.Context) {
+	s.actions.CancelSnapshotCapture(mygo.CallerWindow(ctx))
+}
+
 // Settings is the page binding for preferences and shell actions.
 type Settings struct {
 	actions *action.AppActions

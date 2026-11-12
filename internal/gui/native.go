@@ -11,6 +11,7 @@ import (
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsettings "github.com/sdttttt/ressu/internal/gui/settings"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
+	appsnapshotcap "github.com/sdttttt/ressu/internal/gui/snapshotcap"
 	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/store"
 )
@@ -142,6 +143,16 @@ func (NativeUI) OpenSnapshotViewer(
 // OpenSettings opens the native settings window.
 func (NativeUI) OpenSettings(parent *mygo.Window, callbacks appsettings.Callbacks) {
 	appsettings.Open(parent, callbacks)
+}
+
+// OpenSnapshotCapture opens the single snapshot capture window.
+func (NativeUI) OpenSnapshotCapture(parent *mygo.Window) {
+	appsnapshotcap.Open(parent)
+}
+
+// CloseSnapshotCapture closes the snapshot capture window.
+func (NativeUI) CloseSnapshotCapture(window *mygo.Window) {
+	appsnapshotcap.Close(window)
 }
 
 // OpenAddFeed opens the native add-feed window.

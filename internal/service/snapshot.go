@@ -30,7 +30,10 @@ type SnapshotGeometry struct {
 	ViewportWidth  int `json:"viewportWidth"`
 	ViewportHeight int `json:"viewportHeight"`
 	CardWidth      int `json:"cardWidth"`
-	ContentHeight  int `json:"contentHeight"`
+	// CardLeft is the card's horizontal offset inside the viewport; the
+	// capture window centers the card, so cropping starts past the margin.
+	CardLeft      int `json:"cardLeft"`
+	ContentHeight int `json:"contentHeight"`
 }
 
 // SnapshotTile is one capture and the scroll position it was taken at.
@@ -56,7 +59,7 @@ func (g SnapshotGeometry) validate() error {
 	if g.ViewportWidth <= 0 || g.ViewportHeight <= 0 || g.CardWidth <= 0 || g.ContentHeight <= 0 {
 		return fmt.Errorf("invalid snapshot page size")
 	}
-	if g.CardWidth > g.ViewportWidth {
+	if g.CardLeft < 0 || g.CardLeft+g.CardWidth > g.ViewportWidth {
 		return fmt.Errorf("the snapshot card does not fit the window")
 	}
 	return nil
@@ -132,6 +135,7 @@ func stitchSnapshot(tiles []SnapshotTile, geometry SnapshotGeometry) ([]byte, er
 	var (
 		scale          float64
 		width, height  int
+		cardLeft       int
 		coveredBottom  int
 		previousOffset int64
 		previousWidth  int
@@ -166,6 +170,7 @@ func stitchSnapshot(tiles []SnapshotTile, geometry SnapshotGeometry) ([]byte, er
 			scale = float64(config.Width) / float64(geometry.ViewportWidth)
 			width = roundInt(float64(geometry.CardWidth) * scale)
 			height = roundInt(float64(geometry.ContentHeight) * scale)
+			cardLeft = roundInt(float64(geometry.CardLeft) * scale)
 			if width <= 0 || height <= 0 || width > maxSnapshotSide || height > maxSnapshotSide {
 				return nil, fmt.Errorf("the article is too large for one snapshot")
 			}
@@ -173,7 +178,7 @@ func stitchSnapshot(tiles []SnapshotTile, geometry SnapshotGeometry) ([]byte, er
 			return nil, fmt.Errorf("the window changed while taking the snapshot")
 		}
 		previousWidth, previousHeight = config.Width, config.Height
-		if config.Width < width {
+		if cardLeft+width > config.Width {
 			return nil, fmt.Errorf("the snapshot card does not fit the capture")
 		}
 	}
@@ -197,7 +202,7 @@ func stitchSnapshot(tiles []SnapshotTile, geometry SnapshotGeometry) ([]byte, er
 		if sourceY > coveredBottom {
 			return nil, fmt.Errorf("the snapshot captures leave a gap")
 		}
-		draw.Draw(output, image.Rect(0, sourceY, width, sourceY+drawHeight), capture, image.Pt(0, 0), draw.Src)
+		draw.Draw(output, image.Rect(0, sourceY, width, sourceY+drawHeight), capture, image.Pt(cardLeft, 0), draw.Src)
 		coveredBottom = max(coveredBottom, sourceY+drawHeight)
 	}
 	if coveredBottom < height {

@@ -24,6 +24,7 @@ import (
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	appviewer "github.com/sdttttt/ressu/internal/gui/viewer"
 	"github.com/sdttttt/ressu/internal/service"
+	appstatus "github.com/sdttttt/ressu/internal/status"
 	"github.com/sdttttt/ressu/internal/store"
 )
 
@@ -50,6 +51,8 @@ type UI interface {
 	) error
 	OpenAddFeed(parent *mygo.Window, callbacks appaddfeed.Callbacks)
 	OpenSettings(parent *mygo.Window, callbacks appsettings.Callbacks)
+	OpenSnapshotCapture(parent *mygo.Window)
+	CloseSnapshotCapture(window *mygo.Window)
 	Confirm(ctx context.Context, parent *mygo.Window, request appdialog.ConfirmationRequest) (bool, error)
 	CapturePage(context.Context) ([]byte, error)
 	WriteImage([]byte) error
@@ -238,16 +241,53 @@ func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.Snapsh
 }
 
 // StitchSnapshot joins page captures and opens the native snapshot preview.
+// The caller is the capture window; the preview parents to the main window
+// and the capture window closes once the preview is open.
 func (a *AppActions) StitchSnapshot(
 	ctx context.Context,
 	title string,
 	tiles []service.SnapshotTile,
 ) error {
-	parent := mygo.CallerWindow(ctx)
-	if parent == nil {
+	caller := mygo.CallerWindow(ctx)
+	if caller == nil {
 		return ErrNoSnapshotWindow
 	}
-	return a.stitchSnapshot(parent, title, tiles)
+	parent := caller
+	if owner := caller.Parent(); owner != nil && !owner.IsDestroyed() {
+		parent = owner
+	}
+	err := a.stitchSnapshot(parent, title, tiles)
+	if err == nil && parent != caller && !caller.IsDestroyed() {
+		caller.Close()
+	}
+	return err
+}
+
+// OpenSnapshotCapture opens the single snapshot capture window.
+func (a *AppActions) OpenSnapshotCapture(parent *mygo.Window) {
+	a.ui.OpenSnapshotCapture(parent)
+}
+
+// CancelSnapshotCapture closes the snapshot capture window.
+func (a *AppActions) CancelSnapshotCapture(window *mygo.Window) {
+	a.ui.CloseSnapshotCapture(window)
+}
+
+// SnapshotTarget identifies the article selected for snapshot capture. The
+// boolean is false when no article is selected.
+func (a *AppActions) SnapshotTarget() (appstatus.PostSelection, string, bool) {
+	selection, _ := a.hub.SelectedPost()
+	if selection.GUID == "" {
+		return appstatus.PostSelection{}, "", false
+	}
+	title := ""
+	for _, feed := range a.feeds.List().Feeds {
+		if feed.ID == selection.FeedID {
+			title = feed.Title
+			break
+		}
+	}
+	return selection, title, true
 }
 
 // stitchSnapshot joins page captures and opens the native preview for parent.
