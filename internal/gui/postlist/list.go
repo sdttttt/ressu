@@ -24,7 +24,7 @@ const (
 	paneSaveDelay  = 500 * time.Millisecond
 	textSize       = 13
 	searchDelay    = 300 * time.Millisecond
-	pageSize       = 100
+	pageSize       = 20
 	timeRefresh    = 30 * time.Second
 	reloadDebounce = 300 * time.Millisecond
 )
