@@ -2,6 +2,9 @@
 
 一个随处可见，普通，没有什么特点的传统 **RSS 阅读器**。
 
+<img width="2175" height="1227" alt="图片" src="https://github.com/user-attachments/assets/8f3e30ee-479e-4d92-af2b-73a2d748e1e7" />
+
+
 <img width="1229" height="823" alt="图片" src="https://github.com/user-attachments/assets/6df8c8af-92b2-4ee6-82ea-ddd085944aa4" />
 
 ## Feature
@@ -9,6 +12,7 @@
 - 支持添加（RSS / Atom / JSON Feed）, 从 OPML 批量导入订阅源，或在设置里导出
 - 无后台，无通知，无定时拉取。只有应用回到前台时，会自动触发抓取；最近 5 分钟已抓取过的
   订阅源会跳过，手动刷新不受限制
+- 可以对文章进行快照，方便与群友分享
 - 跟随系统/浅色/深色主题
 - 支持快捷键，按下`?`可查看
 - 基于 GPU & Webview 的混合渲染，只有文章本身为Webview渲染，其他视觉组件均采用了MyGO的NativeUI
