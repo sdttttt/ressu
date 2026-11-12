@@ -87,6 +87,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	hub.PostSelected(
 		appstatus.PostSelection{FeedID: 1, GUID: "first"},
 		store.PostSummary{FeedID: 1, GUID: "first", Title: "First", Read: false},
+		1,
 	)
 	hub.PostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Read: true, Starred: true})
 	hub.PostsChanged(PostsChanged{FeedID: 1, New: 2})
@@ -114,7 +115,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 
 	postSelectionEvent := emitted[2]
 	if postSelectionEvent.EID != EventPostSelected || postSelectionEvent.PostSelection == nil ||
-		postSelectionEvent.PostSelection.GUID != "first" ||
+		postSelectionEvent.PostSelection.GUID != "first" || postSelectionEvent.Direction != 1 ||
 		postSelectionEvent.Post == nil || postSelectionEvent.Post.Title != "First" {
 		t.Fatalf("post selection event = %+v", postSelectionEvent)
 	}

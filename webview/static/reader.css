@@ -123,9 +123,35 @@ body {
 }
 
 #article {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.article-layer {
+  position: absolute;
+  inset: 0;
   box-sizing: border-box;
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
+  background: var(--background);
+  pointer-events: none;
+}
+
+.article-layer:last-child {
+  pointer-events: auto;
+}
+
+.article-layer[data-kind="exit-up"],
+.article-layer[data-kind="cover-down"] {
+  z-index: 10;
+}
+
+.article-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding-top: 0.25rem;
 }
 
 .post-body {

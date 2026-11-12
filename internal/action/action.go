@@ -529,9 +529,11 @@ func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
 	a.status.SelectFeed(ctx, feedID)
 }
 
-// SelectPost broadcasts the article selected by the native list.
-func (a *AppActions) SelectPost(post store.PostSummary) {
-	a.status.SelectPost(context.Background(), post)
+// SelectPost broadcasts the article selected by the native list. The
+// direction tells surfaces how the new post relates to the previous
+// selection in the list: 1 later, -1 earlier, 0 unknown.
+func (a *AppActions) SelectPost(post store.PostSummary, direction int) {
+	a.status.SelectPost(context.Background(), post, direction)
 }
 
 // AddAndSelectFeed subscribes to a feed and broadcasts its selection.

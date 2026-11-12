@@ -82,9 +82,16 @@ func (h *Hub) SelectionChanged(feedID int64) {
 	})
 }
 
-// PostSelected broadcasts the article selected by a reader surface.
-func (h *Hub) PostSelected(selection appstatus.PostSelection, post store.PostSummary) {
-	h.Publish(Event{EID: EventPostSelected, PostSelection: &selection, Post: &post})
+// PostSelected broadcasts the article selected by a reader surface. The
+// direction tells surfaces how the new post relates to the previous
+// selection in the list: 1 later, -1 earlier, 0 unknown.
+func (h *Hub) PostSelected(selection appstatus.PostSelection, post store.PostSummary, direction int) {
+	h.Publish(Event{
+		EID:           EventPostSelected,
+		PostSelection: &selection,
+		Direction:     direction,
+		Post:          &post,
+	})
 }
 
 // PostUpdated broadcasts an article's read or starred state.

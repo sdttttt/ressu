@@ -74,8 +74,12 @@ type Event struct {
 	Prefs         *store.Prefs             `json:"prefs"`
 	Selection     *Selection               `json:"selection"`
 	PostSelection *PostSelection           `json:"postSelection"`
-	Post          *store.PostSummary       `json:"post"`
-	Command       string                   `json:"command"`
+	// Direction is where the selected post sits relative to the previously
+	// selected one in the loaded list: 1 later, -1 earlier, 0 unknown.
+	// Only EventPostSelected sets it.
+	Direction int                `json:"direction"`
+	Post      *store.PostSummary `json:"post"`
+	Command   string             `json:"command"`
 }
 
 // Validate reports whether the event contains the fields its EID needs.

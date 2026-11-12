@@ -25,11 +25,14 @@ func (s *Status) SelectFeed(_ context.Context, feedID int64) {
 	s.hub.SelectionChanged(feedID)
 }
 
-// SelectPost records the article a reader selected.
-func (s *Status) SelectPost(_ context.Context, post store.PostSummary) {
+// SelectPost records the article a reader selected. The direction tells
+// surfaces how the new post relates to the previous selection in the list:
+// 1 later, -1 earlier, 0 unknown.
+func (s *Status) SelectPost(_ context.Context, post store.PostSummary, direction int) {
 	s.hub.PostSelected(
 		appstatus.PostSelection{FeedID: post.FeedID, GUID: post.GUID},
 		post,
+		direction,
 	)
 }
 

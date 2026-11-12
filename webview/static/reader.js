@@ -25,9 +25,7 @@
 
   const elements = {
     article: document.getElementById("article"),
-    body: document.getElementById("post-body"),
     empty: document.getElementById("empty"),
-    loading: document.getElementById("loading"),
     snapshot: document.getElementById("snapshot-backdrop"),
     snapshotProgress: document.getElementById("snapshot-progress"),
     snapshotProgressText: document.getElementById("snapshot-progress-text"),
@@ -36,6 +34,12 @@
   const maxSnapshotWidth = 760;
   const minSnapshotWidth = 320;
   const maxSnapshotTiles = 32;
+
+  // Article swap choreography: 300ms slides, leftover layers dropped after
+  // twice the slide plus one frame of slack for engines that never report
+  // the slide as finished.
+  const slideMs = 300;
+  const swapCleanupMs = 700;
 
   const messageOf = (error) => {
     if (error instanceof Error && error.message) return error.message;
@@ -84,18 +88,154 @@
     applyAppearanceFromPrefs();
   };
 
-  const showPane = (pane) => {
-    elements.empty.hidden = pane !== "empty";
-    elements.loading.hidden = pane !== "loading";
-    elements.article.hidden = pane !== "article";
+  // Article stack: each open article is one absolutely positioned layer so
+  // the covered article keeps its DOM node (and its scroll position) while
+  // the incoming one slides over or beneath it.
+  const stack = {
+    layers: [],
+    swap: 0,
+  };
+
+  /** How an article layer behaves while the stack swaps. Entering rises
+   * 24px while fading in; cover-down sheets down over the old article from
+   * above; exit-up slides up and away, fully opaque, revealing the incoming
+   * one beneath. */
+  const kindFrames = {
+    enter: [
+      { opacity: "0", transform: "translateY(24px)" },
+      { opacity: "1", transform: "translateY(0)" },
+    ],
+    "cover-down": [
+      { opacity: "1", transform: "translateY(-100%)" },
+      { opacity: "1", transform: "translateY(0)" },
+    ],
+    "exit-up": [
+      { opacity: "1", transform: "translateY(0)" },
+      { opacity: "1", transform: "translateY(-100%)" },
+    ],
+  };
+
+  /** Static first-frame pins for kinds whose animation starts on a later
+   * frame, so the pre-animation frame cannot flash the end state. */
+  const kindPins = {
+    enter: { opacity: "0", transform: "translateY(24px)" },
+    "cover-down": { opacity: "1", transform: "translateY(-100%)" },
+    "exit-up": { opacity: "1", transform: "translateY(0)" },
+  };
+
+  const syncPane = () => {
+    const hasLayers = stack.layers.length > 0;
+    elements.empty.hidden = hasLayers;
+    elements.article.hidden = !hasLayers;
+  };
+
+  const topLayer = () => stack.layers[stack.layers.length - 1] || null;
+
+  /** Stop any in-flight slide and clear the pinned first frame. */
+  const stopLayerAnimation = (layer) => {
+    if (layer.animation) {
+      layer.animation.cancel();
+      layer.animation = null;
+    }
+    layer.element.style.opacity = "";
+    layer.element.style.transform = "";
+  };
+
+  /**
+   * Play a layer's slide for its current kind. The animation starts only
+   * once the element is attached: an `animate` call made while the element
+   * is still detached leaves the animation permanently pending (no start
+   * time, `finished` never resolves) in both WebKit and Chromium, which
+   * used to leave the pane black. Deferring to the next frame fixes that;
+   * the first keyframe is pinned inline until then. An inline
+   * `animation: none` keeps CSS animations from compositing over the slide
+   * — WebKit lets a concurrent CSS animation win, which would cancel it.
+   * Only the Web Animations API drives these slides; there is no CSS
+   * animation on layers.
+   */
+  const playKind = (layer, kind, onFinished) => {
+    stopLayerAnimation(layer);
+    if (kind === "base") return;
+    layer.element.style.animation = "none";
+    layer.element.style.opacity = kindPins[kind].opacity;
+    layer.element.style.transform = kindPins[kind].transform;
+    requestAnimationFrame(() => {
+      if (!layer.element.isConnected) return;
+      layer.element.style.opacity = "";
+      layer.element.style.transform = "";
+      const animation = layer.element.animate(kindFrames[kind], {
+        duration: slideMs,
+        easing: "ease-out",
+      });
+      layer.animation = animation;
+      // A rejected `finished` means the layer was replaced mid-flight; the
+      // newer swap rebuilds the stack anyway. Consume the rejection even
+      // without a callback so a cancelled slide never surfaces as an
+      // unhandled rejection.
+      if (onFinished) {
+        animation.finished.then(onFinished, () => {});
+      } else {
+        animation.finished.catch(() => {});
+      }
+    });
+  };
+
+  const setLayerKind = (layer, kind, onFinished) => {
+    layer.element.dataset.kind = kind;
+    playKind(layer, kind, onFinished);
+  };
+
+  /** Drop a leftover layer of one swap once its slide has finished. */
+  const retireLayer = (layer, swap) => {
+    if (!layer.retired || layer.swap !== swap) return;
+    stopLayerAnimation(layer);
+    const index = stack.layers.indexOf(layer);
+    if (index >= 0) stack.layers.splice(index, 1);
+    layer.element.remove();
+    syncPane();
+  };
+
+  /** Backstop for engines that never report the slide as finished. */
+  const scheduleRetire = (layer, swap) => {
+    setTimeout(() => retireLayer(layer, swap), swapCleanupMs);
+  };
+
+  const createSkeleton = () => {
+    const holder = document.createElement("div");
+    holder.className = "article-skeleton";
+    for (const className of ["loading-line", "loading-line short", "loading-line shorter"]) {
+      const line = document.createElement("span");
+      line.className = className;
+      holder.append(line);
+    }
+    return holder;
+  };
+
+  const createLayer = (selection, kind, swap) => {
+    const element = document.createElement("div");
+    element.className = "article-layer";
+    const body = document.createElement("div");
+    body.className = "post-body";
+    body.append(createSkeleton());
+    element.append(body);
+    const layer = { selection, element, body, swap, retired: false, animation: null };
+    elements.article.append(element);
+    stack.layers.push(layer);
+    syncPane();
+    setLayerKind(layer, kind);
+    return layer;
   };
 
   const clearPost = () => {
     state.post = null;
     state.request += 1;
     cancelSnapshot();
-    elements.body.replaceChildren();
-    showPane("empty");
+    for (const layer of stack.layers) {
+      stopLayerAnimation(layer);
+      layer.element.remove();
+    }
+    stack.layers = [];
+    syncPane();
   };
 
   const formatDateTime = (value) => {
@@ -141,35 +281,82 @@
     }
   };
 
-  const showPost = (post) => {
-    state.post = post;
-    elements.body.innerHTML = post.content || post.summary;
-    showPane("article");
-    elements.article.scrollTop = 0;
-  };
+  const samePost = (first, second) =>
+    first.feedId === second.feedId && first.guid === second.guid;
 
-  const loadPost = async (selection, markReadOnOpen) => {
+  /**
+   * Swap the open article. The direction tells how the new selection sits
+   * relative to the previous one in the native list: 1 later (the current
+   * article slides up and away, revealing the incoming one beneath), -1
+   * earlier (the new article sheets down over the current one), 0 unknown
+   * (the first article fades in; a covered article with a missing
+   * direction falls back to being covered). The entering layer mounts
+   * immediately and slides while its body still loads, so quick keyboard
+   * runs keep animating instead of waiting on `Posts.Get`.
+   */
+  const openPost = (selection, direction, markReadOnOpen) => {
     cancelSnapshot();
     const requestId = ++state.request;
-    showPane("loading");
+    const covered = topLayer();
+
+    if (covered && samePost(covered.selection, selection)) {
+      return;
+    }
+
+    const swap = ++stack.swap;
+    if (covered) {
+      covered.retired = true;
+      covered.swap = swap;
+      if (direction > 0) {
+        setLayerKind(covered, "exit-up", () => retireLayer(covered, swap));
+      } else {
+        setLayerKind(covered, "base");
+      }
+      scheduleRetire(covered, swap);
+    }
+
+    const entering = createLayer(selection, direction > 0 ? "enter" : "cover-down", swap);
+    void loadIntoLayer(entering, requestId, markReadOnOpen);
+  };
+
+  const loadIntoLayer = async (layer, requestId, markReadOnOpen) => {
     try {
-      const post = await runtime.call("Posts.Get", selection.feedId, selection.guid);
+      const post = await runtime.call("Posts.Get", layer.selection.feedId, layer.selection.guid);
       if (requestId !== state.request) return;
-      showPost(post);
+      if (!stack.layers.includes(layer)) return;
+      layer.body.innerHTML = post.content || post.summary;
+      state.post = post;
       if (markReadOnOpen && !post.read) await markRead(post);
     } catch (error) {
       if (requestId !== state.request) return;
-      showPane(state.post ? "article" : "empty");
+      restoreCovered(layer);
       notifyError("无法打开文章", error);
     }
   };
 
+  /** Loading failed: drop the entering layer and bring the covered one back. */
+  const restoreCovered = (layer) => {
+    const index = stack.layers.indexOf(layer);
+    if (index >= 0) stack.layers.splice(index, 1);
+    stopLayerAnimation(layer);
+    layer.element.remove();
+    const previous = topLayer();
+    if (previous && previous.retired) {
+      previous.retired = false;
+      previous.swap = 0;
+      delete previous.element.dataset.kind;
+      stopLayerAnimation(previous);
+    }
+    syncPane();
+  };
+
   const scrollOrNext = () => {
-    if (!state.post) {
+    const layer = topLayer();
+    if (!layer || !state.post) {
       runtime.call("Posts.SelectNeighbour", 1, false).catch(() => {});
       return;
     }
-    const box = elements.article;
+    const box = layer.element;
     if (box.clientHeight === 0) return;
     const bottomGap = box.scrollHeight - box.clientHeight - box.scrollTop;
     if (bottomGap > 1) {
@@ -435,7 +622,7 @@
     if (!target) return;
 
     const image = target.closest("img");
-    if (image && elements.body.contains(image)) {
+    if (image && elements.article.contains(image)) {
       event.preventDefault();
       const source = image.currentSrc || image.getAttribute("src") || "";
       const alt = image.getAttribute("alt") || "";
@@ -446,7 +633,7 @@
     }
 
     const anchor = target.closest("a");
-    if (!anchor || !elements.body.contains(anchor)) return;
+    if (!anchor || !elements.article.contains(anchor)) return;
     const href = anchor.getAttribute("href");
     if (!href) return;
     event.preventDefault();
@@ -480,7 +667,7 @@
         break;
       case "post.selected":
         if (event.postSelection) {
-          void loadPost(event.postSelection, state.prefs.markReadOnOpen);
+          openPost(event.postSelection, event.direction || 0, state.prefs.markReadOnOpen);
         }
         break;
       case "post.updated":
@@ -541,7 +728,7 @@
     };
     mediaQuery.addEventListener("change", onSystemThemeChange);
     window.addEventListener("keydown", handleKey);
-    elements.body.addEventListener("click", handleBodyClick);
+    elements.article.addEventListener("click", handleBodyClick);
     window.addEventListener("unload", () => {
       unsubscribe();
       stopThemeWatch();

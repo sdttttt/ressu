@@ -17,6 +17,7 @@ func TestPostListShowsArticles(t *testing.T) {
 	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 1})
 	loaded := make(chan struct{}, 1)
 	selected := make(chan store.PostSummary, 1)
+	directions := make(chan int, 1)
 	now := time.Now()
 	postList := New(model, Callbacks{
 		List: func(query service.PostQuery) (service.PostPage, error) {
@@ -40,7 +41,8 @@ func TestPostListShowsArticles(t *testing.T) {
 				Unread: 1,
 			}, nil
 		},
-		Select: func(post store.PostSummary) {
+		Select: func(post store.PostSummary, direction int) {
+			directions <- direction
 			selected <- post
 		},
 	})
@@ -80,6 +82,9 @@ func TestPostListShowsArticles(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("clicking an article did not select it")
 	}
+	if direction := <-directions; direction != 0 {
+		t.Errorf("click selection direction = %d, want 0", direction)
+	}
 }
 
 func TestPostListNavigationShortcuts(t *testing.T) {
@@ -88,6 +93,7 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 2})
 	loaded := make(chan struct{}, 1)
 	selected := make(chan store.PostSummary, 8)
+	directions := make(chan int, 8)
 	starred := make(chan string, 1)
 	postList := New(model, Callbacks{
 		List: func(service.PostQuery) (service.PostPage, error) {
@@ -102,9 +108,10 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 				Unread: 2,
 			}, nil
 		},
-		Select: func(post store.PostSummary) {
+		Select: func(post store.PostSummary, direction int) {
 			selection := appstatus.PostSelection{FeedID: post.FeedID, GUID: post.GUID}
 			model.SetCurrentPost(selection, post)
+			directions <- direction
 			selected <- post
 		},
 		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {
@@ -122,7 +129,7 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	}
 	tester.Frame()
 
-	expectSelection := func(guid string) {
+	expectSelection := func(guid string, wantDirection int) {
 		t.Helper()
 		select {
 		case post := <-selected:
@@ -132,16 +139,24 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 		case <-time.After(time.Second):
 			t.Fatalf("pressing a shortcut did not select %q", guid)
 		}
+		select {
+		case direction := <-directions:
+			if direction != wantDirection {
+				t.Errorf("selection direction = %d, want %d", direction, wantDirection)
+			}
+		case <-time.After(time.Second):
+			t.Fatalf("selection of %q did not report a direction", guid)
+		}
 	}
 
 	tester.Key(0, ui.KeyJ)
-	expectSelection("first")
+	expectSelection("first", 0)
 	tester.Key(0, ui.KeyJ)
-	expectSelection("second")
+	expectSelection("second", 1)
 	tester.Key(0, ui.KeyN)
-	expectSelection("third")
+	expectSelection("third", 1)
 	tester.Key(0, ui.KeyK)
-	expectSelection("second")
+	expectSelection("second", -1)
 
 	tester.Key(0, ui.KeyS)
 	select {
@@ -171,7 +186,7 @@ func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 				Unread: 1,
 			}, nil
 		},
-		Select: func(store.PostSummary) {
+		Select: func(store.PostSummary, int) {
 			selected <- struct{}{}
 		},
 		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {
@@ -344,5 +359,33 @@ func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 	want := float32(28 * 1.3)
 	if button.Bounds.W < want-0.1 || button.Bounds.W > want+0.1 {
 		t.Errorf("search button width = %v, want %v at large text", button.Bounds.W, want)
+	}
+}
+
+func TestSelectionDirection(t *testing.T) {
+	posts := []store.PostSummary{
+		{FeedID: 1, GUID: "first"},
+		{FeedID: 1, GUID: "second"},
+		{FeedID: 1, GUID: "third"},
+	}
+	tests := []struct {
+		name    string
+		current appstatus.PostSelection
+		post    store.PostSummary
+		want    int
+	}{
+		{"no current selection", appstatus.PostSelection{}, posts[0], 0},
+		{"later post", appstatus.PostSelection{FeedID: 1, GUID: "first"}, posts[2], 1},
+		{"earlier post", appstatus.PostSelection{FeedID: 1, GUID: "third"}, posts[0], -1},
+		{"same post", appstatus.PostSelection{FeedID: 1, GUID: "second"}, posts[1], 0},
+		{"current missing from list", appstatus.PostSelection{FeedID: 1, GUID: "gone"}, posts[0], 0},
+		{"post missing from list", appstatus.PostSelection{FeedID: 1, GUID: "first"}, store.PostSummary{FeedID: 1, GUID: "gone"}, 0},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := selectionDirection(posts, test.current, test.post); got != test.want {
+				t.Errorf("selection direction = %d, want %d", got, test.want)
+			}
+		})
 	}
 }

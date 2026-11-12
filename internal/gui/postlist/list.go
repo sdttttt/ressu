@@ -31,7 +31,7 @@ const (
 // Callbacks connects the native article list to application actions.
 type Callbacks struct {
 	List           func(service.PostQuery) (service.PostPage, error)
-	Select         func(post store.PostSummary)
+	Select         func(post store.PostSummary, direction int)
 	ToggleStar     func(feedID int64, guid string) (store.PostSummary, error)
 	MarkAllRead    func(feedID int64)
 	SetPanePercent func(percent float32)
@@ -365,7 +365,11 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snaps
 		}
 	})
 	if row.Clicked() {
-		l.runAsync(func() { l.callbacks.Select(post) })
+		selected := post
+		l.runAsync(func() {
+			snapshot := l.model.Snapshot()
+			l.callbacks.Select(selected, l.directionFor(snapshot.CurrentPost, selected))
+		})
 	}
 	l.scrollPending(rowKey, row)
 }
@@ -401,6 +405,43 @@ func (l *List) installShortcuts(c *ui.Context) {
 	c.OnWindowShortcut(0, ui.KeyP, func() { l.SelectNeighbour(-1, true) })
 	c.OnWindowShortcut(0, ui.KeyEnter, l.activateSelection)
 	c.OnWindowShortcut(0, ui.KeyS, l.toggleSelectedStar)
+}
+
+// directionFor reports where post sits relative to the current selection in
+// the loaded list: 1 later, -1 earlier, 0 unknown.
+func (l *List) directionFor(current appstatus.PostSelection, post store.PostSummary) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return selectionDirection(l.posts, current, post)
+}
+
+// selectionDirection compares the selected post against the current
+// selection in the loaded list: 1 when the post sits later in the list, -1
+// when earlier, and 0 when there is no current article to compare or either
+// post is missing from the loaded page.
+func selectionDirection(posts []store.PostSummary, current appstatus.PostSelection, post store.PostSummary) int {
+	if current.GUID == "" {
+		return 0
+	}
+	currentIndex, postIndex := -1, -1
+	for index, item := range posts {
+		if item.FeedID == current.FeedID && item.GUID == current.GUID {
+			currentIndex = index
+		}
+		if item.FeedID == post.FeedID && item.GUID == post.GUID {
+			postIndex = index
+		}
+	}
+	switch {
+	case currentIndex < 0 || postIndex < 0:
+		return 0
+	case postIndex > currentIndex:
+		return 1
+	case postIndex < currentIndex:
+		return -1
+	default:
+		return 0
+	}
 }
 
 // SelectNeighbour selects and reveals the next loaded article without wrapping.
@@ -446,7 +487,15 @@ func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 	l.mu.Unlock()
 
 	if callbacks.Select != nil {
-		callbacks.Select(post)
+		selectDirection := 0
+		if current >= 0 {
+			if index > current {
+				selectDirection = 1
+			} else {
+				selectDirection = -1
+			}
+		}
+		callbacks.Select(post, selectDirection)
 	}
 	if invalidate != nil {
 		invalidate()
@@ -471,7 +520,7 @@ func (l *List) activateSelection() {
 	callbacks := l.callbacks
 	l.mu.Unlock()
 	if callbacks.Select != nil {
-		callbacks.Select(post)
+		callbacks.Select(post, 0)
 	}
 }
 
