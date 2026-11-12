@@ -31,12 +31,30 @@ const SortOrderDescending SortOrder = "desc"
 // SortOrderAscending returns older posts before newer posts.
 const SortOrderAscending SortOrder = "asc"
 
+// SortField determines which time Posts.List orders posts by: publication
+// time or the time Ressu fetched the post.
+type SortField string
+
+// SortFieldPublished orders posts by publication time, the default.
+const SortFieldPublished SortField = "published"
+
+// SortFieldFetched orders posts by the time Ressu fetched the post.
+const SortFieldFetched SortField = "fetched"
+
 // normalize turns unknown and empty orders into the default order.
 func (o SortOrder) normalize() SortOrder {
 	if o == SortOrderAscending {
 		return SortOrderAscending
 	}
 	return SortOrderDescending
+}
+
+// normalize turns unknown and empty fields into the default field.
+func (f SortField) normalize() SortField {
+	if f == SortFieldFetched {
+		return SortFieldFetched
+	}
+	return SortFieldPublished
 }
 
 // Posts is the post service the frontend calls.
@@ -95,7 +113,7 @@ func (p *Posts) LoadImage(ctx context.Context, source string) (ArticleImage, err
 
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search
 // matches titles only. An unknown SortOrder selects the default newest-first
-// order.
+// order, and an unknown SortField selects publication time.
 type PostQuery struct {
 	FeedID      int64     `json:"feedId"`
 	UnreadOnly  bool      `json:"unreadOnly"`
@@ -104,6 +122,7 @@ type PostQuery struct {
 	Offset      int       `json:"offset"`
 	Limit       int       `json:"limit"`
 	SortOrder   SortOrder `json:"sortOrder"`
+	SortBy      SortField `json:"sortBy"`
 }
 
 // PostPage is a page of posts, with how many match the query and how many of
@@ -147,9 +166,7 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 		}
 		matches = append(matches, post.ToSummary())
 	}
-	if query.SortOrder.normalize() == SortOrderAscending {
-		slices.SortStableFunc(matches, byPublishedAsc)
-	}
+	sortPosts(matches, query)
 
 	total := len(matches)
 	offset := max(query.Offset, 0)
@@ -252,10 +269,29 @@ func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byt
 	return data, err
 }
 
-func postMatches(post store.PostSkim, needle string) bool {
-	return strings.Contains(strings.ToLower(post.Title), needle)
+// sortPosts orders the list by the query's field and direction. Both are
+// explicit: the store returns newest-published first, which only matches the
+// published descending default.
+func sortPosts(posts []store.PostSummary, query PostQuery) {
+	var byTime func(first, second store.PostSummary) int
+	if query.SortBy.normalize() == SortFieldFetched {
+		byTime = func(first, second store.PostSummary) int {
+			return first.FetchedAt.Compare(second.FetchedAt)
+		}
+	} else {
+		byTime = func(first, second store.PostSummary) int {
+			return first.PublishedAt.Compare(second.PublishedAt)
+		}
+	}
+	if query.SortOrder.normalize() == SortOrderDescending {
+		slices.SortStableFunc(posts, func(first, second store.PostSummary) int {
+			return -byTime(first, second)
+		})
+		return
+	}
+	slices.SortStableFunc(posts, byTime)
 }
 
-func byPublishedAsc(first, second store.PostSummary) int {
-	return first.PublishedAt.Compare(second.PublishedAt)
+func postMatches(post store.PostSkim, needle string) bool {
+	return strings.Contains(strings.ToLower(post.Title), needle)
 }

@@ -75,6 +75,7 @@ func New(model *appstatus.Model, callbacks Callbacks) *List {
 		FeedID:    snapshot.CurrentFeedID,
 		Limit:     pageSize,
 		SortOrder: service.SortOrderDescending,
+		SortBy:    service.SortField(snapshot.PostSort),
 	}
 	return &List{
 		model:       model,
@@ -660,6 +661,9 @@ func (l *List) badge(c *ui.Context, theme *ui.Theme, label string, background, f
 
 func (l *List) syncState(snapshot appstatus.Snapshot) {
 	l.mu.Lock()
+	if snapshot.PostSort != "" {
+		l.query.SortBy = service.SortField(snapshot.PostSort)
+	}
 	if snapshot.PostVersion != l.appliedPostVersion {
 		l.appliedPostVersion = snapshot.PostVersion
 		for index, post := range l.posts {

@@ -44,6 +44,7 @@ type Snapshot struct {
 	ListPercent      float32
 	Theme            string
 	FontSize         string
+	PostSort         string
 	Version          string
 	RelativeStart    time.Time
 	PostsVersion     uint64
@@ -70,6 +71,7 @@ type Model struct {
 	selectedPost     store.PostSummary
 	theme            string
 	font             string
+	postSort         string
 	version          string
 	changed          func()
 	now              func() time.Time
@@ -78,10 +80,11 @@ type Model struct {
 // New creates a status model showing the application version.
 func New(version string) *Model {
 	return &Model{
-		theme:   store.ThemeSystem,
-		font:    store.FontSizeMedium,
-		version: version,
-		now:     time.Now,
+		theme:    store.ThemeSystem,
+		font:     store.FontSizeMedium,
+		postSort: store.PostSortPublished,
+		version:  version,
+		now:      time.Now,
 	}
 }
 
@@ -137,6 +140,18 @@ func (m *Model) SetAppearance(theme, fontSize string) {
 	changed := m.theme != theme || m.font != fontSize
 	m.theme = theme
 	m.font = fontSize
+	callback := m.changed
+	m.mu.Unlock()
+	if changed && callback != nil {
+		callback()
+	}
+}
+
+// SetPostSort mirrors the article list's preferred sort field.
+func (m *Model) SetPostSort(sort string) {
+	m.mu.Lock()
+	changed := m.postSort != sort
+	m.postSort = sort
 	callback := m.changed
 	m.mu.Unlock()
 	if changed && callback != nil {
@@ -230,6 +245,7 @@ func (m *Model) Snapshot() Snapshot {
 		ListPercent:      m.listPercent,
 		Theme:            m.theme,
 		FontSize:         m.font,
+		PostSort:         m.postSort,
 		Version:          m.version,
 		RelativeStart:    m.now(),
 		PostsVersion:     m.postsVersion,

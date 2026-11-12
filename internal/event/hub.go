@@ -180,6 +180,7 @@ func (h *Hub) applyLocked(e Event) {
 			listPercent = float32(e.Prefs.PaneSizes[1])
 		}
 		h.model.SetListPercent(listPercent)
+		h.model.SetPostSort(e.Prefs.PostSort)
 	case EventSelectionChanged:
 		h.model.SetCurrentFeed(e.Selection.FeedID)
 	case EventPostsChanged:

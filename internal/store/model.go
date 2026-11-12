@@ -61,6 +61,7 @@ func (p Post) ToSummary() PostSummary {
 		Summary:     p.Summary,
 		WordCount:   p.WordCount,
 		PublishedAt: p.PublishedAt,
+		FetchedAt:   p.FetchedAt,
 		Read:        p.Read,
 		Starred:     p.Starred,
 	}
@@ -76,6 +77,7 @@ type PostSummary struct {
 	Summary     string    `json:"summary"`
 	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
+	FetchedAt   time.Time `json:"fetchedAt"`
 	Read        bool      `json:"read"`
 	Starred     bool      `json:"starred"`
 }
@@ -92,6 +94,7 @@ type PostSkim struct {
 	Summary     string    `json:"summary"`
 	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
+	FetchedAt   time.Time `json:"fetchedAt"`
 	Read        bool      `json:"read"`
 	Starred     bool      `json:"starred"`
 }
@@ -107,6 +110,7 @@ func (p PostSkim) ToSummary() PostSummary {
 		Summary:     p.Summary,
 		WordCount:   p.WordCount,
 		PublishedAt: p.PublishedAt,
+		FetchedAt:   p.FetchedAt,
 		Read:        p.Read,
 		Starred:     p.Starred,
 	}
@@ -131,6 +135,15 @@ const (
 const (
 	OpenLinksBrowser = "browser"
 	OpenLinksWindow  = "window"
+)
+
+// Values of Prefs.PostSort, the article-list sort field.
+const (
+	// PostSortPublished orders posts by publication time, the default.
+	PostSortPublished = "published"
+
+	// PostSortFetched orders posts by the time Ressu fetched them.
+	PostSortFetched = "fetched"
 )
 
 // Values of Prefs.RemoteResources.
@@ -162,6 +175,7 @@ type Prefs struct {
 	MarkReadOnOpen   bool   `json:"markReadOnOpen"`
 	RemoteResources  string `json:"remoteResources"`
 	OpenLinks        string `json:"openLinks"`
+	PostSort         string `json:"postSort"`
 	PostsPerFeed     int    `json:"postsPerFeed"`
 	ImageCacheLimit  int    `json:"imageCacheLimit"` // maximum image cache size, in MB
 	PaneSizes        []int  `json:"paneSizes"`       // widths of the sidebar and the list, in percent
@@ -177,6 +191,7 @@ func DefaultPrefs() Prefs {
 		MarkReadOnOpen:   true,
 		RemoteResources:  ResourceAccessWebview,
 		OpenLinks:        OpenLinksBrowser,
+		PostSort:         PostSortPublished,
 		PostsPerFeed:     DefaultPostsPerFeed,
 		ImageCacheLimit:  DefaultImageCacheLimit,
 		PaneSizes:        []int{18, 30},
@@ -195,6 +210,9 @@ func (p *Prefs) Normalize() {
 	case FontSizeSmall, FontSizeMedium, FontSizeLarge:
 	default:
 		p.FontSize = FontSizeMedium
+	}
+	if p.PostSort != PostSortFetched {
+		p.PostSort = PostSortPublished
 	}
 	if p.OpenLinks != OpenLinksWindow {
 		p.OpenLinks = OpenLinksBrowser

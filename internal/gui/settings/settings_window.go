@@ -125,6 +125,18 @@ func (s *settingsView) draw(c *ui.Context) {
 				})
 
 				ui.Fieldset(c, "阅读", func() {
+					ui.Field(c, "文章排序依据", func() {
+						sortFields := []string{
+							store.PostSortPublished,
+							store.PostSortFetched,
+						}
+						selected := indexOf(sortFields, s.prefs.PostSort)
+						if ui.Segmented(c, &selected, "发布时间", "抓取时间").
+							Label("文章排序依据").Changed() {
+							s.prefs.PostSort = sortFields[selected]
+							changed = true
+						}
+					}).Description("升序/降序按钮仍然可用，决定最新还是最旧在前。")
 					ui.Field(c, "打开文章时标记为已读", func() {
 						if ui.Switch(c, &s.prefs.MarkReadOnOpen).Changed() {
 							changed = true

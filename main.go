@@ -97,6 +97,7 @@ func main() {
 		listPercent = float32(prefs.PaneSizes[1])
 	}
 	statusModel.SetListPercent(listPercent)
+	statusModel.SetPostSort(prefs.PostSort)
 	hub := appevent.NewHub(statusModel)
 	feeds := service.NewFeedsWithHub(st, hub)
 	hub.FeedsChanged(feeds.List())

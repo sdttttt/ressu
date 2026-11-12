@@ -520,3 +520,83 @@ func TestPostsListSearchesTitlesOnly(t *testing.T) {
 		t.Errorf("title search total = %d", page.Total)
 	}
 }
+
+func TestPostsListSortsByFetchedTime(t *testing.T) {
+	st := openStore(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	publishedBase := time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC)
+	incoming := []store.Post{
+		{GUID: "old", Title: "旧发布", PublishedAt: publishedBase},
+		{GUID: "mid", Title: "中发布", PublishedAt: publishedBase.Add(time.Hour)},
+		{GUID: "new", Title: "新发布", PublishedAt: publishedBase.Add(2 * time.Hour)},
+	}
+	if _, err := st.MergePosts(feed.ID, incoming); err != nil {
+		t.Fatal(err)
+	}
+
+	// MergePosts stamps every new post with the merge time, so stamp the
+	// fetch times afterwards: the fetch order is the reverse of the
+	// publication order.
+	fetchedBase := time.Date(2024, 10, 2, 12, 0, 0, 0, time.UTC)
+	fetched := map[string]time.Time{
+		"old": fetchedBase.Add(2 * time.Hour),
+		"mid": fetchedBase.Add(time.Hour),
+		"new": fetchedBase,
+	}
+	for guid, at := range fetched {
+		if _, err := st.UpdatePost(feed.ID, guid, func(post *store.Post) { post.FetchedAt = at }); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	posts := NewPosts(st)
+
+	assertGUIDs := func(name string, page PostPage, want ...string) {
+		t.Helper()
+		guids := guidsOf(page.Posts)
+		if len(guids) != len(want) {
+			t.Errorf("%s = %v, want %v", name, guids, want)
+			return
+		}
+		for i, guid := range want {
+			if guids[i] != guid {
+				t.Errorf("%s = %v, want %v", name, guids, want)
+				return
+			}
+		}
+	}
+
+	page, err := posts.List(PostQuery{FeedID: feed.ID, SortBy: SortFieldFetched})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertGUIDs("fetched desc", page, "old", "mid", "new")
+
+	page, err = posts.List(PostQuery{
+		FeedID:    feed.ID,
+		SortOrder: SortOrderAscending,
+		SortBy:    SortFieldFetched,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertGUIDs("fetched asc", page, "new", "mid", "old")
+
+	page, err = posts.List(PostQuery{FeedID: feed.ID, SortBy: "unknown"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertGUIDs("unknown field falls back to published desc", page, "new", "mid", "old")
+}
+
+func guidsOf(posts []store.PostSummary) []string {
+	guids := make([]string, 0, len(posts))
+	for _, post := range posts {
+		guids = append(guids, post.GUID)
+	}
+	return guids
+}

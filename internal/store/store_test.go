@@ -71,6 +71,24 @@ func TestPrefsNormalizeRemoteResources(t *testing.T) {
 	}
 }
 
+func TestPrefsNormalizePostSort(t *testing.T) {
+	if prefs := DefaultPrefs(); prefs.PostSort != PostSortPublished {
+		t.Errorf("default post sort = %q, want %q", prefs.PostSort, PostSortPublished)
+	}
+
+	prefs := Prefs{PostSort: PostSortFetched}
+	prefs.Normalize()
+	if prefs.PostSort != PostSortFetched {
+		t.Errorf("fetched post sort = %q", prefs.PostSort)
+	}
+
+	prefs = Prefs{PostSort: ""}
+	prefs.Normalize()
+	if prefs.PostSort != PostSortPublished {
+		t.Errorf("empty post sort = %q, want %q", prefs.PostSort, PostSortPublished)
+	}
+}
+
 func TestAddFeedRejectsDuplicates(t *testing.T) {
 	s := openTemp(t)
 
@@ -441,7 +459,7 @@ func TestEverythingSurvivesReopen(t *testing.T) {
 }
 
 func TestPrefsNormalize(t *testing.T) {
-	p := Prefs{Theme: "solarized", FontSize: "huge", OpenLinks: "carrier-pigeon", PostsPerFeed: 3, PaneSizes: []int{10}}
+	p := Prefs{Theme: "solarized", FontSize: "huge", OpenLinks: "carrier-pigeon", PostSort: "creation", PostsPerFeed: 3, PaneSizes: []int{10}}
 	p.SidebarCollapsed = true
 	p.Normalize()
 
@@ -453,6 +471,9 @@ func TestPrefsNormalize(t *testing.T) {
 	}
 	if p.OpenLinks != OpenLinksBrowser {
 		t.Errorf("open links = %q", p.OpenLinks)
+	}
+	if p.PostSort != PostSortPublished {
+		t.Errorf("post sort = %q", p.PostSort)
 	}
 	if p.PostsPerFeed != DefaultPostsPerFeed {
 		t.Errorf("posts per feed = %d", p.PostsPerFeed)
