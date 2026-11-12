@@ -135,6 +135,10 @@ go tool mygo doctor
   分别构建 `windows/amd64`、`linux/amd64`、`darwin/universal`。
 - 环境要求：Go 1.27.3+、系统 WebView。Windows 10 需要 WebView2 Runtime；
   Linux 需要 WebKitGTK 4.1 与 AppIndicator 相关包。
+- 仓库根目录的 `default.pgo` 为 PGO（Profile-Guided Optimization）profile，`go build`
+  自动启用（`-pgo=auto`），`mygo build` 打包同样生效。发版前可用
+  `RESSU_CPUPROFILE=/tmp/ressu.pprof go tool mygo dev` 正常使用一段时间后，把产出的
+  profile 复制为 `default.pgo` 刷新；profile 过旧时收益衰减但不会变差。
 
 ## 启动与后台刷新
 

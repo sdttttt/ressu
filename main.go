@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -62,6 +63,8 @@ func main() {
 		defer logFile.Close()
 		slog.SetDefault(logFile.Logger())
 	}
+	stopProfile := startCPUProfile()
+	defer stopProfile()
 	cacheDir, err := app.Path(mygo.PathCache)
 	if err != nil {
 		fatal("cache path failed", err)
@@ -190,6 +193,32 @@ func newAboutInfo(version string) appabout.Info {
 func fatal(message string, err error) {
 	slog.Error(message, "operation", "app.startup", "error", err)
 	os.Exit(1)
+}
+
+// startCPUProfile records a CPU profile for PGO when RESSU_CPUPROFILE names
+// a writable file, and returns the function that stops and flushes it.
+func startCPUProfile() func() {
+	path := os.Getenv("RESSU_CPUPROFILE")
+	if path == "" {
+		return func() {}
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		slog.Warn("cpu profile disabled", "operation", "app.profile", "path", path, "error", err)
+		return func() {}
+	}
+	if err := pprof.StartCPUProfile(file); err != nil {
+		slog.Warn("cpu profile disabled", "operation", "app.profile", "path", path, "error", err)
+		_ = file.Close()
+		return func() {}
+	}
+	slog.Info("cpu profile recording", "operation", "app.profile", "path", path)
+	return func() {
+		pprof.StopCPUProfile()
+		if err := file.Close(); err != nil {
+			slog.Warn("cpu profile flush failed", "operation", "app.profile", "path", path, "error", err)
+		}
+	}
 }
 
 // openWindow creates the main window hidden and shows it once the page has
