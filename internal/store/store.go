@@ -356,6 +356,59 @@ func (s *Store) Posts(feedID int64) ([]Post, error) {
 	return posts, nil
 }
 
+// PostSkims returns the posts of a feed without their bodies, newest first.
+func (s *Store) PostSkims(feedID int64) ([]PostSkim, error) {
+	var posts []PostSkim
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		var err error
+		posts, err = readPostSkims(tx, feedID)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	slices.SortStableFunc(posts, byPublishedDescForSkim)
+	return posts, nil
+}
+
+// AllPostSkims returns every post of every feed without bodies, newest first.
+func (s *Store) AllPostSkims() ([]PostSkim, error) {
+	var posts []PostSkim
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte(postsBucket)).ForEach(func(key, _ []byte) error {
+			feedID := int64(binary.BigEndian.Uint64(key))
+			feedPosts, err := readPostSkims(tx, feedID)
+			if err != nil {
+				return err
+			}
+			posts = append(posts, feedPosts...)
+			return nil
+		})
+	}); err != nil {
+		return nil, err
+	}
+	slices.SortStableFunc(posts, byPublishedDescForSkim)
+	return posts, nil
+}
+
+func readPostSkims(tx *bolt.Tx, feedID int64) ([]PostSkim, error) {
+	b := feedPosts(tx, feedID)
+	if b == nil {
+		return nil, nil
+	}
+	var posts []PostSkim
+	if err := b.ForEach(func(_, value []byte) error {
+		var p PostSkim
+		if err := json.Unmarshal(value, &p); err != nil {
+			return err
+		}
+		posts = append(posts, p)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
 // AllPosts returns every post of every feed, newest first.
 func (s *Store) AllPosts() ([]Post, error) {
 	var posts []Post
@@ -615,6 +668,17 @@ func countUnread(posts []Post) int {
 }
 
 func byPublishedDesc(a, b Post) int {
+	switch {
+	case a.PublishedAt.After(b.PublishedAt):
+		return -1
+	case a.PublishedAt.Before(b.PublishedAt):
+		return 1
+	default:
+		return 0
+	}
+}
+
+func byPublishedDescForSkim(a, b PostSkim) int {
 	switch {
 	case a.PublishedAt.After(b.PublishedAt):
 		return -1

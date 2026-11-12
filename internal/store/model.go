@@ -80,6 +80,38 @@ type PostSummary struct {
 	Starred     bool      `json:"starred"`
 }
 
+// PostSkim is a Post without its body, as list queries decode it. Skipping
+// the content field keeps the JSON decoder from allocating every article's
+// HTML on the list path.
+type PostSkim struct {
+	FeedID      int64     `json:"feedId"`
+	GUID        string    `json:"guid"`
+	Title       string    `json:"title"`
+	URL         string    `json:"url"`
+	Author      string    `json:"author"`
+	Summary     string    `json:"summary"`
+	WordCount   int       `json:"wordCount"`
+	PublishedAt time.Time `json:"publishedAt"`
+	Read        bool      `json:"read"`
+	Starred     bool      `json:"starred"`
+}
+
+// ToSummary returns the post without its body, as lists show it.
+func (p PostSkim) ToSummary() PostSummary {
+	return PostSummary{
+		FeedID:      p.FeedID,
+		GUID:        p.GUID,
+		Title:       p.Title,
+		URL:         p.URL,
+		Author:      p.Author,
+		Summary:     p.Summary,
+		WordCount:   p.WordCount,
+		PublishedAt: p.PublishedAt,
+		Read:        p.Read,
+		Starred:     p.Starred,
+	}
+}
+
 // Theme values of Prefs.Theme.
 const (
 	ThemeSystem = "system"

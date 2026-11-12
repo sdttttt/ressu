@@ -117,12 +117,12 @@ type PostPage struct {
 // List returns the posts of a feed that match the query, newest first unless
 // the query asks for oldest first.
 func (p *Posts) List(query PostQuery) (PostPage, error) {
-	var posts []store.Post
+	var posts []store.PostSkim
 	var err error
 	if query.FeedID == AggregateFeedID {
-		posts, err = p.store.AllPosts()
+		posts, err = p.store.AllPostSkims()
 	} else {
-		posts, err = p.store.Posts(query.FeedID)
+		posts, err = p.store.PostSkims(query.FeedID)
 	}
 	if err != nil {
 		slog.Warn("post list failed", "operation", "posts.list", "error", err)
@@ -252,7 +252,7 @@ func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byt
 	return data, err
 }
 
-func postMatches(post store.Post, needle string) bool {
+func postMatches(post store.PostSkim, needle string) bool {
 	return strings.Contains(strings.ToLower(post.Title), needle)
 }
 
