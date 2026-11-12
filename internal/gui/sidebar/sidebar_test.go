@@ -138,3 +138,52 @@ func assertSelection(t *testing.T, selections <-chan int64, want int64) {
 		t.Fatal("selection was not reported")
 	}
 }
+
+func TestSelectionPillSlidesBetweenFeeds(t *testing.T) {
+	model := appstatus.New("")
+	model.SetFeeds(appstatus.FeedsSnapshot{
+		Feeds: []store.Feed{
+			{ID: 1, Title: "源一", URL: "https://example.com/one"},
+			{ID: 2, Title: "源二", URL: "https://example.com/two"},
+		},
+		Unread: 2,
+	})
+	model.SetCurrentFeed(1)
+	sidebar := New(model, Callbacks{
+		Icon: func(context.Context, int64) (store.Icon, error) {
+			return store.Icon{}, store.ErrNotFound
+		},
+	})
+
+	tester := ui.NewTester(sidebar.View, 280, 520)
+	tester.Frame()
+	pillStart, ok := tester.Find("选中订阅源")
+	if !ok {
+		t.Fatal("the selection pill is missing")
+	}
+	rowStart, ok := tester.Find("源一")
+	if !ok {
+		t.Fatal("the first feed row is missing")
+	}
+	// The pill sits behind the selected row; the offset from the row text
+	// is the same for every row of equal height.
+	offset := pillStart.Y - rowStart.Y
+
+	model.SetCurrentFeed(2)
+	tester.Frame()
+	pillMid, _ := tester.Find("选中订阅源")
+	if pillMid.Y != pillStart.Y {
+		t.Errorf("the pill jumped without time advancing: %v -> %v", pillStart.Y, pillMid.Y)
+	}
+
+	tester.Advance(2 * time.Second)
+	tester.Frame()
+	pillEnd, _ := tester.Find("选中订阅源")
+	rowEnd, ok := tester.Find("源二")
+	if !ok {
+		t.Fatal("the second feed row is missing")
+	}
+	if pillEnd.Y-rowEnd.Y != offset {
+		t.Errorf("the pill did not slide to the second row: offset %v, want %v", pillEnd.Y-rowEnd.Y, offset)
+	}
+}

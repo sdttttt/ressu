@@ -32,12 +32,23 @@ const (
 	// textSize matches the webview's 13px list titles.
 	textSize = 13
 
+	// feedRowHeight and feedRowGap size one subscription row; the selection
+	// pill slides along their pitch.
+	feedRowHeight = 34
+	feedRowGap    = 2
+
 	// Icons are revalidated weekly, matching the webview cache.
 	iconTTL = 7 * 24 * time.Hour
 )
 
 // nativeTextSize is MyGO's default text size before system text scaling.
 var nativeTextSize = ui.LightTheme().FontSize
+
+// selectionSlide paces the selected feed's highlight. It is quicker than
+// the stock Snappy spring so keyboard runs keep up.
+var selectionSlide = ui.Animation{
+	Spring: ui.SpringOptions{Duration: 400 * time.Millisecond, Bounce: 0.15},
+}
 
 // Callbacks connects the native sidebar to application actions.
 type Callbacks struct {
@@ -353,12 +364,42 @@ func (s *Sidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 	}
 
 	ui.Scroll(c).Grow(1).Children(func() {
-		ui.Column(c).Fill().Gap(2).Children(func() {
+		ui.Column(c).Fill().Gap(feedRowGap).Children(func() {
+			s.drawSelectionPill(c, theme, snapshot, feeds)
 			for _, feed := range feeds {
 				s.drawFeed(c, theme, snapshot, feed)
 			}
 		})
 	})
+}
+
+// drawSelectionPill draws the rounded highlight behind the selected feed.
+// It slides from the previously selected row on a spring, so quick h/l runs
+// keep moving instead of jumping.
+func (s *Sidebar) drawSelectionPill(
+	c *ui.Context,
+	theme *ui.Theme,
+	snapshot appstatus.Snapshot,
+	feeds []store.Feed,
+) {
+	index := slices.IndexFunc(feeds, func(feed store.Feed) bool {
+		return feed.ID == snapshot.CurrentFeedID
+	})
+	if index == -1 {
+		return
+	}
+	pill := ui.Box(c).
+		Key("selection-pill").
+		Absolute().
+		Left(0).
+		Right(0).
+		Height(feedRowHeight).
+		Radius(6).
+		Background(theme.Accent.Alpha(0.22)).
+		ZIndex(-1).
+		IgnoreInput(true).
+		Label("选中订阅源")
+	pill.Top(pill.AnimateTo("y", float32(index)*(feedRowHeight+feedRowGap), selectionSlide))
 }
 
 func (s *Sidebar) drawFeed(
@@ -371,10 +412,9 @@ func (s *Sidebar) drawFeed(
 	row := ui.ButtonBase(c).
 		Key("feed-"+formatFeedID(feed.ID)).
 		Grow(1).
-		Height(34).
+		Height(feedRowHeight).
 		Padding(10, 8).
 		Radius(6).
-		Background(feedRowBackground(*theme, selected)).
 		Children(func() {
 			s.drawFeedIcon(c, theme, feed)
 			title := ui.Text(c, feed.Title).Grow(1).PaddingStart(10)
@@ -565,13 +605,6 @@ func visibleSidebarFeeds(feeds []store.Feed, filter string) []store.Feed {
 		return !strings.Contains(strings.ToLower(feed.Title), needle) &&
 			!strings.Contains(strings.ToLower(feed.URL), needle)
 	}))
-}
-
-func feedRowBackground(theme ui.Theme, selected bool) ui.Color {
-	if selected {
-		return theme.Accent.Alpha(0.22)
-	}
-	return theme.Background
 }
 
 func unreadText(unread int) string {
