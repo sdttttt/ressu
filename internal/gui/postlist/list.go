@@ -21,11 +21,12 @@ import (
 )
 
 const (
-	paneSaveDelay = 500 * time.Millisecond
-	textSize      = 13
-	searchDelay   = 300 * time.Millisecond
-	pageSize      = 100
-	timeRefresh   = 30 * time.Second
+	paneSaveDelay  = 500 * time.Millisecond
+	textSize       = 13
+	searchDelay    = 300 * time.Millisecond
+	pageSize       = 100
+	timeRefresh    = 30 * time.Second
+	reloadDebounce = 300 * time.Millisecond
 )
 
 // Callbacks connects the native article list to application actions.
@@ -63,6 +64,7 @@ type List struct {
 	search             string
 	searchOpen         bool
 	searchTimer        *time.Timer
+	reloadTimer        *time.Timer
 	pendingScroll      string
 }
 
@@ -672,8 +674,17 @@ func (l *List) syncState(snapshot appstatus.Snapshot) {
 	changedFeed := snapshot.CurrentFeedID != l.loadedFeed
 	changedQuery := l.query != l.loadedQuery
 	changedPosts := snapshot.PostsVersion != l.loadedVersion
-	needsLoad := l.forceReload || l.loadVersion == 0 || changedFeed || changedQuery || changedPosts
-	if !needsLoad || l.loading {
+	needsLoad := l.forceReload || l.loadVersion == 0 || changedFeed || changedQuery
+	if !needsLoad {
+		// A refresh bumps PostsVersion once per completed feed; coalesce
+		// that burst into one debounced reload instead of one per feed.
+		if changedPosts && !l.loading {
+			l.scheduleReloadLocked()
+		}
+		l.mu.Unlock()
+		return
+	}
+	if l.loading {
 		l.mu.Unlock()
 		return
 	}
@@ -869,6 +880,20 @@ func (l *List) reload() {
 	if invalidate != nil {
 		invalidate()
 	}
+}
+
+// scheduleReloadLocked arms the one-shot debounce that coalesces bursts of
+// posts.changed events into a single reload. The caller must hold l.mu.
+func (l *List) scheduleReloadLocked() {
+	if l.reloadTimer != nil {
+		return
+	}
+	l.reloadTimer = time.AfterFunc(reloadDebounce, func() {
+		l.mu.Lock()
+		l.reloadTimer = nil
+		l.mu.Unlock()
+		l.reload()
+	})
 }
 
 func (l *List) runAsync(operation func()) {
