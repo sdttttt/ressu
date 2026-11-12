@@ -1,14 +1,18 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"image/png"
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	appevent "github.com/sdttttt/ressu/core/event"
+	"github.com/sdttttt/ressu/core/logging"
 	"github.com/sdttttt/ressu/core/media"
 	"github.com/sdttttt/ressu/core/store"
 )
@@ -262,11 +266,23 @@ func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error)
 
 // StitchSnapshot joins visible-page captures into one complete PNG.
 func (p *Posts) StitchSnapshot(ctx context.Context, tiles []SnapshotTile) ([]byte, error) {
+	started := time.Now()
 	data, err := stitchSnapshot(tiles, geometryOf(tiles))
 	if err != nil {
 		slog.Warn("snapshot stitch failed", "operation", "posts.stitchSnapshot", "error", err)
+		return data, err
 	}
-	return data, err
+	args := []any{
+		"operation", "posts.stitchSnapshot",
+		"tiles", len(tiles),
+		"bytes", len(data),
+		"elapsedMs", time.Since(started).Milliseconds(),
+	}
+	if config, configErr := png.DecodeConfig(bytes.NewReader(data)); configErr == nil {
+		args = append(args, "width", config.Width, "height", config.Height)
+	}
+	logging.Debug("snapshot stitched", args...)
+	return data, nil
 }
 
 // sortPosts orders the list by the query's field and direction. Both are

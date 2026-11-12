@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"log/slog"
 
 	bolt "go.etcd.io/bbolt"
 
@@ -23,6 +24,13 @@ func migrate(tx *bolt.Tx) error {
 	}
 	if found && version >= currentSchemaVersion {
 		return nil
+	}
+	if found && version < currentSchemaVersion {
+		slog.Info("database schema migrating",
+			"operation", "store.migrate",
+			"from", version,
+			"to", currentSchemaVersion,
+		)
 	}
 	if version < 2 {
 		if err := sanitizeStoredPosts(tx); err != nil {

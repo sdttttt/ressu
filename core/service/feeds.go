@@ -12,6 +12,7 @@ import (
 
 	appevent "github.com/sdttttt/ressu/core/event"
 	"github.com/sdttttt/ressu/core/icon"
+	"github.com/sdttttt/ressu/core/logging"
 	"github.com/sdttttt/ressu/core/rss"
 	"github.com/sdttttt/ressu/core/store"
 )
@@ -153,6 +154,12 @@ func (f *Feeds) fetchIcon(ctx context.Context, feed store.Feed) (store.Icon, err
 			slog.Error("icon cache write failed",
 				"operation", "feeds.icon", "feedId", feed.ID, "error", err)
 		}
+		logging.Debug("icon fetched",
+			"operation", "feeds.icon",
+			"feedId", feed.ID,
+			"contentType", image.ContentType,
+			"bytes", len(image.Data),
+		)
 	}
 	request.err = err
 
@@ -299,6 +306,10 @@ func (f *Feeds) RefreshStale(ctx context.Context) (SyncSummary, error) {
 		}
 	}
 	if len(due) == 0 {
+		logging.Debug("automatic refresh skipped, no feed is due",
+			"operation", "feeds.refreshStale",
+			"feeds", len(feeds),
+		)
 		return SyncSummary{}, nil
 	}
 	return f.refreshFeeds(ctx, due)
@@ -310,6 +321,8 @@ func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSumma
 	f.mu.Lock()
 	if f.refreshing {
 		f.mu.Unlock()
+		logging.Debug("refresh skipped, a refresh is already running",
+			"operation", "feeds.refreshAll")
 		return SyncSummary{}, ErrRefreshing
 	}
 	f.refreshing = true
@@ -391,6 +404,11 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	if errors.Is(err, rss.ErrNotModified) {
 		feed.LastFetchedAt = &started
 		feed.LastError = ""
+		logging.Debug("feed not modified",
+			"operation", "feeds.refresh",
+			"feedId", feed.ID,
+			"elapsedMs", time.Since(started).Milliseconds(),
+		)
 		return 0, f.store.UpdateFeed(feed)
 	}
 	if err != nil {
@@ -442,6 +460,14 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 			"operation", "feeds.refresh", "feedId", feed.ID, "error", err)
 		return 0, err
 	}
+
+	logging.Debug("feed refreshed",
+		"operation", "feeds.refresh",
+		"feedId", feed.ID,
+		"items", len(result.Feed.Items),
+		"added", added,
+		"elapsedMs", time.Since(started).Milliseconds(),
+	)
 
 	f.broadcastFeeds()
 	f.hub.PostsChanged(appevent.PostsChanged{FeedID: id, New: added})

@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"sync"
+
+	"github.com/sdttttt/ressu/core/logging"
 )
 
 // ForegroundRefresher refreshes feeds once the app leaves and regains the
@@ -37,6 +39,7 @@ func (r *ForegroundRefresher) BecomeActive() {
 	refresh := r.refresh
 	r.mu.Unlock()
 
+	logging.Debug("foreground refresh triggered", "operation", "foreground.becomeActive")
 	go refresh(context.Background())
 }
 

@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/sdttttt/ressu/core/logging"
 )
 
 const (
@@ -139,9 +141,13 @@ func cacheEvictLocked(c *Cache, keep string) error {
 	slices.SortFunc(keys, func(first, second string) int {
 		return c.entries[first].CreatedAt.Compare(c.entries[second].CreatedAt)
 	})
+	var (
+		evicted int
+		freed   int64
+	)
 	for _, key := range keys {
 		if c.total <= c.maxBytes {
-			return nil
+			break
 		}
 		entry := c.entries[key]
 		if err := removeEntry(c.dir, key); err != nil {
@@ -149,6 +155,15 @@ func cacheEvictLocked(c *Cache, keep string) error {
 		}
 		delete(c.entries, key)
 		c.total -= entry.Size
+		evicted++
+		freed += entry.Size
+	}
+	if evicted > 0 {
+		logging.Debug("media cache evicted",
+			"operation", "media.evict",
+			"entries", evicted,
+			"freedBytes", freed,
+		)
 	}
 	return nil
 }

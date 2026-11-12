@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -68,6 +69,10 @@ func Open(dir string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	slog.Info("database opened",
+		"operation", "store.open",
+		"feeds", len(s.Feeds()),
+	)
 	return s, nil
 }
 
