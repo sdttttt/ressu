@@ -119,6 +119,14 @@ func (c *Cache) SetLimit(maxBytes int64) error {
 	return c.enforceLimitLocked()
 }
 
+// Usage returns the bytes currently stored in the cache and the active byte
+// limit.
+func (c *Cache) Usage() (used int64, limit int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.total, c.maxBytes
+}
+
 // Get resolves a data URL, a local protocol URL, or a public remote image
 // URL to its cache entry. For remote images it first maps the source to this
 // cache's local URL. A usable stale entry is returned even when refreshing

@@ -45,6 +45,31 @@ func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
 	return stored, nil
 }
 
+// StorageInfo describes how much disk space the app occupies.
+type StorageInfo struct {
+	// DBBytes is the on-disk size of the database file.
+	DBBytes int64 `json:"dbBytes"`
+	// ImageCacheBytes is the size of the downloaded image cache.
+	ImageCacheBytes int64 `json:"imageCacheBytes"`
+	// ImageCacheLimitBytes is the active byte limit of the image cache.
+	ImageCacheLimitBytes int64 `json:"imageCacheLimitBytes"`
+}
+
+// StorageUsage returns the current disk usage of the database and the image
+// cache. A missing media cache reports zero image cache bytes.
+func (s *Settings) StorageUsage() StorageInfo {
+	info := StorageInfo{}
+	if size, err := s.store.DBSize(); err == nil {
+		info.DBBytes = size
+	} else {
+		slog.Warn("database size read failed", "operation", "settings.storageUsage", "error", err)
+	}
+	if s.media != nil {
+		info.ImageCacheBytes, info.ImageCacheLimitBytes = s.media.Usage()
+	}
+	return info
+}
+
 // DataDir returns the directory holding the app's data.
 func (s *Settings) DataDir() string {
 	return s.store.Dir()

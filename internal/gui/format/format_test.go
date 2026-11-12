@@ -39,3 +39,24 @@ func TestFormatArticleMetrics(t *testing.T) {
 		t.Errorf("DateTime() = %q, want empty", got)
 	}
 }
+
+func TestFormatBytes(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int64
+		want  string
+	}{
+		{"negative", -1, "0 B"},
+		{"bytes", 512, "512 B"},
+		{"kilobytes", 48 << 10, "48 KB"},
+		{"megabytes", 48 << 20, "48.0 MB"},
+		{"gigabytes", 3 << 30, "3.0 GB"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := format.Bytes(test.value); got != test.want {
+				t.Errorf("Bytes() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

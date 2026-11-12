@@ -61,11 +61,12 @@ type SnapshotViewerCallbacks struct {
 
 // SettingsCallbacks are the operations a native settings surface may invoke.
 type SettingsCallbacks struct {
-	Load        func() store.Prefs
-	Save        func(prefs store.Prefs) (store.Prefs, error)
-	DataDir     func() string
-	ExportOPML  func(parent WindowHandle) (string, error)
-	OpenDataDir func() error
+	Load         func() store.Prefs
+	Save         func(prefs store.Prefs) (store.Prefs, error)
+	DataDir      func() string
+	StorageUsage func() service.StorageInfo
+	ExportOPML   func(parent WindowHandle) (string, error)
+	OpenDataDir  func() error
 }
 
 // AddFeedCallbacks are the operations a native subscription surface may
@@ -441,11 +442,12 @@ func (a *AppActions) OpenLink(link string) error {
 // OpenSettings opens the native settings surface with action callbacks.
 func (a *AppActions) OpenSettings(parent WindowHandle) {
 	a.ui.OpenSettings(parent, SettingsCallbacks{
-		Load:        a.settings.Get,
-		Save:        a.UpdateSettingsDraft,
-		DataDir:     a.settings.DataDir,
-		ExportOPML:  a.ExportOPML,
-		OpenDataDir: a.OpenDataDir,
+		Load:         a.settings.Get,
+		Save:         a.UpdateSettingsDraft,
+		DataDir:      a.settings.DataDir,
+		StorageUsage: a.settings.StorageUsage,
+		ExportOPML:   a.ExportOPML,
+		OpenDataDir:  a.OpenDataDir,
 	})
 }
 

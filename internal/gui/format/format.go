@@ -58,3 +58,21 @@ func WordCount(count int) string {
 	}
 	return digits + " 字"
 }
+
+// Bytes formats a byte count with a binary unit, keeping one decimal place
+// from megabytes upward.
+func Bytes(count int64) string {
+	if count < 0 {
+		count = 0
+	}
+	switch {
+	case count >= 1<<30:
+		return fmt.Sprintf("%.1f GB", float64(count)/(1<<30))
+	case count >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(count)/(1<<20))
+	case count >= 1<<10:
+		return fmt.Sprintf("%d KB", count/(1<<10))
+	default:
+		return fmt.Sprintf("%d B", count)
+	}
+}

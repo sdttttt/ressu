@@ -46,6 +46,31 @@ func TestSetLimitPrunesOldestImages(t *testing.T) {
 	}
 }
 
+func TestUsageReflectsStoredBytesAndLimit(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "media")
+	cache, err := Open(dir, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cache.Close()
+
+	used, limit := cache.Usage()
+	if used != 0 || limit != DefaultCacheBytes {
+		t.Fatalf("Usage() = %d/%d, want 0/%d", used, limit, DefaultCacheBytes)
+	}
+
+	cache.mu.Lock()
+	cache.entries["a"] = Entry{Key: "a", CreatedAt: time.Now(), Size: 100}
+	cache.entries["b"] = Entry{Key: "b", CreatedAt: time.Now(), Size: 23}
+	cache.total = 123
+	cache.mu.Unlock()
+
+	used, limit = cache.Usage()
+	if used != 123 || limit != DefaultCacheBytes {
+		t.Fatalf("Usage() = %d/%d, want 123/%d", used, limit, DefaultCacheBytes)
+	}
+}
+
 func newTestCacheEntry(t *testing.T, dir, source string, data []byte, createdAt time.Time) string {
 	t.Helper()
 	for _, name := range []string{indexPath, dataPath} {

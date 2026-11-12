@@ -10,7 +10,9 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/core/service"
 	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/internal/gui/format"
 	guitheme "github.com/sdttttt/ressu/internal/gui/theme"
 	appwindow "github.com/sdttttt/ressu/internal/gui/window"
 )
@@ -30,11 +32,12 @@ var settingsWindow struct {
 
 // Callbacks are the operations a native settings surface may invoke.
 type Callbacks struct {
-	Load        func() store.Prefs
-	Save        func(store.Prefs) (store.Prefs, error)
-	DataDir     func() string
-	ExportOPML  func(parent *mygo.Window) (string, error)
-	OpenDataDir func() error
+	Load         func() store.Prefs
+	Save         func(store.Prefs) (store.Prefs, error)
+	DataDir      func() string
+	StorageUsage func() service.StorageInfo
+	ExportOPML   func(parent *mygo.Window) (string, error)
+	OpenDataDir  func() error
 }
 
 // Open opens the single native settings window.
@@ -84,12 +87,16 @@ type settingsView struct {
 	err       string
 	notice    string
 	noticeAt  time.Time
+
+	storage   service.StorageInfo
+	storageAt time.Time
 }
 
 // draw renders one frame of the settings form.
 func (s *settingsView) draw(c *ui.Context) {
 	theme := guitheme.New(c, s.prefs.Theme, s.prefs.FontSize)
 	changed := false
+	s.refreshStorage(c)
 
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Padding(20, 24).Children(func() {
@@ -175,7 +182,7 @@ func (s *settingsView) draw(c *ui.Context) {
 							s.prefs.ImageCacheLimit = int(math.Round(value))
 							changed = true
 						}
-					})
+					}).Description(cacheUsageDescription(s.storage))
 				})
 
 				ui.Fieldset(c, "链接", func() {
@@ -197,6 +204,7 @@ func (s *settingsView) draw(c *ui.Context) {
 					ui.Column(c).Gap(8).Children(func() {
 						ui.Text(c, "数据目录").TextColor(theme.TextMuted)
 						ui.Text(c, s.callbacks.DataDir()).Selectable().Font("monospace")
+						ui.Text(c, dbSizeDescription(s.storage)).TextColor(theme.TextMuted)
 						ui.Row(c).Gap(8).Children(func() {
 							if ui.Button(c, "打开数据目录").Clicked() {
 								if err := s.callbacks.OpenDataDir(); err != nil {
@@ -239,6 +247,20 @@ func (s *settingsView) draw(c *ui.Context) {
 	}
 }
 
+// refreshStorage reloads the disk usage snapshot at most every five seconds
+// so the window stays current while it is open.
+func (s *settingsView) refreshStorage(c *ui.Context) {
+	if s.callbacks.StorageUsage == nil {
+		return
+	}
+	if !s.storageAt.IsZero() && time.Since(s.storageAt) < 5*time.Second {
+		return
+	}
+	s.storage = s.callbacks.StorageUsage()
+	s.storageAt = time.Now()
+	c.After(5*time.Second + 10*time.Millisecond)
+}
+
 // save persists the current draft and refreshes the form with normalized
 // values.
 func (s *settingsView) save(c *ui.Context) {
@@ -266,6 +288,27 @@ func (s *settingsView) fail(c *ui.Context, err error) {
 	s.notice = ""
 	s.err = fmt.Sprintf("操作失败：%v", err)
 	c.Invalidate()
+}
+
+// dbSizeDescription renders the database size line of the data fieldset.
+func dbSizeDescription(info service.StorageInfo) string {
+	if info.DBBytes <= 0 {
+		return "数据库大小：—"
+	}
+	return "数据库大小：" + format.Bytes(info.DBBytes)
+}
+
+// cacheUsageDescription renders the image cache usage line under the cache
+// limit field.
+func cacheUsageDescription(info service.StorageInfo) string {
+	if info.ImageCacheLimitBytes <= 0 {
+		return ""
+	}
+	usage := "—"
+	if info.ImageCacheBytes > 0 {
+		usage = format.Bytes(info.ImageCacheBytes)
+	}
+	return "当前缓存占用：" + usage + " / 上限 " + format.Bytes(info.ImageCacheLimitBytes)
 }
 
 // indexOf returns the index of value, or zero when it is absent.

@@ -158,9 +158,10 @@ func (NativeUI) OpenSnapshotViewer(
 // OpenSettings opens the native settings window.
 func (NativeUI) OpenSettings(parent action.WindowHandle, callbacks action.SettingsCallbacks) {
 	appsettings.Open(windowOf(parent), appsettings.Callbacks{
-		Load:    callbacks.Load,
-		Save:    callbacks.Save,
-		DataDir: callbacks.DataDir,
+		Load:         callbacks.Load,
+		Save:         callbacks.Save,
+		DataDir:      callbacks.DataDir,
+		StorageUsage: callbacks.StorageUsage,
 		ExportOPML: func(window *mygo.Window) (string, error) {
 			return callbacks.ExportOPML(action.NewWindowHandle(window))
 		},

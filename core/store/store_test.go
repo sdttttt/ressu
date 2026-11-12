@@ -47,6 +47,22 @@ func TestOpenCreatesDatabase(t *testing.T) {
 	}
 }
 
+func TestDBSizeMatchesFile(t *testing.T) {
+	s := openTemp(t)
+
+	info, err := os.Stat(filepath.Join(s.Dir(), dbFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.DBSize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != info.Size() {
+		t.Errorf("DBSize() = %d, want file size %d", got, info.Size())
+	}
+}
+
 func TestPrefsNormalizeRemoteResources(t *testing.T) {
 	if prefs := DefaultPrefs(); prefs.RemoteResources != ResourceAccessWebview {
 		t.Errorf("default remote resources = %q, want %q", prefs.RemoteResources, ResourceAccessWebview)

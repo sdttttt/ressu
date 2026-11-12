@@ -116,6 +116,15 @@ func (s *Store) Dir() string {
 	return filepath.Dir(s.db.Path())
 }
 
+// DBSize returns the on-disk size of the database file in bytes.
+func (s *Store) DBSize() (int64, error) {
+	info, err := os.Stat(s.db.Path())
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
+}
+
 // feedKey encodes a feed id: big-endian bytes keep the keys in id order.
 func feedKey(id int64) []byte {
 	var key [8]byte
