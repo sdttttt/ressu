@@ -87,10 +87,30 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+
+      - name: Write release notes
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || true)
+          range="${TAG_NAME}"
+          [ -n "$prev" ] && range="${prev}..${TAG_NAME}"
+          {
+            echo "## 更新内容"
+            echo
+            git log --no-merges --pretty=format:"- %s ([%h](https://github.com/${REPO}/commit/%H))" "$range" \
+              | grep -v '^- chore: release'
+            echo
+          } > release-notes.md
 
       - name: Collect release assets
         run: |
@@ -111,7 +131,7 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
+          body_path: release-notes.md
           fail_on_unmatched_files: true
           files: release-assets/*
 
