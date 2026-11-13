@@ -6,19 +6,21 @@ import "time"
 
 // Feed is a subscription and the metadata of its channel.
 type Feed struct {
-	ID            int64      `json:"id"`
-	URL           string     `json:"url"`
-	Title         string     `json:"title"`
-	SiteURL       string     `json:"siteUrl"`
-	Description   string     `json:"description"`
-	IconURL       string     `json:"iconUrl"`
-	Language      string     `json:"language"`
-	ETag          string     `json:"etag"`
-	LastModified  string     `json:"lastModified"`
-	LastFetchedAt *time.Time `json:"lastFetchedAt"`
-	LastError     string     `json:"lastError"`
-	Unread        int        `json:"unread"`
-	CreatedAt     time.Time  `json:"createdAt"`
+	ID              int64      `json:"id"`
+	URL             string     `json:"url"`
+	Title           string     `json:"title"`
+	CustomTitle     bool       `json:"customTitle"`
+	RemoteResources string     `json:"remoteResources"` // empty follows the global preference
+	SiteURL         string     `json:"siteUrl"`
+	Description     string     `json:"description"`
+	IconURL         string     `json:"iconUrl"`
+	Language        string     `json:"language"`
+	ETag            string     `json:"etag"`
+	LastModified    string     `json:"lastModified"`
+	LastFetchedAt   *time.Time `json:"lastFetchedAt"`
+	LastError       string     `json:"lastError"`
+	Unread          int        `json:"unread"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }
 
 // IconMeta describes a cached feed icon.

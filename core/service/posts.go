@@ -215,10 +215,24 @@ func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 			p.broadcastFeeds()
 		}
 	}
-	if p.media != nil && p.store.Prefs().RemoteResources == store.ResourceAccessGoProxy {
+	if p.media != nil && p.remoteResourcesGoProxy(post.FeedID) {
 		post.Content = p.media.RewriteHTML(post.Content, post.URL)
 	}
 	return post, nil
+}
+
+// remoteResourcesGoProxy reports whether article bodies of the feed should be
+// rewritten through the local media cache: the feed's own mode wins, an empty
+// one falls back to the global preference.
+func (p *Posts) remoteResourcesGoProxy(feedID int64) bool {
+	mode := ""
+	if feed, err := p.store.Feed(feedID); err == nil {
+		mode = feed.RemoteResources
+	}
+	if mode == "" {
+		mode = p.store.Prefs().RemoteResources
+	}
+	return mode == store.ResourceAccessGoProxy
 }
 
 // MarkRead marks a post read or unread.

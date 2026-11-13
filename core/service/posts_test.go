@@ -142,6 +142,70 @@ func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 	}
 }
 
+func TestGetUsesFeedRemoteResources(t *testing.T) {
+	st := openStore(t)
+	content := `<p>正文</p><img src="https://cdn.example.com/photo.png">`
+	newFeedWithPost := func(id int64, url, mode string) {
+		t.Helper()
+		if _, err := st.AddFeed(store.Feed{ID: id, URL: url, Title: "源", RemoteResources: mode}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := st.MergePosts(id, []store.Post{{
+			FeedID:  id,
+			GUID:    "photo",
+			URL:     url + "/photo",
+			Content: content,
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The global preference is the webview mode.
+	prefs := st.Prefs()
+	prefs.RemoteResources = store.ResourceAccessWebview
+	if err := st.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+	newFeedWithPost(1, "https://a.example.com/feed", store.ResourceAccessGoProxy)
+	newFeedWithPost(2, "https://b.example.com/feed", store.ResourceAccessWebview)
+	newFeedWithPost(3, "https://c.example.com/feed", "")
+
+	articleMedia, err := media.Open(filepath.Join(t.TempDir(), "articles"), media.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer articleMedia.Close()
+	mediaURL, ok := articleMedia.LocalURL("https://cdn.example.com/photo.png")
+	if !ok {
+		t.Fatal("source URL could not be mapped")
+	}
+	posts := NewPostsWithMedia(st, articleMedia)
+
+	proxied, err := posts.Get(1, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(proxied.Content, `src="`+mediaURL+`"`) {
+		t.Fatalf("goProxy feed content = %s", proxied.Content)
+	}
+
+	direct, err := posts.Get(2, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(direct.Content, mediaURL) {
+		t.Fatalf("webview feed content = %s", direct.Content)
+	}
+
+	inherited, err := posts.Get(3, "photo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(inherited.Content, mediaURL) {
+		t.Fatalf("feed without a mode should follow the webview preference: %s", inherited.Content)
+	}
+}
+
 func addPostForReadTest(t *testing.T, st *store.Store) store.Feed {
 	t.Helper()
 	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})

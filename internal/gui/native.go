@@ -180,19 +180,30 @@ func (NativeUI) CloseSnapshotCapture(window action.WindowHandle) {
 }
 
 // OpenAddFeed opens the native add-feed window.
-func (NativeUI) OpenAddFeed(parent action.WindowHandle, callbacks action.AddFeedCallbacks) {
-	appaddfeed.Open(windowOf(parent), appaddfeed.Callbacks{
+func (n NativeUI) OpenAddFeed(parent action.WindowHandle, callbacks action.AddFeedCallbacks) {
+	appaddfeed.Open(windowOf(parent), n.addFeedCallbacks(callbacks))
+}
+
+// OpenEditFeed opens the native subscription window pre-filled for editing.
+func (n NativeUI) OpenEditFeed(parent action.WindowHandle, feed store.Feed, callbacks action.AddFeedCallbacks) {
+	appaddfeed.OpenEdit(windowOf(parent), feed, n.addFeedCallbacks(callbacks))
+}
+
+// addFeedCallbacks adapts action callbacks to the add-feed window.
+func (NativeUI) addFeedCallbacks(callbacks action.AddFeedCallbacks) appaddfeed.Callbacks {
+	return appaddfeed.Callbacks{
 		Appearance: callbacks.Appearance,
-		Test: func(ctx context.Context, feedURL string) (appaddfeed.Preview, error) {
-			preview, err := callbacks.Test(ctx, feedURL)
+		Test: func(ctx context.Context, feedURL string, excludeID int64) (appaddfeed.Preview, error) {
+			preview, err := callbacks.Test(ctx, feedURL, excludeID)
 			return appaddfeed.Preview(preview), err
 		},
-		Add: callbacks.Add,
+		Add:  callbacks.Add,
+		Save: callbacks.Save,
 		ImportOPML: func(feedParent *mygo.Window) (appaddfeed.Summary, error) {
 			summary, err := callbacks.ImportOPML(context.Background(), action.NewWindowHandle(feedParent))
 			return appaddfeed.Summary(summary), err
 		},
-	})
+	}
 }
 
 // Confirm shows an in-app confirmation for a destructive action.

@@ -178,13 +178,15 @@ func iconFresh(icon store.Icon, feedIconURL string) bool {
 		(feedIconURL == "" || icon.Meta.SourceURL == feedIconURL)
 }
 
-// Test fetches and parses a feed without subscribing to it.
-func (f *Feeds) Test(ctx context.Context, feedURL string) (FeedPreview, error) {
+// Test fetches and parses a feed without subscribing to it. A stored feed
+// whose ID equals excludeID does not count as a duplicate, which lets the
+// edit surface re-test the address it already owns.
+func (f *Feeds) Test(ctx context.Context, feedURL string, excludeID int64) (FeedPreview, error) {
 	feedURL = strings.TrimSpace(feedURL)
 	if err := rss.ValidateURL(feedURL); err != nil {
 		return FeedPreview{}, err
 	}
-	if f.duplicateFeed(feedURL) {
+	if f.duplicateFeed(feedURL, excludeID) {
 		return FeedPreview{}, store.ErrDuplicate
 	}
 
@@ -207,10 +209,11 @@ func (f *Feeds) Test(ctx context.Context, feedURL string) (FeedPreview, error) {
 	}, nil
 }
 
-// duplicateFeed reports whether a feed is already stored by address.
-func (f *Feeds) duplicateFeed(feedURL string) bool {
+// duplicateFeed reports whether a feed is already stored by address, ignoring
+// the subscription excludeID when it is not zero.
+func (f *Feeds) duplicateFeed(feedURL string, excludeID int64) bool {
 	for _, exist := range f.store.Feeds() {
-		if exist.URL == feedURL {
+		if exist.ID != excludeID && exist.URL == feedURL {
 			return true
 		}
 	}
@@ -218,14 +221,18 @@ func (f *Feeds) duplicateFeed(feedURL string) bool {
 }
 
 // Add subscribes to a feed: it fetches the address once, stores the channel
-// and its posts. A non-empty title replaces the feed's channel title.
-func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, error) {
+// and its posts. A non-empty title replaces the feed's channel title. An empty
+// remoteResources stores the current global remote-resource mode.
+func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
 	feedURL = strings.TrimSpace(feedURL)
 	if err := rss.ValidateURL(feedURL); err != nil {
 		return store.Feed{}, err
 	}
-	if f.duplicateFeed(feedURL) {
+	if f.duplicateFeed(feedURL, 0) {
 		return store.Feed{}, store.ErrDuplicate
+	}
+	if remoteResources == "" {
+		remoteResources = f.store.Prefs().RemoteResources
 	}
 
 	result, err := rss.Fetch(ctx, feedURL, "", "")
@@ -239,15 +246,17 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 	now := time.Now()
 	title = strings.TrimSpace(title)
 	feed, err := f.store.AddFeed(store.Feed{
-		URL:           feedURL,
-		Title:         firstNonEmpty(title, titleOf(result.Feed, feedURL)),
-		SiteURL:       result.Feed.Meta.SiteURL,
-		Description:   result.Feed.Meta.Description,
-		IconURL:       result.Feed.Meta.IconURL,
-		Language:      result.Feed.Meta.Language,
-		ETag:          result.ETag,
-		LastModified:  result.LastModified,
-		LastFetchedAt: &now,
+		URL:             feedURL,
+		Title:           firstNonEmpty(title, titleOf(result.Feed, feedURL)),
+		CustomTitle:     title != "",
+		RemoteResources: remoteResources,
+		SiteURL:         result.Feed.Meta.SiteURL,
+		Description:     result.Feed.Meta.Description,
+		IconURL:         result.Feed.Meta.IconURL,
+		Language:        result.Feed.Meta.Language,
+		ETag:            result.ETag,
+		LastModified:    result.LastModified,
+		LastFetchedAt:   &now,
 	})
 	if err != nil {
 		slog.Error("feed add save failed",
@@ -264,6 +273,73 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL string) (store.Feed, err
 
 	f.broadcastFeeds()
 	f.hub.PostsChanged(appevent.PostsChanged{FeedID: feed.ID, New: added})
+	return f.store.Feed(feed.ID)
+}
+
+// Update changes the address or title of a subscription. A changed address is
+// fetched once and its posts are merged in; a cleared title falls back to the
+// channel title on the next refresh. An empty remoteResources keeps the stored
+// mode.
+func (f *Feeds) Update(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
+	feedURL = strings.TrimSpace(feedURL)
+	if err := rss.ValidateURL(feedURL); err != nil {
+		return store.Feed{}, err
+	}
+	feed, err := f.store.Feed(id)
+	if err != nil {
+		return store.Feed{}, err
+	}
+	if f.duplicateFeed(feedURL, id) {
+		return store.Feed{}, store.ErrDuplicate
+	}
+
+	title = strings.TrimSpace(title)
+	urlChanged := feedURL != feed.URL
+	var added int
+	if urlChanged {
+		result, err := rss.Fetch(ctx, feedURL, "", "")
+		if err != nil {
+			slog.Warn("feed update failed",
+				"operation", "feeds.update", "feedId", id, "feedHost", feedHost(feedURL),
+				"error", redactedFeedError(feedURL, err))
+			return store.Feed{}, err
+		}
+		now := time.Now()
+		feed.URL = feedURL
+		feed.SiteURL = result.Feed.Meta.SiteURL
+		feed.Description = result.Feed.Meta.Description
+		feed.IconURL = result.Feed.Meta.IconURL
+		feed.Language = result.Feed.Meta.Language
+		feed.ETag = result.ETag
+		feed.LastModified = result.LastModified
+		feed.LastFetchedAt = &now
+		feed.LastError = ""
+		if title == "" {
+			feed.Title = titleOf(result.Feed, feedURL)
+		}
+		if added, err = f.store.MergePosts(feed.ID, toPosts(result.Feed.Items)); err != nil {
+			slog.Error("stored feed posts failed",
+				"operation", "feeds.update", "feedId", feed.ID, "error", err)
+			return store.Feed{}, err
+		}
+	}
+	feed.CustomTitle = title != ""
+	if feed.CustomTitle {
+		feed.Title = title
+	}
+	if remoteResources != "" {
+		feed.RemoteResources = remoteResources
+	}
+	if err := f.store.UpdateFeed(feed); err != nil {
+		slog.Error("feed update save failed",
+			"operation", "feeds.update", "feedId", id, "error", err)
+		return store.Feed{}, err
+	}
+
+	f.broadcastFeeds()
+	if urlChanged {
+		f.hub.PostsChanged(appevent.PostsChanged{FeedID: feed.ID, New: added})
+	}
 	return f.store.Feed(feed.ID)
 }
 
@@ -442,7 +518,9 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 		return 0, err
 	}
 
-	feed.Title = titleOf(result.Feed, feed.URL)
+	if !feed.CustomTitle {
+		feed.Title = titleOf(result.Feed, feed.URL)
+	}
 	feed.SiteURL = firstNonEmpty(result.Feed.Meta.SiteURL, feed.SiteURL)
 	feed.Description = firstNonEmpty(result.Feed.Meta.Description, feed.Description)
 	feed.IconURL = firstNonEmpty(result.Feed.Meta.IconURL, feed.IconURL)
@@ -500,7 +578,7 @@ func (f *Feeds) BuildOPML() ([]byte, error) {
 func (f *Feeds) importOPMLURLs(ctx context.Context, urls []string) (ImportSummary, error) {
 	var summary ImportSummary
 	for _, feedURL := range urls {
-		if _, err := f.Add(ctx, "", feedURL); err != nil {
+		if _, err := f.Add(ctx, "", feedURL, ""); err != nil {
 			if err == store.ErrDuplicate {
 				summary.Skipped++
 			} else {

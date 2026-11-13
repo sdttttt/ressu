@@ -1,5 +1,5 @@
-// Package addfeed renders the native subscription discovery and OPML import
-// window.
+// Package addfeed renders the native subscription discovery, editing, and
+// OPML import window.
 package addfeed
 
 import (
@@ -56,13 +56,24 @@ type Summary struct {
 // Callbacks are the operations a native add-feed surface may invoke.
 type Callbacks struct {
 	Appearance func() store.Prefs
-	Test       func(context.Context, string) (Preview, error)
-	Add        func(context.Context, string, string) (store.Feed, error)
+	Test       func(context.Context, string, int64) (Preview, error)
+	Add        func(context.Context, string, string, string) (store.Feed, error)
+	Save       func(context.Context, int64, string, string, string) (store.Feed, error)
 	ImportOPML func(parent *mygo.Window) (Summary, error)
 }
 
-// Open opens the single native subscription window.
+// Open opens the single native subscription window for adding a feed.
 func Open(parent *mygo.Window, callbacks Callbacks) {
+	open(parent, nil, callbacks)
+}
+
+// OpenEdit opens the same window pre-filled for editing an existing feed.
+func OpenEdit(parent *mygo.Window, feed store.Feed, callbacks Callbacks) {
+	open(parent, &feed, callbacks)
+}
+
+// open opens the single native subscription window, optionally in edit mode.
+func open(parent *mygo.Window, edit *store.Feed, callbacks Callbacks) {
 	addFeedWindow.Lock()
 	if window := addFeedWindow.window; window != nil && !window.IsDestroyed() {
 		addFeedWindow.Unlock()
@@ -72,9 +83,30 @@ func Open(parent *mygo.Window, callbacks Callbacks) {
 	}
 	addFeedWindow.Unlock()
 
-	view := &addFeedView{callbacks: callbacks, prefs: callbacks.Appearance()}
+	prefs := callbacks.Appearance()
+	view := &addFeedView{
+		callbacks:       callbacks,
+		prefs:           prefs,
+		edit:            edit,
+		remoteResources: prefs.RemoteResources,
+	}
+	if edit != nil {
+		view.url = edit.URL
+		view.testedURL = edit.URL
+		if edit.RemoteResources != "" {
+			view.remoteResources = edit.RemoteResources
+		}
+		if edit.CustomTitle {
+			view.title = edit.Title
+			view.titleTouched = true
+		}
+	}
+	title := "添加订阅源"
+	if edit != nil {
+		title = "编辑订阅源"
+	}
 	options := mygo.WindowOptions{
-		Title:           "添加订阅源",
+		Title:           title,
 		Width:           addFeedWidth,
 		Height:          addFeedHeight,
 		UseContentSize:  true,
@@ -102,20 +134,22 @@ func Open(parent *mygo.Window, callbacks Callbacks) {
 
 // addFeedView keeps the subscription draft, preview, and operation state.
 type addFeedView struct {
-	callbacks    Callbacks
-	prefs        store.Prefs
-	window       *mygo.Window
-	url          string
-	title        string
-	testedURL    string
-	titleTouched bool
-	lastTitle    string
-	testing      bool
-	pending      bool
-	importing    bool
-	err          string
-	preview      *Preview
-	previewDelta int
+	callbacks       Callbacks
+	prefs           store.Prefs
+	edit            *store.Feed
+	window          *mygo.Window
+	url             string
+	title           string
+	remoteResources string
+	testedURL       string
+	titleTouched    bool
+	lastTitle       string
+	testing         bool
+	pending         bool
+	importing       bool
+	err             string
+	preview         *Preview
+	previewDelta    int
 }
 
 // draw renders one frame of the subscription form.
@@ -143,6 +177,14 @@ func (s *addFeedView) draw(c *ui.Context) {
 					}
 					s.lastTitle = s.title
 				}).Description("留空时使用订阅源名称。")
+				ui.Field(c, "远程资源访问方式", func() {
+					ui.RadioGroup(c, func() {
+						ui.Radio(c, &s.remoteResources,
+							store.ResourceAccessGoProxy, "由 Ressu 代理并缓存")
+						ui.Radio(c, &s.remoteResources,
+							store.ResourceAccessWebview, "由 WebView 直接加载")
+					})
+				}).Description("只影响这个订阅源的正文图片加载。")
 			})
 
 			ui.Column(c).Padding(16, 0).Gap(8).Children(func() {
@@ -154,11 +196,21 @@ func (s *addFeedView) draw(c *ui.Context) {
 					s.startTest()
 				}
 				addLabel := "添加订阅"
-				if s.pending {
-					addLabel = "正在添加…"
+				if s.edit != nil {
+					addLabel = "保存修改"
 				}
-				addDisabled := s.pending || s.testing || s.importing ||
-					strings.TrimSpace(s.url) == "" || strings.TrimSpace(s.url) != s.testedURL
+				if s.pending {
+					if s.edit != nil {
+						addLabel = "正在保存…"
+					} else {
+						addLabel = "正在添加…"
+					}
+				}
+				feedURL := strings.TrimSpace(s.url)
+				addDisabled := s.pending || s.testing || s.importing || feedURL == ""
+				if feedURL != s.testedURL && (s.edit == nil || feedURL != s.edit.URL) {
+					addDisabled = true
+				}
 				if ui.Button(c, addLabel).Disabled(addDisabled).Clicked() {
 					s.startAdd()
 				}
@@ -185,12 +237,14 @@ func (s *addFeedView) draw(c *ui.Context) {
 			default:
 				ui.Text(c, "支持 RSS、Atom 和 JSON Feed").TextColor(theme.TextMuted).Grow(1)
 			}
-			importLabel := "导入 OPML…"
-			if s.importing {
-				importLabel = "正在导入…"
-			}
-			if ui.Button(c, importLabel).Disabled(s.pending || s.testing || s.importing).Clicked() {
-				s.startImport()
+			if s.edit == nil {
+				importLabel := "导入 OPML…"
+				if s.importing {
+					importLabel = "正在导入…"
+				}
+				if ui.Button(c, importLabel).Disabled(s.pending || s.testing || s.importing).Clicked() {
+					s.startImport()
+				}
 			}
 		})
 	})
@@ -235,7 +289,11 @@ func (s *addFeedView) startTest() {
 	s.invalidate()
 
 	go func() {
-		preview, err := s.callbacks.Test(context.Background(), feedURL)
+		var excludeID int64
+		if s.edit != nil {
+			excludeID = s.edit.ID
+		}
+		preview, err := s.callbacks.Test(context.Background(), feedURL, excludeID)
 		s.complete(func() {
 			s.testing = false
 			if err != nil {
@@ -252,23 +310,33 @@ func (s *addFeedView) startTest() {
 	}()
 }
 
-// startAdd creates the subscription and closes the window on success.
+// startAdd creates the subscription, or saves the edited one, and closes the
+// window on success.
 func (s *addFeedView) startAdd() {
 	feedURL := strings.TrimSpace(s.url)
 	title := strings.TrimSpace(s.title)
-	if feedURL == "" || feedURL != s.testedURL {
+	tested := feedURL != "" && (feedURL == s.testedURL || (s.edit != nil && feedURL == s.edit.URL))
+	if !tested {
 		s.err = "请先测试订阅地址"
+		if s.edit != nil {
+			s.err = "地址已更改，请先测试订阅地址"
+		}
 		s.invalidate()
 		return
 	}
-	if !s.beginBusy(&s.pending, "添加中不能同时执行其他操作") {
+	if !s.beginBusy(&s.pending, "处理中不能同时执行其他操作") {
 		return
 	}
 	s.clearError()
 	s.invalidate()
 
 	go func() {
-		_, err := s.callbacks.Add(context.Background(), title, feedURL)
+		var err error
+		if s.edit != nil {
+			_, err = s.callbacks.Save(context.Background(), s.edit.ID, title, feedURL, s.remoteResources)
+		} else {
+			_, err = s.callbacks.Add(context.Background(), title, feedURL, s.remoteResources)
+		}
 		window := s.window
 		s.complete(func() {
 			s.pending = false
@@ -276,7 +344,9 @@ func (s *addFeedView) startAdd() {
 				s.fail(err)
 				return
 			}
-			s.reset()
+			if s.edit == nil {
+				s.reset()
+			}
 		})
 		if err == nil && window != nil && !window.IsDestroyed() {
 			window.Close()

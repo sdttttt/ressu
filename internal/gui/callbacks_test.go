@@ -28,7 +28,9 @@ func (callbackFakeUI) OpenImageViewer(action.WindowHandle, []byte, string, strin
 func (callbackFakeUI) OpenSnapshotViewer(action.WindowHandle, []byte, string, action.SnapshotViewerCallbacks) error {
 	return nil
 }
-func (callbackFakeUI) OpenAddFeed(action.WindowHandle, action.AddFeedCallbacks)   {}
+func (callbackFakeUI) OpenAddFeed(action.WindowHandle, action.AddFeedCallbacks) {}
+func (callbackFakeUI) OpenEditFeed(action.WindowHandle, store.Feed, action.AddFeedCallbacks) {
+}
 func (callbackFakeUI) OpenSettings(action.WindowHandle, action.SettingsCallbacks) {}
 func (callbackFakeUI) OpenSnapshotCapture(action.WindowHandle)                    {}
 func (callbackFakeUI) CloseSnapshotCapture(action.WindowHandle)                   {}

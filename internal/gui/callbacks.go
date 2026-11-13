@@ -30,6 +30,9 @@ func SidebarCallbacks(a *action.AppActions) appsidebar.Callbacks {
 				a.Notify("error", "取消订阅失败")
 			}
 		},
+		Edit: func(parent *mygo.Window, feedID int64) {
+			a.OpenEditFeed(action.NewWindowHandle(parent), feedID)
+		},
 		OpenAddFeed:    func(parent *mygo.Window) { a.OpenAddFeed(action.NewWindowHandle(parent)) },
 		OpenSettings:   func(parent *mygo.Window) { a.OpenSettings(action.NewWindowHandle(parent)) },
 		SetCollapsed:   a.SetSidebarCollapsed,

@@ -23,7 +23,7 @@ func TestImportOPMLURLs(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(t.Context(), "", ok1.URL); err != nil {
+	if _, err := feeds.Add(t.Context(), "", ok1.URL, ""); err != nil {
 		t.Fatalf("pre-add: %v", err)
 	}
 
@@ -117,7 +117,7 @@ func TestExportOPMLData(t *testing.T) {
 
 	st := openStore(t)
 	feeds := NewFeeds(st)
-	if _, err := feeds.Add(t.Context(), "", server.URL); err != nil {
+	if _, err := feeds.Add(t.Context(), "", server.URL, ""); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 

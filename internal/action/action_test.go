@@ -30,6 +30,7 @@ type fakeUI struct {
 	snapshotCaptureClosed WindowHandle
 	notifications         []Notification
 	addFeedOpened         bool
+	editFeed              store.Feed
 	helpShown             bool
 	feedDelta             int
 	confirmation          *ConfirmationRequest
@@ -85,6 +86,10 @@ func (f *fakeUI) OpenSettings(WindowHandle, SettingsCallbacks) {}
 
 func (f *fakeUI) OpenAddFeed(WindowHandle, AddFeedCallbacks) {
 	f.addFeedOpened = true
+}
+
+func (f *fakeUI) OpenEditFeed(_ WindowHandle, feed store.Feed, _ AddFeedCallbacks) {
+	f.editFeed = feed
 }
 
 func (f *fakeUI) OpenSnapshotCapture(parent WindowHandle) {
@@ -173,6 +178,33 @@ func TestOpenAddFeedUsesNativeUI(t *testing.T) {
 
 	if !ui.addFeedOpened {
 		t.Error("OpenAddFeed did not reach the native UI")
+	}
+}
+
+func TestOpenEditFeedPassesFeedToNativeUI(t *testing.T) {
+	actions, ui, st := newRemovalTestActions(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed.xml", Title: "测试源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actions.OpenEditFeed(WindowHandle{}, feed.ID)
+
+	if ui.editFeed.ID != feed.ID || ui.editFeed.URL != feed.URL {
+		t.Errorf("OpenEditFeed passed %+v; want feed %d", ui.editFeed, feed.ID)
+	}
+}
+
+func TestOpenEditFeedNotifiesWhenFeedMissing(t *testing.T) {
+	actions, ui, _ := newRemovalTestActions(t)
+
+	actions.OpenEditFeed(WindowHandle{}, 1)
+
+	if ui.editFeed.ID != 0 {
+		t.Errorf("a missing feed reached the UI: %+v", ui.editFeed)
+	}
+	if len(ui.notifications) == 0 {
+		t.Error("a missing feed showed no notification")
 	}
 }
 
@@ -376,7 +408,7 @@ func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
 		&fakeUI{},
 	)
 
-	feed, err := actions.AddAndSelectFeed(context.Background(), "", server.URL)
+	feed, err := actions.AddAndSelectFeed(context.Background(), "", server.URL, "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -62,6 +62,7 @@ type Callbacks struct {
 	RefreshFeed    func(int64)
 	MarkAllRead    func(int64)
 	Remove         func(parent *mygo.Window, feedID int64)
+	Edit           func(parent *mygo.Window, feedID int64)
 	OpenAddFeed    func(parent *mygo.Window)
 	OpenSettings   func(parent *mygo.Window)
 	SetCollapsed   func(collapsed bool)
@@ -460,6 +461,9 @@ func (s *Sidebar) drawFeed(
 		if menu.Item("打开").Chosen() {
 			s.runAsync(func() { s.callbacks.Select(feed.ID) })
 		}
+		if menu.Item("编辑").Chosen() {
+			s.editFeed(feed.ID)
+		}
 		if menu.Item("刷新").Chosen() {
 			s.runAsync(func() { s.callbacks.RefreshFeed(feed.ID) })
 		}
@@ -546,6 +550,15 @@ func (s *Sidebar) removeFeed(feedID int64) {
 	callbacks := s.callbacks
 	s.mu.Unlock()
 	s.runAsync(func() { callbacks.Remove(window, feedID) })
+}
+
+// editFeed asks the application to open the subscription editor for feedID.
+func (s *Sidebar) editFeed(feedID int64) {
+	s.mu.Lock()
+	window := s.window
+	callbacks := s.callbacks
+	s.mu.Unlock()
+	s.runAsync(func() { callbacks.Edit(window, feedID) })
 }
 
 func (s *Sidebar) runAsync(operation func()) {

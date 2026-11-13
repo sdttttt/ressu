@@ -73,8 +73,9 @@ type SettingsCallbacks struct {
 // invoke.
 type AddFeedCallbacks struct {
 	Appearance func() store.Prefs
-	Test       func(ctx context.Context, feedURL string) (service.FeedPreview, error)
-	Add        func(ctx context.Context, title, feedURL string) (store.Feed, error)
+	Test       func(ctx context.Context, feedURL string, excludeID int64) (service.FeedPreview, error)
+	Add        func(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error)
+	Save       func(ctx context.Context, feedID int64, title, feedURL, remoteResources string) (store.Feed, error)
 	ImportOPML func(ctx context.Context, parent WindowHandle) (service.ImportSummary, error)
 }
 
@@ -94,6 +95,7 @@ type UI interface {
 		callbacks SnapshotViewerCallbacks,
 	) error
 	OpenAddFeed(parent WindowHandle, callbacks AddFeedCallbacks)
+	OpenEditFeed(parent WindowHandle, feed store.Feed, callbacks AddFeedCallbacks)
 	OpenSettings(parent WindowHandle, callbacks SettingsCallbacks)
 	OpenSnapshotCapture(parent WindowHandle)
 	CloseSnapshotCapture(window WindowHandle)
@@ -148,14 +150,20 @@ func (a *AppActions) FeedIcon(ctx context.Context, id int64) (store.Icon, error)
 	return a.feeds.Icon(ctx, id)
 }
 
-// TestFeed validates and previews a subscription URL.
-func (a *AppActions) TestFeed(ctx context.Context, feedURL string) (service.FeedPreview, error) {
-	return a.feeds.Test(ctx, feedURL)
+// TestFeed validates and previews a subscription URL. A stored feed whose ID
+// equals excludeID does not count as a duplicate.
+func (a *AppActions) TestFeed(ctx context.Context, feedURL string, excludeID int64) (service.FeedPreview, error) {
+	return a.feeds.Test(ctx, feedURL, excludeID)
 }
 
 // AddFeed subscribes to a feed.
-func (a *AppActions) AddFeed(ctx context.Context, title, feedURL string) (store.Feed, error) {
-	return a.feeds.Add(ctx, title, feedURL)
+func (a *AppActions) AddFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+	return a.feeds.Add(ctx, title, feedURL, remoteResources)
+}
+
+// UpdateFeed changes the address or title of a subscription.
+func (a *AppActions) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
+	return a.feeds.Update(ctx, id, title, feedURL, remoteResources)
 }
 
 // ConfirmRemoveFeed asks before deleting a subscription and its posts.
@@ -458,12 +466,30 @@ func (a *AppActions) OpenSettings(parent WindowHandle) {
 
 // OpenAddFeed opens the native subscription surface.
 func (a *AppActions) OpenAddFeed(parent WindowHandle) {
-	a.ui.OpenAddFeed(parent, AddFeedCallbacks{
+	a.ui.OpenAddFeed(parent, a.addFeedCallbacks())
+}
+
+// OpenEditFeed opens the native subscription surface pre-filled for editing.
+func (a *AppActions) OpenEditFeed(parent WindowHandle, feedID int64) {
+	feed, err := a.feeds.Feed(feedID)
+	if err != nil {
+		slog.Warn("feed edit lookup failed",
+			"operation", "action.feeds.openEditFeed", "feedId", feedID, "error", err)
+		a.Notify("error", "打开编辑失败")
+		return
+	}
+	a.ui.OpenEditFeed(parent, feed, a.addFeedCallbacks())
+}
+
+// addFeedCallbacks wires the native subscription surface to feed operations.
+func (a *AppActions) addFeedCallbacks() AddFeedCallbacks {
+	return AddFeedCallbacks{
 		Appearance: a.settings.Get,
 		Test:       a.TestFeed,
 		Add:        a.AddAndSelectFeed,
+		Save:       a.UpdateFeed,
 		ImportOPML: a.ImportOPML,
-	})
+	}
 }
 
 // Notify shows a native application notification.
@@ -541,8 +567,8 @@ func (a *AppActions) SelectPost(post store.PostSummary, direction int) {
 }
 
 // AddAndSelectFeed subscribes to a feed and broadcasts its selection.
-func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL string) (store.Feed, error) {
-	feed, err := a.AddFeed(ctx, title, feedURL)
+func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+	feed, err := a.AddFeed(ctx, title, feedURL, remoteResources)
 	if err != nil {
 		return store.Feed{}, err
 	}

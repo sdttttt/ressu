@@ -76,7 +76,7 @@ func main() {
 
 		var feedIDs []int64
 		for n := range 4 {
-			feed, err := feeds.Add(ctx, "", fmt.Sprintf("%s/feed/%d", server.URL, n))
+			feed, err := feeds.Add(ctx, "", fmt.Sprintf("%s/feed/%d", server.URL, n), "")
 			if err != nil {
 				log.Fatal(err)
 			}

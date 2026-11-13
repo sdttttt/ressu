@@ -40,7 +40,10 @@ Ressu 阅读器的后端核心。
 ## 刷新流程与事件
 
 - `Feeds.Add` 先校验 URL、检查重复，再立即抓取一次并保存频道元数据与首批文章；成功后
-  广播 `feeds.changed` 和 `posts.changed`。
+  广播 `feeds.changed` 和 `posts.changed`。`Feeds.Update` 修改订阅源地址或名称：地址变更会
+  立即重抓并合并文章（重置 ETag/Last-Modified），查重排除自身；非空名称写入
+  `Feed.CustomTitle`，`refreshOne` 刷新元数据时跳过自定义标题，清空名称则下次刷新回落到
+  频道标题。`Feeds.Test` 校验并预览地址，查重同样支持排除自身（编辑时复测原地址）。
 - `Feeds.RefreshAll` 用手动全量刷新，`maxConcurrent = 2` 信号量并发，每个订阅完成广播
   `sync.progress`，批次开始/结束广播 `sync.started`/`sync.finished`。
 - `Feeds.RefreshStale` 供启动和回前台自动刷新：只抓 `LastFetchedAt` 为空或早于 5 分钟的
@@ -79,6 +82,9 @@ Ressu 阅读器的后端核心。
   按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读；它在一个事务里重写该
   订阅的整个文章桶。`UpdatePost` 和 `MarkAllRead` 只写受影响的数据。
 - `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
+- 远程资源访问方式全局默认存于 `Prefs.RemoteResources`；每个订阅源可用
+  `Feed.RemoteResources` 覆盖（空串 = 跟随全局，新增时由界面写入当时的全局值），
+  `Posts.Get` 按文章所属订阅源的判断决定是否经 `media.RewriteHTML` 走本地缓存。
 - `Prefs.Normalize` 替换越界值：未知主题回落 `system`，未知字号回落 `medium`，
   `postSort` 不是 `fetched` 就回落 `published`，`openLinks` 不是 `window` 就变成
   `browser`，`remoteResources` 不是 `webview` 就回落 `goProxy`，`postsPerFeed` 限制在

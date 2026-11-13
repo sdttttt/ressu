@@ -44,12 +44,12 @@ func (w *WebEndpoint) Icon(ctx context.Context, id int64) (store.Icon, error) {
 
 // Test validates and previews a subscription URL.
 func (w *WebEndpoint) Test(ctx context.Context, feedURL string) (service.FeedPreview, error) {
-	return w.actions.TestFeed(ctx, feedURL)
+	return w.actions.TestFeed(ctx, feedURL, 0)
 }
 
-// Add subscribes to a feed.
+// Add subscribes to a feed with the global default remote-resource mode.
 func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (store.Feed, error) {
-	return w.actions.AddFeed(ctx, title, feedURL)
+	return w.actions.AddFeed(ctx, title, feedURL, "")
 }
 
 // OpenAddFeed opens the native subscription surface.
