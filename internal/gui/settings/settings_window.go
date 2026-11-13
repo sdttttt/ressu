@@ -129,6 +129,11 @@ func (s *settingsView) draw(c *ui.Context) {
 							changed = true
 						}
 					})
+					ui.Field(c, "减少动效", func() {
+						if ui.Switch(c, &s.prefs.ReduceMotion).Changed() {
+							changed = true
+						}
+					})
 				})
 
 				ui.Fieldset(c, "阅读", func() {

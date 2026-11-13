@@ -13,6 +13,7 @@
     prefs: {
       theme: "system",
       fontSize: "medium",
+      reduceMotion: false,
     },
   };
 
@@ -45,6 +46,14 @@
     if (theme === "light" || theme === "sepia") return false;
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   };
+
+  // Effective reduce-motion: the app's own preference, or the desktop's
+  // accessibility setting, which the system webview reports as
+  // prefers-reduced-motion. Read fresh on each use so a system change
+  // applies without a page reload.
+  const reduceMotion = () =>
+    state.prefs.reduceMotion ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const fontScale = (fontSize) => {
     if (fontSize === "large") return "1.3";
@@ -142,6 +151,12 @@
   const playKind = (layer, kind, onFinished) => {
     stopLayerAnimation(layer);
     if (kind === "base") return;
+    if (reduceMotion()) {
+      // Land on the end state at once; the swap's cleanup still runs
+      // through onFinished, off the stack like an animation's.
+      if (onFinished) queueMicrotask(onFinished);
+      return;
+    }
     layer.element.style.animation = "none";
     layer.element.style.opacity = kindPins[kind].opacity;
     layer.element.style.transform = kindPins[kind].transform;
@@ -321,7 +336,10 @@
     if (box.clientHeight === 0) return;
     const bottomGap = box.scrollHeight - box.clientHeight - box.scrollTop;
     if (bottomGap > 1) {
-      box.scrollBy({ top: box.clientHeight * 0.9, behavior: "smooth" });
+      box.scrollBy({
+        top: box.clientHeight * 0.9,
+        behavior: reduceMotion() ? "auto" : "smooth",
+      });
       return;
     }
     runtime.call("Posts.SelectNeighbour", 1, false).catch(() => {});

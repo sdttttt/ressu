@@ -90,6 +90,7 @@ func main() {
 	prefs := st.Prefs()
 	statusModel := appstatus.New(app.Version())
 	statusModel.SetAppearance(prefs.Theme, prefs.FontSize)
+	statusModel.SetReduceMotion(prefs.ReduceMotion)
 	sidebarPercent := float32(18)
 	if len(prefs.PaneSizes) == 2 {
 		sidebarPercent = float32(prefs.PaneSizes[0])

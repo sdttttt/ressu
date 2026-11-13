@@ -169,6 +169,7 @@ func (h *Hub) applyLocked(e Event) {
 		}
 		h.model.SetListPercent(listPercent)
 		h.model.SetPostSort(e.Prefs.PostSort)
+		h.model.SetReduceMotion(e.Prefs.ReduceMotion)
 	case EventSelectionChanged:
 		h.model.SetCurrentFeed(e.Selection.FeedID)
 	case EventPostsChanged:

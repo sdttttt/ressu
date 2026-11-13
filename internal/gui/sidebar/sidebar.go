@@ -50,6 +50,10 @@ var selectionSlide = ui.Animation{
 	Spring: ui.SpringOptions{Duration: 400 * time.Millisecond, Bounce: 0.15},
 }
 
+// poseSnap lands a pose at once, for the reduce-motion preference: a timed
+// animation of a millisecond instead of the Snappy spring.
+var poseSnap = ui.Animation{Duration: time.Millisecond}
+
 // Callbacks connects the native sidebar to application actions.
 type Callbacks struct {
 	Icon           func(context.Context, int64) (store.Icon, error)
@@ -286,7 +290,11 @@ func (s *Sidebar) DrawOverlay(c *ui.Context) {
 	default:
 		pose = ui.Pose{XPercent: -104, Fade: 1}
 	}
-	panel.AnimatePose(pose, ui.Snappy)
+	anim := ui.Snappy
+	if snapshot.ReduceMotion {
+		anim = poseSnap
+	}
+	panel.AnimatePose(pose, anim)
 	if nextFrame && s.invalidate != nil {
 		s.invalidate()
 	}
@@ -399,7 +407,12 @@ func (s *Sidebar) drawSelectionPill(
 		ZIndex(-1).
 		IgnoreInput(true).
 		Label("选中订阅源")
-	pill.Top(pill.AnimateTo("y", float32(index)*(feedRowHeight+feedRowGap), selectionSlide))
+	target := float32(index) * (feedRowHeight + feedRowGap)
+	if snapshot.ReduceMotion {
+		pill.Top(pill.Jump("y", target))
+	} else {
+		pill.Top(pill.AnimateTo("y", target, selectionSlide))
+	}
 }
 
 func (s *Sidebar) drawFeed(

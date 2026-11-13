@@ -180,6 +180,7 @@ type Prefs struct {
 	ImageCacheLimit  int    `json:"imageCacheLimit"` // maximum image cache size, in MB
 	PaneSizes        []int  `json:"paneSizes"`       // widths of the sidebar and the list, in percent
 	SidebarCollapsed bool   `json:"sidebarCollapsed"`
+	ReduceMotion     bool   `json:"reduceMotion"` // cut article swaps and native slides short
 }
 
 // DefaultPrefs are the preferences of a new install.
@@ -196,6 +197,7 @@ func DefaultPrefs() Prefs {
 		ImageCacheLimit:  DefaultImageCacheLimit,
 		PaneSizes:        []int{18, 30},
 		SidebarCollapsed: false,
+		ReduceMotion:     false,
 	}
 }
 

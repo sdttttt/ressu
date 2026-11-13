@@ -44,6 +44,7 @@ type Snapshot struct {
 	ListPercent      float32
 	Theme            string
 	FontSize         string
+	ReduceMotion     bool
 	PostSort         string
 	Version          string
 	RelativeStart    time.Time
@@ -71,6 +72,7 @@ type Model struct {
 	selectedPost     store.PostSummary
 	theme            string
 	font             string
+	reduceMotion     bool
 	postSort         string
 	version          string
 	changed          func()
@@ -140,6 +142,18 @@ func (m *Model) SetAppearance(theme, fontSize string) {
 	changed := m.theme != theme || m.font != fontSize
 	m.theme = theme
 	m.font = fontSize
+	callback := m.changed
+	m.mu.Unlock()
+	if changed && callback != nil {
+		callback()
+	}
+}
+
+// SetReduceMotion mirrors the preference that cuts animation short.
+func (m *Model) SetReduceMotion(reduced bool) {
+	m.mu.Lock()
+	changed := m.reduceMotion != reduced
+	m.reduceMotion = reduced
 	callback := m.changed
 	m.mu.Unlock()
 	if changed && callback != nil {
@@ -245,6 +259,7 @@ func (m *Model) Snapshot() Snapshot {
 		ListPercent:      m.listPercent,
 		Theme:            m.theme,
 		FontSize:         m.font,
+		ReduceMotion:     m.reduceMotion,
 		PostSort:         m.postSort,
 		Version:          m.version,
 		RelativeStart:    m.now(),

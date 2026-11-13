@@ -115,3 +115,30 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		t.Fatalf("changing the feed kept the selected summary: %+v", selected)
 	}
 }
+
+func TestModelMirrorsReduceMotion(t *testing.T) {
+	model := New("")
+	if model.Snapshot().ReduceMotion {
+		t.Fatal("reduce motion is on by default")
+	}
+
+	changed := make(chan struct{}, 2)
+	model.SetChanged(func() { changed <- struct{}{} })
+
+	model.SetReduceMotion(true)
+	select {
+	case <-changed:
+	case <-time.After(time.Second):
+		t.Fatal("SetReduceMotion did not notify")
+	}
+	if !model.Snapshot().ReduceMotion {
+		t.Fatal("reduce motion was not mirrored")
+	}
+
+	model.SetReduceMotion(true)
+	select {
+	case <-changed:
+		t.Fatal("unchanged reduce motion notified")
+	default:
+	}
+}
