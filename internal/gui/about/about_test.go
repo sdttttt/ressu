@@ -27,7 +27,7 @@ func TestAboutViewRendersMetadata(t *testing.T) {
 		"2026-11-10",
 		"邮箱",
 		"sendaihazuki@foxmail.com",
-		"必开花繁盛，乐上加乐，而且欢呼。",
+		"听见了吗，那远方的汽笛声。",
 	} {
 		if !tester.HasText(want) {
 			t.Errorf("About window is missing %q", want)
