@@ -256,7 +256,7 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) 
 			for _, post := range l.posts {
 				l.drawPost(c, theme, snapshot, post)
 			}
-			if len(l.posts) < l.total {
+			if l.matchCount() < l.total {
 				l.drawLoadMore(c, theme)
 			}
 		})
@@ -551,7 +551,7 @@ func (l *List) toggleSelectedStar() {
 
 func (l *List) drawLoadMore(c *ui.Context, theme *ui.Theme) {
 	palette := guitheme.NewPostPalette(*theme)
-	label := fmt.Sprintf("加载更多（还有 %d 篇）", l.total-len(l.posts))
+	label := fmt.Sprintf("加载更多（还有 %d 篇）", l.total-l.matchCount())
 	if l.loading {
 		label = "加载中…"
 	}
@@ -671,6 +671,7 @@ func (l *List) syncState(snapshot app.Snapshot) {
 		l.appliedPostVersion = snapshot.PostVersion
 		for index, post := range l.posts {
 			if post.FeedID == snapshot.Post.FeedID && post.GUID == snapshot.Post.GUID {
+				l.adjustTotalLocked(post, snapshot.Post)
 				l.posts[index].Read = snapshot.Post.Read
 				l.posts[index].Starred = snapshot.Post.Starred
 				break
@@ -828,7 +829,7 @@ func (l *List) loadMore() {
 		return
 	}
 	query := l.query
-	query.Offset = len(l.posts)
+	query.Offset = l.matchCount()
 	query.Limit = pageSize
 	l.loadVersion++
 	generation := l.loadVersion
@@ -859,6 +860,45 @@ func (l *List) loadMore() {
 			invalidate()
 		}
 	}()
+}
+
+// matchCount returns how many loaded posts still satisfy the active filters.
+// Read or starred state can change in place while the rows stay listed, so
+// len(l.posts) is not a valid page offset under an unread/starred filter.
+func (l *List) matchCount() int {
+	count := 0
+	for _, post := range l.posts {
+		if l.matches(post) {
+			count++
+		}
+	}
+	return count
+}
+
+// matches reports whether one post satisfies the active unread/starred
+// filters. Search is not part of it: a listed post's title never changes.
+func (l *List) matches(post app.PostSummary) bool {
+	if l.query.UnreadOnly && post.Read {
+		return false
+	}
+	if l.query.StarredOnly && !post.Starred {
+		return false
+	}
+	return true
+}
+
+// adjustTotalLocked reconciles the matched total when one listed post flips
+// in or out of the active filters, so the load-more counter stays accurate
+// between page fetches. The caller must hold l.mu.
+func (l *List) adjustTotalLocked(before, after app.PostSummary) {
+	oldMatch := l.matches(before)
+	newMatch := l.matches(after)
+	switch {
+	case oldMatch && !newMatch && l.total > 0:
+		l.total--
+	case !oldMatch && newMatch:
+		l.total++
+	}
 }
 
 func (l *List) toggleStar(post app.PostSummary) {

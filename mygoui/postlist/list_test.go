@@ -1,6 +1,7 @@
 package postlist
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -270,6 +271,73 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	tester.Frame()
 	if !tester.HasText("Second article") {
 		t.Error("article list is missing the loaded second page")
+	}
+}
+
+func TestPostListLoadMoreCountsOnlyUnreadPosts(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 25}},
+		Unread: 25,
+	})
+	model.SetCurrentFeed(7)
+	queries := make(chan app.PostQuery, 2)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			queries <- query
+			page := app.PostPage{Total: 25, Unread: 25}
+			if query.Offset == 17 {
+				page.Total = 22
+				for i := 21; i <= 25; i++ {
+					page.Posts = append(page.Posts, app.PostSummary{
+						FeedID: 7, GUID: fmt.Sprintf("guid-%d", i), Title: fmt.Sprintf("Post %d", i),
+					})
+				}
+				return page, nil
+			}
+			for i := 1; i <= 20; i++ {
+				page.Posts = append(page.Posts, app.PostSummary{
+					FeedID: 7, GUID: fmt.Sprintf("guid-%d", i), Title: fmt.Sprintf("Post %d", i),
+				})
+			}
+			return page, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 1600)
+	tester.Frame()
+	select {
+	case <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	tester.Frame()
+
+	// Reading three listed posts only grays them in place; the rows stay.
+	// Without a total adjustment the stale counter would read eight.
+	for i := 1; i <= 3; i++ {
+		model.SetPostUpdated(app.PostSummary{
+			FeedID: 7, GUID: fmt.Sprintf("guid-%d", i), Title: fmt.Sprintf("Post %d", i), Read: true,
+		})
+		tester.Frame()
+	}
+
+	if err := tester.Click("加载更多（还有 5 篇）"); err != nil {
+		t.Fatalf("click load more: %v", err)
+	}
+	var second app.PostQuery
+	select {
+	case second = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("loading the next page did not query posts")
+	}
+	if second.Offset != 17 {
+		t.Errorf("second query offset = %d, want 17 (only unread rows count)", second.Offset)
+	}
+	tester.Frame()
+	if !tester.HasText("Post 25") {
+		t.Error("article list is missing posts after the in-place read rows")
 	}
 }
 
