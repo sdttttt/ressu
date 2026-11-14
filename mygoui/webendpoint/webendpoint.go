@@ -9,14 +9,11 @@ import (
 	"github.com/egoist/mygo"
 
 	"github.com/sdttttt/ressu/core/app"
-	appevent "github.com/sdttttt/ressu/core/event"
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
 )
 
 // AppEvent is the only event channel the Go side broadcasts to pages. The Hub
 // sinks into it so the event package stays free of UI-framework imports.
-var AppEvent = mygo.NewEvent[appevent.Event]("app:event")
+var AppEvent = mygo.NewEvent[app.Event]("app:event")
 
 // ErrNoSnapshotWindow reports that the snapshot caller window is unavailable.
 var ErrNoSnapshotWindow = errors.New("no snapshot window")
@@ -33,22 +30,22 @@ func NewWebEndpoint(actions *app.App) *WebEndpoint {
 }
 
 // List returns the subscriptions and total unread count.
-func (w *WebEndpoint) List() service.FeedsSnapshot {
+func (w *WebEndpoint) List() app.FeedsSnapshot {
 	return w.actions.ListFeeds()
 }
 
 // Icon returns a feed's cached icon.
-func (w *WebEndpoint) Icon(ctx context.Context, id int64) (store.Icon, error) {
+func (w *WebEndpoint) Icon(ctx context.Context, id int64) (app.Icon, error) {
 	return w.actions.FeedIcon(ctx, id)
 }
 
 // Test validates and previews a subscription URL.
-func (w *WebEndpoint) Test(ctx context.Context, feedURL string) (service.FeedPreview, error) {
+func (w *WebEndpoint) Test(ctx context.Context, feedURL string) (app.FeedPreview, error) {
 	return w.actions.TestFeed(ctx, feedURL, 0)
 }
 
 // Add subscribes to a feed with the global default remote-resource mode.
-func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (store.Feed, error) {
+func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (app.Feed, error) {
 	return w.actions.AddFeed(ctx, title, feedURL, "")
 }
 
@@ -63,22 +60,22 @@ func (w *WebEndpoint) ConfirmRemove(ctx context.Context, id int64) error {
 }
 
 // Refresh fetches one subscription.
-func (w *WebEndpoint) Refresh(ctx context.Context, id int64) (store.Feed, error) {
+func (w *WebEndpoint) Refresh(ctx context.Context, id int64) (app.Feed, error) {
 	return w.actions.RefreshFeed(ctx, id)
 }
 
 // RefreshAll fetches every subscription.
-func (w *WebEndpoint) RefreshAll(ctx context.Context) (service.SyncSummary, error) {
+func (w *WebEndpoint) RefreshAll(ctx context.Context) (app.SyncSummary, error) {
 	return w.actions.RefreshAll(ctx)
 }
 
 // RefreshStale fetches subscriptions that have not been fetched recently.
-func (w *WebEndpoint) RefreshStale(ctx context.Context) (service.SyncSummary, error) {
+func (w *WebEndpoint) RefreshStale(ctx context.Context) (app.SyncSummary, error) {
 	return w.actions.RefreshStale(ctx)
 }
 
 // ImportOPML asks for an OPML file and imports its subscriptions.
-func (w *WebEndpoint) ImportOPML(ctx context.Context) (service.ImportSummary, error) {
+func (w *WebEndpoint) ImportOPML(ctx context.Context) (app.ImportSummary, error) {
 	return w.actions.ImportOPML(ctx, app.NewWindowHandle(mygo.CallerWindow(ctx)))
 }
 
@@ -103,12 +100,12 @@ func (p *Posts) OpenImage(ctx context.Context, source, alt string) error {
 }
 
 // List returns a page of posts.
-func (p *Posts) List(query service.PostQuery) (service.PostPage, error) {
+func (p *Posts) List(query app.PostQuery) (app.PostPage, error) {
 	return p.actions.ListPosts(query)
 }
 
 // Get returns one complete post.
-func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
+func (p *Posts) Get(feedID int64, guid string) (app.Post, error) {
 	return p.actions.GetPost(feedID, guid)
 }
 
@@ -118,12 +115,12 @@ func (p *Posts) MarkAllRead(feedID int64) (int, error) {
 }
 
 // ToggleRead flips one post's read state.
-func (p *Posts) ToggleRead(feedID int64, guid string) (store.PostSummary, error) {
+func (p *Posts) ToggleRead(feedID int64, guid string) (app.PostSummary, error) {
 	return p.actions.TogglePostRead(feedID, guid)
 }
 
 // ToggleStar changes one post's starred state.
-func (p *Posts) ToggleStar(feedID int64, guid string) (store.PostSummary, error) {
+func (p *Posts) ToggleStar(feedID int64, guid string) (app.PostSummary, error) {
 	return p.actions.TogglePostStar(feedID, guid)
 }
 
@@ -133,7 +130,7 @@ func (p *Posts) SelectNeighbour(_ context.Context, delta int, onlyUnread bool) {
 }
 
 // CaptureSnapshot captures the visible page for one scroll position.
-func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCaptureRequest) ([]byte, error) {
+func (p *Posts) CaptureSnapshot(ctx context.Context, request app.SnapshotCaptureRequest) ([]byte, error) {
 	return p.actions.CaptureSnapshot(ctx, request)
 }
 
@@ -143,7 +140,7 @@ func (p *Posts) CaptureSnapshot(ctx context.Context, request service.SnapshotCap
 func (p *Posts) StitchSnapshot(
 	ctx context.Context,
 	title string,
-	tiles []service.SnapshotTile,
+	tiles []app.SnapshotTile,
 ) error {
 	caller := mygo.CallerWindow(ctx)
 	if caller == nil {
@@ -206,12 +203,12 @@ func NewSettings(actions *app.App) *Settings {
 }
 
 // Get returns the current preferences.
-func (s *Settings) Get() store.Prefs {
+func (s *Settings) Get() app.Prefs {
 	return s.actions.Preferences()
 }
 
 // Update stores preferences.
-func (s *Settings) Update(prefs store.Prefs) (store.Prefs, error) {
+func (s *Settings) Update(prefs app.Prefs) (app.Prefs, error) {
 	return s.actions.UpdatePreferences(prefs)
 }
 

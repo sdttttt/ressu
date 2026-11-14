@@ -14,7 +14,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/media"
+	"github.com/sdttttt/ressu/core/app"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
 )
 
@@ -60,7 +60,7 @@ func newImageViewerContent(data []byte, viewerURL string) (imageViewerContent, e
 	if decodeErr == nil {
 		return imageViewerContent{image: image, url: viewerURL, data: data}, nil
 	}
-	if media.IsAVIF(data) {
+	if app.IsAVIF(data) {
 		return imageViewerContent{url: viewerURL, data: data}, nil
 	}
 	return imageViewerContent{}, fmt.Errorf("could not decode the image: %w", decodeErr)
@@ -180,7 +180,7 @@ func showImageSaveError(viewer *mygo.Window, err error) {
 
 // imageExtension chooses a download extension from validated image bytes.
 func imageExtension(data []byte) string {
-	switch media.ContentType(data) {
+	switch app.ContentType(data) {
 	case "image/avif":
 		return ".avif"
 	case "image/bmp":

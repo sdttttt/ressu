@@ -7,18 +7,17 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	model.SetFeeds(appstatus.FeedsSnapshot{Feeds: []store.Feed{{ID: 1, Title: "A"}}, Unread: 1})
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{Feeds: []app.Feed{{ID: 1, Title: "A"}}, Unread: 1})
 	published := time.Date(2026, time.November, 9, 12, 0, 0, 0, time.UTC)
 	model.SetCurrentPost(
-		appstatus.PostSelection{FeedID: 1, GUID: "first"},
-		store.PostSummary{
+		app.PostSelection{FeedID: 1, GUID: "first"},
+		app.PostSummary{
 			FeedID:      1,
 			GUID:        "first",
 			Title:       "First article",
@@ -32,10 +31,10 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	starred := make(chan bool, 1)
 	snapshotRequested := make(chan bool, 1)
 	header := New(model, Callbacks{
-		ToggleStar: func(int64, string) (store.PostSummary, error) {
-			model.SetPostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Starred: false})
+		ToggleStar: func(int64, string) (app.PostSummary, error) {
+			model.SetPostUpdated(app.PostSummary{FeedID: 1, GUID: "first", Starred: false})
 			starred <- false
-			return store.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
+			return app.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
 		},
 		RequestSnapshot: func(*mygo.Window) {
 			snapshotRequested <- true

@@ -13,10 +13,10 @@ import (
 	"os"
 	"strings"
 
-	appevent "github.com/sdttttt/ressu/core/event"
-	"github.com/sdttttt/ressu/core/service"
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	appevent "github.com/sdttttt/ressu/core/internal/event"
+	"github.com/sdttttt/ressu/core/internal/service"
+	appstatus "github.com/sdttttt/ressu/core/internal/status"
+	"github.com/sdttttt/ressu/core/internal/store"
 )
 
 // ErrInvalidLink reports a link that is not an absolute HTTP or HTTPS URL.

@@ -6,26 +6,24 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/service"
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestPostListShowsArticles(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 1})
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{Unread: 1})
 	loaded := make(chan struct{}, 1)
-	selected := make(chan store.PostSummary, 1)
+	selected := make(chan app.PostSummary, 1)
 	directions := make(chan int, 1)
 	now := time.Now()
 	postList := New(model, Callbacks{
-		List: func(query service.PostQuery) (service.PostPage, error) {
+		List: func(query app.PostQuery) (app.PostPage, error) {
 			defer func() {
 				loaded <- struct{}{}
 			}()
-			return service.PostPage{
-				Posts: []store.PostSummary{
+			return app.PostPage{
+				Posts: []app.PostSummary{
 					{
 						FeedID:      1,
 						GUID:        "first",
@@ -41,7 +39,7 @@ func TestPostListShowsArticles(t *testing.T) {
 				Unread: 1,
 			}, nil
 		},
-		Select: func(post store.PostSummary, direction int) {
+		Select: func(post app.PostSummary, direction int) {
 			directions <- direction
 			selected <- post
 		},
@@ -88,18 +86,18 @@ func TestPostListShowsArticles(t *testing.T) {
 }
 
 func TestPostListNavigationShortcuts(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	model.SetFeeds(appstatus.FeedsSnapshot{Unread: 2})
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{Unread: 2})
 	loaded := make(chan struct{}, 1)
-	selected := make(chan store.PostSummary, 8)
+	selected := make(chan app.PostSummary, 8)
 	directions := make(chan int, 8)
 	starred := make(chan string, 1)
 	postList := New(model, Callbacks{
-		List: func(service.PostQuery) (service.PostPage, error) {
+		List: func(app.PostQuery) (app.PostPage, error) {
 			defer func() { loaded <- struct{}{} }()
-			return service.PostPage{
-				Posts: []store.PostSummary{
+			return app.PostPage{
+				Posts: []app.PostSummary{
 					{FeedID: 1, GUID: "first", Title: "First article"},
 					{FeedID: 1, GUID: "second", Title: "Second article", Read: true},
 					{FeedID: 1, GUID: "third", Title: "Third article"},
@@ -108,15 +106,15 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 				Unread: 2,
 			}, nil
 		},
-		Select: func(post store.PostSummary, direction int) {
-			selection := appstatus.PostSelection{FeedID: post.FeedID, GUID: post.GUID}
+		Select: func(post app.PostSummary, direction int) {
+			selection := app.PostSelection{FeedID: post.FeedID, GUID: post.GUID}
 			model.SetCurrentPost(selection, post)
 			directions <- direction
 			selected <- post
 		},
-		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {
+		ToggleStar: func(_ int64, guid string) (app.PostSummary, error) {
 			starred <- guid
-			return store.PostSummary{}, nil
+			return app.PostSummary{}, nil
 		},
 	})
 
@@ -170,28 +168,28 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 }
 
 func TestPostListStarDoesNotOpenArticle(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
 	loaded := make(chan struct{}, 1)
 	selected := make(chan struct{}, 1)
 	starred := make(chan string, 1)
 	postList := New(model, Callbacks{
-		List: func(service.PostQuery) (service.PostPage, error) {
+		List: func(app.PostQuery) (app.PostPage, error) {
 			defer func() { loaded <- struct{}{} }()
-			return service.PostPage{
-				Posts: []store.PostSummary{
+			return app.PostPage{
+				Posts: []app.PostSummary{
 					{FeedID: 1, GUID: "first", Title: "First article", Starred: true},
 				},
 				Total:  1,
 				Unread: 1,
 			}, nil
 		},
-		Select: func(store.PostSummary, int) {
+		Select: func(app.PostSummary, int) {
 			selected <- struct{}{}
 		},
-		ToggleStar: func(_ int64, guid string) (store.PostSummary, error) {
+		ToggleStar: func(_ int64, guid string) (app.PostSummary, error) {
 			starred <- guid
-			return store.PostSummary{GUID: guid, Starred: false}, nil
+			return app.PostSummary{GUID: guid, Starred: false}, nil
 		},
 	})
 
@@ -225,28 +223,28 @@ func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 }
 
 func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds:  []store.Feed{{ID: 7, Title: "Selected feed", Unread: 2}},
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 2}},
 		Unread: 2,
 	})
 	model.SetCurrentFeed(7)
-	queries := make(chan service.PostQuery, 2)
+	queries := make(chan app.PostQuery, 2)
 	postList := New(model, Callbacks{
-		List: func(query service.PostQuery) (service.PostPage, error) {
+		List: func(query app.PostQuery) (app.PostPage, error) {
 			queries <- query
-			post := store.PostSummary{FeedID: 7, GUID: "first", Title: "First article"}
+			post := app.PostSummary{FeedID: 7, GUID: "first", Title: "First article"}
 			if query.Offset == 1 {
-				post = store.PostSummary{FeedID: 7, GUID: "second", Title: "Second article"}
+				post = app.PostSummary{FeedID: 7, GUID: "second", Title: "Second article"}
 			}
-			return service.PostPage{Posts: []store.PostSummary{post}, Total: 2, Unread: 2}, nil
+			return app.PostPage{Posts: []app.PostSummary{post}, Total: 2, Unread: 2}, nil
 		},
 	})
 
 	tester := ui.NewTester(postList.View, 360, 520)
 	tester.Frame()
-	var first service.PostQuery
+	var first app.PostQuery
 	select {
 	case first = <-queries:
 	case <-time.After(time.Second):
@@ -260,7 +258,7 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	if err := tester.Click("加载更多（还有 1 篇）"); err != nil {
 		t.Fatalf("click load more: %v", err)
 	}
-	var second service.PostQuery
+	var second app.PostQuery
 	select {
 	case second = <-queries:
 	case <-time.After(time.Second):
@@ -276,19 +274,19 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 }
 
 func TestPostListFilterIconButtons(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
-	queries := make(chan service.PostQuery, 3)
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	queries := make(chan app.PostQuery, 3)
 	postList := New(model, Callbacks{
-		List: func(query service.PostQuery) (service.PostPage, error) {
+		List: func(query app.PostQuery) (app.PostPage, error) {
 			queries <- query
-			return service.PostPage{}, nil
+			return app.PostPage{}, nil
 		},
 	})
 
 	tester := ui.NewTester(postList.View, 360, 520)
 	tester.Frame()
-	var initial service.PostQuery
+	var initial app.PostQuery
 	select {
 	case initial = <-queries:
 	case <-time.After(time.Second):
@@ -301,7 +299,7 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	if err := tester.Click("只看未读"); err != nil {
 		t.Fatalf("click unread filter: %v", err)
 	}
-	var unread service.PostQuery
+	var unread app.PostQuery
 	select {
 	case unread = <-queries:
 	case <-time.After(time.Second):
@@ -314,7 +312,7 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	if err := tester.Click("只看星标"); err != nil {
 		t.Fatalf("click starred filter: %v", err)
 	}
-	var starred service.PostQuery
+	var starred app.PostQuery
 	select {
 	case starred = <-queries:
 	case <-time.After(time.Second):
@@ -326,8 +324,8 @@ func TestPostListFilterIconButtons(t *testing.T) {
 }
 
 func TestPostListMatchesWebviewTextSize(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
 	postList := New(model, Callbacks{})
 
 	var fontSize float32
@@ -342,11 +340,11 @@ func TestPostListMatchesWebviewTextSize(t *testing.T) {
 }
 
 func TestPostListScalesLayoutWithFontSize(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeLarge)
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeLarge)
 	postList := New(model, Callbacks{
-		List: func(service.PostQuery) (service.PostPage, error) {
-			return service.PostPage{}, nil
+		List: func(app.PostQuery) (app.PostPage, error) {
+			return app.PostPage{}, nil
 		},
 	})
 
@@ -363,23 +361,23 @@ func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 }
 
 func TestSelectionDirection(t *testing.T) {
-	posts := []store.PostSummary{
+	posts := []app.PostSummary{
 		{FeedID: 1, GUID: "first"},
 		{FeedID: 1, GUID: "second"},
 		{FeedID: 1, GUID: "third"},
 	}
 	tests := []struct {
 		name    string
-		current appstatus.PostSelection
-		post    store.PostSummary
+		current app.PostSelection
+		post    app.PostSummary
 		want    int
 	}{
-		{"no current selection", appstatus.PostSelection{}, posts[0], 0},
-		{"later post", appstatus.PostSelection{FeedID: 1, GUID: "first"}, posts[2], 1},
-		{"earlier post", appstatus.PostSelection{FeedID: 1, GUID: "third"}, posts[0], -1},
-		{"same post", appstatus.PostSelection{FeedID: 1, GUID: "second"}, posts[1], 0},
-		{"current missing from list", appstatus.PostSelection{FeedID: 1, GUID: "gone"}, posts[0], 0},
-		{"post missing from list", appstatus.PostSelection{FeedID: 1, GUID: "first"}, store.PostSummary{FeedID: 1, GUID: "gone"}, 0},
+		{"no current selection", app.PostSelection{}, posts[0], 0},
+		{"later post", app.PostSelection{FeedID: 1, GUID: "first"}, posts[2], 1},
+		{"earlier post", app.PostSelection{FeedID: 1, GUID: "third"}, posts[0], -1},
+		{"same post", app.PostSelection{FeedID: 1, GUID: "second"}, posts[1], 0},
+		{"current missing from list", app.PostSelection{FeedID: 1, GUID: "gone"}, posts[0], 0},
+		{"post missing from list", app.PostSelection{FeedID: 1, GUID: "first"}, app.PostSummary{FeedID: 1, GUID: "gone"}, 0},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

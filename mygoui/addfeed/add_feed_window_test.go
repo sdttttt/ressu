@@ -8,19 +8,19 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestAddFeedViewRendersDraft(t *testing.T) {
-	prefs := store.DefaultPrefs()
+	prefs := app.DefaultPrefs()
 	view := &addFeedView{
 		callbacks: Callbacks{
-			Appearance: func() store.Prefs { return prefs },
+			Appearance: func() app.Prefs { return prefs },
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
+			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs:     prefs,
@@ -55,15 +55,15 @@ func TestAddFeedViewRendersDraft(t *testing.T) {
 }
 
 func TestAddFeedViewRendersError(t *testing.T) {
-	prefs := store.DefaultPrefs()
+	prefs := app.DefaultPrefs()
 	view := &addFeedView{
 		callbacks: Callbacks{
-			Appearance: func() store.Prefs { return prefs },
+			Appearance: func() app.Prefs { return prefs },
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
+			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs: prefs,
@@ -78,22 +78,22 @@ func TestAddFeedViewRendersError(t *testing.T) {
 }
 
 func TestAddFeedViewRendersEditMode(t *testing.T) {
-	prefs := store.DefaultPrefs()
+	prefs := app.DefaultPrefs()
 	view := &addFeedView{
 		callbacks: Callbacks{
-			Appearance: func() store.Prefs { return prefs },
+			Appearance: func() app.Prefs { return prefs },
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (store.Feed, error) { return store.Feed{}, nil },
+			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs:           prefs,
-		edit:            &store.Feed{ID: 7, URL: "https://example.com/feed.xml", Title: "自定义名称", CustomTitle: true},
+		edit:            &app.Feed{ID: 7, URL: "https://example.com/feed.xml", Title: "自定义名称", CustomTitle: true},
 		url:             "https://example.com/feed.xml",
 		title:           "自定义名称",
-		remoteResources: store.ResourceAccessGoProxy,
+		remoteResources: app.ResourceAccessGoProxy,
 	}
 
 	tester := ui.NewTester(view.draw, addFeedWidth, addFeedHeight)

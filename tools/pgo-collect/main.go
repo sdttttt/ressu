@@ -17,8 +17,7 @@ import (
 	"runtime/pprof"
 	"sync/atomic"
 
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 var version atomic.Int64
@@ -67,12 +66,12 @@ func main() {
 	for round := range 3 {
 		dir := filepath.Join(os.TempDir(), fmt.Sprintf("ressu-pgo-%d", round))
 		_ = os.RemoveAll(dir)
-		st, err := store.Open(dir)
+		st, err := app.OpenStore(dir)
 		if err != nil {
 			log.Fatal(err)
 		}
-		feeds := service.NewFeeds(st)
-		posts := service.NewPosts(st)
+		feeds := app.NewFeeds(st)
+		posts := app.NewPosts(st)
 
 		var feedIDs []int64
 		for n := range 4 {
@@ -88,7 +87,7 @@ func main() {
 				log.Fatal(err)
 			}
 			for _, id := range feedIDs {
-				page, err := posts.List(service.PostQuery{FeedID: id, Limit: 100})
+				page, err := posts.List(app.PostQuery{FeedID: id, Limit: 100})
 				if err != nil {
 					log.Fatal(err)
 				}

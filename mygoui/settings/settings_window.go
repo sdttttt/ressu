@@ -10,8 +10,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	"github.com/sdttttt/ressu/mygoui/format"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
@@ -32,10 +31,10 @@ var settingsWindow struct {
 
 // Callbacks are the operations a native settings surface may invoke.
 type Callbacks struct {
-	Load         func() store.Prefs
-	Save         func(store.Prefs) (store.Prefs, error)
+	Load         func() app.Prefs
+	Save         func(app.Prefs) (app.Prefs, error)
 	DataDir      func() string
-	StorageUsage func() service.StorageInfo
+	StorageUsage func() app.StorageInfo
 	ExportOPML   func(parent *mygo.Window) (string, error)
 	OpenDataDir  func() error
 }
@@ -82,13 +81,13 @@ func Open(parent *mygo.Window, callbacks Callbacks) {
 // settingsView keeps the editable preferences and the last save result.
 type settingsView struct {
 	callbacks Callbacks
-	prefs     store.Prefs
+	prefs     app.Prefs
 	window    *mygo.Window
 	err       string
 	notice    string
 	noticeAt  time.Time
 
-	storage   service.StorageInfo
+	storage   app.StorageInfo
 	storageAt time.Time
 }
 
@@ -104,10 +103,10 @@ func (s *settingsView) draw(c *ui.Context) {
 				ui.Fieldset(c, "外观", func() {
 					ui.Field(c, "主题", func() {
 						themes := []string{
-							store.ThemeSystem,
-							store.ThemeLight,
-							store.ThemeDark,
-							store.ThemeSepia,
+							app.ThemeSystem,
+							app.ThemeLight,
+							app.ThemeDark,
+							app.ThemeSepia,
 						}
 						selected := indexOf(themes, s.prefs.Theme)
 						if ui.Segmented(c, &selected, "跟随系统", "浅色", "深色", "护眼").
@@ -118,9 +117,9 @@ func (s *settingsView) draw(c *ui.Context) {
 					})
 					ui.Field(c, "界面字号", func() {
 						fontSizes := []string{
-							store.FontSizeSmall,
-							store.FontSizeMedium,
-							store.FontSizeLarge,
+							app.FontSizeSmall,
+							app.FontSizeMedium,
+							app.FontSizeLarge,
 						}
 						selected := indexOf(fontSizes, s.prefs.FontSize)
 						if ui.Segmented(c, &selected, "小", "中", "大").
@@ -139,8 +138,8 @@ func (s *settingsView) draw(c *ui.Context) {
 				ui.Fieldset(c, "阅读", func() {
 					ui.Field(c, "文章排序依据", func() {
 						sortFields := []string{
-							store.PostSortPublished,
-							store.PostSortFetched,
+							app.PostSortPublished,
+							app.PostSortFetched,
 						}
 						selected := indexOf(sortFields, s.prefs.PostSort)
 						if ui.Segmented(c, &selected, "发布时间", "抓取时间").
@@ -172,11 +171,11 @@ func (s *settingsView) draw(c *ui.Context) {
 					ui.Field(c, "正文图片", func() {
 						ui.RadioGroup(c, func() {
 							if ui.Radio(c, &s.prefs.RemoteResources,
-								store.ResourceAccessGoProxy, "由 Ressu 代理并缓存").Changed() {
+								app.ResourceAccessGoProxy, "由 Ressu 代理并缓存").Changed() {
 								changed = true
 							}
 							if ui.Radio(c, &s.prefs.RemoteResources,
-								store.ResourceAccessWebview, "由 WebView 直接加载").Changed() {
+								app.ResourceAccessWebview, "由 WebView 直接加载").Changed() {
 								changed = true
 							}
 						})
@@ -194,11 +193,11 @@ func (s *settingsView) draw(c *ui.Context) {
 					ui.Field(c, "打开文章链接", func() {
 						ui.RadioGroup(c, func() {
 							if ui.Radio(c, &s.prefs.OpenLinks,
-								store.OpenLinksBrowser, "系统浏览器").Changed() {
+								app.OpenLinksBrowser, "系统浏览器").Changed() {
 								changed = true
 							}
 							if ui.Radio(c, &s.prefs.OpenLinks,
-								store.OpenLinksWindow, "应用内窗口").Changed() {
+								app.OpenLinksWindow, "应用内窗口").Changed() {
 								changed = true
 							}
 						})
@@ -296,7 +295,7 @@ func (s *settingsView) fail(c *ui.Context, err error) {
 }
 
 // dbSizeDescription renders the database size line of the data fieldset.
-func dbSizeDescription(info service.StorageInfo) string {
+func dbSizeDescription(info app.StorageInfo) string {
 	if info.DBBytes <= 0 {
 		return "数据库大小：—"
 	}
@@ -305,7 +304,7 @@ func dbSizeDescription(info service.StorageInfo) string {
 
 // cacheUsageDescription renders the image cache usage line under the cache
 // limit field.
-func cacheUsageDescription(info service.StorageInfo) string {
+func cacheUsageDescription(info app.StorageInfo) string {
 	if info.ImageCacheLimitBytes <= 0 {
 		return ""
 	}

@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
@@ -17,18 +17,18 @@ func TestComponentThemesIgnoreInheritedTextScale(t *testing.T) {
 		fontSize string
 		want     float32
 	}{
-		{"small", store.FontSizeSmall, 13},
-		{"medium", store.FontSizeMedium, 14.95},
-		{"large", store.FontSizeLarge, 16.9},
+		{"small", app.FontSizeSmall, 13},
+		{"medium", app.FontSizeMedium, 14.95},
+		{"large", app.FontSizeLarge, 16.9},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			var sidebarSize, postListSize float32
 			view := func(c *ui.Context) {
-				outer := appsidebar.Theme(c, store.ThemeSystem, test.fontSize)
+				outer := appsidebar.Theme(c, app.ThemeSystem, test.fontSize)
 				ui.Themed(c, outer).Children(func() {
-					sidebarSize = appsidebar.Theme(c, store.ThemeSystem, test.fontSize).FontSize
-					postListSize = guitheme.PostTheme(c, store.ThemeSystem, test.fontSize).FontSize
+					sidebarSize = appsidebar.Theme(c, app.ThemeSystem, test.fontSize).FontSize
+					postListSize = guitheme.PostTheme(c, app.ThemeSystem, test.fontSize).FontSize
 				})
 			}
 

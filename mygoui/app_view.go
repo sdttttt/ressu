@@ -4,7 +4,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/app"
 	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
 	apppostheader "github.com/sdttttt/ressu/mygoui/postheader"
 	apppostlist "github.com/sdttttt/ressu/mygoui/postlist"
@@ -25,7 +25,7 @@ type AppView struct {
 
 // NewAppView creates the main window's native layout.
 func NewAppView(
-	statusModel *appstatus.Model,
+	statusModel *app.Model,
 	onAbout func(),
 	notifications *appdialog.Notifications,
 	confirmations *appdialog.Confirmations,

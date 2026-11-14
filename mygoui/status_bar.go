@@ -7,18 +7,18 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/app"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
 
 // StatusBar draws the reader's bottom status bar with MyGO native UI.
 type StatusBar struct {
-	model   *appstatus.Model
+	model   *app.Model
 	onAbout func()
 }
 
 // NewStatusBar draws the state kept by model.
-func NewStatusBar(model *appstatus.Model, onAbout func()) *StatusBar {
+func NewStatusBar(model *app.Model, onAbout func()) *StatusBar {
 	return &StatusBar{model: model, onAbout: onAbout}
 }
 

@@ -11,9 +11,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/service"
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	appformat "github.com/sdttttt/ressu/mygoui/format"
 	appicon "github.com/sdttttt/ressu/mygoui/icon"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
@@ -31,9 +29,9 @@ const (
 
 // Callbacks connects the native article list to application actions.
 type Callbacks struct {
-	List           func(service.PostQuery) (service.PostPage, error)
-	Select         func(post store.PostSummary, direction int)
-	ToggleStar     func(feedID int64, guid string) (store.PostSummary, error)
+	List           func(app.PostQuery) (app.PostPage, error)
+	Select         func(post app.PostSummary, direction int)
+	ToggleStar     func(feedID int64, guid string) (app.PostSummary, error)
 	MarkAllRead    func(feedID int64)
 	SetPanePercent func(percent float32)
 	Notify         func(level, message string)
@@ -42,7 +40,7 @@ type Callbacks struct {
 // List renders articles with the WebView list's visual contract.
 type List struct {
 	mu         sync.Mutex
-	model      *appstatus.Model
+	model      *app.Model
 	callbacks  Callbacks
 	invalidate func()
 	window     *mygo.Window
@@ -50,17 +48,17 @@ type List struct {
 	panePercent   float32
 	paneSaveTimer *time.Timer
 
-	posts         []store.PostSummary
+	posts         []app.PostSummary
 	total         int
 	loading       bool
 	loadedVersion uint64
 	loadedFeed    int64
-	loadedQuery   service.PostQuery
+	loadedQuery   app.PostQuery
 	loadVersion   int
 	forceReload   bool
 
 	appliedPostVersion uint64
-	query              service.PostQuery
+	query              app.PostQuery
 	search             string
 	searchOpen         bool
 	searchTimer        *time.Timer
@@ -69,14 +67,14 @@ type List struct {
 }
 
 // New creates the native article list.
-func New(model *appstatus.Model, callbacks Callbacks) *List {
+func New(model *app.Model, callbacks Callbacks) *List {
 	snapshot := model.Snapshot()
-	query := service.PostQuery{
+	query := app.PostQuery{
 		FeedID:     snapshot.CurrentFeedID,
 		UnreadOnly: true,
 		Limit:      pageSize,
-		SortOrder:  service.SortOrderDescending,
-		SortBy:     service.SortField(snapshot.PostSort),
+		SortOrder:  app.SortOrderDescending,
+		SortBy:     app.SortField(snapshot.PostSort),
 	}
 	return &List{
 		model:       model,
@@ -157,7 +155,7 @@ func (l *List) View(c *ui.Context) {
 	})
 }
 
-func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
 	title := "聚合源"
 	for _, feed := range snapshot.Feeds {
 		if feed.ID == snapshot.CurrentFeedID {
@@ -196,7 +194,7 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Sna
 			})
 			sortIcon := appicon.SortDescending
 			sortLabel := "按时间升序排列"
-			if l.query.SortOrder == service.SortOrderAscending {
+			if l.query.SortOrder == app.SortOrderAscending {
 				sortIcon = appicon.SortAscending
 				sortLabel = "按时间降序排列"
 			}
@@ -238,7 +236,7 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Sna
 	ui.Box(c).FillWidth().Height(1).Background(palette.Border)
 }
 
-func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
 	ui.Scroll(c).Grow(1).Padding(l.scaled(theme, 8), l.scaled(theme, 8)).Children(func() {
 		if l.loading && len(l.posts) == 0 {
 			ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).Children(func() {
@@ -265,7 +263,7 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snap
 	})
 }
 
-func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot, post store.PostSummary) {
+func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, post app.PostSummary) {
 	palette := guitheme.NewPostPalette(*theme)
 	rowKey := postRowKey(post)
 	selected := snapshot.CurrentPost.FeedID == post.FeedID && snapshot.CurrentPost.GUID == post.GUID
@@ -417,7 +415,7 @@ func (l *List) installShortcuts(c *ui.Context) {
 
 // directionFor reports where post sits relative to the current selection in
 // the loaded list: 1 later, -1 earlier, 0 unknown.
-func (l *List) directionFor(current appstatus.PostSelection, post store.PostSummary) int {
+func (l *List) directionFor(current app.PostSelection, post app.PostSummary) int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return selectionDirection(l.posts, current, post)
@@ -427,7 +425,7 @@ func (l *List) directionFor(current appstatus.PostSelection, post store.PostSumm
 // selection in the loaded list: 1 when the post sits later in the list, -1
 // when earlier, and 0 when there is no current article to compare or either
 // post is missing from the loaded page.
-func selectionDirection(posts []store.PostSummary, current appstatus.PostSelection, post store.PostSummary) int {
+func selectionDirection(posts []app.PostSummary, current app.PostSelection, post app.PostSummary) int {
 	if current.GUID == "" {
 		return 0
 	}
@@ -535,7 +533,7 @@ func (l *List) activateSelection() {
 func (l *List) toggleSelectedStar() {
 	snapshot := l.model.Snapshot()
 	l.mu.Lock()
-	var post store.PostSummary
+	var post app.PostSummary
 	found := false
 	for _, candidate := range l.posts {
 		if candidate.FeedID == snapshot.CurrentPost.FeedID &&
@@ -664,10 +662,10 @@ func (l *List) badge(c *ui.Context, theme *ui.Theme, label string, background, f
 	})
 }
 
-func (l *List) syncState(snapshot appstatus.Snapshot) {
+func (l *List) syncState(snapshot app.Snapshot) {
 	l.mu.Lock()
 	if snapshot.PostSort != "" {
-		l.query.SortBy = service.SortField(snapshot.PostSort)
+		l.query.SortBy = app.SortField(snapshot.PostSort)
 	}
 	if snapshot.PostVersion != l.appliedPostVersion {
 		l.appliedPostVersion = snapshot.PostVersion
@@ -739,10 +737,10 @@ func (l *List) syncState(snapshot appstatus.Snapshot) {
 
 func (l *List) setSortOrder() {
 	l.mu.Lock()
-	if l.query.SortOrder == service.SortOrderAscending {
-		l.query.SortOrder = service.SortOrderDescending
+	if l.query.SortOrder == app.SortOrderAscending {
+		l.query.SortOrder = app.SortOrderDescending
 	} else {
-		l.query.SortOrder = service.SortOrderAscending
+		l.query.SortOrder = app.SortOrderAscending
 	}
 	invalidate := l.invalidate
 	l.mu.Unlock()
@@ -863,7 +861,7 @@ func (l *List) loadMore() {
 	}()
 }
 
-func (l *List) toggleStar(post store.PostSummary) {
+func (l *List) toggleStar(post app.PostSummary) {
 	l.runAsync(func() {
 		if _, err := l.callbacks.ToggleStar(post.FeedID, post.GUID); err != nil && l.callbacks.Notify != nil {
 			l.callbacks.Notify("error", "无法修改星标："+err.Error())
@@ -923,12 +921,12 @@ func postRowBackground(palette guitheme.PostPalette, selected bool) ui.Color {
 	return palette.Background
 }
 
-func postRowKey(post store.PostSummary) string {
+func postRowKey(post app.PostSummary) string {
 	return "post-" + formatPostID(post.FeedID) + "-" + post.GUID
 }
 
-func currentUnread(snapshot appstatus.Snapshot) int {
-	if snapshot.CurrentFeedID == service.AggregateFeedID {
+func currentUnread(snapshot app.Snapshot) int {
+	if snapshot.CurrentFeedID == app.AggregateFeedID {
 		return snapshot.Unread
 	}
 	for _, feed := range snapshot.Feeds {

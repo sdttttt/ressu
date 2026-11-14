@@ -42,7 +42,8 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 清单是三个 Go module：根 `go.mod`（桌面壳）、`core/go.mod`（阅读器后端）和
 `mygoui/go.mod`（MyGO 原生界面），由根目录 `go.work` 串成 workspace；各 go.mod 里的
 `replace` 仅作脱离 workspace 单独构建的兜底。`core` 不得依赖 `mygo` 或 `mygoui`，保证
-可以单独被 Web 服务、CLI 或移动端前端复用。
+可以单独被 Web 服务、CLI 或移动端前端复用；`core` 只通过 `core/app` 对外暴露能力，
+其余包全部在 `core/internal/` 下，禁止外部导入。
 
 ## 目录结构
 
@@ -50,10 +51,11 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 main.go                   极简启动器，只调用 mygoui.Run()
 go.work                  串联根、core、mygoui 三个 module 的 workspace
 core/                    独立后端 module，细节见 core/README.md
-  rss/ icon/ sanitize/ store/ media/ service/ event/ status/ logging/
-  app/                   应用门面（入站端口）+ UI 接口与 DTO，细节见 core/app/README.md
-  buildinfo/             从 Go 构建元数据读取构建日期
-  textmetrics/ limitreader/
+  app/                   唯一对外暴露的应用门面（入站端口）+ UI 接口、DTO 与
+                         内部包重导出，细节见 core/app/README.md
+  internal/              后端实现（rss/icon/sanitize/store/media/service/event/
+                         status/logging/buildinfo/textmetrics/limitreader），
+                         禁止 core 树以外的代码导入
 mygoui/                  原生界面 module（启动装配、组合根与各功能包），细节见 mygoui/README.md
   run.go / menu_*.go     启动装配与 macOS 菜单
   webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
@@ -94,14 +96,14 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 ## 架构总纲
 
 数据自上而下走 `webview -> mygoui/webendpoint -> core/app -> service`，副作用自下而上由
-`core/app` 回调给原生层；`core/service` 只有业务逻辑，`core/app` 的 `App` 是界面能力的
+`core/app` 回调给原生层；`core/internal/service` 只有业务逻辑，`core/app` 的 `App` 是界面能力的
 唯一入口，`mygoui/webendpoint` 只做绑定适配。三者的完整契约见
 `core/app/README.md`，事件 EID 清单与语义见 `core/README.md`，原生侧消费见
 `mygoui/README.md`，页面侧消费见 `webview/static/README.md`。
 
 几条跨层铁律：
 
-- Go 只声明一个广播通道 `app:event`（载荷 `core/event.Event`，Hub 串行发布：revision →
+- Go 只声明一个广播通道 `app:event`（载荷 `app.Event`，Hub 串行发布：revision →
   更新 `status.Model` 镜像 → sink 广播）。不要绕过 Hub，不要新增第二个通道。
 - 事件分两类：`sync.*`、`feeds.changed`、`posts.changed`、`selection.changed`、
   `post.selected`、`post.updated` 是领域事件，任何前端都要消费；`appearance.changed`、
@@ -136,13 +138,14 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 
 ## 常见改动路径
 
-- 新增后端调用：`core/service` 写业务逻辑（不碰 MyGO）→ `core/app` 加 `App` 方法（必要
-  时封装 `mygoui` 方法并实现 `app.UI`）→ `mygoui/webendpoint` 对应绑定对象加只做参
-  数/调用方窗口适配的导出方法 → 页面或原生组件调用。细节见 `core/app/README.md`。
-- 新增事件：`core/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，在
-  `reader.js` dispatcher 加分支。
-- 新增偏好：`store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` → `mygoui/settings` 加原生
-  控件 → 若影响阅读更新 `reader.js`。
+- 新增后端调用：`core/internal/service` 写业务逻辑（不碰 MyGO）→ `core/app` 加 `App` 方
+  法（必要时封装 `mygoui` 方法并实现 `app.UI`，内部类型经 `export.go` 重导出）→
+  `mygoui/webendpoint` 对应绑定对象加只做参数/调用方窗口适配的导出方法 → 页面或原生
+  组件调用。细节见 `core/app/README.md`。
+- 新增事件：`core/internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方
+  法，在 `reader.js` dispatcher 加分支。
+- 新增偏好：`store.Prefs`、`DefaultPrefs`、`Prefs.Normalize`（在
+  `core/internal/store`）→ `mygoui/settings` 加原生控件 → 若影响阅读更新 `reader.js`。
 - 新增快捷键：先确认属于原生列表、主窗口还是静态正文，分别接在
   `mygoui/postlist`、`mygoui/app_view.go`、`reader.js`。WebView 焦点下转交
   原生行为的按键必须调用 `Status` 绑定并 `preventDefault()`。
@@ -151,10 +154,10 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 ## 测试
 
 - Go：`go test ./...`（三个 module 分别在根目录、`core/`、`mygoui/` 跑）。`rss` 表驱动、
-  夹具在 `core/rss/testdata/`；`store` 覆盖创建/合并/裁剪/迁移/图标缓存；`service` 用
-  httptest 跑添加、刷新、304、节流、筛选、分页、搜索、OPML、已读；`event` 覆盖校验、
-  revision 顺序、并发与快照；`core/app` 覆盖门面方法与 UI 副作用；`mygoui` 子包用
-  `ui.NewTester` 渲染各原生组件并断言行为（侧栏含选中胶囊滑动测试）。
+  夹具在 `core/internal/rss/testdata/`；`store` 覆盖创建/合并/裁剪/迁移/图标缓存；
+  `service` 用 httptest 跑添加、刷新、304、节流、筛选、分页、搜索、OPML、已读；
+  `event` 覆盖校验、revision 顺序、并发与快照；`core/app` 覆盖门面方法与 UI 副作用；
+  `mygoui` 子包用 `ui.NewTester` 渲染各原生组件并断言行为（侧栏含选中胶囊滑动测试）。
 - 静态页无独立测试框架；语法用 `node --check webview/static/reader.js` 检查。
 - 没有 E2E、浏览器自动化或覆盖率阈值。提交前至少运行与改动相关的测试；跨层改动跑
   三个 module 的 `go test`/`go vet` 和 `go tool mygo build`。
@@ -169,7 +172,7 @@ SHA256SUMS、发 GitHub Release；tag 含 `-` 标记预发布）。发版时修�
 
 ## 安全
 
-- 订阅源内容不可信：正文必须经 `core/sanitize` 清洗后入库（禁用 script/iframe/form 等，
+- 订阅源内容不可信：正文必须经 `core/internal/sanitize` 清洗后入库（禁用 script/iframe/form 等，
   链接加 `rel="noopener noreferrer"`）；前端 `innerHTML` 只接收已清洗正文。
 - 外链必须经页面 `externalHref()` 与 `action.OpenLink` 双重校验，只允许绝对
   `http`/`https`。

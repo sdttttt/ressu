@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/internal/service"
+	"github.com/sdttttt/ressu/core/internal/store"
 )
 
 func TestStitchSnapshotOpensNativeViewer(t *testing.T) {

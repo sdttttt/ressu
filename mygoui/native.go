@@ -7,7 +7,6 @@ import (
 	"github.com/egoist/mygo"
 
 	"github.com/sdttttt/ressu/core/app"
-	"github.com/sdttttt/ressu/core/store"
 	appaddfeed "github.com/sdttttt/ressu/mygoui/addfeed"
 	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
 	apppostlist "github.com/sdttttt/ressu/mygoui/postlist"
@@ -185,7 +184,7 @@ func (n NativeUI) OpenAddFeed(parent app.WindowHandle, callbacks app.AddFeedCall
 }
 
 // OpenEditFeed opens the native subscription window pre-filled for editing.
-func (n NativeUI) OpenEditFeed(parent app.WindowHandle, feed store.Feed, callbacks app.AddFeedCallbacks) {
+func (n NativeUI) OpenEditFeed(parent app.WindowHandle, feed app.Feed, callbacks app.AddFeedCallbacks) {
 	appaddfeed.OpenEdit(windowOf(parent), feed, n.addFeedCallbacks(callbacks))
 }
 
@@ -244,9 +243,9 @@ func (NativeUI) WriteImage(data []byte) error {
 // ApplyTheme applies the native appearance for a preference theme.
 func (NativeUI) ApplyTheme(theme string) {
 	switch theme {
-	case store.ThemeLight:
+	case app.ThemeLight:
 		mygo.Theme.SetSource(mygo.ThemeLight)
-	case store.ThemeDark, store.ThemeSepia:
+	case app.ThemeDark, app.ThemeSepia:
 		mygo.Theme.SetSource(mygo.ThemeDark)
 	default:
 		mygo.Theme.SetSource(mygo.ThemeSystem)

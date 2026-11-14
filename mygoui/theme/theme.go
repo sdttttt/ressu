@@ -4,7 +4,7 @@ package theme
 import (
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 // Family is the native interface font used across all windows.
@@ -19,11 +19,11 @@ func StatusBarHeight(fontSize string) float32 {
 func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	base := ui.LightTheme()
 	switch appearance {
-	case store.ThemeDark:
+	case app.ThemeDark:
 		base = ui.DarkTheme()
-	case store.ThemeSepia:
+	case app.ThemeSepia:
 		base = ui.LightTheme()
-	case store.ThemeSystem:
+	case app.ThemeSystem:
 		if c.Theme().Dark {
 			base = ui.DarkTheme()
 		}
@@ -32,7 +32,7 @@ func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	nativeTheme := *base
 	nativeTheme.FontSize *= FontScale(fontSize)
 	nativeTheme.Font = Family
-	if appearance == store.ThemeSepia {
+	if appearance == app.ThemeSepia {
 		ApplySepia(&nativeTheme)
 	}
 	return &nativeTheme
@@ -64,9 +64,9 @@ func ApplySepia(theme *ui.Theme) {
 // FontScale converts the interface font preference to a scale.
 func FontScale(fontSize string) float32 {
 	switch fontSize {
-	case store.FontSizeMedium:
+	case app.FontSizeMedium:
 		return 1.15
-	case store.FontSizeLarge:
+	case app.FontSizeLarge:
 		return 1.3
 	default:
 		return 1

@@ -1,13 +1,19 @@
 # Ressu 应用门面（core/app）
 
-`App` 是所有页面和原生界面能力的**唯一应用入口**（入站端口）：持有 service、事件 Hub 和
-`UI` 回调接口，负责文件对话框、剪贴板、外链、截图、原生主题与状态广播。分层规则：
+`core` 唯一对外暴露的包：前端只允许 import `github.com/sdttttt/ressu/core/app`，内部实现
+都在 `core/internal/` 下。`App` 是所有页面和原生界面能力的**唯一应用入口**（入站端口）：
+持有 service、事件 Hub 和 `UI` 回调接口，负责文件对话框、剪贴板、外链、截图、原生主题与
+状态广播。分层规则：
 
 - 需要暴露给界面层的能力必须先定义成 `App` 方法；service 层不感知 UI。
 - `app` 不 import `mygo`/`mygoui`：`UI` 是接口，只使用视图无关类型——
   `WindowHandle`（不透明窗口句柄，`NewWindowHandle` 包装具体窗口）、`Notification`、
   `ConfirmationRequest`、`AddFeedCallbacks`、`SettingsCallbacks` 等 DTO。桌面壳的
   `mygoui.NativeUI` 负责解包句柄并适配各原生窗口的回调结构体。
+- 门面在 `export.go` 里以类型别名和变量重导出内部包的类型与构造器（`Prefs`、`Model`、
+  `OpenStore`、`NewHub`、`NewFeedsWithHub` 等），内部包之间重名时另起名字
+  （`OpenStore`/`OpenMedia`/`OpenLog`、`MediaOptions`/`LogOptions`、status 的
+  `FeedsSnapshot` 叫 `StatusFeedsSnapshot`）。新增对外能力时在 `export.go` 补重导出。
 - 只有 `App` 负责事件广播和 UI 副作用；`mygoui` 组件只通过回调或只读数据
   类型接入，不直接访问数据库或实现业务规则。
 

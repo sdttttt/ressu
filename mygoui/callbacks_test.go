@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/sdttttt/ressu/core/app"
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
 )
 
 // callbackFakeUI implements app.UI with no-op side effects.
@@ -29,7 +27,7 @@ func (callbackFakeUI) OpenSnapshotViewer(app.WindowHandle, []byte, string, app.S
 	return nil
 }
 func (callbackFakeUI) OpenAddFeed(app.WindowHandle, app.AddFeedCallbacks) {}
-func (callbackFakeUI) OpenEditFeed(app.WindowHandle, store.Feed, app.AddFeedCallbacks) {
+func (callbackFakeUI) OpenEditFeed(app.WindowHandle, app.Feed, app.AddFeedCallbacks) {
 }
 func (callbackFakeUI) OpenSettings(app.WindowHandle, app.SettingsCallbacks) {}
 func (callbackFakeUI) OpenSnapshotCapture(app.WindowHandle)                 {}
@@ -46,7 +44,7 @@ func (callbackFakeUI) SelectNeighbourFeed(int)                     {}
 func (callbackFakeUI) ShowHelp()                                   {}
 
 func TestSidebarCallbacksPersistLayout(t *testing.T) {
-	st, err := store.Open(t.TempDir())
+	st, err := app.OpenStore(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +53,7 @@ func TestSidebarCallbacksPersistLayout(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	actions := app.New(nil, nil, service.NewSettings(st), nil, nil, callbackFakeUI{})
+	actions := app.New(nil, nil, app.NewSettings(st), nil, nil, callbackFakeUI{})
 	callbacks := SidebarCallbacks(actions)
 
 	callbacks.SetCollapsed(true)

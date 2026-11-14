@@ -5,7 +5,13 @@ Ressu 阅读器的后端核心。
 该 module 独立是为了与 GUI 解耦，可被 Web 服务、CLI 或其他前端复用；桌面壳的原生界面在
 `mygoui` module，`core` 不得依赖它或 `mygo`。
 
+`core` 只对外暴露 `app` 一个包：前端只允许 import `github.com/sdttttt/ressu/core/app`，
+门面重导出的内部类型和构造器足够完成启动装配与交互；其余包全部在 `internal/` 下，禁止
+外部导入。
+
 ## 包一览
+
+除 `app` 外所有包都在 `internal/` 下，路径相应为 `core/internal/<包名>`：
 
 | 包            | 作用                                                           |
 | ------------- | -------------------------------------------------------------- |
@@ -23,8 +29,11 @@ Ressu 阅读器的后端核心。
 | `textmetrics` | 正文字数统计                                                    |
 | `limitreader` | 带体积上限的 `io.Reader`                                        |
 
-`service` 不 import `mygo` 或任何 GUI 包；`event` 的 sink 注入设计保证发布器不依赖传输层。
-`app` 持有 `UI` 接口（出站端口），只使用视图无关的 DTO，由 `mygoui.NativeUI` 实现。
+`internal/service` 不 import `mygo` 或任何 GUI 包；`internal/event` 的 sink 注入设计保证
+发布器不依赖传输层。`app` 持有 `UI` 接口（出站端口），只使用视图无关的 DTO，由
+`mygoui.NativeUI` 实现；`app` 通过 `export.go` 重导出内部包的类型与构造器（如
+`OpenStore`、`NewHub`、`NewFeedsWithHub`、`Prefs`、`Model`），外部代码不需要也不允许
+直接引用内部包。
 
 ## 订阅源抓取与解析
 
@@ -36,9 +45,9 @@ Ressu 阅读器的后端核心。
 - `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
   链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。频道和文章里的相对链接按订阅源
   地址解析为绝对地址，摘要去掉 HTML、折叠空白并截断。
-- 正文在 `core/sanitize` 基于 bluemonday 清洗后入库；链接和媒体地址按文章地址补全。
+- 正文在 `core/internal/sanitize` 基于 bluemonday 清洗后入库；链接和媒体地址按文章地址补全。
   损坏 XML 或不是订阅源的页面返回错误，由服务层展示给用户。
-- 订阅源图标由 `core/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon 链接，最后
+- 订阅源图标由 `core/internal/icon` 在 Go 端解析：优先 feed 内置图标，其次站点 favicon 链接，最后
   `/favicon.ico`。只允许位图、http/https、256KB 以内，并通过 bbolt 缓存。
 
 ## 刷新流程与事件
@@ -57,14 +66,14 @@ Ressu 阅读器的后端核心。
   `feeds.changed`，订阅和已存文章保留。
 - 成功抓取后调用 `store.MergePosts`，再刷新频道元数据与校验器；合并后重新读取 Feed，
   因为未读数已在事务中重算。
-- OPML：`core/rss/opml.go` 负责解析（跳过无 `xmlUrl` 的目录）和导出；
-  `core/service/opml.go` 汇总导入结果（`ImportSummary`），导入复用 `Feeds.Add`。
+- OPML：`core/internal/rss/opml.go` 负责解析（跳过无 `xmlUrl` 的目录）和导出；
+  `core/internal/service/opml.go` 汇总导入结果（`ImportSummary`），导入复用 `Feeds.Add`。
 - `Posts.List` 在服务端完成未读/星标筛选、搜索和分页，返回 `{posts,total,unread}`；
   默认每页 100、上限 500。未读数由文章推导并保存在 `Feed.Unread`：合并时重算，单条已读
   变化时增减，全部已读时清零。
 - `Posts.Get` 按偏好 `MarkReadOnOpen` 自动标已读（失败不阻塞阅读）并广播
   `post.updated`；`Posts.ToggleRead` 翻转已读并返回最新摘要。
-- 事件由 `core/event.Hub` 串行发布：先分配递增 `revision`、更新时间，再更新 `status.Model`
+- 事件由 `internal/event.Hub` 串行发布：先分配递增 `revision`、更新时间，再更新 `status.Model`
   镜像，最后交给 sink。任何改变订阅或未读状态的服务方法都应广播。
 
 ## 持久化
@@ -81,7 +90,7 @@ Ressu 阅读器的后端核心。
 - `Store` 在内存缓存订阅和偏好，文章每次从数据库读取；一把互斥锁串行化写操作；返回的
   slice 会克隆。bbolt 的文件锁意味着同一数据目录只能有一个进程打开数据库。
 - `settings/schemaVersion` 记录数据库版本；修改持久化结构必须兼容旧记录，或在
-  `store/migrate.go` 加入迁移。
+  `internal/store/migrate.go` 加入迁移。
 - `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
   按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读；它在一个事务里重写该
   订阅的整个文章桶。`UpdatePost` 和 `MarkAllRead` 只写受影响的数据。
@@ -105,15 +114,12 @@ import (
 	"context"
 	"log"
 
-	"github.com/sdttttt/ressu/core/event"
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func main() {
 	// 1. 打开（或创建）数据库：用户数据目录下的 ressu.db。
-	st, err := store.Open("./data")
+	st, err := app.OpenStore("./data")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,16 +127,16 @@ func main() {
 
 	// 2. 创建事件 Hub。sink 是事件出口：推给 SSE、WebSocket、
 	//    终端日志或任何你的前端；传 nil 则只更新内存镜像。
-	model := status.New("0.1.0")
-	hub := event.NewHub(model, func(e event.Event) error {
+	model := app.NewStatusModel("0.1.0")
+	hub := app.NewHub(model, func(e app.Event) error {
 		log.Printf("event %s rev=%d", e.EID, e.Revision)
 		return nil
 	})
 
 	// 3. 组合业务服务。
-	feeds := service.NewFeedsWithHub(st, hub)
-	posts := service.NewPostsWithMediaAndHub(st, nil, hub)
-	settings := service.NewSettings(st)
+	feeds := app.NewFeedsWithHub(st, hub)
+	posts := app.NewPostsWithMediaAndHub(st, nil, hub)
+	settings := app.NewSettings(st)
 
 	// 4. 正常使用：订阅、刷新、读文章。
 	ctx := context.Background()
@@ -144,7 +150,7 @@ func main() {
 	}
 	log.Printf("updated=%d new=%d failed=%d", summary.Updated, summary.New, summary.Failed)
 
-	page, err := posts.List(service.PostQuery{FeedID: feed.ID})
+	page, err := posts.List(app.PostQuery{FeedID: feed.ID})
 	if err != nil {
 		log.Fatal(err)
 	}

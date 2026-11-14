@@ -7,19 +7,18 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestSidebarShowsSubscriptionActions(t *testing.T) {
-	model := appstatus.New("")
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds:  []store.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
 		Unread: 2,
 	})
 	sidebar := New(model, Callbacks{
-		Icon: func(context.Context, int64) (store.Icon, error) {
-			return store.Icon{}, store.ErrNotFound
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
 		},
 	})
 
@@ -39,8 +38,8 @@ func TestSidebarShowsSubscriptionActions(t *testing.T) {
 }
 
 func TestSidebarMatchesWebviewTextSize(t *testing.T) {
-	model := appstatus.New("")
-	model.SetAppearance(store.ThemeSystem, store.FontSizeSmall)
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
 	sidebar := New(model, Callbacks{})
 
 	var fontSize float32
@@ -55,15 +54,15 @@ func TestSidebarMatchesWebviewTextSize(t *testing.T) {
 }
 
 func TestSidebarClicksToggleSelectedFeed(t *testing.T) {
-	model := appstatus.New("")
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds:  []store.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 1, Title: "测试源", URL: "https://example.com/feed"}},
 		Unread: 2,
 	})
 	selections := make(chan int64, 2)
 	sidebar := New(model, Callbacks{
-		Icon: func(context.Context, int64) (store.Icon, error) {
-			return store.Icon{}, store.ErrNotFound
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
 		},
 		Select: func(feedID int64) {
 			selections <- feedID
@@ -100,9 +99,9 @@ func TestSidebarClicksToggleSelectedFeed(t *testing.T) {
 }
 
 func TestSidebarSelectNeighbourClampsToFeedBounds(t *testing.T) {
-	model := appstatus.New("")
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds: []store.Feed{
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
 			{ID: 1, Title: "第一个", URL: "https://example.com/one"},
 			{ID: 2, Title: "第二个", URL: "https://example.com/two"},
 			{ID: 3, Title: "第三个", URL: "https://example.com/three"},
@@ -140,9 +139,9 @@ func assertSelection(t *testing.T, selections <-chan int64, want int64) {
 }
 
 func TestSelectionPillSlidesBetweenFeeds(t *testing.T) {
-	model := appstatus.New("")
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds: []store.Feed{
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
 			{ID: 1, Title: "源一", URL: "https://example.com/one"},
 			{ID: 2, Title: "源二", URL: "https://example.com/two"},
 		},
@@ -150,8 +149,8 @@ func TestSelectionPillSlidesBetweenFeeds(t *testing.T) {
 	})
 	model.SetCurrentFeed(1)
 	sidebar := New(model, Callbacks{
-		Icon: func(context.Context, int64) (store.Icon, error) {
-			return store.Icon{}, store.ErrNotFound
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
 		},
 	})
 
@@ -191,10 +190,10 @@ func TestSelectionPillSlidesBetweenFeeds(t *testing.T) {
 }
 
 func TestSelectionPillJumpsWhenReduceMotion(t *testing.T) {
-	model := appstatus.New("")
+	model := app.NewStatusModel("")
 	model.SetReduceMotion(true)
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds: []store.Feed{
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
 			{ID: 1, Title: "源一", URL: "https://example.com/one"},
 			{ID: 2, Title: "源二", URL: "https://example.com/two"},
 		},
@@ -202,8 +201,8 @@ func TestSelectionPillJumpsWhenReduceMotion(t *testing.T) {
 	})
 	model.SetCurrentFeed(1)
 	sidebar := New(model, Callbacks{
-		Icon: func(context.Context, int64) (store.Icon, error) {
-			return store.Icon{}, store.ErrNotFound
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
 		},
 	})
 

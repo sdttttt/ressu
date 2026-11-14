@@ -8,7 +8,6 @@ import (
 	"github.com/egoist/mygo"
 
 	"github.com/sdttttt/ressu/core/app"
-	"github.com/sdttttt/ressu/core/service"
 	apppostheader "github.com/sdttttt/ressu/mygoui/postheader"
 	apppostlist "github.com/sdttttt/ressu/mygoui/postlist"
 	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
@@ -67,7 +66,7 @@ func PostHeaderCallbacks(a *app.App) apppostheader.Callbacks {
 
 func refreshAllWithNotice(a *app.App) {
 	if _, err := a.RefreshAll(context.Background()); err != nil {
-		if errors.Is(err, service.ErrRefreshing) {
+		if errors.Is(err, app.ErrRefreshing) {
 			return
 		}
 		slog.Warn("native refresh all failed",

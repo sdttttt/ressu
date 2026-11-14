@@ -12,7 +12,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
 )
@@ -55,10 +55,10 @@ type Summary struct {
 
 // Callbacks are the operations a native add-feed surface may invoke.
 type Callbacks struct {
-	Appearance func() store.Prefs
+	Appearance func() app.Prefs
 	Test       func(context.Context, string, int64) (Preview, error)
-	Add        func(context.Context, string, string, string) (store.Feed, error)
-	Save       func(context.Context, int64, string, string, string) (store.Feed, error)
+	Add        func(context.Context, string, string, string) (app.Feed, error)
+	Save       func(context.Context, int64, string, string, string) (app.Feed, error)
 	ImportOPML func(parent *mygo.Window) (Summary, error)
 }
 
@@ -68,12 +68,12 @@ func Open(parent *mygo.Window, callbacks Callbacks) {
 }
 
 // OpenEdit opens the same window pre-filled for editing an existing feed.
-func OpenEdit(parent *mygo.Window, feed store.Feed, callbacks Callbacks) {
+func OpenEdit(parent *mygo.Window, feed app.Feed, callbacks Callbacks) {
 	open(parent, &feed, callbacks)
 }
 
 // open opens the single native subscription window, optionally in edit mode.
-func open(parent *mygo.Window, edit *store.Feed, callbacks Callbacks) {
+func open(parent *mygo.Window, edit *app.Feed, callbacks Callbacks) {
 	addFeedWindow.Lock()
 	if window := addFeedWindow.window; window != nil && !window.IsDestroyed() {
 		addFeedWindow.Unlock()
@@ -135,8 +135,8 @@ func open(parent *mygo.Window, edit *store.Feed, callbacks Callbacks) {
 // addFeedView keeps the subscription draft, preview, and operation state.
 type addFeedView struct {
 	callbacks       Callbacks
-	prefs           store.Prefs
-	edit            *store.Feed
+	prefs           app.Prefs
+	edit            *app.Feed
 	window          *mygo.Window
 	url             string
 	title           string
@@ -180,9 +180,9 @@ func (s *addFeedView) draw(c *ui.Context) {
 				ui.Field(c, "远程资源访问方式", func() {
 					ui.RadioGroup(c, func() {
 						ui.Radio(c, &s.remoteResources,
-							store.ResourceAccessGoProxy, "由 Ressu 代理并缓存")
+							app.ResourceAccessGoProxy, "由 Ressu 代理并缓存")
 						ui.Radio(c, &s.remoteResources,
-							store.ResourceAccessWebview, "由 WebView 直接加载")
+							app.ResourceAccessWebview, "由 WebView 直接加载")
 					})
 				}).Description("只影响这个订阅源的正文图片加载。")
 			})

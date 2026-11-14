@@ -12,8 +12,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	appicon "github.com/sdttttt/ressu/mygoui/icon"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	"github.com/sdttttt/ressu/mygoui/widget"
@@ -56,7 +55,7 @@ var poseSnap = ui.Animation{Duration: time.Millisecond}
 
 // Callbacks connects the native sidebar to application actions.
 type Callbacks struct {
-	Icon           func(context.Context, int64) (store.Icon, error)
+	Icon           func(context.Context, int64) (app.Icon, error)
 	Select         func(int64)
 	RefreshAll     func()
 	RefreshFeed    func(int64)
@@ -90,7 +89,7 @@ const (
 // Sidebar renders subscriptions and their actions natively.
 type Sidebar struct {
 	mu         sync.Mutex
-	model      *appstatus.Model
+	model      *app.Model
 	callbacks  Callbacks
 	invalidate func()
 	window     *mygo.Window
@@ -110,7 +109,7 @@ type Sidebar struct {
 }
 
 // New creates the native subscription sidebar.
-func New(model *appstatus.Model, callbacks Callbacks) *Sidebar {
+func New(model *app.Model, callbacks Callbacks) *Sidebar {
 	snapshot := model.Snapshot()
 	return &Sidebar{
 		model:        model,
@@ -204,7 +203,7 @@ func (s *Sidebar) SelectNeighbour(delta int) {
 		return
 	}
 
-	index := slices.IndexFunc(snapshot.Feeds, func(feed store.Feed) bool {
+	index := slices.IndexFunc(snapshot.Feeds, func(feed app.Feed) bool {
 		return feed.ID == snapshot.CurrentFeedID
 	})
 	if index == -1 {
@@ -301,7 +300,7 @@ func (s *Sidebar) DrawOverlay(c *ui.Context) {
 	}
 }
 
-func (s *Sidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (s *Sidebar) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
 	ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 		ui.Row(c).Grow(1).AlignItems(ui.Center).Gap(6).Children(func() {
 			ui.Text(c, "订阅源").FontWeight(600).Shrink(1).Ellipsis("…")
@@ -358,7 +357,7 @@ func (s *Sidebar) iconButton(
 	})
 }
 
-func (s *Sidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.Snapshot) {
+func (s *Sidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
 	feeds := visibleSidebarFeeds(snapshot.Feeds, s.search)
 	if len(feeds) == 0 {
 		ui.Column(c).Grow(1).Center().Children(func() {
@@ -388,10 +387,10 @@ func (s *Sidebar) drawFeeds(c *ui.Context, theme *ui.Theme, snapshot appstatus.S
 func (s *Sidebar) drawSelectionPill(
 	c *ui.Context,
 	theme *ui.Theme,
-	snapshot appstatus.Snapshot,
-	feeds []store.Feed,
+	snapshot app.Snapshot,
+	feeds []app.Feed,
 ) {
-	index := slices.IndexFunc(feeds, func(feed store.Feed) bool {
+	index := slices.IndexFunc(feeds, func(feed app.Feed) bool {
 		return feed.ID == snapshot.CurrentFeedID
 	})
 	if index == -1 {
@@ -419,8 +418,8 @@ func (s *Sidebar) drawSelectionPill(
 func (s *Sidebar) drawFeed(
 	c *ui.Context,
 	theme *ui.Theme,
-	snapshot appstatus.Snapshot,
-	feed store.Feed,
+	snapshot app.Snapshot,
+	feed app.Feed,
 ) {
 	selected := snapshot.CurrentFeedID == feed.ID
 	row := ui.ButtonBase(c).
@@ -476,7 +475,7 @@ func (s *Sidebar) drawFeed(
 	})
 }
 
-func (s *Sidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed store.Feed) {
+func (s *Sidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed app.Feed) {
 	icon, ok := s.cachedIcon(feed)
 	switch {
 	case ok && !icon.missing:
@@ -522,7 +521,7 @@ func (s *Sidebar) loadIcon(feedID int64) {
 	}()
 }
 
-func (s *Sidebar) cachedIcon(feed store.Feed) (sidebarIcon, bool) {
+func (s *Sidebar) cachedIcon(feed app.Feed) (sidebarIcon, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	icon, ok := s.icons[feed.ID]
@@ -535,13 +534,13 @@ func (s *Sidebar) cachedIcon(feed store.Feed) (sidebarIcon, bool) {
 	return icon, time.Since(icon.fetched) < iconTTL
 }
 
-func (s *Sidebar) feedByID(feedID int64) (store.Feed, bool) {
+func (s *Sidebar) feedByID(feedID int64) (app.Feed, bool) {
 	for _, feed := range s.model.Snapshot().Feeds {
 		if feed.ID == feedID {
 			return feed, true
 		}
 	}
-	return store.Feed{}, false
+	return app.Feed{}, false
 }
 
 func (s *Sidebar) removeFeed(feedID int64) {
@@ -622,12 +621,12 @@ func (s *Sidebar) scheduleHide() {
 	})
 }
 
-func visibleSidebarFeeds(feeds []store.Feed, filter string) []store.Feed {
+func visibleSidebarFeeds(feeds []app.Feed, filter string) []app.Feed {
 	needle := strings.ToLower(strings.TrimSpace(filter))
 	if needle == "" {
 		return feeds
 	}
-	return slices.Clone(slices.DeleteFunc(feeds, func(feed store.Feed) bool {
+	return slices.Clone(slices.DeleteFunc(feeds, func(feed app.Feed) bool {
 		return !strings.Contains(strings.ToLower(feed.Title), needle) &&
 			!strings.Contains(strings.ToLower(feed.URL), needle)
 	}))

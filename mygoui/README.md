@@ -1,7 +1,9 @@
 # Ressu 原生界面（mygoui）
 
 MyGO 原生界面的启动装配、组合根与副作用实现，独立为 `github.com/sdttttt/ressu/mygoui`
-module，只依赖 mygo 与 `ressu/core`。根包的 `run.go` 负责启动装配（`Run`：打开数据库、
+module，只依赖 mygo 与 `ressu/core`。core 侧只允许 import
+`github.com/sdttttt/ressu/core/app` 门面（类型与构造器经其 `export.go` 重导出），不得
+引用 `core/internal/` 下的包。根包的 `run.go` 负责启动装配（`Run`：打开数据库、
 组合 service 与 `core/app.App`、注册 `webendpoint` 绑定、创建主窗），`menu_*.go` 实现
 macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文章列表、文章头部的回调组装
 集中在根包的 `callbacks.go`；可复用的主题、格式化、图标、控件、对话框和子窗口放在基础包，
@@ -65,7 +67,7 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 
 状态栏版本号是普通文本，点击由 `Element.OnClick` 绑定（不用按钮控件）；点击后打开
 `about` 单例子窗口，显示版本、嵌入头像、开发者、构建日期和 `mailto:` 邮箱。构建日期由
-`core/buildinfo.Date` 从 Go 的 `vcs.time` 读取，缺少 VCS 信息时回退到可执行文件的
+`core/app` 门面重导出的 `Date` 从 Go 的 `vcs.time` 读取，缺少 VCS 信息时回退到可执行文件的
 修改时间。
 
 ## 原生通知（dialog）
@@ -84,7 +86,7 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 - 采集页用 `Snapshot.Selected` 读当前选中文章、`Posts.Get` 取正文后重建固定浅色、
   760px 居中的快照卡片，等待图片解码并按滚动分片调用 `Posts.CaptureSnapshot`
   （`NativeUI.CapturePage` 对纯页面窗口回退为 `Window.CapturePage`）。
-- 随后页面调用 `Posts.StitchSnapshot`，`core/service/snapshot.go` 拼接完成后以主窗口为
+- 随后页面调用 `Posts.StitchSnapshot`，`core/internal/service/snapshot.go` 拼接完成后以主窗口为
   `Parent` 打开原生预览窗口并关闭采集窗口。拼接按几何信息里的 `cardLeft` 从整窗截图中
   裁出居中卡片；生成中阻断交互，Esc 或错误页关闭按钮经 `Snapshot.Cancel` 关窗。
 - 不能用当前窗口截图代替长文快照；嵌入 WebView 的快照必须通过

@@ -7,24 +7,23 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
 	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
 )
 
 func TestAppViewRendersNativeHelpAndFeedShortcuts(t *testing.T) {
-	model := appstatus.New("")
-	model.SetFeeds(appstatus.FeedsSnapshot{
-		Feeds: []store.Feed{
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
 			{ID: 1, Title: "第一个", URL: "https://example.com/one"},
 			{ID: 2, Title: "第二个", URL: "https://example.com/two"},
 		},
 	})
 	selections := make(chan int64, 2)
 	sidebar := appsidebar.New(model, appsidebar.Callbacks{
-		Icon: func(context.Context, int64) (store.Icon, error) {
-			return store.Icon{}, store.ErrNotFound
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
 		},
 		Select: func(feedID int64) {
 			selections <- feedID

@@ -6,19 +6,18 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestSettingsViewRendersPreferences(t *testing.T) {
-	prefs := store.DefaultPrefs()
+	prefs := app.DefaultPrefs()
 	view := &settingsView{
 		callbacks: Callbacks{
-			Load:    func() store.Prefs { return prefs },
-			Save:    func(next store.Prefs) (store.Prefs, error) { return next, nil },
+			Load:    func() app.Prefs { return prefs },
+			Save:    func(next app.Prefs) (app.Prefs, error) { return next, nil },
 			DataDir: func() string { return t.TempDir() },
-			StorageUsage: func() service.StorageInfo {
-				return service.StorageInfo{
+			StorageUsage: func() app.StorageInfo {
+				return app.StorageInfo{
 					DBBytes:              48 << 20,
 					ImageCacheBytes:      120 << 20,
 					ImageCacheLimitBytes: 256 << 20,

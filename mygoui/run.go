@@ -15,13 +15,6 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	appcore "github.com/sdttttt/ressu/core/app"
-	"github.com/sdttttt/ressu/core/buildinfo"
-	appevent "github.com/sdttttt/ressu/core/event"
-	"github.com/sdttttt/ressu/core/logging"
-	"github.com/sdttttt/ressu/core/media"
-	"github.com/sdttttt/ressu/core/service"
-	appstatus "github.com/sdttttt/ressu/core/status"
-	"github.com/sdttttt/ressu/core/store"
 	appabout "github.com/sdttttt/ressu/mygoui/about"
 	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
 	apppostheader "github.com/sdttttt/ressu/mygoui/postheader"
@@ -53,7 +46,7 @@ func Run() {
 	if err != nil {
 		fatal("user data path failed", err)
 	}
-	logFile, err := logging.Open(dir, logging.Options{})
+	logFile, err := appcore.OpenLog(dir, appcore.LogOptions{})
 	if err != nil {
 		slog.Warn("log file disabled", "operation", "logging.open", "error", err)
 		logFile = nil
@@ -67,26 +60,26 @@ func Run() {
 	if err != nil {
 		fatal("cache path failed", err)
 	}
-	st, err := store.Open(dir)
+	st, err := appcore.OpenStore(dir)
 	if err != nil {
 		fatal("database open failed", err)
 	}
 	defer st.Close()
 	slog.Info("application starting", "operation", "app.start")
 
-	articleMedia, err := media.Open(filepath.Join(cacheDir, "articles"), media.Options{
+	articleMedia, err := appcore.OpenMedia(filepath.Join(cacheDir, "articles"), appcore.MediaOptions{
 		MaxBytes: int64(st.Prefs().ImageCacheLimit) << 20,
 	})
 	if err != nil {
 		fatal("article media cache open failed", err)
 	}
 	defer articleMedia.Close()
-	if err := mygo.Protocol.Handle(media.Scheme, articleMedia.Handler()); err != nil {
+	if err := mygo.Protocol.Handle(appcore.MediaScheme, articleMedia.Handler()); err != nil {
 		fatal("media protocol registration failed", err)
 	}
 
 	prefs := st.Prefs()
-	statusModel := appstatus.New(app.Version())
+	statusModel := appcore.NewStatusModel(app.Version())
 	statusModel.SetAppearance(prefs.Theme, prefs.FontSize)
 	statusModel.SetReduceMotion(prefs.ReduceMotion)
 	sidebarPercent := float32(18)
@@ -100,13 +93,13 @@ func Run() {
 	}
 	statusModel.SetListPercent(listPercent)
 	statusModel.SetPostSort(prefs.PostSort)
-	hub := appevent.NewHub(statusModel, webendpoint.AppEvent.Broadcast)
-	feeds := service.NewFeedsWithHub(st, hub)
+	hub := appcore.NewHub(statusModel, webendpoint.AppEvent.Broadcast)
+	feeds := appcore.NewFeedsWithHub(st, hub)
 	hub.FeedsChanged(feeds.List())
-	posts := service.NewPostsWithMediaAndHub(st, articleMedia, hub)
-	settings := service.NewSettingsWithMedia(st, articleMedia)
+	posts := appcore.NewPostsWithMediaAndHub(st, articleMedia, hub)
+	settings := appcore.NewSettingsWithMedia(st, articleMedia)
 	pageReady := make(chan struct{}, 1)
-	status := service.NewStatus(hub, func() {
+	status := appcore.NewStatus(hub, func() {
 		select {
 		case pageReady <- struct{}{}:
 		default:
@@ -139,8 +132,8 @@ func Run() {
 		webendpoint.NewSnapshot(actions),
 		webendpoint.NewStatus(actions),
 	)
-	foreground := service.NewForegroundRefresher(func(ctx context.Context) {
-		if _, err := feeds.RefreshStale(ctx); err != nil && !errors.Is(err, service.ErrRefreshing) {
+	foreground := appcore.NewForegroundRefresher(func(ctx context.Context) {
+		if _, err := feeds.RefreshStale(ctx); err != nil && !errors.Is(err, appcore.ErrRefreshing) {
 			slog.Warn("refresh on foreground failed",
 				"operation", "app.foregroundRefresh", "error", err)
 		}
@@ -177,7 +170,7 @@ func Run() {
 // newAboutInfo gathers the metadata shown by the native About window.
 func newAboutInfo(version string) appabout.Info {
 	buildDate := "未知"
-	if date := buildinfo.Date(); !date.IsZero() {
+	if date := appcore.Date(); !date.IsZero() {
 		buildDate = date.Format("2006-01-02")
 	}
 	return appabout.Info{
@@ -224,10 +217,10 @@ func startCPUProfile() func() {
 // mounted, so startup shows a splash instead of a blank window. onReady runs
 // once the window is shown.
 func openWindow(
-	statusModel *appstatus.Model,
+	statusModel *appcore.Model,
 	pageReady <-chan struct{},
 	onReady func(),
-	foreground *service.ForegroundRefresher,
+	foreground *appcore.ForegroundRefresher,
 	isActive func() bool,
 	about appabout.Info,
 	notifications *appdialog.Notifications,

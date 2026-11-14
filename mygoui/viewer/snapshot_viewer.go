@@ -7,7 +7,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/sdttttt/ressu/core/store"
+	"github.com/sdttttt/ressu/core/app"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
 )
@@ -93,7 +93,7 @@ func newSnapshotViewerContent(
 
 // draw renders the preview toolbar and scrollable snapshot image.
 func (v *snapshotViewerContent) draw(c *ui.Context) {
-	theme := guitheme.New(c, store.ThemeLight, store.FontSizeMedium)
+	theme := guitheme.New(c, app.ThemeLight, app.FontSizeMedium)
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Background(theme.Background).Children(func() {
 			ui.Row(c).Shrink(0).

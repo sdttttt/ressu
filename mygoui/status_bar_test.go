@@ -5,11 +5,11 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	appstatus "github.com/sdttttt/ressu/core/status"
+	"github.com/sdttttt/ressu/core/app"
 )
 
 func TestStatusBarVersionOpensAbout(t *testing.T) {
-	model := appstatus.New("26.11.8")
+	model := app.NewStatusModel("26.11.8")
 	opened := false
 	status := NewStatusBar(model, func() {
 		opened = true
