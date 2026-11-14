@@ -240,6 +240,98 @@ func TestOpenBackfillsPostWordCounts(t *testing.T) {
 	}
 }
 
+func TestOpenRecomputesUnreadCounts(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "a", Title: "A", PublishedAt: base},
+		{GUID: "b", Title: "B", PublishedAt: base.Add(time.Hour)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UpdatePost(feed.ID, "a", func(post *Post) { post.Read = true }); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		// Simulate the stale count a pre-fix build could persist; opening
+		// the store must derive the count from the posts instead of
+		// trusting the cached value.
+		feeds := tx.Bucket([]byte(feedsBucket))
+		var f Feed
+		if _, err := get(feeds, feedKey(feed.ID), &f); err != nil {
+			return err
+		}
+		f.Unread = 2
+		return put(feeds, feedKey(feed.ID), f)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	updated, err := reopened.Feed(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Unread != 1 {
+		t.Errorf("unread = %d, want 1", updated.Unread)
+	}
+	if got := reopened.Unread(); got != 1 {
+		t.Errorf("total unread = %d, want 1", got)
+	}
+}
+
+func TestUpdateFeedPreservesUnread(t *testing.T) {
+	s := openTemp(t)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "a", Title: "A", PublishedAt: base},
+		{GUID: "b", Title: "B", PublishedAt: base.Add(time.Hour)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// A caller that read the feed before posts changed holds a stale count;
+	// UpdateFeed must not write it back.
+	stale, err := s.Feed(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UpdatePost(feed.ID, "a", func(post *Post) { post.Read = true }); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateFeed(stale); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := s.Feed(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Unread != 1 {
+		t.Errorf("unread = %d, want 1", updated.Unread)
+	}
+	if got := s.Unread(); got != 1 {
+		t.Errorf("total unread = %d, want 1", got)
+	}
+}
+
 func TestMergePostsKeepsReadAndStarred(t *testing.T) {
 	s := openTemp(t)
 	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed", Title: "A"})

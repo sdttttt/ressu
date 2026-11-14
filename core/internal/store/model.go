@@ -19,8 +19,11 @@ type Feed struct {
 	LastModified    string     `json:"lastModified"`
 	LastFetchedAt   *time.Time `json:"lastFetchedAt"`
 	LastError       string     `json:"lastError"`
-	Unread          int        `json:"unread"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	// Unread is derived from the stored posts: recomputed for every feed when
+	// the database opens, then maintained in memory. The persisted value is a
+	// cache, never the source of truth.
+	Unread    int       `json:"unread"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // IconMeta describes a cached feed icon.

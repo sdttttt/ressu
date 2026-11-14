@@ -69,8 +69,10 @@ Ressu 阅读器的后端核心。
 - OPML：`core/internal/rss/opml.go` 负责解析（跳过无 `xmlUrl` 的目录）和导出；
   `core/internal/service/opml.go` 汇总导入结果（`ImportSummary`），导入复用 `Feeds.Add`。
 - `Posts.List` 在服务端完成未读/星标筛选、搜索和分页，返回 `{posts,total,unread}`；
-  默认每页 100、上限 500。未读数由文章推导并保存在 `Feed.Unread`：合并时重算，单条已读
-  变化时增减，全部已读时清零。
+  默认每页 100、上限 500。未读数由文章推导：`Feed.Unread` 是启动时从文章全量推导、
+  运行期在内存维护的缓存，磁盘值不作为真相来源（任何漂移重启即自愈）；合并时重算，
+  单条已读变化时增减，全部已读时清零；`Store.UpdateFeed` 只改元数据，忽略调用方传入
+  的未读数。
 - `Posts.Get` 按偏好 `MarkReadOnOpen` 自动标已读（失败不阻塞阅读）并广播
   `post.updated`；`Posts.ToggleRead` 翻转已读并返回最新摘要。
 - 事件由 `internal/event.Hub` 串行发布：先分配递增 `revision`、更新时间，再更新 `status.Model`
@@ -82,7 +84,7 @@ Ressu 阅读器的后端核心。
 
 | 桶         | 键                | 值                                                      |
 | ---------- | ----------------- | ------------------------------------------------------- |
-| `feeds`    | 8 字节大端订阅 id | 整个 `Feed` 的 JSON：元数据、ETag/Last-Modified、未读数 |
+| `feeds`    | 8 字节大端订阅 id | 整个 `Feed` 的 JSON：元数据、ETag/Last-Modified、未读数缓存 |
 | `posts`    | 订阅 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                           |
 | `settings` | `prefs`           | 整个 `Prefs` 的 JSON                                    |
 | `icons`    | 订阅 id（嵌套桶） | `data` 键存原始图片字节；`meta` 键存缓存元数据 JSON     |

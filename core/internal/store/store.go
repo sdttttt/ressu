@@ -60,12 +60,7 @@ func Open(dir string) (*Store, error) {
 	}
 
 	s := &Store{db: db, prefs: DefaultPrefs()}
-	if err := db.Update(func(tx *bolt.Tx) error {
-		if err := s.init(tx); err != nil {
-			return err
-		}
-		return migrate(tx)
-	}); err != nil {
+	if err := db.Update(func(tx *bolt.Tx) error { return s.init(tx) }); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -76,7 +71,8 @@ func Open(dir string) (*Store, error) {
 	return s, nil
 }
 
-// init creates the buckets and loads the subscriptions and preferences.
+// init creates the buckets, migrates the data, then loads the subscriptions
+// and preferences.
 func (s *Store) init(tx *bolt.Tx) error {
 	feeds, err := tx.CreateBucketIfNotExists([]byte(feedsBucket))
 	if err != nil {
@@ -93,6 +89,10 @@ func (s *Store) init(tx *bolt.Tx) error {
 		return err
 	}
 
+	if err := migrate(tx); err != nil {
+		return err
+	}
+
 	if err := feeds.ForEach(func(_, value []byte) error {
 		var f Feed
 		if err := json.Unmarshal(value, &f); err != nil {
@@ -102,6 +102,20 @@ func (s *Store) init(tx *bolt.Tx) error {
 		return nil
 	}); err != nil {
 		return err
+	}
+
+	// Derive every unread count from the stored posts. The counter cached in
+	// each feed record is maintained in memory only; whatever sits on disk
+	// is a snapshot that must never be trusted, so opening always heals it.
+	for i := range s.feeds {
+		posts, err := readPosts(tx, s.feeds[i].ID)
+		if err != nil {
+			return err
+		}
+		s.feeds[i].Unread = countUnread(posts)
+		if err := put(feeds, feedKey(s.feeds[i].ID), s.feeds[i]); err != nil {
+			return err
+		}
 	}
 
 	if _, err := get(settings, []byte(prefsKey), &s.prefs); err != nil {
@@ -230,7 +244,10 @@ func (s *Store) AddFeed(f Feed) (Feed, error) {
 	return f, nil
 }
 
-// UpdateFeed replaces the metadata of a subscription.
+// UpdateFeed replaces the metadata of a subscription. The unread count is
+// derived from the stored posts and owned by the store, so the caller's
+// Unread field is ignored: merging or trimming posts may have refreshed it
+// after the caller read the feed.
 func (s *Store) UpdateFeed(f Feed) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -239,6 +256,7 @@ func (s *Store) UpdateFeed(f Feed) error {
 	if i < 0 {
 		return ErrNotFound
 	}
+	f.Unread = s.feeds[i].Unread
 	if err := s.db.Update(func(tx *bolt.Tx) error { return s.putFeed(tx, f) }); err != nil {
 		return err
 	}
