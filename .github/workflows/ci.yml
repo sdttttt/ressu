@@ -71,8 +71,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-0 libayatana-appindicator3-1
 
+      - name: Generate a fresh PGO profile
+        run: go run ./tools/pgo-collect -out default.pgo
+
       - name: Package
-        run: go run ./tools/build -platform ${{ matrix.platform }}
+        run: go tool mygo build -platform ${{ matrix.platform }}
 
       - uses: actions/upload-artifact@v4
         with:
