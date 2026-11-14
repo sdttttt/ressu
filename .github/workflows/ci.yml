@@ -30,6 +30,10 @@ jobs:
         run: go test ./...
         working-directory: core
 
+      - name: Mygoui module tests
+        run: go test ./...
+        working-directory: mygoui
+
       - name: Check static reader script
         run: node --check webview/static/reader.js
 

@@ -10,8 +10,8 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 | 主题                                 | 文档                       |
 | ------------------------------------ | -------------------------- |
 | 后端核心：抓取、持久化、刷新、事件   | `core/README.md`           |
-| 应用动作层与绑定分工                 | `internal/action/README.md` |
-| 原生界面：布局、侧栏、列表、窗口、快照 | `internal/gui/README.md`  |
+| 应用门面与绑定分工                 | `core/app/README.md` |
+| 原生界面：布局、侧栏、列表、窗口、快照 | `mygoui/README.md`  |
 | 阅读页前端结构与安全约定             | `webview/static/README.md` |
 
 ## 快速约束
@@ -39,22 +39,24 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 | 平台   | 以 Windows 为主，同时支持 Linux 与 macOS                          |
 | 许可证 | 0BSD                                                              |
 
-清单是两个 Go module：根 `go.mod`（桌面壳）和 `core/go.mod`（阅读器后端）。根 module 通过
-`replace github.com/sdttttt/ressu/core => ./core` 引用后端；`core` 不得依赖 `mygo` 或
-`internal/gui`，保证可以单独被 Web 服务、CLI 或移动端前端复用。
+清单是三个 Go module：根 `go.mod`（桌面壳）、`core/go.mod`（阅读器后端）和
+`mygoui/go.mod`（MyGO 原生界面），由根目录 `go.work` 串成 workspace；各 go.mod 里的
+`replace` 仅作脱离 workspace 单独构建的兜底。`core` 不得依赖 `mygo` 或 `mygoui`，保证
+可以单独被 Web 服务、CLI 或移动端前端复用。
 
 ## 目录结构
 
 ```text
-main.go / menu_darwin.go / menu_other.go   入口、macOS 菜单（菜单项直接调 action）
+main.go / menu_darwin.go / menu_other.go   入口、macOS 菜单（菜单项直接调 core/app）
+go.work                  串联根、core、mygoui 三个 module 的 workspace
 core/                    独立后端 module，细节见 core/README.md
   rss/ icon/ sanitize/ store/ media/ service/ event/ status/ logging/
+  app/                   应用门面（入站端口）+ UI 接口与 DTO，细节见 core/app/README.md
   textmetrics/ limitreader/
+mygoui/                  原生界面 module（组合根与各功能包），细节见 mygoui/README.md
 internal/
-  action/                应用动作层，细节见 internal/action/README.md
   webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
   buildinfo/             从 Go 构建元数据读取构建日期
-  gui/                   原生界面组合根与各功能包，细节见 internal/gui/README.md
 tools/pgo-collect/       在 CPU profile 下跑核心热路径，产出 default.pgo（CI 发版前运行）
 webview/static/          阅读页与快照页静态源码，细节见 webview/static/README.md
 resources/               打包图标
@@ -72,8 +74,8 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 | 命令                 | 作用                                                     |
 | -------------------- | -------------------------------------------------------- |
 | `go tool mygo dev`   | 构建并运行开发版；终端里 `r` 重建、`c` 清屏、`q` 退出     |
-| `go test ./...`      | 壳 module 单测（`core/` 内同样命令跑后端 module）         |
-| `go vet ./...`       | Go 静态检查（两个 module 分别运行）                      |
+| `go test ./...`      | 壳 module 单测（`core/`、`mygoui/` 内同样命令跑各自 module） |
+| `go vet ./...`       | Go 静态检查（三个 module 分别运行）                      |
 | `go tool mygo build` | 内嵌静态前端、编译并打包到 `build/`                       |
 | `go tool mygo vet`   | MyGO 的 Go vet 与原生 UI 生命周期检查；未接入 CI          |
 
@@ -91,11 +93,11 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 
 ## 架构总纲
 
-数据自上而下走 `webview -> webendpoint -> action -> service`，副作用自下而上由 `action`
-回调给原生层；`core/service` 只有业务逻辑，`internal/action` 是界面能力的唯一入口，
-`internal/webendpoint` 只做绑定适配。三者的完整契约见
-`internal/action/README.md`，事件 EID 清单与语义见 `core/README.md`，原生侧消费见
-`internal/gui/README.md`，页面侧消费见 `webview/static/README.md`。
+数据自上而下走 `webview -> webendpoint -> core/app -> service`，副作用自下而上由
+`core/app` 回调给原生层；`core/service` 只有业务逻辑，`core/app` 的 `App` 是界面能力的
+唯一入口，`internal/webendpoint` 只做绑定适配。三者的完整契约见
+`core/app/README.md`，事件 EID 清单与语义见 `core/README.md`，原生侧消费见
+`mygoui/README.md`，页面侧消费见 `webview/static/README.md`。
 
 几条跨层铁律：
 
@@ -104,12 +106,12 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 - 事件分两类：`sync.*`、`feeds.changed`、`posts.changed`、`selection.changed`、
   `post.selected`、`post.updated` 是领域事件，任何前端都要消费；`appearance.changed`、
   `prefs.changed` 是视图事件，由桌面壳发布，移植其他前端可忽略。
-- macOS 菜单项（设置、添加订阅、全部刷新）直接调用 `action` 方法，不经页面转发；
-  Windows/Linux 没有原生菜单栏。
+- macOS 菜单项（设置、添加订阅、全部刷新）直接调用 `core/app` 的 `App` 方法，不经页面
+  转发；Windows/Linux 没有原生菜单栏。
 - 主窗口 1200x800、最小 900x600、`StateKey: "main"`，先 `Hidden` 创建，页面就绪
   （`Status.PageReady`）后显示，5 秒未就绪兜底显示。启动仅在 `RefreshOnStart` 为真时
   自动刷新，回前台经 `ForegroundRefresher` 触发 `RefreshStale`（5 分钟节流）。
-- 快照入口在原生文章头部，经 `action.RequestSnapshot(parent)` 直接打开采集窗口。
+- 快照入口在原生文章头部，经 `core/app` 的 `RequestSnapshot(parent)` 直接打开采集窗口。
 
 ## 代码约定
 
@@ -134,28 +136,28 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 
 ## 常见改动路径
 
-- 新增后端调用：`core/service` 写业务逻辑（不碰 MyGO）→ `internal/action` 加
-  `AppActions` 方法（必要时封装 `internal/gui` 方法并实现 `action.UI`）→
-  `internal/webendpoint` 对应绑定对象加只做参数/调用方窗口适配的导出方法 → 页面或原生
-  组件调用。细节见 `internal/action/README.md`。
+- 新增后端调用：`core/service` 写业务逻辑（不碰 MyGO）→ `core/app` 加 `App` 方法（必要
+  时封装 `mygoui` 方法并实现 `app.UI`）→ `internal/webendpoint` 对应绑定对象加只做参
+  数/调用方窗口适配的导出方法 → 页面或原生组件调用。细节见 `core/app/README.md`。
 - 新增事件：`core/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，在
   `reader.js` dispatcher 加分支。
-- 新增偏好：`store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` →
-  `internal/gui/settings` 加原生控件 → 若影响阅读更新 `reader.js`。
+- 新增偏好：`store.Prefs`、`DefaultPrefs`、`Prefs.Normalize` → `mygoui/settings` 加原生
+  控件 → 若影响阅读更新 `reader.js`。
 - 新增快捷键：先确认属于原生列表、主窗口还是静态正文，分别接在
-  `internal/gui/postlist`、`internal/gui/app_view.go`、`reader.js`。WebView 焦点下转交
+  `mygoui/postlist`、`mygoui/app_view.go`、`reader.js`。WebView 焦点下转交
   原生行为的按键必须调用 `Status` 绑定并 `preventDefault()`。
 - 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、`reader.js`、原生设置窗口和测试。
 
 ## 测试
 
-- Go：`go test ./...`（两个 module 分别跑）。`rss` 表驱动、夹具在 `core/rss/testdata/`；
-  `store` 覆盖创建/合并/裁剪/迁移/图标缓存；`service` 用 httptest 跑添加、刷新、304、
-  节流、筛选、分页、搜索、OPML、已读；`event` 覆盖校验、revision 顺序、并发与快照；
-  `gui` 子包用 `ui.NewTester` 渲染各原生组件并断言行为（侧栏含选中胶囊滑动测试）。
+- Go：`go test ./...`（三个 module 分别在根目录、`core/`、`mygoui/` 跑）。`rss` 表驱动、
+  夹具在 `core/rss/testdata/`；`store` 覆盖创建/合并/裁剪/迁移/图标缓存；`service` 用
+  httptest 跑添加、刷新、304、节流、筛选、分页、搜索、OPML、已读；`event` 覆盖校验、
+  revision 顺序、并发与快照；`core/app` 覆盖门面方法与 UI 副作用；`mygoui` 子包用
+  `ui.NewTester` 渲染各原生组件并断言行为（侧栏含选中胶囊滑动测试）。
 - 静态页无独立测试框架；语法用 `node --check webview/static/reader.js` 检查。
 - 没有 E2E、浏览器自动化或覆盖率阈值。提交前至少运行与改动相关的测试；跨层改动跑
-  两个 module 的 `go test`/`go vet` 和 `go tool mygo build`。
+  三个 module 的 `go test`/`go vet` 和 `go tool mygo build`。
 
 ## CI 与发布
 

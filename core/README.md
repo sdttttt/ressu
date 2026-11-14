@@ -2,7 +2,8 @@
 
 Ressu 阅读器的后端核心。
 
-该包独立仅仅是为了和GUI解耦，暂时没有移植核心的打算。
+该 module 独立是为了与 GUI 解耦，可被 Web 服务、CLI 或其他前端复用；桌面壳的原生界面在
+`mygoui` module，`core` 不得依赖它或 `mygo`。
 
 ## 包一览
 
@@ -14,6 +15,7 @@ Ressu 阅读器的后端核心。
 | `store`       | bbolt 单文件持久化：订阅、文章、偏好、图标缓存、迁移            |
 | `media`       | 正文图片安全下载、磁盘缓存；缓存本身是一个 `http.Handler`       |
 | `service`     | 业务入口：订阅增删刷新、文章列表/搜索/分页、偏好、快照拼接      |
+| `app`         | 应用门面（入站端口）：界面能力的唯一入口、`UI` 接口与 DTO       |
 | `event`       | 统一事件 DTO 与串行发布器 Hub（sink 注入，发布者不带传输层）    |
 | `status`      | 服务状态的内存镜像模型（供状态栏等只读消费）                    |
 | `logging`     | 可选的日志文件封装；`Debug` 仅在 `debug` build tag 下输出        |
@@ -21,6 +23,7 @@ Ressu 阅读器的后端核心。
 | `limitreader` | 带体积上限的 `io.Reader`                                        |
 
 `service` 不 import `mygo` 或任何 GUI 包；`event` 的 sink 注入设计保证发布器不依赖传输层。
+`app` 持有 `UI` 接口（出站端口），只使用视图无关的 DTO，由 `mygoui.NativeUI` 实现。
 
 ## 订阅源抓取与解析
 
