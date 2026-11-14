@@ -294,8 +294,8 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("article list did not load")
 	}
-	if initial.UnreadOnly || initial.StarredOnly {
-		t.Fatalf("initial query = %+v, want filters off", initial)
+	if !initial.UnreadOnly || initial.StarredOnly {
+		t.Fatalf("initial query = %+v, want unread only", initial)
 	}
 
 	if err := tester.Click("只看未读"); err != nil {
@@ -307,8 +307,8 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("clicking the unread filter did not query posts")
 	}
-	if !unread.UnreadOnly || unread.StarredOnly {
-		t.Errorf("unread query = %+v, want unread only", unread)
+	if unread.UnreadOnly || unread.StarredOnly {
+		t.Errorf("unread query = %+v, want filters off", unread)
 	}
 
 	if err := tester.Click("只看星标"); err != nil {
@@ -320,8 +320,8 @@ func TestPostListFilterIconButtons(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("clicking the starred filter did not query posts")
 	}
-	if !starred.UnreadOnly || !starred.StarredOnly {
-		t.Errorf("starred query = %+v, want both filters on", starred)
+	if starred.UnreadOnly || !starred.StarredOnly {
+		t.Errorf("starred query = %+v, want starred only", starred)
 	}
 }
 

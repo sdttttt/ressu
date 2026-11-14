@@ -72,10 +72,11 @@ type List struct {
 func New(model *appstatus.Model, callbacks Callbacks) *List {
 	snapshot := model.Snapshot()
 	query := service.PostQuery{
-		FeedID:    snapshot.CurrentFeedID,
-		Limit:     pageSize,
-		SortOrder: service.SortOrderDescending,
-		SortBy:    service.SortField(snapshot.PostSort),
+		FeedID:     snapshot.CurrentFeedID,
+		UnreadOnly: true,
+		Limit:      pageSize,
+		SortOrder:  service.SortOrderDescending,
+		SortBy:     service.SortField(snapshot.PostSort),
 	}
 	return &List{
 		model:       model,
