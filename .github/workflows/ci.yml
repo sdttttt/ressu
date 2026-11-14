@@ -105,14 +105,29 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
+          if ! git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+            echo "tag ${TAG_NAME} not found in this checkout" >&2
+            exit 1
+          fi
+
           prev=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || true)
           range="${TAG_NAME}"
           [ -n "$prev" ] && range="${prev}..${TAG_NAME}"
+
+          # An empty result is legitimate (e.g. every commit is a release
+          # chore); only a git log failure should abort the step.
+          commits=$(git log --no-merges \
+            --pretty=format:"- %s ([%h](https://github.com/${REPO}/commit/%H))" "$range")
+          commits=$(printf '%s\n' "$commits" | grep -vE '^- chore(:|\(release\):) (release|prepare)' || true)
+
           {
-            echo "## 更新内容"
+            echo "## What's Changed"
             echo
-            git log --no-merges --pretty=format:"- %s ([%h](https://github.com/${REPO}/commit/%H))" "$range" \
-              | grep -v '^- chore: release'
+            if [ -n "$commits" ]; then
+              printf '%s\n' "$commits"
+            else
+              echo "- 维护性更新。"
+            fi
             echo
           } > release-notes.md
 
