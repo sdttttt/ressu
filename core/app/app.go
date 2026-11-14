@@ -1,7 +1,7 @@
-// Package action defines the application operations shared by the web and
+// Package app defines the application operations shared by the web and
 // native interfaces. Services keep the business logic; this layer owns UI
 // side effects and state-change broadcasts.
-package action
+package app
 
 import (
 	"context"
@@ -208,7 +208,7 @@ func (a *AppActions) RefreshStale(ctx context.Context) (service.SyncSummary, err
 func (a *AppActions) ImportOPML(ctx context.Context, parent WindowHandle) (service.ImportSummary, error) {
 	paths, err := a.ui.SelectOPMLImport(parent)
 	if err != nil {
-		slog.Warn("OPML picker failed", "operation", "action.feeds.importOPML", "error", err)
+		slog.Warn("OPML picker failed", "operation", "app.feeds.importOPML", "error", err)
 		return service.ImportSummary{}, err
 	}
 	if len(paths) == 0 {
@@ -217,7 +217,7 @@ func (a *AppActions) ImportOPML(ctx context.Context, parent WindowHandle) (servi
 
 	file, err := os.Open(paths[0])
 	if err != nil {
-		slog.Error("OPML open failed", "operation", "action.feeds.importOPML", "error", err)
+		slog.Error("OPML open failed", "operation", "app.feeds.importOPML", "error", err)
 		return service.ImportSummary{}, err
 	}
 	defer file.Close()
@@ -232,14 +232,14 @@ func (a *AppActions) ExportOPML(parent WindowHandle) (string, error) {
 	}
 	path, err := a.ui.SelectOPMLExport(parent, "ressu-subscriptions.opml")
 	if err != nil {
-		slog.Warn("OPML save picker failed", "operation", "action.feeds.exportOPML", "error", err)
+		slog.Warn("OPML save picker failed", "operation", "app.feeds.exportOPML", "error", err)
 		return "", err
 	}
 	if path == "" {
 		return "", nil
 	}
 	if err := os.WriteFile(path, data, 0o600); err != nil {
-		slog.Error("OPML write failed", "operation", "action.feeds.exportOPML", "error", err)
+		slog.Error("OPML write failed", "operation", "app.feeds.exportOPML", "error", err)
 		return "", fmt.Errorf("could not save the OPML file: %w", err)
 	}
 	return path, nil
@@ -292,7 +292,7 @@ func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.Snapsh
 	data, err := a.ui.CapturePage(ctx)
 	if err != nil {
 		slog.Warn("snapshot capture failed",
-			"operation", "action.posts.captureSnapshot", "error", err)
+			"operation", "app.posts.captureSnapshot", "error", err)
 	}
 	return data, err
 }
@@ -360,14 +360,14 @@ func (a *AppActions) SaveSnapshot(parent WindowHandle, fileName string, data []b
 	}
 	path, err := a.ui.SelectSnapshotSavePath(parent, service.SnapshotFileName(fileName))
 	if err != nil {
-		slog.Warn("snapshot save picker failed", "operation", "action.posts.saveSnapshot", "error", err)
+		slog.Warn("snapshot save picker failed", "operation", "app.posts.saveSnapshot", "error", err)
 		return "", err
 	}
 	if path == "" {
 		return "", nil
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		slog.Error("snapshot write failed", "operation", "action.posts.saveSnapshot", "error", err)
+		slog.Error("snapshot write failed", "operation", "app.posts.saveSnapshot", "error", err)
 		return "", fmt.Errorf("could not save the snapshot: %w", err)
 	}
 	return path, nil
@@ -376,11 +376,11 @@ func (a *AppActions) SaveSnapshot(parent WindowHandle, fileName string, data []b
 // CopySnapshot puts a stitched snapshot on the clipboard.
 func (a *AppActions) CopySnapshot(data []byte) error {
 	if err := service.ValidateSnapshotImage(data); err != nil {
-		slog.Warn("invalid snapshot image", "operation", "action.posts.copySnapshot", "error", err)
+		slog.Warn("invalid snapshot image", "operation", "app.posts.copySnapshot", "error", err)
 		return err
 	}
 	if err := a.ui.WriteImage(data); err != nil {
-		slog.Warn("snapshot copy failed", "operation", "action.posts.copySnapshot", "error", err)
+		slog.Warn("snapshot copy failed", "operation", "app.posts.copySnapshot", "error", err)
 		return err
 	}
 	return nil
@@ -423,7 +423,7 @@ func (a *AppActions) DataDir() string {
 func (a *AppActions) OpenDataDir() error {
 	if err := a.ui.OpenPath(a.settings.DataDir()); err != nil {
 		slog.Warn("data directory open failed",
-			"operation", "action.settings.openDataDir", "error", err)
+			"operation", "app.settings.openDataDir", "error", err)
 		return err
 	}
 	return nil
@@ -446,7 +446,7 @@ func (a *AppActions) OpenLink(link string) error {
 	}
 	if err := a.ui.OpenExternal(link); err != nil {
 		slog.Warn("external link open failed",
-			"operation", "action.settings.openLink", "externalHost", parsed.Host, "error", err)
+			"operation", "app.settings.openLink", "externalHost", parsed.Host, "error", err)
 		return err
 	}
 	return nil
@@ -474,7 +474,7 @@ func (a *AppActions) OpenEditFeed(parent WindowHandle, feedID int64) {
 	feed, err := a.feeds.Feed(feedID)
 	if err != nil {
 		slog.Warn("feed edit lookup failed",
-			"operation", "action.feeds.openEditFeed", "feedId", feedID, "error", err)
+			"operation", "app.feeds.openEditFeed", "feedId", feedID, "error", err)
 		a.Notify("error", "打开编辑失败")
 		return
 	}
@@ -511,7 +511,7 @@ func (a *AppActions) SetSidebarCollapsed(collapsed bool) {
 	prefs.SidebarCollapsed = collapsed
 	if _, err := a.UpdatePreferences(prefs); err != nil {
 		slog.Warn("native sidebar collapse save failed",
-			"operation", "action.sidebar.setCollapsed", "collapsed", collapsed, "error", err)
+			"operation", "app.sidebar.setCollapsed", "collapsed", collapsed, "error", err)
 		a.Notify("error", "保存侧边栏状态失败")
 	}
 }
@@ -530,7 +530,7 @@ func (a *AppActions) SetSidebarPercent(percent float32) {
 	prefs.PaneSizes = []int{sideWidth, listWidth}
 	if _, err := a.UpdatePreferences(prefs); err != nil {
 		slog.Warn("native sidebar width save failed",
-			"operation", "action.sidebar.setPanePercent", "percent", percent, "error", err)
+			"operation", "app.sidebar.setPanePercent", "percent", percent, "error", err)
 		a.Notify("error", "保存侧边栏宽度失败")
 	}
 }
@@ -549,7 +549,7 @@ func (a *AppActions) SetListPercent(percent float32) {
 	prefs.PaneSizes = []int{sideWidth, listWidth}
 	if _, err := a.UpdatePreferences(prefs); err != nil {
 		slog.Warn("native list width save failed",
-			"operation", "action.postList.setPanePercent", "percent", percent, "error", err)
+			"operation", "app.postList.setPanePercent", "percent", percent, "error", err)
 		a.Notify("error", "保存文章栏宽度失败")
 	}
 }

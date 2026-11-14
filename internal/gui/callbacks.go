@@ -7,8 +7,8 @@ import (
 
 	"github.com/egoist/mygo"
 
+	"github.com/sdttttt/ressu/core/app"
 	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/internal/action"
 	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
 	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
@@ -16,7 +16,7 @@ import (
 
 // SidebarCallbacks wires the native subscription sidebar to application
 // actions.
-func SidebarCallbacks(a *action.AppActions) appsidebar.Callbacks {
+func SidebarCallbacks(a *app.AppActions) appsidebar.Callbacks {
 	return appsidebar.Callbacks{
 		Icon:        a.FeedIcon,
 		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
@@ -24,24 +24,24 @@ func SidebarCallbacks(a *action.AppActions) appsidebar.Callbacks {
 		RefreshFeed: func(feedID int64) { refreshFeedWithNotice(a, feedID) },
 		MarkAllRead: func(feedID int64) { markAllReadWithNotice(a, feedID) },
 		Remove: func(parent *mygo.Window, feedID int64) {
-			if err := a.ConfirmRemoveFeed(context.Background(), action.NewWindowHandle(parent), feedID); err != nil {
+			if err := a.ConfirmRemoveFeed(context.Background(), app.NewWindowHandle(parent), feedID); err != nil {
 				slog.Warn("native feed removal failed",
 					"operation", "gui.sidebar.remove", "feedID", feedID, "error", err)
 				a.Notify("error", "取消订阅失败")
 			}
 		},
 		Edit: func(parent *mygo.Window, feedID int64) {
-			a.OpenEditFeed(action.NewWindowHandle(parent), feedID)
+			a.OpenEditFeed(app.NewWindowHandle(parent), feedID)
 		},
-		OpenAddFeed:    func(parent *mygo.Window) { a.OpenAddFeed(action.NewWindowHandle(parent)) },
-		OpenSettings:   func(parent *mygo.Window) { a.OpenSettings(action.NewWindowHandle(parent)) },
+		OpenAddFeed:    func(parent *mygo.Window) { a.OpenAddFeed(app.NewWindowHandle(parent)) },
+		OpenSettings:   func(parent *mygo.Window) { a.OpenSettings(app.NewWindowHandle(parent)) },
 		SetCollapsed:   a.SetSidebarCollapsed,
 		SetPanePercent: a.SetSidebarPercent,
 	}
 }
 
 // PostListCallbacks wires the native article list to application actions.
-func PostListCallbacks(a *action.AppActions) apppostlist.Callbacks {
+func PostListCallbacks(a *app.AppActions) apppostlist.Callbacks {
 	return apppostlist.Callbacks{
 		List:           a.ListPosts,
 		Select:         a.SelectPost,
@@ -53,19 +53,19 @@ func PostListCallbacks(a *action.AppActions) apppostlist.Callbacks {
 }
 
 // PostHeaderCallbacks wires the native article header to application actions.
-func PostHeaderCallbacks(a *action.AppActions) apppostheader.Callbacks {
+func PostHeaderCallbacks(a *app.AppActions) apppostheader.Callbacks {
 	return apppostheader.Callbacks{
 		ToggleStar: a.TogglePostStar,
 		MarkRead:   a.MarkPostRead,
 		OpenLink:   a.OpenLink,
 		RequestSnapshot: func(parent *mygo.Window) {
-			a.RequestSnapshot(action.NewWindowHandle(parent))
+			a.RequestSnapshot(app.NewWindowHandle(parent))
 		},
 		Notify: a.Notify,
 	}
 }
 
-func refreshAllWithNotice(a *action.AppActions) {
+func refreshAllWithNotice(a *app.AppActions) {
 	if _, err := a.RefreshAll(context.Background()); err != nil {
 		if errors.Is(err, service.ErrRefreshing) {
 			return
@@ -76,7 +76,7 @@ func refreshAllWithNotice(a *action.AppActions) {
 	}
 }
 
-func refreshFeedWithNotice(a *action.AppActions, feedID int64) {
+func refreshFeedWithNotice(a *app.AppActions, feedID int64) {
 	if _, err := a.RefreshFeed(context.Background(), feedID); err != nil {
 		slog.Warn("native feed refresh failed",
 			"operation", "gui.sidebar.refreshFeed", "feedID", feedID, "error", err)
@@ -84,7 +84,7 @@ func refreshFeedWithNotice(a *action.AppActions, feedID int64) {
 	}
 }
 
-func markAllReadWithNotice(a *action.AppActions, feedID int64) {
+func markAllReadWithNotice(a *app.AppActions, feedID int64) {
 	if _, err := a.MarkAllPostsRead(feedID); err != nil {
 		slog.Warn("native mark all read failed",
 			"operation", "gui.sidebar.markAllRead", "feedID", feedID, "error", err)

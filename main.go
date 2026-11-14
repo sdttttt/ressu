@@ -17,13 +17,13 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	appcore "github.com/sdttttt/ressu/core/app"
 	appevent "github.com/sdttttt/ressu/core/event"
 	"github.com/sdttttt/ressu/core/logging"
 	"github.com/sdttttt/ressu/core/media"
 	"github.com/sdttttt/ressu/core/service"
 	appstatus "github.com/sdttttt/ressu/core/status"
 	"github.com/sdttttt/ressu/core/store"
-	"github.com/sdttttt/ressu/internal/action"
 	"github.com/sdttttt/ressu/internal/buildinfo"
 	"github.com/sdttttt/ressu/internal/gui"
 	appabout "github.com/sdttttt/ressu/internal/gui/about"
@@ -127,7 +127,7 @@ func main() {
 		return prefs.Theme, prefs.FontSize
 	})
 	nativeUI := gui.NewNativeUI(notifications, confirmations)
-	actions := action.New(feeds, posts, settings, status, hub, nativeUI)
+	actions := appcore.New(feeds, posts, settings, status, hub, nativeUI)
 	sidebar := appsidebar.New(statusModel, gui.SidebarCallbacks(actions))
 	postList := apppostlist.New(statusModel, gui.PostListCallbacks(actions))
 	postHeader := apppostheader.New(statusModel, gui.PostHeaderCallbacks(actions))

@@ -9,29 +9,29 @@ import (
 
 	"github.com/egoist/mygo"
 
+	"github.com/sdttttt/ressu/core/app"
 	"github.com/sdttttt/ressu/core/service"
-	"github.com/sdttttt/ressu/internal/action"
 )
 
 // setMenu installs the system menu bar, which macOS owns.
-func setMenu(actions *action.AppActions) {
+func setMenu(actions *app.AppActions) {
 	mygo.App.SetMenu(newMenu(actions))
 }
 
 // newMenu builds the menu bar. Its items call application actions directly.
-func newMenu(actions *action.AppActions) *mygo.Menu {
+func newMenu(actions *app.AppActions) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Role: mygo.RoleAppMenu},
 		{Label: "File", Submenu: []*mygo.MenuItem{
 			{Label: "Add Feed…", Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, window *mygo.Window) {
-				actions.OpenAddFeed(action.NewWindowHandle(window))
+				actions.OpenAddFeed(app.NewWindowHandle(window))
 			}},
 			{Label: "Refresh All", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
 				refreshAllWithNotice(actions)
 			}},
 			mygo.Separator(),
 			{Label: "Settings…", Accelerator: "CmdOrCtrl+,", Click: func(_ *mygo.MenuItem, window *mygo.Window) {
-				actions.OpenSettings(action.NewWindowHandle(window))
+				actions.OpenSettings(app.NewWindowHandle(window))
 			}},
 			mygo.Separator(),
 			{Role: mygo.RoleClose},
@@ -42,7 +42,7 @@ func newMenu(actions *action.AppActions) *mygo.Menu {
 	})
 }
 
-func refreshAllWithNotice(actions *action.AppActions) {
+func refreshAllWithNotice(actions *app.AppActions) {
 	if _, err := actions.RefreshAll(context.Background()); err != nil {
 		if errors.Is(err, service.ErrRefreshing) {
 			return

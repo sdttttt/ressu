@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo"
 
+	"github.com/sdttttt/ressu/core/app"
 	"github.com/sdttttt/ressu/core/store"
-	"github.com/sdttttt/ressu/internal/action"
 	appaddfeed "github.com/sdttttt/ressu/internal/gui/addfeed"
 	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
 	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
@@ -27,7 +27,7 @@ type NativeUI struct {
 }
 
 // windowOf unwraps the toolkit window carried by an action window handle.
-func windowOf(handle action.WindowHandle) *mygo.Window {
+func windowOf(handle app.WindowHandle) *mygo.Window {
 	if window, ok := handle.Native().(*mygo.Window); ok {
 		return window
 	}
@@ -82,7 +82,7 @@ func (n *NativeUI) ShowHelp() {
 }
 
 // SelectOPMLImport shows the picker used while importing subscriptions.
-func (NativeUI) SelectOPMLImport(parent action.WindowHandle) ([]string, error) {
+func (NativeUI) SelectOPMLImport(parent app.WindowHandle) ([]string, error) {
 	return mygo.Dialog.Open(mygo.OpenDialogOptions{
 		Parent: windowOf(parent),
 		Title:  "选择 OPML 文件",
@@ -93,7 +93,7 @@ func (NativeUI) SelectOPMLImport(parent action.WindowHandle) ([]string, error) {
 }
 
 // SelectOPMLExport shows the save picker used while exporting subscriptions.
-func (NativeUI) SelectOPMLExport(parent action.WindowHandle, defaultPath string) (string, error) {
+func (NativeUI) SelectOPMLExport(parent app.WindowHandle, defaultPath string) (string, error) {
 	return mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      windowOf(parent),
 		Title:       "导出 OPML 文件",
@@ -105,7 +105,7 @@ func (NativeUI) SelectOPMLExport(parent action.WindowHandle, defaultPath string)
 }
 
 // SelectSnapshotSavePath shows the save picker used by article snapshots.
-func (NativeUI) SelectSnapshotSavePath(parent action.WindowHandle, defaultPath string) (string, error) {
+func (NativeUI) SelectSnapshotSavePath(parent app.WindowHandle, defaultPath string) (string, error) {
 	return mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      windowOf(parent),
 		Title:       "保存文章快照",
@@ -131,7 +131,7 @@ func (NativeUI) OpenLinkWindow(title, link string) {
 
 // OpenImageViewer opens the native article image viewer.
 func (NativeUI) OpenImageViewer(
-	parent action.WindowHandle,
+	parent app.WindowHandle,
 	data []byte,
 	viewerURL string,
 	alt string,
@@ -141,14 +141,14 @@ func (NativeUI) OpenImageViewer(
 
 // OpenSnapshotViewer opens the native generated-snapshot window.
 func (NativeUI) OpenSnapshotViewer(
-	parent action.WindowHandle,
+	parent app.WindowHandle,
 	data []byte,
 	title string,
-	callbacks action.SnapshotViewerCallbacks,
+	callbacks app.SnapshotViewerCallbacks,
 ) error {
 	return appviewer.OpenSnapshot(windowOf(parent), data, title, appviewer.SnapshotCallbacks{
 		Save: func(window *mygo.Window, snapshotData []byte, fileName string) (string, error) {
-			return callbacks.Save(action.NewWindowHandle(window), snapshotData, fileName)
+			return callbacks.Save(app.NewWindowHandle(window), snapshotData, fileName)
 		},
 		Copy:   callbacks.Copy,
 		Notify: callbacks.Notify,
@@ -156,41 +156,41 @@ func (NativeUI) OpenSnapshotViewer(
 }
 
 // OpenSettings opens the native settings window.
-func (NativeUI) OpenSettings(parent action.WindowHandle, callbacks action.SettingsCallbacks) {
+func (NativeUI) OpenSettings(parent app.WindowHandle, callbacks app.SettingsCallbacks) {
 	appsettings.Open(windowOf(parent), appsettings.Callbacks{
 		Load:         callbacks.Load,
 		Save:         callbacks.Save,
 		DataDir:      callbacks.DataDir,
 		StorageUsage: callbacks.StorageUsage,
 		ExportOPML: func(window *mygo.Window) (string, error) {
-			return callbacks.ExportOPML(action.NewWindowHandle(window))
+			return callbacks.ExportOPML(app.NewWindowHandle(window))
 		},
 		OpenDataDir: callbacks.OpenDataDir,
 	})
 }
 
 // OpenSnapshotCapture opens the single snapshot capture window.
-func (NativeUI) OpenSnapshotCapture(parent action.WindowHandle) {
+func (NativeUI) OpenSnapshotCapture(parent app.WindowHandle) {
 	appsnapshotcap.Open(windowOf(parent))
 }
 
 // CloseSnapshotCapture closes the snapshot capture window.
-func (NativeUI) CloseSnapshotCapture(window action.WindowHandle) {
+func (NativeUI) CloseSnapshotCapture(window app.WindowHandle) {
 	appsnapshotcap.Close(windowOf(window))
 }
 
 // OpenAddFeed opens the native add-feed window.
-func (n NativeUI) OpenAddFeed(parent action.WindowHandle, callbacks action.AddFeedCallbacks) {
+func (n NativeUI) OpenAddFeed(parent app.WindowHandle, callbacks app.AddFeedCallbacks) {
 	appaddfeed.Open(windowOf(parent), n.addFeedCallbacks(callbacks))
 }
 
 // OpenEditFeed opens the native subscription window pre-filled for editing.
-func (n NativeUI) OpenEditFeed(parent action.WindowHandle, feed store.Feed, callbacks action.AddFeedCallbacks) {
+func (n NativeUI) OpenEditFeed(parent app.WindowHandle, feed store.Feed, callbacks app.AddFeedCallbacks) {
 	appaddfeed.OpenEdit(windowOf(parent), feed, n.addFeedCallbacks(callbacks))
 }
 
 // addFeedCallbacks adapts action callbacks to the add-feed window.
-func (NativeUI) addFeedCallbacks(callbacks action.AddFeedCallbacks) appaddfeed.Callbacks {
+func (NativeUI) addFeedCallbacks(callbacks app.AddFeedCallbacks) appaddfeed.Callbacks {
 	return appaddfeed.Callbacks{
 		Appearance: callbacks.Appearance,
 		Test: func(ctx context.Context, feedURL string, excludeID int64) (appaddfeed.Preview, error) {
@@ -200,17 +200,17 @@ func (NativeUI) addFeedCallbacks(callbacks action.AddFeedCallbacks) appaddfeed.C
 		Add:  callbacks.Add,
 		Save: callbacks.Save,
 		ImportOPML: func(feedParent *mygo.Window) (appaddfeed.Summary, error) {
-			summary, err := callbacks.ImportOPML(context.Background(), action.NewWindowHandle(feedParent))
+			summary, err := callbacks.ImportOPML(context.Background(), app.NewWindowHandle(feedParent))
 			return appaddfeed.Summary(summary), err
 		},
 	}
 }
 
-// Confirm shows an in-app confirmation for a destructive action.
+// Confirm shows an in-app confirmation for a destructive app.
 func (n NativeUI) Confirm(
 	ctx context.Context,
-	parent action.WindowHandle,
-	request action.ConfirmationRequest,
+	parent app.WindowHandle,
+	request app.ConfirmationRequest,
 ) (bool, error) {
 	if n.confirmations == nil {
 		return false, appdialog.ErrNoConfirmationSurface
@@ -254,7 +254,7 @@ func (NativeUI) ApplyTheme(theme string) {
 }
 
 // ShowNotification queues a native toast for the main window.
-func (n NativeUI) ShowNotification(notification action.Notification) {
+func (n NativeUI) ShowNotification(notification app.Notification) {
 	if n.notifications != nil {
 		n.notifications.Show(appdialog.Notification{
 			Type:  notification.Type,
