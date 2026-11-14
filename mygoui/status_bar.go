@@ -1,4 +1,4 @@
-// Package gui draws the parts of the reader that MyGO renders directly.
+// Package mygoui draws the parts of the reader that MyGO renders directly.
 package mygoui
 
 import (

@@ -19,6 +19,7 @@ Ressu 阅读器的后端核心。
 | `event`       | 统一事件 DTO 与串行发布器 Hub（sink 注入，发布者不带传输层）    |
 | `status`      | 服务状态的内存镜像模型（供状态栏等只读消费）                    |
 | `logging`     | 可选的日志文件封装；`Debug` 仅在 `debug` build tag 下输出        |
+| `buildinfo`   | 从 Go 构建元数据读取构建日期，缺少 VCS 信息时回退可执行文件修改时间 |
 | `textmetrics` | 正文字数统计                                                    |
 | `limitreader` | 带体积上限的 `io.Reader`                                        |
 

@@ -24,11 +24,11 @@ var ErrNoSnapshotWindow = errors.New("no snapshot window")
 // WebEndpoint is the page binding for subscription actions. It is exposed to
 // the page as Feeds.
 type WebEndpoint struct {
-	actions *app.AppActions
+	actions *app.App
 }
 
 // NewWebEndpoint creates the subscription endpoint.
-func NewWebEndpoint(actions *app.AppActions) *WebEndpoint {
+func NewWebEndpoint(actions *app.App) *WebEndpoint {
 	return &WebEndpoint{actions: actions}
 }
 
@@ -89,11 +89,11 @@ func (w *WebEndpoint) ExportOPML(ctx context.Context) (string, error) {
 
 // Posts is the page binding for article actions.
 type Posts struct {
-	actions *app.AppActions
+	actions *app.App
 }
 
 // NewPosts creates the article endpoint.
-func NewPosts(actions *app.AppActions) *Posts {
+func NewPosts(actions *app.App) *Posts {
 	return &Posts{actions: actions}
 }
 
@@ -169,11 +169,11 @@ type SnapshotTarget struct {
 
 // Snapshot is the page binding of the snapshot capture window.
 type Snapshot struct {
-	actions *app.AppActions
+	actions *app.App
 }
 
 // NewSnapshot creates the snapshot endpoint.
-func NewSnapshot(actions *app.AppActions) *Snapshot {
+func NewSnapshot(actions *app.App) *Snapshot {
 	return &Snapshot{actions: actions}
 }
 
@@ -197,11 +197,11 @@ func (s *Snapshot) Cancel(ctx context.Context) {
 
 // Settings is the page binding for preferences and shell actions.
 type Settings struct {
-	actions *app.AppActions
+	actions *app.App
 }
 
 // NewSettings creates the settings endpoint.
-func NewSettings(actions *app.AppActions) *Settings {
+func NewSettings(actions *app.App) *Settings {
 	return &Settings{actions: actions}
 }
 
@@ -237,11 +237,11 @@ func (s *Settings) OpenSettings(ctx context.Context) {
 
 // Status is the page binding for native status state.
 type Status struct {
-	actions *app.AppActions
+	actions *app.App
 }
 
 // NewStatus creates the status endpoint.
-func NewStatus(actions *app.AppActions) *Status {
+func NewStatus(actions *app.App) *Status {
 	return &Status{actions: actions}
 }
 

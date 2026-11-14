@@ -1,10 +1,12 @@
 # Ressu 原生界面（mygoui）
 
-MyGO 原生界面的组合根与副作用实现，独立为 `github.com/sdttttt/ressu/mygoui` module，只
-依赖 mygo 与 `ressu/core`。根包只做主窗布局、状态栏和 `NativeUI`；侧栏、文章
-列表、文章头部的回调组装集中在根包的 `callbacks.go`；可复用的主题、格式化、图标、控件、
-对话框和子窗口放在基础包，订阅源栏、文章列表、文章头部和各类窗口放在功能包。组件只持有
-`status.Model` 快照与 `core/app.App` 提供的回调，不得直接访问数据库或实现业务规则。
+MyGO 原生界面的启动装配、组合根与副作用实现，独立为 `github.com/sdttttt/ressu/mygoui`
+module，只依赖 mygo 与 `ressu/core`。根包的 `run.go` 负责启动装配（`Run`：打开数据库、
+组合 service 与 `core/app.App`、注册 `webendpoint` 绑定、创建主窗），`menu_*.go` 实现
+macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文章列表、文章头部的回调组装
+集中在根包的 `callbacks.go`；可复用的主题、格式化、图标、控件、对话框和子窗口放在基础包，
+订阅源栏、文章列表、文章头部和各类窗口放在功能包。组件只持有 `status.Model` 快照与
+`core/app.App` 提供的回调，不得直接访问数据库或实现业务规则。
 
 原生界面是即时模式 UI：构造器写入指针，用 `Element.Changed()` 判断变化，用
 `c.Invalidate()` 触发重绘；不要把 `ui.Context` 或控件存进状态或后台 goroutine。
@@ -63,7 +65,7 @@ MyGO 原生界面的组合根与副作用实现，独立为 `github.com/sdttttt/
 
 状态栏版本号是普通文本，点击由 `Element.OnClick` 绑定（不用按钮控件）；点击后打开
 `about` 单例子窗口，显示版本、嵌入头像、开发者、构建日期和 `mailto:` 邮箱。构建日期由
-`internal/buildinfo.Date` 从 Go 的 `vcs.time` 读取，缺少 VCS 信息时回退到可执行文件的
+`core/buildinfo.Date` 从 Go 的 `vcs.time` 读取，缺少 VCS 信息时回退到可执行文件的
 修改时间。
 
 ## 原生通知（dialog）

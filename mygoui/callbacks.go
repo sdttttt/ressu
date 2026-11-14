@@ -16,7 +16,7 @@ import (
 
 // SidebarCallbacks wires the native subscription sidebar to application
 // actions.
-func SidebarCallbacks(a *app.AppActions) appsidebar.Callbacks {
+func SidebarCallbacks(a *app.App) appsidebar.Callbacks {
 	return appsidebar.Callbacks{
 		Icon:        a.FeedIcon,
 		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
@@ -41,7 +41,7 @@ func SidebarCallbacks(a *app.AppActions) appsidebar.Callbacks {
 }
 
 // PostListCallbacks wires the native article list to application actions.
-func PostListCallbacks(a *app.AppActions) apppostlist.Callbacks {
+func PostListCallbacks(a *app.App) apppostlist.Callbacks {
 	return apppostlist.Callbacks{
 		List:           a.ListPosts,
 		Select:         a.SelectPost,
@@ -53,7 +53,7 @@ func PostListCallbacks(a *app.AppActions) apppostlist.Callbacks {
 }
 
 // PostHeaderCallbacks wires the native article header to application actions.
-func PostHeaderCallbacks(a *app.AppActions) apppostheader.Callbacks {
+func PostHeaderCallbacks(a *app.App) apppostheader.Callbacks {
 	return apppostheader.Callbacks{
 		ToggleStar: a.TogglePostStar,
 		MarkRead:   a.MarkPostRead,
@@ -65,7 +65,7 @@ func PostHeaderCallbacks(a *app.AppActions) apppostheader.Callbacks {
 	}
 }
 
-func refreshAllWithNotice(a *app.AppActions) {
+func refreshAllWithNotice(a *app.App) {
 	if _, err := a.RefreshAll(context.Background()); err != nil {
 		if errors.Is(err, service.ErrRefreshing) {
 			return
@@ -76,7 +76,7 @@ func refreshAllWithNotice(a *app.AppActions) {
 	}
 }
 
-func refreshFeedWithNotice(a *app.AppActions, feedID int64) {
+func refreshFeedWithNotice(a *app.App, feedID int64) {
 	if _, err := a.RefreshFeed(context.Background(), feedID); err != nil {
 		slog.Warn("native feed refresh failed",
 			"operation", "mygoui.sidebar.refreshFeed", "feedID", feedID, "error", err)
@@ -84,7 +84,7 @@ func refreshFeedWithNotice(a *app.AppActions, feedID int64) {
 	}
 }
 
-func markAllReadWithNotice(a *app.AppActions, feedID int64) {
+func markAllReadWithNotice(a *app.App, feedID int64) {
 	if _, err := a.MarkAllPostsRead(feedID); err != nil {
 		slog.Warn("native mark all read failed",
 			"operation", "mygoui.sidebar.markAllRead", "feedID", feedID, "error", err)

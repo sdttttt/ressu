@@ -3,7 +3,6 @@ module github.com/sdttttt/ressu
 go 1.27.3
 
 require (
-	github.com/egoist/mygo v0.9.0
 	github.com/sdttttt/ressu/core v0.0.0
 	github.com/sdttttt/ressu/mygoui v0.0.0
 )
@@ -15,6 +14,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cloudflare/circl v1.6.2 // indirect
 	github.com/ebitengine/purego v0.11.3 // indirect
+	github.com/egoist/mygo v0.9.0 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect

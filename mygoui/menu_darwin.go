@@ -1,25 +1,20 @@
 //go:build darwin
 
-package main
+package mygoui
 
 import (
-	"context"
-	"errors"
-	"log/slog"
-
 	"github.com/egoist/mygo"
 
 	"github.com/sdttttt/ressu/core/app"
-	"github.com/sdttttt/ressu/core/service"
 )
 
 // setMenu installs the system menu bar, which macOS owns.
-func setMenu(actions *app.AppActions) {
+func setMenu(actions *app.App) {
 	mygo.App.SetMenu(newMenu(actions))
 }
 
 // newMenu builds the menu bar. Its items call application actions directly.
-func newMenu(actions *app.AppActions) *mygo.Menu {
+func newMenu(actions *app.App) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Role: mygo.RoleAppMenu},
 		{Label: "File", Submenu: []*mygo.MenuItem{
@@ -40,15 +35,4 @@ func newMenu(actions *app.AppActions) *mygo.Menu {
 		{Role: mygo.RoleViewMenu},
 		{Role: mygo.RoleWindowMenu},
 	})
-}
-
-func refreshAllWithNotice(actions *app.AppActions) {
-	if _, err := actions.RefreshAll(context.Background()); err != nil {
-		if errors.Is(err, service.ErrRefreshing) {
-			return
-		}
-		slog.Warn("menu refresh all failed",
-			"operation", "app.menu.refreshAll", "error", err)
-		actions.Notify("error", "刷新订阅源失败")
-	}
 }

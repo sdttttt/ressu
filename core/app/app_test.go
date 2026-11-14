@@ -136,7 +136,7 @@ func (f *fakeUI) ShowHelp() {
 	f.helpShown = true
 }
 
-func newTestActions(t *testing.T) (*AppActions, *fakeUI) {
+func newTestActions(t *testing.T) (*App, *fakeUI) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
 	if err != nil {
@@ -262,7 +262,7 @@ func TestConfirmRemoveFeedRejectsMissingFeed(t *testing.T) {
 	}
 }
 
-func newRemovalTestActions(t *testing.T) (*AppActions, *fakeUI, *store.Store) {
+func newRemovalTestActions(t *testing.T) (*App, *fakeUI, *store.Store) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
 	if err != nil {

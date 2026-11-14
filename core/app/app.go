@@ -109,10 +109,10 @@ type UI interface {
 	ShowHelp()
 }
 
-// AppActions is the single application-level entry for capabilities exposed to
+// App is the single application-level entry for capabilities exposed to
 // the WebView and native interfaces. Web bindings forward here instead of
 // calling services directly.
-type AppActions struct {
+type App struct {
 	feeds    *service.Feeds
 	posts    *service.Posts
 	settings *service.Settings
@@ -129,8 +129,8 @@ func New(
 	status *service.Status,
 	hub *appevent.Hub,
 	ui UI,
-) *AppActions {
-	return &AppActions{
+) *App {
+	return &App{
 		feeds:    feeds,
 		posts:    posts,
 		settings: settings,
@@ -141,33 +141,33 @@ func New(
 }
 
 // ListFeeds returns the subscriptions and total unread count.
-func (a *AppActions) ListFeeds() service.FeedsSnapshot {
+func (a *App) ListFeeds() service.FeedsSnapshot {
 	return a.feeds.List()
 }
 
 // FeedIcon returns the cached icon of a feed.
-func (a *AppActions) FeedIcon(ctx context.Context, id int64) (store.Icon, error) {
+func (a *App) FeedIcon(ctx context.Context, id int64) (store.Icon, error) {
 	return a.feeds.Icon(ctx, id)
 }
 
 // TestFeed validates and previews a subscription URL. A stored feed whose ID
 // equals excludeID does not count as a duplicate.
-func (a *AppActions) TestFeed(ctx context.Context, feedURL string, excludeID int64) (service.FeedPreview, error) {
+func (a *App) TestFeed(ctx context.Context, feedURL string, excludeID int64) (service.FeedPreview, error) {
 	return a.feeds.Test(ctx, feedURL, excludeID)
 }
 
 // AddFeed subscribes to a feed.
-func (a *AppActions) AddFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+func (a *App) AddFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
 	return a.feeds.Add(ctx, title, feedURL, remoteResources)
 }
 
 // UpdateFeed changes the address or title of a subscription.
-func (a *AppActions) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
+func (a *App) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
 	return a.feeds.Update(ctx, id, title, feedURL, remoteResources)
 }
 
 // ConfirmRemoveFeed asks before deleting a subscription and its posts.
-func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle, id int64) error {
+func (a *App) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle, id int64) error {
 	feed, err := a.feeds.Feed(id)
 	if err != nil {
 		return err
@@ -190,22 +190,22 @@ func (a *AppActions) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle,
 }
 
 // RefreshFeed fetches one subscription.
-func (a *AppActions) RefreshFeed(ctx context.Context, id int64) (store.Feed, error) {
+func (a *App) RefreshFeed(ctx context.Context, id int64) (store.Feed, error) {
 	return a.feeds.Refresh(ctx, id)
 }
 
 // RefreshAll fetches every subscription.
-func (a *AppActions) RefreshAll(ctx context.Context) (service.SyncSummary, error) {
+func (a *App) RefreshAll(ctx context.Context) (service.SyncSummary, error) {
 	return a.feeds.RefreshAll(ctx)
 }
 
 // RefreshStale fetches subscriptions that have not been fetched recently.
-func (a *AppActions) RefreshStale(ctx context.Context) (service.SyncSummary, error) {
+func (a *App) RefreshStale(ctx context.Context) (service.SyncSummary, error) {
 	return a.feeds.RefreshStale(ctx)
 }
 
 // ImportOPML asks for an OPML file and imports its subscriptions.
-func (a *AppActions) ImportOPML(ctx context.Context, parent WindowHandle) (service.ImportSummary, error) {
+func (a *App) ImportOPML(ctx context.Context, parent WindowHandle) (service.ImportSummary, error) {
 	paths, err := a.ui.SelectOPMLImport(parent)
 	if err != nil {
 		slog.Warn("OPML picker failed", "operation", "app.feeds.importOPML", "error", err)
@@ -225,7 +225,7 @@ func (a *AppActions) ImportOPML(ctx context.Context, parent WindowHandle) (servi
 }
 
 // ExportOPML asks where to save the subscriptions and writes an OPML file.
-func (a *AppActions) ExportOPML(parent WindowHandle) (string, error) {
+func (a *App) ExportOPML(parent WindowHandle) (string, error) {
 	data, err := a.feeds.BuildOPML()
 	if err != nil {
 		return "", err
@@ -246,7 +246,7 @@ func (a *AppActions) ExportOPML(parent WindowHandle) (string, error) {
 }
 
 // OpenImage loads an article image and opens it in the native viewer.
-func (a *AppActions) OpenImage(ctx context.Context, parent WindowHandle, source, alt string) error {
+func (a *App) OpenImage(ctx context.Context, parent WindowHandle, source, alt string) error {
 	image, err := a.posts.LoadImage(ctx, source)
 	if err != nil {
 		return err
@@ -255,37 +255,37 @@ func (a *AppActions) OpenImage(ctx context.Context, parent WindowHandle, source,
 }
 
 // ListPosts returns a page of posts.
-func (a *AppActions) ListPosts(query service.PostQuery) (service.PostPage, error) {
+func (a *App) ListPosts(query service.PostQuery) (service.PostPage, error) {
 	return a.posts.List(query)
 }
 
 // GetPost returns one complete post.
-func (a *AppActions) GetPost(feedID int64, guid string) (store.Post, error) {
+func (a *App) GetPost(feedID int64, guid string) (store.Post, error) {
 	return a.posts.Get(feedID, guid)
 }
 
 // MarkPostRead changes one post's read state.
-func (a *AppActions) MarkPostRead(feedID int64, guid string, read bool) error {
+func (a *App) MarkPostRead(feedID int64, guid string, read bool) error {
 	return a.posts.MarkRead(feedID, guid, read)
 }
 
 // TogglePostRead flips one post's read state.
-func (a *AppActions) TogglePostRead(feedID int64, guid string) (store.PostSummary, error) {
+func (a *App) TogglePostRead(feedID int64, guid string) (store.PostSummary, error) {
 	return a.posts.ToggleRead(feedID, guid)
 }
 
 // MarkAllPostsRead marks every post of a feed as read.
-func (a *AppActions) MarkAllPostsRead(feedID int64) (int, error) {
+func (a *App) MarkAllPostsRead(feedID int64) (int, error) {
 	return a.posts.MarkAllRead(feedID)
 }
 
 // TogglePostStar changes one post's starred state.
-func (a *AppActions) TogglePostStar(feedID int64, guid string) (store.PostSummary, error) {
+func (a *App) TogglePostStar(feedID int64, guid string) (store.PostSummary, error) {
 	return a.posts.ToggleStar(feedID, guid)
 }
 
 // CaptureSnapshot captures the visible page for one scroll position.
-func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.SnapshotCaptureRequest) ([]byte, error) {
+func (a *App) CaptureSnapshot(ctx context.Context, request service.SnapshotCaptureRequest) ([]byte, error) {
 	if err := service.ValidateSnapshotCapture(request); err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (a *AppActions) CaptureSnapshot(ctx context.Context, request service.Snapsh
 
 // StitchSnapshot joins page captures and opens the native snapshot preview
 // for parent.
-func (a *AppActions) StitchSnapshot(
+func (a *App) StitchSnapshot(
 	parent WindowHandle,
 	title string,
 	tiles []service.SnapshotTile,
@@ -308,18 +308,18 @@ func (a *AppActions) StitchSnapshot(
 }
 
 // OpenSnapshotCapture opens the single snapshot capture window.
-func (a *AppActions) OpenSnapshotCapture(parent WindowHandle) {
+func (a *App) OpenSnapshotCapture(parent WindowHandle) {
 	a.ui.OpenSnapshotCapture(parent)
 }
 
 // CancelSnapshotCapture closes the snapshot capture window.
-func (a *AppActions) CancelSnapshotCapture(window WindowHandle) {
+func (a *App) CancelSnapshotCapture(window WindowHandle) {
 	a.ui.CloseSnapshotCapture(window)
 }
 
 // SnapshotTarget identifies the article selected for snapshot capture. The
 // boolean is false when no article is selected.
-func (a *AppActions) SnapshotTarget() (appstatus.PostSelection, string, bool) {
+func (a *App) SnapshotTarget() (appstatus.PostSelection, string, bool) {
 	selection, _ := a.hub.SelectedPost()
 	if selection.GUID == "" {
 		return appstatus.PostSelection{}, "", false
@@ -335,7 +335,7 @@ func (a *AppActions) SnapshotTarget() (appstatus.PostSelection, string, bool) {
 }
 
 // stitchSnapshot joins page captures and opens the native preview for parent.
-func (a *AppActions) stitchSnapshot(
+func (a *App) stitchSnapshot(
 	parent WindowHandle,
 	title string,
 	tiles []service.SnapshotTile,
@@ -354,7 +354,7 @@ func (a *AppActions) stitchSnapshot(
 }
 
 // SaveSnapshot asks where to save a stitched snapshot and writes it.
-func (a *AppActions) SaveSnapshot(parent WindowHandle, fileName string, data []byte) (string, error) {
+func (a *App) SaveSnapshot(parent WindowHandle, fileName string, data []byte) (string, error) {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		return "", err
 	}
@@ -374,7 +374,7 @@ func (a *AppActions) SaveSnapshot(parent WindowHandle, fileName string, data []b
 }
 
 // CopySnapshot puts a stitched snapshot on the clipboard.
-func (a *AppActions) CopySnapshot(data []byte) error {
+func (a *App) CopySnapshot(data []byte) error {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		slog.Warn("invalid snapshot image", "operation", "app.posts.copySnapshot", "error", err)
 		return err
@@ -387,12 +387,12 @@ func (a *AppActions) CopySnapshot(data []byte) error {
 }
 
 // Preferences returns the current preferences.
-func (a *AppActions) Preferences() store.Prefs {
+func (a *App) Preferences() store.Prefs {
 	return a.settings.Get()
 }
 
 // UpdatePreferences stores preferences and broadcasts every affected change.
-func (a *AppActions) UpdatePreferences(prefs store.Prefs) (store.Prefs, error) {
+func (a *App) UpdatePreferences(prefs store.Prefs) (store.Prefs, error) {
 	stored, err := a.settings.Update(prefs)
 	if err != nil {
 		return store.Prefs{}, err
@@ -407,7 +407,7 @@ func (a *AppActions) UpdatePreferences(prefs store.Prefs) (store.Prefs, error) {
 
 // UpdateSettingsDraft saves a native settings draft while preserving layout
 // fields that the native surface does not edit.
-func (a *AppActions) UpdateSettingsDraft(prefs store.Prefs) (store.Prefs, error) {
+func (a *App) UpdateSettingsDraft(prefs store.Prefs) (store.Prefs, error) {
 	current := a.settings.Get()
 	prefs.PaneSizes = append([]int(nil), current.PaneSizes...)
 	prefs.SidebarCollapsed = current.SidebarCollapsed
@@ -415,12 +415,12 @@ func (a *AppActions) UpdateSettingsDraft(prefs store.Prefs) (store.Prefs, error)
 }
 
 // DataDir returns the app's data directory.
-func (a *AppActions) DataDir() string {
+func (a *App) DataDir() string {
 	return a.settings.DataDir()
 }
 
 // OpenDataDir shows the data directory in the file manager.
-func (a *AppActions) OpenDataDir() error {
+func (a *App) OpenDataDir() error {
 	if err := a.ui.OpenPath(a.settings.DataDir()); err != nil {
 		slog.Warn("data directory open failed",
 			"operation", "app.settings.openDataDir", "error", err)
@@ -430,7 +430,7 @@ func (a *AppActions) OpenDataDir() error {
 }
 
 // OpenLink opens an absolute HTTP or HTTPS link according to the preferences.
-func (a *AppActions) OpenLink(link string) error {
+func (a *App) OpenLink(link string) error {
 	link = strings.TrimSpace(link)
 	if link == "" {
 		return nil
@@ -453,7 +453,7 @@ func (a *AppActions) OpenLink(link string) error {
 }
 
 // OpenSettings opens the native settings surface with action callbacks.
-func (a *AppActions) OpenSettings(parent WindowHandle) {
+func (a *App) OpenSettings(parent WindowHandle) {
 	a.ui.OpenSettings(parent, SettingsCallbacks{
 		Load:         a.settings.Get,
 		Save:         a.UpdateSettingsDraft,
@@ -465,12 +465,12 @@ func (a *AppActions) OpenSettings(parent WindowHandle) {
 }
 
 // OpenAddFeed opens the native subscription surface.
-func (a *AppActions) OpenAddFeed(parent WindowHandle) {
+func (a *App) OpenAddFeed(parent WindowHandle) {
 	a.ui.OpenAddFeed(parent, a.addFeedCallbacks())
 }
 
 // OpenEditFeed opens the native subscription surface pre-filled for editing.
-func (a *AppActions) OpenEditFeed(parent WindowHandle, feedID int64) {
+func (a *App) OpenEditFeed(parent WindowHandle, feedID int64) {
 	feed, err := a.feeds.Feed(feedID)
 	if err != nil {
 		slog.Warn("feed edit lookup failed",
@@ -482,7 +482,7 @@ func (a *AppActions) OpenEditFeed(parent WindowHandle, feedID int64) {
 }
 
 // addFeedCallbacks wires the native subscription surface to feed operations.
-func (a *AppActions) addFeedCallbacks() AddFeedCallbacks {
+func (a *App) addFeedCallbacks() AddFeedCallbacks {
 	return AddFeedCallbacks{
 		Appearance: a.settings.Get,
 		Test:       a.TestFeed,
@@ -493,17 +493,17 @@ func (a *AppActions) addFeedCallbacks() AddFeedCallbacks {
 }
 
 // Notify shows a native application notification.
-func (a *AppActions) Notify(level, message string) {
+func (a *App) Notify(level, message string) {
 	a.ui.ShowNotification(Notification{Type: level, Title: message})
 }
 
 // RequestSnapshot opens the capture window for the selected post snapshot.
-func (a *AppActions) RequestSnapshot(parent WindowHandle) {
+func (a *App) RequestSnapshot(parent WindowHandle) {
 	a.ui.OpenSnapshotCapture(parent)
 }
 
 // SetSidebarCollapsed stores the native sidebar's collapsed preference.
-func (a *AppActions) SetSidebarCollapsed(collapsed bool) {
+func (a *App) SetSidebarCollapsed(collapsed bool) {
 	prefs := a.settings.Get()
 	if prefs.SidebarCollapsed == collapsed {
 		return
@@ -517,7 +517,7 @@ func (a *AppActions) SetSidebarCollapsed(collapsed bool) {
 }
 
 // SetSidebarPercent stores the native sidebar's docked width percentage.
-func (a *AppActions) SetSidebarPercent(percent float32) {
+func (a *App) SetSidebarPercent(percent float32) {
 	prefs := a.settings.Get()
 	sideWidth := min(max(int(math.Round(float64(percent))), 5), 90)
 	listWidth := 30
@@ -536,7 +536,7 @@ func (a *AppActions) SetSidebarPercent(percent float32) {
 }
 
 // SetListPercent stores the native article list's docked width percentage.
-func (a *AppActions) SetListPercent(percent float32) {
+func (a *App) SetListPercent(percent float32) {
 	prefs := a.settings.Get()
 	listWidth := min(max(int(math.Round(float64(percent))), 18), 55)
 	sideWidth := 18
@@ -555,19 +555,19 @@ func (a *AppActions) SetListPercent(percent float32) {
 }
 
 // SelectFeed broadcasts the feed selected by a page.
-func (a *AppActions) SelectFeed(ctx context.Context, feedID int64) {
+func (a *App) SelectFeed(ctx context.Context, feedID int64) {
 	a.status.SelectFeed(ctx, feedID)
 }
 
 // SelectPost broadcasts the article selected by the native list. The
 // direction tells surfaces how the new post relates to the previous
 // selection in the list: 1 later, -1 earlier, 0 unknown.
-func (a *AppActions) SelectPost(post store.PostSummary, direction int) {
+func (a *App) SelectPost(post store.PostSummary, direction int) {
 	a.status.SelectPost(context.Background(), post, direction)
 }
 
 // AddAndSelectFeed subscribes to a feed and broadcasts its selection.
-func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+func (a *App) AddAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
 	feed, err := a.AddFeed(ctx, title, feedURL, remoteResources)
 	if err != nil {
 		return store.Feed{}, err
@@ -577,21 +577,21 @@ func (a *AppActions) AddAndSelectFeed(ctx context.Context, title, feedURL, remot
 }
 
 // PageReady marks the reader page as ready to receive a full snapshot.
-func (a *AppActions) PageReady(ctx context.Context) {
+func (a *App) PageReady(ctx context.Context) {
 	a.status.PageReady(ctx)
 }
 
 // SelectNeighbourPost moves the native article list from a page shortcut.
-func (a *AppActions) SelectNeighbourPost(delta int, onlyUnread bool) {
+func (a *App) SelectNeighbourPost(delta int, onlyUnread bool) {
 	a.ui.SelectNeighbourPost(delta, onlyUnread)
 }
 
 // SelectNeighbourFeed moves the native subscription selection from a page shortcut.
-func (a *AppActions) SelectNeighbourFeed(delta int) {
+func (a *App) SelectNeighbourFeed(delta int) {
 	a.ui.SelectNeighbourFeed(delta)
 }
 
 // ShowHelp opens the native keyboard shortcut modal.
-func (a *AppActions) ShowHelp() {
+func (a *App) ShowHelp() {
 	a.ui.ShowHelp()
 }

@@ -47,16 +47,16 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 ## 目录结构
 
 ```text
-main.go / menu_darwin.go / menu_other.go   入口、macOS 菜单（菜单项直接调 core/app）
+main.go                   极简启动器，只调用 mygoui.Run()
 go.work                  串联根、core、mygoui 三个 module 的 workspace
 core/                    独立后端 module，细节见 core/README.md
   rss/ icon/ sanitize/ store/ media/ service/ event/ status/ logging/
   app/                   应用门面（入站端口）+ UI 接口与 DTO，细节见 core/app/README.md
-  textmetrics/ limitreader/
-mygoui/                  原生界面 module（组合根与各功能包），细节见 mygoui/README.md
-internal/
-  webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
   buildinfo/             从 Go 构建元数据读取构建日期
+  textmetrics/ limitreader/
+mygoui/                  原生界面 module（启动装配、组合根与各功能包），细节见 mygoui/README.md
+  run.go / menu_*.go     启动装配与 macOS 菜单
+  webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
 tools/pgo-collect/       在 CPU profile 下跑核心热路径，产出 default.pgo（CI 发版前运行）
 webview/static/          阅读页与快照页静态源码，细节见 webview/static/README.md
 resources/               打包图标
@@ -93,9 +93,9 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 
 ## 架构总纲
 
-数据自上而下走 `webview -> webendpoint -> core/app -> service`，副作用自下而上由
+数据自上而下走 `webview -> mygoui/webendpoint -> core/app -> service`，副作用自下而上由
 `core/app` 回调给原生层；`core/service` 只有业务逻辑，`core/app` 的 `App` 是界面能力的
-唯一入口，`internal/webendpoint` 只做绑定适配。三者的完整契约见
+唯一入口，`mygoui/webendpoint` 只做绑定适配。三者的完整契约见
 `core/app/README.md`，事件 EID 清单与语义见 `core/README.md`，原生侧消费见
 `mygoui/README.md`，页面侧消费见 `webview/static/README.md`。
 
@@ -137,7 +137,7 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 ## 常见改动路径
 
 - 新增后端调用：`core/service` 写业务逻辑（不碰 MyGO）→ `core/app` 加 `App` 方法（必要
-  时封装 `mygoui` 方法并实现 `app.UI`）→ `internal/webendpoint` 对应绑定对象加只做参
+  时封装 `mygoui` 方法并实现 `app.UI`）→ `mygoui/webendpoint` 对应绑定对象加只做参
   数/调用方窗口适配的导出方法 → 页面或原生组件调用。细节见 `core/app/README.md`。
 - 新增事件：`core/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方法，在
   `reader.js` dispatcher 加分支。
