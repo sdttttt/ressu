@@ -25,13 +25,13 @@ import (
 	appstatus "github.com/sdttttt/ressu/core/status"
 	"github.com/sdttttt/ressu/core/store"
 	"github.com/sdttttt/ressu/internal/buildinfo"
-	"github.com/sdttttt/ressu/internal/gui"
-	appabout "github.com/sdttttt/ressu/internal/gui/about"
-	appdialog "github.com/sdttttt/ressu/internal/gui/dialog"
-	apppostheader "github.com/sdttttt/ressu/internal/gui/postheader"
-	apppostlist "github.com/sdttttt/ressu/internal/gui/postlist"
-	appsidebar "github.com/sdttttt/ressu/internal/gui/sidebar"
 	"github.com/sdttttt/ressu/internal/webendpoint"
+	"github.com/sdttttt/ressu/mygoui"
+	appabout "github.com/sdttttt/ressu/mygoui/about"
+	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
+	apppostheader "github.com/sdttttt/ressu/mygoui/postheader"
+	apppostlist "github.com/sdttttt/ressu/mygoui/postlist"
+	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
 )
 
 const (
@@ -126,11 +126,11 @@ func main() {
 		prefs := st.Prefs()
 		return prefs.Theme, prefs.FontSize
 	})
-	nativeUI := gui.NewNativeUI(notifications, confirmations)
+	nativeUI := mygoui.NewNativeUI(notifications, confirmations)
 	actions := appcore.New(feeds, posts, settings, status, hub, nativeUI)
-	sidebar := appsidebar.New(statusModel, gui.SidebarCallbacks(actions))
-	postList := apppostlist.New(statusModel, gui.PostListCallbacks(actions))
-	postHeader := apppostheader.New(statusModel, gui.PostHeaderCallbacks(actions))
+	sidebar := appsidebar.New(statusModel, mygoui.SidebarCallbacks(actions))
+	postList := apppostlist.New(statusModel, mygoui.PostListCallbacks(actions))
+	postHeader := apppostheader.New(statusModel, mygoui.PostHeaderCallbacks(actions))
 	nativeUI.SetHelp(help)
 	nativeUI.SetSidebar(sidebar)
 	nativeUI.SetPostList(postList)
@@ -240,7 +240,7 @@ func openWindow(
 	postList *apppostlist.List,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
-	view := gui.NewAppView(statusModel, func() {
+	view := mygoui.NewAppView(statusModel, func() {
 		info := about
 		snapshot := statusModel.Snapshot()
 		info.Theme = snapshot.Theme
