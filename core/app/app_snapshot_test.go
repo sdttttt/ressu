@@ -44,7 +44,7 @@ func TestStitchSnapshotOpensNativeViewer(t *testing.T) {
 		t.Fatalf("snapshot viewer = %d bytes, title %q", len(ui.snapshotData), ui.snapshotTitle)
 	}
 
-	path, err := actions.SaveSnapshot(ui.snapshotParent, ui.snapshotTitle, ui.snapshotData)
+	path, err := actions.saveSnapshot(ui.snapshotParent, ui.snapshotTitle, ui.snapshotData)
 	if err != nil || path != ui.savePath {
 		t.Fatalf("viewer save = %q, %v", path, err)
 	}

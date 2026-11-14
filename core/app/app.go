@@ -307,11 +307,6 @@ func (a *App) StitchSnapshot(
 	return a.stitchSnapshot(parent, title, tiles)
 }
 
-// OpenSnapshotCapture opens the single snapshot capture window.
-func (a *App) OpenSnapshotCapture(parent WindowHandle) {
-	a.ui.OpenSnapshotCapture(parent)
-}
-
 // CancelSnapshotCapture closes the snapshot capture window.
 func (a *App) CancelSnapshotCapture(window WindowHandle) {
 	a.ui.CloseSnapshotCapture(window)
@@ -346,15 +341,15 @@ func (a *App) stitchSnapshot(
 	}
 	return a.ui.OpenSnapshotViewer(parent, data, title, SnapshotViewerCallbacks{
 		Save: func(snapshotParent WindowHandle, snapshotData []byte, fileName string) (string, error) {
-			return a.SaveSnapshot(snapshotParent, fileName, snapshotData)
+			return a.saveSnapshot(snapshotParent, fileName, snapshotData)
 		},
-		Copy:   a.CopySnapshot,
+		Copy:   a.copySnapshot,
 		Notify: a.Notify,
 	})
 }
 
-// SaveSnapshot asks where to save a stitched snapshot and writes it.
-func (a *App) SaveSnapshot(parent WindowHandle, fileName string, data []byte) (string, error) {
+// saveSnapshot asks where to save a stitched snapshot and writes it.
+func (a *App) saveSnapshot(parent WindowHandle, fileName string, data []byte) (string, error) {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		return "", err
 	}
@@ -373,8 +368,8 @@ func (a *App) SaveSnapshot(parent WindowHandle, fileName string, data []byte) (s
 	return path, nil
 }
 
-// CopySnapshot puts a stitched snapshot on the clipboard.
-func (a *App) CopySnapshot(data []byte) error {
+// copySnapshot puts a stitched snapshot on the clipboard.
+func (a *App) copySnapshot(data []byte) error {
 	if err := service.ValidateSnapshotImage(data); err != nil {
 		slog.Warn("invalid snapshot image", "operation", "app.posts.copySnapshot", "error", err)
 		return err
@@ -486,7 +481,7 @@ func (a *App) addFeedCallbacks() AddFeedCallbacks {
 	return AddFeedCallbacks{
 		Appearance: a.settings.Get,
 		Test:       a.TestFeed,
-		Add:        a.AddAndSelectFeed,
+		Add:        a.addAndSelectFeed,
 		Save:       a.UpdateFeed,
 		ImportOPML: a.ImportOPML,
 	}
@@ -566,8 +561,8 @@ func (a *App) SelectPost(post store.PostSummary, direction int) {
 	a.status.SelectPost(context.Background(), post, direction)
 }
 
-// AddAndSelectFeed subscribes to a feed and broadcasts its selection.
-func (a *App) AddAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+// addAndSelectFeed subscribes to a feed and broadcasts its selection.
+func (a *App) addAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
 	feed, err := a.AddFeed(ctx, title, feedURL, remoteResources)
 	if err != nil {
 		return store.Feed{}, err
