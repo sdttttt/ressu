@@ -204,7 +204,11 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot appstatus.Sna
 				l.setSortOrder()
 			})
 			ui.Row(c).AlignItems(ui.Center).Gap(l.scaled(theme, 4)).Children(func() {
-				l.iconButton(c, theme, appicon.Mail, "只看未读", l.query.UnreadOnly, func() {
+				unreadLabel := "只看未读"
+				if !l.query.UnreadOnly {
+					unreadLabel = "显示全部"
+				}
+				l.iconButton(c, theme, appicon.Mail, unreadLabel, !l.query.UnreadOnly, func() {
 					l.setUnreadOnly(!l.query.UnreadOnly)
 				})
 				l.iconButton(c, theme, appicon.Star, "只看星标", l.query.StarredOnly, func() {
