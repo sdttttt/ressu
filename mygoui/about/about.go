@@ -16,7 +16,7 @@ const (
 	aboutWidth = 440
 
 	// aboutHeight is the content height of the About window.
-	aboutHeight = 360
+	aboutHeight = 420
 )
 
 var aboutWindow struct {
@@ -35,12 +35,13 @@ var aboutAvatar = sync.OnceValue(func() *ui.Bitmap {
 
 // Info is the metadata shown by the native About window.
 type Info struct {
-	Version   string
-	BuildDate string
-	Developer string
-	Email     string
-	Theme     string
-	FontSize  string
+	Version    string
+	BuildDate  string
+	SourceCode string
+	Developer  string
+	Email      string
+	Theme      string
+	FontSize   string
 }
 
 // Open opens the single native About window.
@@ -95,21 +96,11 @@ func (a *aboutView) draw(c *ui.Context) {
 				ui.Textf(c, "版本 %s", a.info.Version).TextColor(theme.TextMuted)
 			})
 			ui.Box(c).Height(1).Shrink(0).Background(theme.Border)
-			aboutDeveloper(c, theme, a.info.Developer)
+			aboutField(c, theme, "Source Code", a.info.SourceCode, a.info.SourceCode)
 			aboutField(c, theme, "构建日期", a.info.BuildDate)
+			ui.Box(c).Height(1).Shrink(0).Background(theme.Border)
 			aboutField(c, theme, "邮箱", a.info.Email, "mailto:"+a.info.Email)
 			ui.Text(c, "听见了吗，那远方的汽笛声。").TextColor(theme.TextMuted)
-		})
-	})
-}
-
-// aboutDeveloper renders the developer's portrait, label, and name.
-func aboutDeveloper(c *ui.Context, theme *ui.Theme, developer string) {
-	ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
-		ui.Avatar(c, developer, aboutAvatar())
-		ui.Column(c).Gap(2).Children(func() {
-			ui.Text(c, "开发者").TextColor(theme.TextMuted)
-			ui.Text(c, developer).Selectable()
 		})
 	})
 }

@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	appDeveloper = "sdttttt"
-	appEmail     = "sendaihazuki@foxmail.com"
+	appDeveloper  = "sdttttt"
+	appEmail      = "sendaihazuki@foxmail.com"
+	appSourceCode = "https://github.com/sdttttt/ressu"
 )
 
 // Run wires the core services, native UI, and WebView bindings together and
@@ -174,10 +175,11 @@ func newAboutInfo(version string) appabout.Info {
 		buildDate = date.Format("2006-01-02")
 	}
 	return appabout.Info{
-		Version:   version,
-		BuildDate: buildDate,
-		Developer: appDeveloper,
-		Email:     appEmail,
+		Version:    version,
+		BuildDate:  buildDate,
+		SourceCode: appSourceCode,
+		Developer:  appDeveloper,
+		Email:      appEmail,
 	}
 }
 

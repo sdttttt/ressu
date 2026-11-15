@@ -10,10 +10,11 @@ import (
 func TestAboutViewRendersMetadata(t *testing.T) {
 	view := &aboutView{
 		info: Info{
-			Version:   "26.11.8",
-			BuildDate: "2026-11-10",
-			Developer: "sdttttt",
-			Email:     "sendaihazuki@foxmail.com",
+			Version:    "26.11.8",
+			BuildDate:  "2026-11-10",
+			SourceCode: "https://github.com/sdttttt/ressu",
+			Developer:  "sdttttt",
+			Email:      "sendaihazuki@foxmail.com",
 		},
 	}
 
@@ -21,6 +22,10 @@ func TestAboutViewRendersMetadata(t *testing.T) {
 	for _, want := range []string{
 		"Ressu",
 		"版本 26.11.8",
+		"Source Code",
+		"https://github.com/sdttttt/ressu",
+		"构建日期",
+		"2026-11-10",
 		"开发者",
 		"sdttttt",
 		"构建日期",
