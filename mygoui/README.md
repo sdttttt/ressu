@@ -54,6 +54,18 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 文本输入获得焦点时全部跳过。WebView 持有焦点时，`reader.js` 只拦截 `h`、`l` 和 `?`，
 经 `Status` 绑定转交原生 GUI 并 `preventDefault()`，避免物理按键丢失。
 
+## 阅读页后台挂起（page_lifecycle.go）
+
+- 主窗 WebView 在阅读页闲置时占着独立渲染进程；主窗最小化 5 秒后
+  `pageLifecycle` 销毁阅读页（`WebView.Destroy`），释放渲染进程内存；窗口从任务栏
+  恢复（`OnRestore`）时立刻 `NewWebView` 重建并重载 `/`。仅失焦（切到其他窗口）不
+  触发，避免阅读页无谓重载。
+- 重建后的页面走正常启动流程：`Status.PageReady` 推 `state.snapshot` 全量恢复状态，
+  并在有选中文章时补发一条 `post.selected`（`core/internal/service/status.go`），
+  正文自动恢复显示。文章栈滚动位置等纯视图状态不保留。
+- 挂起期间 `app:event` 广播对阅读页是空操作，无副作用；快照采集/预览是独立窗口，
+  不受影响。
+
 ## 原生设置窗口（settings）
 
 - 入口是原生订阅源栏的菜单或 macOS 菜单直接调用 `core/app` 的 `OpenSettings(window)`；窗口是

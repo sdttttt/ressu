@@ -50,6 +50,9 @@ func (a *AppView) SetPage(page *mygo.WebView) {
 	a.page = page
 }
 
+// Page returns the reader page currently attached, if any.
+func (a *AppView) Page() *mygo.WebView { return a.page }
+
 // View builds the native layout around the reader page.
 func (a *AppView) View(c *ui.Context) {
 	theme := c.Theme()

@@ -37,10 +37,14 @@ func (s *Status) SelectPost(_ context.Context, post store.PostSummary, direction
 }
 
 // PageReady lets the app show once the page has mounted its splash, then
-// broadcasts the complete state to it.
+// broadcasts the complete state to it. The selected article is broadcast
+// again afterwards so a reloaded page restores the open content.
 func (s *Status) PageReady(_ context.Context) {
 	if s.pageReady != nil {
 		s.pageReady()
 	}
 	s.hub.PublishSnapshot()
+	if selection, post := s.hub.SelectedPost(); selection.GUID != "" && post.GUID != "" {
+		s.hub.PostSelected(selection, post, 0)
+	}
 }

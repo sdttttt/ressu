@@ -293,6 +293,7 @@ func openWindow(
 	}
 	view.SetPage(page)
 	win.Invalidate()
+	newPageLifecycle(win, view)
 
 	timer := time.AfterFunc(5*time.Second, show)
 	go func() {

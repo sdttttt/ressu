@@ -111,7 +111,8 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 - macOS 菜单项（设置、添加订阅、全部刷新）直接调用 `core/app` 的 `App` 方法，不经页面
   转发；Windows/Linux 没有原生菜单栏。
 - 主窗口 1200x800、最小 900x600、`StateKey: "main"`，先 `Hidden` 创建，页面就绪
-  （`Status.PageReady`）后显示，5 秒未就绪兜底显示。启动仅在 `RefreshOnStart` 为真时
+  （`Status.PageReady`）后显示，5 秒未就绪兜底显示；主窗最小化 5 秒后阅读页 WebView
+  销毁省内存，恢复时重建（见 `mygoui/page_lifecycle.go`）。启动仅在 `RefreshOnStart` 为真时
   自动刷新，回前台经 `ForegroundRefresher` 触发 `RefreshStale`（5 分钟节流）。
 - 快照入口在原生文章头部，经 `core/app` 的 `RequestSnapshot(parent)` 直接打开采集窗口。
 
