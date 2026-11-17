@@ -64,6 +64,7 @@ type List struct {
 	searchTimer        *time.Timer
 	reloadTimer        *time.Timer
 	pendingScroll      string
+	scroll             ui.ScrollState
 }
 
 // New creates the native article list.
@@ -237,7 +238,7 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 }
 
 func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
-	ui.Scroll(c).Grow(1).Padding(l.scaled(theme, 8), l.scaled(theme, 8)).Children(func() {
+	ui.Scroll(c).Grow(1).TrackScroll(&l.scroll).Padding(l.scaled(theme, 8), l.scaled(theme, 8)).Children(func() {
 		if l.loading && len(l.posts) == 0 {
 			ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).Children(func() {
 				for range 5 {
@@ -261,6 +262,23 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) 
 			}
 		})
 	})
+	l.autoLoadMore(theme)
+}
+
+// autoLoadMore starts the next page once the user scrolls close to the
+// bottom of the loaded list, so paging no longer depends on clicking the
+// load-more button. The button stays as the fallback for viewports the
+// content does not overflow, where no scroll event can reach the bottom.
+func (l *List) autoLoadMore(theme *ui.Theme) {
+	l.mu.Lock()
+	loading := l.loading
+	hasMore := l.matchCount() < l.total
+	threshold := l.scaled(theme, 72)
+	nearBottom := l.scroll.MaxY > 0 && l.scroll.Y >= l.scroll.MaxY-threshold
+	l.mu.Unlock()
+	if !loading && hasMore && nearBottom {
+		l.loadMore()
+	}
 }
 
 func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, post app.PostSummary) {

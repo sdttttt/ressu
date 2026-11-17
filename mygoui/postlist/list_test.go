@@ -341,6 +341,72 @@ func TestPostListLoadMoreCountsOnlyUnreadPosts(t *testing.T) {
 	}
 }
 
+func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 25}},
+		Unread: 25,
+	})
+	model.SetCurrentFeed(7)
+	queries := make(chan app.PostQuery, 4)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			queries <- query
+			page := app.PostPage{Total: 25, Unread: 25}
+			start := query.Offset + 1
+			for i := start; i <= min(start+pageSize-1, 25); i++ {
+				page.Posts = append(page.Posts, app.PostSummary{
+					FeedID: 7, GUID: fmt.Sprintf("guid-%d", i), Title: fmt.Sprintf("Post %d", i),
+				})
+			}
+			return page, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case first := <-queries:
+		if first.Offset != 0 {
+			t.Errorf("first query offset = %d, want 0", first.Offset)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	tester.Frame()
+
+	select {
+	case extra := <-queries:
+		t.Fatalf("unexpected query before scrolling: %+v", extra)
+	default:
+	}
+
+	postList.scroll.Y = postList.scroll.MaxY
+	tester.Frame()
+	select {
+	case second := <-queries:
+		if second.Offset != 20 {
+			t.Errorf("second query offset = %d, want 20", second.Offset)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("scrolling to the bottom did not load the next page")
+	}
+	tester.Frame()
+	if !tester.HasText("Post 25") {
+		t.Error("article list is missing posts from the auto-loaded page")
+	}
+
+	// Everything is loaded now: staying at the bottom must not query again.
+	postList.scroll.Y = postList.scroll.MaxY
+	tester.Frame()
+	select {
+	case extra := <-queries:
+		t.Fatalf("unexpected query after all posts loaded: %+v", extra)
+	default:
+	}
+}
+
 func TestPostListFilterIconButtons(t *testing.T) {
 	model := app.NewStatusModel("")
 	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
