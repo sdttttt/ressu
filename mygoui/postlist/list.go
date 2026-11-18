@@ -65,6 +65,12 @@ type List struct {
 	reloadTimer        *time.Timer
 	pendingScroll      string
 	scroll             ui.ScrollState
+
+	anchorKey         string
+	preserveScroll    bool
+	pendingRestoreKey string
+	pendingRestoreY   float32
+	reloadLimit       int
 }
 
 // New creates the native article list.
@@ -238,7 +244,10 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 }
 
 func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) {
-	ui.Scroll(c).Grow(1).TrackScroll(&l.scroll).Padding(l.scaled(theme, 8), l.scaled(theme, 8)).Children(func() {
+	scrollEl := ui.Scroll(c).Grow(1).TrackScroll(&l.scroll).Padding(l.scaled(theme, 8), l.scaled(theme, 8))
+	viewport := scrollEl.Bounds()
+	anchorKey := ""
+	scrollEl.Children(func() {
 		if l.loading && len(l.posts) == 0 {
 			ui.Column(c).FillWidth().Gap(l.scaled(theme, 8)).Children(func() {
 				for range 5 {
@@ -255,13 +264,18 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) 
 
 		ui.Column(c).FillWidth().Gap(l.scaled(theme, 4)).Children(func() {
 			for _, post := range l.posts {
-				l.drawPost(c, theme, snapshot, post)
+				l.drawPost(c, theme, snapshot, post, viewport, &anchorKey)
 			}
 			if l.matchCount() < l.total {
 				l.drawLoadMore(c, theme)
 			}
 		})
 	})
+	if anchorKey != "" {
+		l.mu.Lock()
+		l.anchorKey = anchorKey
+		l.mu.Unlock()
+	}
 	l.autoLoadMore(theme)
 }
 
@@ -281,7 +295,7 @@ func (l *List) autoLoadMore(theme *ui.Theme) {
 	}
 }
 
-func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, post app.PostSummary) {
+func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, post app.PostSummary, viewport ui.Rect, frameAnchor *string) {
 	palette := guitheme.NewPostPalette(*theme)
 	rowKey := postRowKey(post)
 	selected := snapshot.CurrentPost.FeedID == post.FeedID && snapshot.CurrentPost.GUID == post.GUID
@@ -293,6 +307,12 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 		Background(postRowBackground(palette, selected)).
 		Transition(ui.ElementTransition{Duration: 100 * time.Millisecond, Colors: true}).
 		Label(post.Title)
+	if *frameAnchor == "" {
+		bounds := row.Bounds()
+		if viewport.H > 0 && bounds.H > 0 && bounds.Y+bounds.H > viewport.Y {
+			*frameAnchor = rowKey
+		}
+	}
 	hovered := row.Hovered()
 	if hovered {
 		row.Background(palette.Accent.Alpha(0.6))
@@ -722,7 +742,13 @@ func (l *List) syncState(snapshot app.Snapshot) {
 	query.FeedID = snapshot.CurrentFeedID
 	query.Offset = 0
 	query.Limit = pageSize
-	l.loadedQuery = query
+	if l.reloadLimit > pageSize {
+		// A data-change reload fetches enough rows to cover what the user
+		// had scrolled through, so the scroll anchor survives the reload.
+		query.Limit = l.reloadLimit
+		l.reloadLimit = 0
+	}
+	l.loadedQuery = l.query
 	l.loadVersion++
 	generation := l.loadVersion
 	l.loading = true
@@ -740,6 +766,9 @@ func (l *List) syncState(snapshot app.Snapshot) {
 			if err == nil {
 				l.posts = page.Posts
 				l.total = page.Total
+				l.applyScrollRestoreLocked()
+			} else {
+				l.preserveScroll = false
 			}
 			l.loading = false
 		}
@@ -937,7 +966,26 @@ func (l *List) markAllRead(feedID int64) {
 }
 
 func (l *List) reload() {
+	l.requestReload(false)
+}
+
+// reloadAfterDataChange reloads like reload and asks the load completion to
+// restore the scroll position, so a background refresh that inserts articles
+// above the viewport does not move what the user is reading.
+func (l *List) reloadAfterDataChange() {
+	l.requestReload(true)
+}
+
+func (l *List) requestReload(preserve bool) {
 	l.mu.Lock()
+	if preserve {
+		l.preserveScroll = true
+		l.pendingRestoreKey = l.anchorKey
+		l.pendingRestoreY = l.scroll.Y
+		if count := l.matchCount(); count > pageSize {
+			l.reloadLimit = count
+		}
+	}
 	l.forceReload = true
 	l.loadedVersion = 0
 	invalidate := l.invalidate
@@ -945,6 +993,35 @@ func (l *List) reload() {
 	if invalidate != nil {
 		invalidate()
 	}
+}
+
+// applyScrollRestoreLocked re-anchors the viewport after a data-change
+// reload. When the topmost visible post survived the reload, schedule a
+// minimal scroll to it; otherwise restore the pre-reload pixel offset and
+// let autoLoadMore backfill the deeper pages. The caller must hold l.mu.
+func (l *List) applyScrollRestoreLocked() {
+	if !l.preserveScroll {
+		return
+	}
+	l.preserveScroll = false
+	key := l.pendingRestoreKey
+	if key == "" {
+		return
+	}
+	found := false
+	for _, post := range l.posts {
+		if postRowKey(post) == key {
+			found = true
+			break
+		}
+	}
+	if found {
+		if l.pendingScroll == "" {
+			l.pendingScroll = key
+		}
+		return
+	}
+	l.scroll.Y = l.pendingRestoreY
 }
 
 // scheduleReloadLocked arms the one-shot debounce that coalesces bursts of
@@ -957,7 +1034,7 @@ func (l *List) scheduleReloadLocked() {
 		l.mu.Lock()
 		l.reloadTimer = nil
 		l.mu.Unlock()
-		l.reload()
+		l.reloadAfterDataChange()
 	})
 }
 

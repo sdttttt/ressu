@@ -2,6 +2,7 @@ package postlist
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -519,5 +520,209 @@ func TestSelectionDirection(t *testing.T) {
 				t.Errorf("selection direction = %d, want %d", got, test.want)
 			}
 		})
+	}
+}
+
+func TestPostListReloadKeepsTopVisiblePost(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 20}},
+		Unread: 20,
+	})
+	model.SetCurrentFeed(7)
+
+	dataset := &testDataset{}
+	dataset.set(postRange(1, 20), 20)
+	queries := make(chan app.PostQuery, 4)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			queries <- query
+			posts, total := dataset.page(query.Offset, query.Limit)
+			return app.PostPage{Posts: posts, Total: total, Unread: total}, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	waitForCondition(t, func() bool { return len(postList.posts) == 20 }, "initial page")
+	tester.Frame()
+
+	postList.scroll.Y = 0
+	tester.Frame()
+	anchor := postRowKey(app.PostSummary{FeedID: 7, GUID: "guid-1"})
+	if postList.anchorKey != anchor {
+		t.Fatalf("anchorKey = %q, want %q", postList.anchorKey, anchor)
+	}
+
+	// Ten fresh articles land on top; the first page keeps guid-1 at index 10.
+	dataset.set(append(postRange(101, 110), postRange(1, 10)...), 30)
+	model.SetPostsChanged()
+	reload := frameUntilQuery(t, tester, queries, "a posts.changed reload")
+	if reload.Offset != 0 || reload.Limit != pageSize {
+		t.Errorf("reload query = %+v, want offset 0 limit %d", reload, pageSize)
+	}
+	waitForCondition(t, func() bool {
+		return len(postList.posts) == 20 && postList.posts[10].GUID == "guid-1"
+	}, "reloaded first page")
+	waitForCondition(t, func() bool { return postList.scroll.Y > 0 }, "scroll restored to the anchor")
+}
+
+func TestPostListReloadRestoresDeepScroll(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 60}},
+		Unread: 60,
+	})
+	model.SetCurrentFeed(7)
+
+	dataset := &testDataset{}
+	dataset.set(postRange(1, 60), 60)
+	queries := make(chan app.PostQuery, 4)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			queries <- query
+			posts, total := dataset.page(query.Offset, query.Limit)
+			return app.PostPage{Posts: posts, Total: total, Unread: total}, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	waitForCondition(t, func() bool { return len(postList.posts) == 20 }, "initial page")
+	tester.Frame()
+
+	// Page in the rest by scrolling to the bottom; autoLoadMore chains across
+	// frames, so keep framing until every post is loaded.
+	postList.scroll.Y = postList.scroll.MaxY
+	for len(postList.posts) < 60 {
+		loaded := len(postList.posts)
+		more := frameUntilQuery(t, tester, queries, "the next page")
+		if more.Offset != loaded {
+			t.Errorf("next page query offset = %d, want %d", more.Offset, loaded)
+		}
+		waitForCondition(t, func() bool { return len(postList.posts) > loaded }, "next page apply")
+	}
+	tester.Frame()
+
+	postList.scroll.Y = postList.scroll.MaxY
+	tester.Frame()
+	savedY := postList.scroll.Y
+	if savedY <= 0 {
+		t.Fatalf("scroll.Y = %v, want a deep scroll position", savedY)
+	}
+
+	// The refresh refetches every loaded row in one query, so the deep anchor
+	// survives and the scroll offset stays exactly where the user left it.
+	// Chained autoLoadMore may still have a stale query in flight; the reload
+	// wait skips those and the reload replaces the rows, dropping duplicates.
+	model.SetPostsChanged()
+	reload := frameUntilReloadQuery(t, tester, queries)
+	if reload.Offset != 0 || reload.Limit <= pageSize {
+		t.Errorf("reload query = %+v, want offset 0 and a limit covering the deep scroll", reload)
+	}
+	waitForCondition(t, func() bool { return len(postList.posts) == reload.Limit }, "reloaded posts")
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if postList.scroll.Y == savedY {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if postList.scroll.Y != savedY {
+		t.Errorf("scroll.Y = %v, want restored offset %v (anchor %q, posts %d, MaxY %v)",
+			postList.scroll.Y, savedY, postList.anchorKey, len(postList.posts), postList.scroll.MaxY)
+	}
+}
+
+// testDataset feeds the stubbed List callback; the test swaps it to simulate
+// a background refresh.
+type testDataset struct {
+	mu    sync.Mutex
+	posts []app.PostSummary
+	total int
+}
+
+func (d *testDataset) set(posts []app.PostSummary, total int) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.posts = posts
+	d.total = total
+}
+
+func (d *testDataset) page(offset, limit int) ([]app.PostSummary, int) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if offset >= len(d.posts) {
+		return nil, d.total
+	}
+	end := min(offset+limit, len(d.posts))
+	return d.posts[offset:end], d.total
+}
+
+func postRange(first, last int) []app.PostSummary {
+	posts := make([]app.PostSummary, 0, last-first+1)
+	for i := first; i <= last; i++ {
+		posts = append(posts, app.PostSummary{
+			FeedID: 7, GUID: fmt.Sprintf("guid-%d", i), Title: fmt.Sprintf("Post %d", i),
+		})
+	}
+	return posts
+}
+
+func waitForCondition(t *testing.T, condition func() bool, message string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", message)
+}
+
+// frameUntilReloadQuery renders frames until the stub reports a reload query
+// (offset 0), discarding stale next-page queries a chaining autoLoadMore may
+// still have in flight.
+func frameUntilReloadQuery(t *testing.T, tester *ui.Tester, queries chan app.PostQuery) app.PostQuery {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		query := frameUntilQuery(t, tester, queries, "a posts.changed reload")
+		if query.Offset == 0 {
+			return query
+		}
+	}
+	t.Fatal("timed out waiting for a posts.changed reload")
+	return app.PostQuery{}
+}
+
+// frameUntilQuery renders frames until the stub reports another List query,
+// which is how tests drive debounced reloads without sleeping blindly.
+func frameUntilQuery(t *testing.T, tester *ui.Tester, queries chan app.PostQuery, message string) app.PostQuery {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		tester.Frame()
+		select {
+		case query := <-queries:
+			return query
+		case <-time.After(25 * time.Millisecond):
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for %s", message)
+		}
 	}
 }
