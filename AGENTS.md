@@ -32,7 +32,7 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 
 | 层     | 选择                                                              |
 | ------ | ----------------------------------------------------------------- |
-| 外壳   | MyGO 0.9.2（`github.com/egoist/mygo`），Go，无 cgo，系统 WebView  |
+| 外壳   | MyGO 0.10.0（`github.com/egoist/mygo`），Go，无 cgo，系统 WebView  |
 | 后端   | Go 1.27.3，`mmcdole/gofeed` 1.5，bbolt 1.5                        |
 | 前端   | 无框架静态 HTML/CSS/JS，内嵌系统 WebView                            |
 | 存储   | 用户数据目录下的 bbolt 单文件数据库 `ressu.db`                     |

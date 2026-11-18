@@ -3,7 +3,7 @@ module github.com/sdttttt/ressu/mygoui
 go 1.27.3
 
 require (
-	github.com/egoist/mygo v0.9.2
+	github.com/egoist/mygo v0.10.0
 	github.com/sdttttt/ressu/core v0.0.0
 )
 
@@ -17,7 +17,7 @@ require (
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	go.etcd.io/bbolt v1.5.0 // indirect
 	golang.org/x/image v0.48.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 )
