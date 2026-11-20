@@ -25,8 +25,10 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
   新数据入口必须走 Go 绑定。
 - 不要手改生成物：`build/`、`.mygo/`。
 - 只改与任务相关的代码。不要顺手修复无关失败，也不要在任务中新增 ESLint/Prettier 配置。
-- `gofmt` 必须干净（仓库带 `.golangci.yml`，启用 standard lint 集与 gofmt/goimports
-  formatter）。
+- `gofmt` 必须干净（仓库带 `.golangci.yml`，启用 standard lint 集，外加 gosec、revive、
+  unconvert、unparam、misspell、intrange、copyloopvar、usestdlibvars、wastedassign；
+  gofmt/goimports formatter；`_test.go` 豁免 errcheck/gosec/unparam）。提交前在根目录、
+  `core/`、`mygoui/` 各跑一次 `golangci-lint run ./...`。
 
 ## 技术栈与模块
 

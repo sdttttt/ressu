@@ -227,10 +227,6 @@ func (e Entry) ViewerURL() string {
 	return localURL(e.Key)
 }
 
-func (c *Cache) fetch(ctx context.Context, old Entry) (Entry, error) {
-	return cacheFetch(c, ctx, old)
-}
-
 func (c *Cache) fail(old Entry, failedAt time.Time) {
 	cacheFail(c, old, failedAt)
 }
@@ -259,10 +255,6 @@ func (c *Cache) reportFailure(key string, failedAt time.Time) bool {
 
 func (c *Cache) load() error {
 	return cacheLoad(c)
-}
-
-func (c *Cache) put(key string, entry Entry, data []byte) error {
-	return cachePut(c, key, entry, data)
 }
 
 func (c *Cache) evictLocked(keep string) error {

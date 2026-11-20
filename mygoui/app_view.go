@@ -67,8 +67,7 @@ func (a *AppView) View(c *ui.Context) {
 				}
 
 				ui.Themed(c, a.postList.Theme(c)).Fill().Children(func() {
-					var articleSplit ui.Element
-					articleSplit = ui.SplitPercent(c, a.postList.SplitPercent(), func() {
+					articleSplit := ui.SplitPercent(c, a.postList.SplitPercent(), func() {
 						a.postList.View(c)
 					}, func() {
 						ui.Column(c).Fill().Children(func() {

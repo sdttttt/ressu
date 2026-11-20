@@ -5,6 +5,36 @@ run:
 
 linters:
   default: standard
+  enable:
+    - copyloopvar
+    - gosec
+    - intrange
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+
+  settings:
+    gosec:
+      # math/rand 仅用于非加密场景（如文件名、jitter）。
+      excludes:
+        - G404
+
+    revive:
+      rules:
+        # 与仓库约定一致：包注释在主文件，导出标识符有文档注释。
+        - name: package-comments
+          disabled: true
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - unparam
 
 formatters:
   enable:

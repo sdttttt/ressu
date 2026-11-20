@@ -44,8 +44,7 @@ type IconButtonOptions struct {
 
 // IconButton draws a themed icon button and runs Action only when enabled.
 func IconButton(c *ui.Context, colors IconButtonColors, options IconButtonOptions) ui.Element {
-	var button ui.Element
-	button = ui.ButtonBase(c).
+	button := ui.ButtonBase(c).
 		Size(options.Size, options.Size).
 		Radius(options.Radius).
 		Cursor(ui.CursorPointer).

@@ -51,7 +51,7 @@ type Store struct {
 // Open opens the database in dir, creating it with the default preferences
 // when it is missing.
 func Open(dir string) (*Store, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, err
 	}
 	db, err := bolt.Open(filepath.Join(dir, dbFileName), 0o600, &bolt.Options{Timeout: time.Second})
@@ -61,7 +61,12 @@ func Open(dir string) (*Store, error) {
 
 	s := &Store{db: db, prefs: DefaultPrefs()}
 	if err := db.Update(func(tx *bolt.Tx) error { return s.init(tx) }); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			slog.Warn("database close failed after init error",
+				"operation", "store.open",
+				"error", closeErr,
+			)
+		}
 		return nil, err
 	}
 	slog.Info("database opened",
@@ -147,7 +152,9 @@ func (s *Store) DBSize() (int64, error) {
 // feedKey encodes a feed id: big-endian bytes keep the keys in id order.
 func feedKey(id int64) []byte {
 	var key [8]byte
-	binary.BigEndian.PutUint64(key[:], uint64(id))
+	// IDs come from a monotonic in-process counter and never go negative, so
+	// the int64/uint64 round trip cannot overflow.
+	binary.BigEndian.PutUint64(key[:], uint64(id)) //nolint:gosec // G115
 	return key[:]
 }
 
@@ -407,7 +414,8 @@ func (s *Store) AllPostSkims() ([]PostSkim, error) {
 	var posts []PostSkim
 	if err := s.db.View(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte(postsBucket)).ForEach(func(key, _ []byte) error {
-			feedID := int64(binary.BigEndian.Uint64(key))
+			// Bucket keys are encoded by feedKey from non-negative int64 IDs.
+			feedID := int64(binary.BigEndian.Uint64(key)) //nolint:gosec // G115
 			feedPosts, err := readPostSkims(tx, feedID)
 			if err != nil {
 				return err
@@ -446,7 +454,8 @@ func (s *Store) AllPosts() ([]Post, error) {
 	var posts []Post
 	if err := s.db.View(func(tx *bolt.Tx) error {
 		return tx.Bucket([]byte(postsBucket)).ForEach(func(key, _ []byte) error {
-			feedID := int64(binary.BigEndian.Uint64(key))
+			// Bucket keys are encoded by feedKey from non-negative int64 IDs.
+			feedID := int64(binary.BigEndian.Uint64(key)) //nolint:gosec // G115
 			feedPosts, err := readPosts(tx, feedID)
 			if err != nil {
 				return err

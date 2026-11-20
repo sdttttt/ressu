@@ -376,7 +376,7 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 			Size(l.scaled(theme, 24), l.scaled(theme, 24)).
 			Radius(l.scaled(theme, 6)).Cursor(ui.CursorPointer).
 			Label(map[bool]string{true: "取消星标", false: "加星标"}[post.Starred]).
-			IgnoreInput(!(post.Starred || hovered))
+			IgnoreInput(!post.Starred && !hovered)
 		starHovered := star.Hovered()
 		starPressed := star.Pressed()
 		if starHovered || starPressed {
@@ -673,8 +673,8 @@ func (l *List) iconButton(
 	label string,
 	active bool,
 	action func(),
-) ui.Element {
-	return widget.IconButton(c, guitheme.PostIconButtonColors(guitheme.NewPostPalette(*theme)), widget.IconButtonOptions{
+) {
+	widget.IconButton(c, guitheme.PostIconButtonColors(guitheme.NewPostPalette(*theme)), widget.IconButtonOptions{
 		Icon:     icon,
 		Label:    label,
 		Size:     l.scaled(theme, 28),

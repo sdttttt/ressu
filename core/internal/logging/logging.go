@@ -60,7 +60,7 @@ func Open(dir string, options Options) (*File, error) {
 		return nil, err
 	}
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600) //nolint:gosec // G304: path is fixed to the app's own log directory.
 	if err != nil {
 		return nil, fmt.Errorf("could not open the log file: %w", err)
 	}
@@ -151,7 +151,7 @@ func pruneBackups(path string) error {
 	sort.Sort(sort.Reverse(sort.IntSlice(generations)))
 
 	extra := len(generations) - maxBackupGenerations
-	for index := 0; index < extra; index++ {
+	for index := range extra {
 		generation := generations[index]
 		old := fmt.Sprintf("%s.%d", path, generation)
 		if err := os.Remove(old); err != nil {

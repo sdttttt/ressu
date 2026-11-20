@@ -36,7 +36,7 @@ func Run() {
 	app.SetName("Ressu")
 	if os.Getenv("MYGO_GENERATE") != "" {
 		generateDir := filepath.Join(os.TempDir(), "ressu-generate")
-		if err := os.MkdirAll(generateDir, 0o755); err != nil {
+		if err := os.MkdirAll(generateDir, 0o750); err != nil {
 			fatal("generate data path failed", err)
 		}
 		app.SetPath(mygo.PathUserData, generateDir)
@@ -50,9 +50,8 @@ func Run() {
 	logFile, err := appcore.OpenLog(dir, appcore.LogOptions{})
 	if err != nil {
 		slog.Warn("log file disabled", "operation", "logging.open", "error", err)
-		logFile = nil
 	} else {
-		defer logFile.Close()
+		defer func() { _ = logFile.Close() }()
 		slog.SetDefault(logFile.Logger())
 	}
 	stopProfile := startCPUProfile()
@@ -65,7 +64,7 @@ func Run() {
 	if err != nil {
 		fatal("database open failed", err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 	slog.Info("application starting", "operation", "app.start")
 
 	articleMedia, err := appcore.OpenMedia(filepath.Join(cacheDir, "articles"), appcore.MediaOptions{
@@ -74,7 +73,7 @@ func Run() {
 	if err != nil {
 		fatal("article media cache open failed", err)
 	}
-	defer articleMedia.Close()
+	defer func() { _ = articleMedia.Close() }()
 	if err := mygo.Protocol.Handle(appcore.MediaScheme, articleMedia.Handler()); err != nil {
 		fatal("media protocol registration failed", err)
 	}
@@ -196,7 +195,7 @@ func startCPUProfile() func() {
 	if path == "" {
 		return func() {}
 	}
-	file, err := os.Create(path)
+	file, err := os.Create(path) //nolint:gosec // G304: path is an explicit opt-in via RESSU_CPUPROFILE.
 	if err != nil {
 		slog.Warn("cpu profile disabled", "operation", "app.profile", "path", path, "error", err)
 		return func() {}

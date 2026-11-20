@@ -195,9 +195,7 @@ func cachePrepare(c *Cache, key, sourceURL string) bool {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if current, ok := c.entries[key]; ok {
-		entry = current
-	} else {
+	if _, exists := c.entries[key]; !exists {
 		c.entries[key] = entry
 	}
 	return true
@@ -208,7 +206,7 @@ func validKey(key string) bool {
 		return false
 	}
 	for _, char := range key {
-		if !('0' <= char && char <= '9' || 'a' <= char && char <= 'f') {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
 			return false
 		}
 	}

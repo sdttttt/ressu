@@ -61,7 +61,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 		Meta: Meta{
 			Title:       strings.TrimSpace(parsed.Title),
 			SiteURL:     resolve(feedURL, parsed.Link),
-			Description: plainText(parsed.Description, SummaryLimit),
+			Description: plainText(parsed.Description),
 			Language:    parsed.Language,
 		},
 	}
@@ -97,7 +97,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 			Title:       strings.TrimSpace(it.Title),
 			URL:         link,
 			Author:      authorOf(it),
-			Summary:     plainText(descriptionOf(it), SummaryLimit),
+			Summary:     plainText(descriptionOf(it)),
 			Content:     content,
 			PublishedAt: published,
 		}
@@ -155,13 +155,13 @@ func resolve(base, ref string) string {
 }
 
 // plainText turns markup into the text it shows, collapsed to one line and cut
-// to limit runes.
-func plainText(markup string, limit int) string {
+// to SummaryLimit runes.
+func plainText(markup string) string {
 	if markup == "" {
 		return ""
 	}
 	if !strings.ContainsAny(markup, "<&") {
-		return truncate(collapse(markup), limit)
+		return truncate(collapse(markup), SummaryLimit)
 	}
 
 	z := html.NewTokenizer(strings.NewReader(markup))
@@ -170,7 +170,7 @@ func plainText(markup string, limit int) string {
 	for {
 		switch z.Next() {
 		case html.ErrorToken:
-			return truncate(collapse(b.String()), limit)
+			return truncate(collapse(b.String()), SummaryLimit)
 		case html.TextToken:
 			if skipped == 0 {
 				b.Write(z.Text())

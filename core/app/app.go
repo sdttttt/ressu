@@ -220,7 +220,7 @@ func (a *App) ImportOPML(ctx context.Context, parent WindowHandle) (service.Impo
 		slog.Error("OPML open failed", "operation", "app.feeds.importOPML", "error", err)
 		return service.ImportSummary{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	return a.feeds.ImportOPML(ctx, file)
 }
 
@@ -361,7 +361,7 @@ func (a *App) saveSnapshot(parent WindowHandle, fileName string, data []byte) (s
 	if path == "" {
 		return "", nil
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		slog.Error("snapshot write failed", "operation", "app.posts.saveSnapshot", "error", err)
 		return "", fmt.Errorf("could not save the snapshot: %w", err)
 	}

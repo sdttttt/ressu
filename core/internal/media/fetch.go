@@ -112,7 +112,7 @@ func cacheFetch(c *Cache, ctx context.Context, old Entry) (Entry, error) {
 		c.fail(old, now)
 		return Entry{}, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode == http.StatusNotModified && old.Size > 0 {
 		entry.ContentType = old.ContentType

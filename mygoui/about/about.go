@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
-	"github.com/sdttttt/ressu/mygoui/assets"
+
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
 )
@@ -23,15 +23,6 @@ var aboutWindow struct {
 	sync.Mutex
 	window *mygo.Window
 }
-
-// aboutAvatar decodes the embedded portrait once for every About window.
-var aboutAvatar = sync.OnceValue(func() *ui.Bitmap {
-	bitmap, err := ui.DecodeBitmap(assets.AboutAvatar)
-	if err != nil {
-		return nil
-	}
-	return bitmap
-})
 
 // Info is the metadata shown by the native About window.
 type Info struct {

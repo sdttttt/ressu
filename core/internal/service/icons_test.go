@@ -165,8 +165,7 @@ func TestFeedsIconExpiresAfterTTL(t *testing.T) {
 func TestFeedsIconSharesOneRequest(t *testing.T) {
 	var hits atomic.Int32
 	release := make(chan struct{})
-	var server *httptest.Server
-	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/blocked.png" {
 			if hits.Add(1) == 1 {
 				<-release

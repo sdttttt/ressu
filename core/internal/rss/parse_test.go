@@ -182,7 +182,7 @@ func TestPlainText(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := plainText(c.markup, SummaryLimit)
+			got := plainText(c.markup)
 			if got != c.want {
 				t.Errorf("plainText(%q) = %q, want %q", c.markup, got, c.want)
 			}
@@ -191,7 +191,7 @@ func TestPlainText(t *testing.T) {
 }
 
 func TestPlainTextTruncates(t *testing.T) {
-	got := plainText(strings.Repeat("字", SummaryLimit+10), SummaryLimit)
+	got := plainText(strings.Repeat("字", SummaryLimit+10))
 	if !strings.HasSuffix(got, "…") {
 		t.Fatalf("summary should be cut, got %q", got)
 	}

@@ -80,12 +80,12 @@ func cacheServeRequest(
 		}
 	}
 
-	file, err := os.Open(c.dataFile(key))
+	file, err := os.Open(c.dataFile(key)) //nolint:gosec // G703: key is validated as lowercase hex by validKey before reaching here.
 	if err != nil {
 		http.Error(writer, "image unavailable", http.StatusServiceUnavailable)
 		return http.StatusServiceUnavailable, fmt.Errorf("could not open image bytes: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer.Header().Set("Content-Type", entry.ContentType)
 	writer.Header().Set("Cache-Control", "private, max-age=300")

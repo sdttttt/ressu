@@ -62,7 +62,7 @@ var allowedContentTypes = map[string]bool{
 // Fetch discovers candidate addresses, downloads the first usable bitmap, and
 // returns its source URL.
 func Fetch(ctx context.Context, source Source) (Icon, error) {
-	var lastErr error = ErrNoIcon
+	var lastErr = ErrNoIcon
 	for _, candidate := range candidates(ctx, source) {
 		if err := ctx.Err(); err != nil {
 			return Icon{}, err
@@ -162,7 +162,7 @@ func download(ctx context.Context, address string) (Icon, error) {
 	if err != nil {
 		return Icon{}, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		return Icon{}, fmt.Errorf("the server answered %s", response.Status)
@@ -202,7 +202,7 @@ func getBody(parent context.Context, address, accept string, limit int64) ([]byt
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("the server answered %s", response.Status)

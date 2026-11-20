@@ -81,7 +81,7 @@ func fetch(ctx context.Context, feedURL, etag, lastModified string, maxBody int6
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusNotModified {
 		return nil, ErrNotModified

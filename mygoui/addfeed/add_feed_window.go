@@ -448,7 +448,7 @@ func (s *addFeedView) resizeForPreview(visible bool) {
 		return
 	}
 
-	delta := 0
+	var delta int
 	if visible {
 		if s.previewDelta != 0 {
 			return

@@ -106,19 +106,7 @@ type PostSkim struct {
 
 // ToSummary returns the post without its body, as lists show it.
 func (p PostSkim) ToSummary() PostSummary {
-	return PostSummary{
-		FeedID:      p.FeedID,
-		GUID:        p.GUID,
-		Title:       p.Title,
-		URL:         p.URL,
-		Author:      p.Author,
-		Summary:     p.Summary,
-		WordCount:   p.WordCount,
-		PublishedAt: p.PublishedAt,
-		FetchedAt:   p.FetchedAt,
-		Read:        p.Read,
-		Starred:     p.Starred,
-	}
+	return PostSummary(p)
 }
 
 // Theme values of Prefs.Theme.

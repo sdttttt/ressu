@@ -162,7 +162,7 @@ func downloadImageViewerImage(viewer *mygo.Window, content *imageViewerContent) 
 	if savePath == "" {
 		return
 	}
-	if err := os.WriteFile(savePath, content.data, 0o644); err != nil {
+	if err := os.WriteFile(savePath, content.data, 0o600); err != nil {
 		showImageSaveError(viewer, fmt.Errorf("could not save the image: %w", err))
 	}
 }

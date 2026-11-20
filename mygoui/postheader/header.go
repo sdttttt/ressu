@@ -194,11 +194,11 @@ func (h *Header) iconButton(
 	accent bool,
 	enabled bool,
 	action func(),
-) ui.Element {
+) {
 	palette := guitheme.NewPostPalette(*theme)
 	colors := guitheme.PostIconButtonColors(palette)
 	colors.Rest = palette.TextMuted
-	return widget.IconButton(c, colors, widget.IconButtonOptions{
+	widget.IconButton(c, colors, widget.IconButtonOptions{
 		Icon:     icon,
 		Label:    label,
 		Size:     h.scaled(theme, 28),
