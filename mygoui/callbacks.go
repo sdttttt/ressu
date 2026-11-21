@@ -61,6 +61,9 @@ func PostHeaderCallbacks(a *app.App) apppostheader.Callbacks {
 		MarkRead:   a.MarkPostRead,
 		OpenLink:   a.OpenLink,
 		CopyLink:   func(link string) { copyLinkToClipboard(a, link) },
+		ExtractFullText: func(feedID int64, guid string) error {
+			return a.ExtractPostFullText(context.Background(), feedID, guid)
+		},
 		RequestSnapshot: func(parent *mygo.Window) {
 			a.RequestSnapshot(app.NewWindowHandle(parent))
 		},

@@ -1,7 +1,10 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -397,5 +400,85 @@ func TestToggleReadFlipsState(t *testing.T) {
 	}
 	if len(updated) != 2 || updated[0].Read == updated[1].Read {
 		t.Errorf("post.updated events = %+v", updated)
+	}
+}
+
+func TestExtractFullTextPublishesCleanedContent(t *testing.T) {
+	st := openStore(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<html><head><title>a</title></head><body>` +
+			`<article><p>The full readable body of the article keeps going ` +
+			`with enough text for the extractor to prefer this node.</p>` +
+			`<script>alert("x")</script></article></body></html>`))
+	}))
+	defer server.Close()
+
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.MergePosts(feed.ID, []store.Post{{
+		GUID:        "a",
+		Title:       "第一篇",
+		URL:         server.URL,
+		Content:     "摘要",
+		PublishedAt: time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	var fullTexts []appevent.FullText
+	hub := appevent.NewHub(appstatus.New("test"), func(e appevent.Event) error {
+		if e.EID == appevent.EventPostFullText {
+			fullTexts = append(fullTexts, *e.FullText)
+		}
+		return nil
+	})
+	posts := NewPostsWithHub(st, hub)
+
+	if err := posts.ExtractFullText(context.Background(), feed.ID, "a"); err != nil {
+		t.Fatal(err)
+	}
+	if len(fullTexts) != 1 {
+		t.Fatalf("post.fulltext events = %+v", fullTexts)
+	}
+	if fullTexts[0].FeedID != feed.ID || fullTexts[0].GUID != "a" {
+		t.Errorf("full-text target = %+v", fullTexts[0])
+	}
+	if !strings.Contains(fullTexts[0].Content, "full readable body") {
+		t.Errorf("full-text content = %q; want the extracted body", fullTexts[0].Content)
+	}
+	if strings.Contains(fullTexts[0].Content, "alert(") {
+		t.Errorf("full-text content keeps a script: %q", fullTexts[0].Content)
+	}
+
+	stored, err := st.Post(feed.ID, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Content != "摘要" {
+		t.Errorf("stored content = %q; want the extraction left nothing behind", stored.Content)
+	}
+}
+
+func TestExtractFullTextWithoutOriginalPage(t *testing.T) {
+	st := openStore(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/feed", Title: "源"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.MergePosts(feed.ID, []store.Post{{
+		GUID:        "a",
+		Title:       "第一篇",
+		PublishedAt: time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := NewPosts(st).ExtractFullText(context.Background(), feed.ID, "a"); err == nil {
+		t.Fatal("ExtractFullText succeeded without an original page; want an error")
+	}
+	if err := NewPosts(st).ExtractFullText(context.Background(), feed.ID, "missing"); err == nil {
+		t.Fatal("ExtractFullText succeeded for a missing post; want an error")
 	}
 }

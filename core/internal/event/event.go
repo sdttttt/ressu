@@ -34,6 +34,8 @@ const (
 	EventPostSelected EventID = "post.selected"
 	// EventPostUpdated carries an article's read or starred state.
 	EventPostUpdated EventID = "post.updated"
+	// EventPostFullText carries an article body extracted on demand.
+	EventPostFullText EventID = "post.fulltext"
 
 	// View events are published by the desktop shell rather than the
 	// service layer. Alternate frontends may ignore them.
@@ -63,6 +65,14 @@ type Selection struct {
 // PostSelection is the article selected by the page.
 type PostSelection = appstatus.PostSelection
 
+// FullText is an article body extracted on demand. It is not stored;
+// consumers show it in place of the feed-provided content.
+type FullText struct {
+	FeedID  int64  `json:"feedId"`
+	GUID    string `json:"guid"`
+	Content string `json:"content"`
+}
+
 // Event is the single payload used by every Go-to-frontend broadcast. EID
 // decides which fields consumers read; the other sections are null.
 type Event struct {
@@ -81,6 +91,7 @@ type Event struct {
 	// Only EventPostSelected sets it.
 	Direction int                `json:"direction"`
 	Post      *store.PostSummary `json:"post"`
+	FullText  *FullText          `json:"fullText"`
 }
 
 // Validate reports whether the event contains the fields its EID needs.
@@ -122,6 +133,10 @@ func (e Event) Validate() error {
 	case EventPostUpdated:
 		if e.Post == nil || e.Post.GUID == "" {
 			return fmt.Errorf("event %q is missing a post update", e.EID)
+		}
+	case EventPostFullText:
+		if e.FullText == nil || e.FullText.GUID == "" {
+			return fmt.Errorf("event %q is missing extracted content", e.EID)
 		}
 	default:
 		return fmt.Errorf("unknown event id %q", e.EID)

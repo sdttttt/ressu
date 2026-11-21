@@ -20,7 +20,8 @@
 - 启动时订阅一次 `app:event`；唯一 dispatcher 按 `eid` 路由，丢弃 `revision` 不递增的
   事件。消费的分支：`state.snapshot`/`appearance.changed`/`prefs.changed`（主题、字号与
   减少动效）、
-  `selection.changed`（清空文章栈）、`post.selected`（打开正文）。
+  `selection.changed`（清空文章栈）、`post.selected`（打开正文）、`post.fulltext`
+  （原生头部「提取全文」的按需结果，匹配当前文章时替换正文）。
 - **文章层栈**：每篇文章一个绝对定位层，被盖住的层保留 DOM 和滚动位置；换篇动画由
   原生列表选择方向决定（`direction`：1 新文章从下方淡入、旧层上滑退出；-1 新层从上方
   盖下）。动画只在元素挂载后的下一帧启动（先内联钉住首帧），滑动用 Web Animations API，
@@ -31,6 +32,8 @@
   旧层。
 - 打开正文由 `Posts.Get` 完成；已读标记在 Go 侧按偏好自动处理（见 core/README），页面
   不再消费 `post.updated`、`m` 键调 `Posts.ToggleRead` 服务端翻转。
+- `post.fulltext` 的正文已在 Go 侧清洗（与 `Post.Content` 同一管线），页面按 feedId/guid
+  匹配顶层文章层后直接进 `innerHTML`；内容不落库，切走再切回会回到订阅源提供的正文。
 - 主题两层：`action.UpdatePreferences` 设置原生外观；页面在 `<html>` 上切换 `dark` 和
   `theme-sepia` 类，字号经 `--app-text-scale` 缩放。`system` 主题监听
   `prefers-color-scheme`。`sepia` 的运行时类名必须是 `theme-sepia`。

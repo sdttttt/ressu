@@ -294,6 +294,12 @@ func (a *App) GetPost(feedID int64, guid string) (store.Post, error) {
 	return a.posts.Get(feedID, guid)
 }
 
+// ExtractPostFullText pulls the readable body of an article page and
+// broadcasts it to reading surfaces. Nothing is stored.
+func (a *App) ExtractPostFullText(ctx context.Context, feedID int64, guid string) error {
+	return a.posts.ExtractFullText(ctx, feedID, guid)
+}
+
 // MarkPostRead changes one post's read state.
 func (a *App) MarkPostRead(feedID int64, guid string, read bool) error {
 	return a.posts.MarkRead(feedID, guid, read)

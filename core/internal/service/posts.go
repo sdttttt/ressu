@@ -13,6 +13,7 @@ import (
 	"time"
 
 	appevent "github.com/sdttttt/ressu/core/internal/event"
+	"github.com/sdttttt/ressu/core/internal/extract"
 	"github.com/sdttttt/ressu/core/internal/logging"
 	"github.com/sdttttt/ressu/core/internal/media"
 	"github.com/sdttttt/ressu/core/internal/store"
@@ -245,6 +246,44 @@ func (p *Posts) Get(feedID int64, guid string) (store.Post, error) {
 		post.Content = p.media.RewriteHTML(post.Content, post.URL)
 	}
 	return post, nil
+}
+
+// ExtractFullText fetches the article page of one post, extracts its readable
+// body, and broadcasts the cleaned HTML so reading surfaces can show it in
+// place of the feed-provided content. Nothing is stored: reopening the
+// article falls back to the stored content.
+func (p *Posts) ExtractFullText(ctx context.Context, feedID int64, guid string) error {
+	post, err := p.store.Post(feedID, guid)
+	if err != nil {
+		slog.Warn("full-text post lookup failed",
+			"operation", "posts.extractFullText", "feedId", feedID, "error", err)
+		return err
+	}
+	if post.URL == "" {
+		return errors.New("the article has no original page")
+	}
+
+	content, err := extract.Article(ctx, post.URL)
+	if err != nil {
+		slog.Warn("full-text extraction failed",
+			"operation", "posts.extractFullText",
+			"feedId", feedID,
+			"pageHost", feedHost(post.URL),
+			"error", redactedFeedError(post.URL, err))
+		return err
+	}
+	if p.media != nil && p.remoteResourcesGoProxy(feedID) {
+		content = p.media.RewriteHTML(content, post.URL)
+	}
+	logging.Debug("full-text extracted",
+		"operation", "posts.extractFullText",
+		"feedId", feedID,
+		"bytes", len(content),
+	)
+	if p.hub != nil {
+		p.hub.PostFullText(feedID, guid, content)
+	}
+	return nil
 }
 
 // remoteResourcesGoProxy reports whether article bodies of the feed should be

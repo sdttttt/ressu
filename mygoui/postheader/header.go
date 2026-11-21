@@ -28,6 +28,7 @@ type Callbacks struct {
 	MarkRead        func(feedID int64, guid string, read bool) error
 	OpenLink        func(link string) error
 	CopyLink        func(link string)
+	ExtractFullText func(feedID int64, guid string) error
 	RequestSnapshot func(parent *mygo.Window)
 	Notify          func(level, message string)
 }
@@ -37,8 +38,9 @@ type Header struct {
 	model     *app.Model
 	callbacks Callbacks
 
-	mu     sync.Mutex
-	window *mygo.Window
+	mu         sync.Mutex
+	window     *mygo.Window
+	extracting bool
 }
 
 // New creates the native header above the reading pane.
@@ -68,9 +70,9 @@ func (h *Header) View(c *ui.Context) {
 		ui.Column(c).FillWidth().
 			Padding(h.scaled(theme, 12), h.scaled(theme, 18), h.scaled(theme, 12), h.scaled(theme, 18)).
 			Background(palette.Background).Children(func() {
+			h.drawTitle(c, theme, post)
 			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(h.scaled(theme, 12)).Children(func() {
 				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-					h.drawTitle(c, theme, post)
 					h.drawMeta(c, theme, snapshot, post)
 				})
 				ui.Row(c).Shrink(0).AlignItems(ui.Center).Gap(h.scaled(theme, 2)).Children(func() {
@@ -182,6 +184,9 @@ func (h *Header) drawActions(c *ui.Context, theme *ui.Theme, post app.PostSummar
 	h.iconButton(c, theme, appicon.Copy, "复制链接", false, post.URL != "", func() {
 		h.copyLink(post)
 	})
+	h.iconButton(c, theme, appicon.BookOpen, "提取全文", false, post.URL != "" && !h.isExtracting(), func() {
+		h.extractFullText(post)
+	})
 	h.iconButton(c, theme, appicon.Camera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
 		h.mu.Lock()
 		window := h.window
@@ -252,6 +257,46 @@ func (h *Header) copyLink(post app.PostSummary) {
 		return
 	}
 	h.callbacks.CopyLink(post.URL)
+}
+
+// isExtracting reports whether a full-text extraction is in flight.
+func (h *Header) isExtracting() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.extracting
+}
+
+// extractFullText pulls the readable body of the article page and
+// broadcasts it to the reading pane. A second click while one extraction
+// runs is ignored.
+func (h *Header) extractFullText(post app.PostSummary) {
+	extract := h.callbacks.ExtractFullText
+	if extract == nil || post.URL == "" {
+		return
+	}
+	h.mu.Lock()
+	if h.extracting {
+		h.mu.Unlock()
+		return
+	}
+	h.extracting = true
+	window := h.window
+	h.mu.Unlock()
+	if window != nil && !window.IsDestroyed() {
+		window.Invalidate()
+	}
+	go func() {
+		err := extract(post.FeedID, post.GUID)
+		h.mu.Lock()
+		h.extracting = false
+		h.mu.Unlock()
+		if window != nil && !window.IsDestroyed() {
+			window.Invalidate()
+		}
+		if err != nil {
+			h.notify("提取全文失败")
+		}
+	}()
 }
 
 func (h *Header) notify(message string) {

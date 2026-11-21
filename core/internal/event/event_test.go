@@ -35,6 +35,7 @@ func TestEventValidate(t *testing.T) {
 		{"selection", Event{EID: EventSelectionChanged, Selection: selection}, true},
 		{"post selected", Event{EID: EventPostSelected, PostSelection: postSelection, Post: post}, true},
 		{"post updated", Event{EID: EventPostUpdated, Post: post}, true},
+		{"post fulltext", Event{EID: EventPostFullText, FullText: &FullText{FeedID: 1, GUID: "g", Content: "c"}}, true},
 		{"missing sync", Event{EID: EventSyncStarted}, false},
 		{"missing feeds", Event{EID: EventFeedsChanged}, false},
 		{"missing posts", Event{EID: EventPostsChanged}, false},
@@ -46,6 +47,8 @@ func TestEventValidate(t *testing.T) {
 		{"post selected without summary", Event{EID: EventPostSelected, PostSelection: postSelection}, false},
 		{"missing post updated", Event{EID: EventPostUpdated}, false},
 		{"empty post update", Event{EID: EventPostUpdated, Post: &store.PostSummary{FeedID: 1}}, false},
+		{"missing post fulltext", Event{EID: EventPostFullText}, false},
+		{"empty post fulltext", Event{EID: EventPostFullText, FullText: &FullText{FeedID: 1}}, false},
 		{"unknown", Event{EID: EventID("unknown")}, false},
 	}
 

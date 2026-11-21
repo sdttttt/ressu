@@ -1,6 +1,7 @@
 package postheader
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 		},
 	})
 
-	tester := ui.NewTester(header.View, 680, 96)
+	tester := ui.NewTester(header.View, 680, 120)
 	tester.Frame()
 	for _, text := range []string{
 		"First article",
@@ -97,5 +98,42 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("clicking the copy-link action did not copy the link")
+	}
+}
+
+func TestHeaderExtractFullText(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{Feeds: []app.Feed{{ID: 1, Title: "A"}}, Unread: 1})
+	model.SetCurrentPost(
+		app.PostSelection{FeedID: 1, GUID: "first"},
+		app.PostSummary{
+			FeedID:      1,
+			GUID:        "first",
+			Title:       "First article",
+			URL:         "https://example.com/first",
+			PublishedAt: time.Date(2026, time.November, 9, 12, 0, 0, 0, time.UTC),
+		},
+	)
+	extracted := make(chan [2]string, 1)
+	header := New(model, Callbacks{
+		ExtractFullText: func(feedID int64, guid string) error {
+			extracted <- [2]string{strconv.FormatInt(feedID, 10), guid}
+			return nil
+		},
+	})
+
+	tester := ui.NewTester(header.View, 680, 120)
+	tester.Frame()
+	if err := tester.Click("提取全文"); err != nil {
+		t.Fatalf("click extract-full-text action: %v", err)
+	}
+	select {
+	case target := <-extracted:
+		if target != [2]string{"1", "first"} {
+			t.Errorf("extraction target = %v; want the selected article", target)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("clicking the extract-full-text action did not extract the article")
 	}
 }

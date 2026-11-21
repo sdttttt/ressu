@@ -445,6 +445,17 @@
           openPost(event.postSelection, event.direction || 0);
         }
         break;
+      case "post.fulltext": {
+        // FullText content is cleaned on the Go side, like Post.Content.
+        const fullText = event.fullText;
+        const layer = topLayer();
+        if (!fullText || !layer || !samePost(layer.selection, fullText)) break;
+        layer.body.innerHTML = fullText.content;
+        if (state.post && samePost(state.post, fullText)) {
+          state.post = { ...state.post, content: fullText.content };
+        }
+        break;
+      }
     }
   };
 

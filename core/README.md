@@ -75,6 +75,9 @@ Ressu 阅读器的后端核心。
   的未读数。
 - `Posts.Get` 按偏好 `MarkReadOnOpen` 自动标已读（失败不阻塞阅读）并广播
   `post.updated`；`Posts.ToggleRead` 翻转已读并返回最新摘要。
+- `Posts.ExtractFullText` 按需抓原文页提取正文（`core/internal/extract`，readability），
+  复用 sanitize 清洗管线，Go 代理模式的文章图片同样重写；结果只经 `post.fulltext` 事件
+  推给阅读层，不落库，重新打开文章时回落到订阅源提供的正文。
 - 事件由 `internal/event.Hub` 串行发布：先分配递增 `revision`、更新时间，再更新 `status.Model`
   镜像，最后交给 sink。任何改变订阅或未读状态的服务方法都应广播。
 

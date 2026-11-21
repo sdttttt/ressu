@@ -56,8 +56,8 @@ core/                    独立后端 module，细节见 core/README.md
   app/                   唯一对外暴露的应用门面（入站端口）+ UI 接口、DTO 与
                          内部包重导出，细节见 core/app/README.md
   internal/              后端实现（rss/icon/sanitize/store/media/service/event/
-                         status/logging/buildinfo/textmetrics/limitreader），
-                         禁止 core 树以外的代码导入
+                         status/logging/buildinfo/textmetrics/limitreader/safedial/
+                         extract），禁止 core 树以外的代码导入
 mygoui/                  原生界面 module（启动装配、组合根与各功能包），细节见 mygoui/README.md
   run.go / menu_*.go     启动装配与 macOS 菜单
   webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
