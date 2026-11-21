@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -428,6 +429,44 @@ func (s *Store) AllPostSkims() ([]PostSkim, error) {
 	}
 	slices.SortStableFunc(posts, byPublishedDescForSkim)
 	return posts, nil
+}
+
+// SearchPostGUIDs returns the GUIDs of a feed's posts whose title or body
+// contains needle, matched case-insensitively. An empty needle matches
+// nothing.
+func (s *Store) SearchPostGUIDs(feedID int64, needle string) ([]string, error) {
+	needle = strings.ToLower(needle)
+	var guids []string
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		b := feedPosts(tx, feedID)
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(_, value []byte) error {
+			var p struct {
+				GUID    string `json:"guid"`
+				Title   string `json:"title"`
+				Content string `json:"content"`
+			}
+			if err := json.Unmarshal(value, &p); err != nil {
+				return err
+			}
+			if textMatches(p.Title, needle) || textMatches(p.Content, needle) {
+				guids = append(guids, p.GUID)
+			}
+			return nil
+		})
+	}); err != nil {
+		return nil, err
+	}
+	return guids, nil
+}
+
+// textMatches reports whether text contains needle, matched
+// case-insensitively. The raw check hits caseless scripts such as Chinese
+// without allocating; the lowercased check covers case-folded text.
+func textMatches(text, needle string) bool {
+	return strings.Contains(text, needle) || strings.Contains(strings.ToLower(text), needle)
 }
 
 func readPostSkims(tx *bolt.Tx, feedID int64) ([]PostSkim, error) {

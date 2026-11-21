@@ -72,6 +72,7 @@ type List struct {
 	search             string
 	searchOpen         bool
 	searchTimer        *time.Timer
+	searchScope        int
 	reloadTimer        *time.Timer
 	pendingScroll      string
 	scroll             ui.ScrollState
@@ -196,9 +197,9 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 				l.badge(c, theme, strconv.Itoa(currentUnread(snapshot))+" 未读", palette.Secondary, palette.SecondaryForeground)
 			})
 
-			searchLabel := "搜索标题"
+			searchLabel := "搜索文章"
 			if l.searchOpen {
-				searchLabel = "关闭标题搜索"
+				searchLabel = "关闭搜索"
 			}
 			l.iconButton(c, theme, appicon.Search, searchLabel, l.searchOpen, func() {
 				l.setSearchOpen(!l.searchOpen)
@@ -230,6 +231,25 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 		})
 
 		if l.searchOpen {
+			// The post theme makes the control surfaces transparent for
+			// the list; the segmented control needs the standard surfaces
+			// to read as a control, as in the settings window.
+			base := guitheme.New(c, snapshot.Theme, snapshot.FontSize)
+			base.FontSize = theme.FontSize
+			ui.Themed(c, base).Children(func() {
+				scope := ui.Segmented(c, &l.searchScope, "标题", "全文").
+					Label("搜索范围").
+					Margin(l.scaled(theme, 6), 0, 0, 0)
+				if scope.Changed() {
+					l.setSearchScope(l.searchScope)
+				}
+			})
+			inputLabel := "搜索文章标题"
+			placeholder := "搜索标题"
+			if l.searchScope == 1 {
+				inputLabel = "搜索文章全文"
+				placeholder = "搜索全文"
+			}
 			ui.TextInput(c, &l.search).
 				Margin(l.scaled(theme, 6), 0, 0, 0).
 				Height(l.scaled(theme, 28)).
@@ -237,8 +257,8 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 				Padding(l.scaled(theme, 2), l.scaled(theme, 8)).
 				FontSize(l.scaled(theme, 12)).
 				FixedLineHeight(l.scaled(theme, 16)).
-				Label("搜索文章标题").
-				Placeholder("搜索标题").
+				Label(inputLabel).
+				Placeholder(placeholder).
 				PlaceholderColor(palette.TextMuted).
 				AutoFocus().
 				OnChange(func() { l.setSearch(l.search) })
@@ -810,6 +830,15 @@ func (l *List) setSearchOpen(open bool) {
 			l.searchTimer.Stop()
 			l.searchTimer = nil
 		}
+	}
+	l.redraw()
+}
+
+func (l *List) setSearchScope(scope int) {
+	l.searchScope = scope
+	l.query.SearchScope = app.SearchScopeTitle
+	if scope == 1 {
+		l.query.SearchScope = app.SearchScopeFulltext
 	}
 	l.redraw()
 }

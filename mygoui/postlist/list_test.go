@@ -477,6 +477,59 @@ func TestPostListMatchesWebviewTextSize(t *testing.T) {
 	}
 }
 
+func TestPostListSearchScopeToggle(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	queries := make(chan app.PostQuery, 4)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			queries <- query
+			return app.PostPage{}, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case initial := <-queries:
+		if initial.SearchScope != "" {
+			t.Fatalf("initial scope = %q; want the title default", initial.SearchScope)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+
+	if err := tester.Click("搜索文章"); err != nil {
+		t.Fatalf("open search: %v", err)
+	}
+
+	if err := tester.Click("全文"); err != nil {
+		t.Fatalf("choose fulltext scope: %v", err)
+	}
+	var fulltext app.PostQuery
+	select {
+	case fulltext = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("switching scope did not query posts")
+	}
+	if fulltext.SearchScope != app.SearchScopeFulltext {
+		t.Errorf("scope = %q; want %q", fulltext.SearchScope, app.SearchScopeFulltext)
+	}
+
+	if err := tester.Click("标题"); err != nil {
+		t.Fatalf("choose title scope: %v", err)
+	}
+	var title app.PostQuery
+	select {
+	case title = <-queries:
+	case <-time.After(time.Second):
+		t.Fatal("switching back did not query posts")
+	}
+	if title.SearchScope != app.SearchScopeTitle {
+		t.Errorf("scope = %q; want %q", title.SearchScope, app.SearchScopeTitle)
+	}
+}
+
 func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 	model := app.NewStatusModel("")
 	model.SetAppearance(app.ThemeSystem, app.FontSizeLarge)
@@ -488,7 +541,7 @@ func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 
 	tester := ui.NewTester(postList.View, 360, 520)
 	tester.Frame()
-	button, ok := tester.Access("搜索标题")
+	button, ok := tester.Access("搜索文章")
 	if !ok {
 		t.Fatal("search button is missing")
 	}

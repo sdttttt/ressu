@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -531,6 +532,73 @@ func TestMarkAllRead(t *testing.T) {
 	}
 	if changed != 0 {
 		t.Errorf("second call changed = %d", changed)
+	}
+}
+
+func TestSearchPostGUIDs(t *testing.T) {
+	s := openTemp(t)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := s.AddFeed(Feed{URL: "https://b.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "title-hit", Title: "Rust 发布说明", Content: "<p>无关正文</p>", PublishedAt: base},
+		{GUID: "body-hit", Title: "周记", Content: "<p>这周学了 Rust  borrow check</p>", PublishedAt: base},
+		{GUID: "miss", Title: "另一篇", Content: "<p>什么都没有</p>", PublishedAt: base},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(other.ID, []Post{
+		{GUID: "cross", Title: "Rust 别处", Content: "<p>别的源</p>", PublishedAt: base},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	guids, err := s.SearchPostGUIDs(feed.ID, "rust")
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(guids)
+	if want := []string{"body-hit", "title-hit"}; !slices.Equal(guids, want) {
+		t.Errorf("guids = %v; want %v", guids, want)
+	}
+
+	// Case-insensitivity reaches case-folded text.
+	guids, err = s.SearchPostGUIDs(feed.ID, "RUST")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(guids) != 2 {
+		t.Errorf("uppercase needle guids = %v; want 2 hits", guids)
+	}
+
+	// A caseless-script needle hits the body directly.
+	guids, err = s.SearchPostGUIDs(feed.ID, "borrow")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(guids, []string{"body-hit"}) {
+		t.Errorf("body guids = %v; want [body-hit]", guids)
+	}
+
+	guids, err = s.SearchPostGUIDs(feed.ID, "不存在")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(guids) != 0 {
+		t.Errorf("miss guids = %v; want none", guids)
+	}
+
+	guids, err = s.SearchPostGUIDs(9999, "rust")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(guids) != 0 {
+		t.Errorf("unknown feed guids = %v; want none", guids)
 	}
 }
 

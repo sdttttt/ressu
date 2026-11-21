@@ -74,6 +74,8 @@ type (
 	PostPage = service.PostPage
 	// PostQuery filters and pages the post list.
 	PostQuery = service.PostQuery
+	// SearchScope selects the fields a post search matches.
+	SearchScope = service.SearchScope
 	// SnapshotCaptureRequest is one scroll-position capture of the reader
 	// page.
 	SnapshotCaptureRequest = service.SnapshotCaptureRequest
@@ -95,6 +97,10 @@ var (
 	SortOrderAscending = service.SortOrderAscending
 	// SortOrderDescending sorts newest first.
 	SortOrderDescending = service.SortOrderDescending
+	// SearchScopeTitle matches post titles only.
+	SearchScopeTitle = service.SearchScopeTitle
+	// SearchScopeFulltext matches post titles and bodies.
+	SearchScopeFulltext = service.SearchScopeFulltext
 
 	NewFeeds                = service.NewFeeds
 	NewFeedsWithHub         = service.NewFeedsWithHub

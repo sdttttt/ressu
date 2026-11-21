@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,18 +121,29 @@ func (p *Posts) LoadImage(ctx context.Context, source string) (ArticleImage, err
 	return ArticleImage{Data: data, ViewerURL: entry.ViewerURL()}, nil
 }
 
+// SearchScope values of PostQuery.SearchScope.
+type SearchScope string
+
+// Search scopes of PostQuery.SearchScope.
+const (
+	SearchScopeTitle    SearchScope = "title"
+	SearchScopeFulltext SearchScope = "fulltext"
+)
+
 // PostQuery selects a page of posts. FeedID zero selects all feeds. Search
-// matches titles only. An unknown SortOrder selects the default newest-first
-// order, and an unknown SortField selects publication time.
+// matches titles only unless SearchScope asks for the full text. An unknown
+// SortOrder selects the default newest-first order, and an unknown SortField
+// selects publication time.
 type PostQuery struct {
-	FeedID      int64     `json:"feedId"`
-	UnreadOnly  bool      `json:"unreadOnly"`
-	StarredOnly bool      `json:"starredOnly"`
-	Search      string    `json:"search"`
-	Offset      int       `json:"offset"`
-	Limit       int       `json:"limit"`
-	SortOrder   SortOrder `json:"sortOrder"`
-	SortBy      SortField `json:"sortBy"`
+	FeedID      int64       `json:"feedId"`
+	UnreadOnly  bool        `json:"unreadOnly"`
+	StarredOnly bool        `json:"starredOnly"`
+	Search      string      `json:"search"`
+	SearchScope SearchScope `json:"searchScope"`
+	Offset      int         `json:"offset"`
+	Limit       int         `json:"limit"`
+	SortOrder   SortOrder   `json:"sortOrder"`
+	SortBy      SortField   `json:"sortBy"`
 }
 
 // PostPage is a page of posts, with how many match the query and how many of
@@ -158,6 +170,14 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 	}
 
 	needle := strings.ToLower(strings.TrimSpace(query.Search))
+	var bodyGuids map[string]struct{}
+	if needle != "" && query.SearchScope == SearchScopeFulltext {
+		bodyGuids, err = p.searchBodies(query.FeedID, needle)
+		if err != nil {
+			slog.Warn("post body search failed", "operation", "posts.list.searchBodies", "error", err)
+			return PostPage{}, err
+		}
+	}
 	matches := make([]store.PostSummary, 0, len(posts))
 	unread := 0
 	for _, post := range posts {
@@ -170,8 +190,14 @@ func (p *Posts) List(query PostQuery) (PostPage, error) {
 		if query.StarredOnly && !post.Starred {
 			continue
 		}
-		if needle != "" && !postMatches(post, needle) {
-			continue
+		if needle != "" {
+			if bodyGuids != nil {
+				if _, ok := bodyGuids[bodyKey(post.FeedID, post.GUID)]; !ok {
+					continue
+				}
+			} else if !postMatches(post, needle) {
+				continue
+			}
 		}
 		matches = append(matches, post.ToSummary())
 	}
@@ -359,4 +385,32 @@ func sortPosts(posts []store.PostSummary, query PostQuery) {
 
 func postMatches(post store.PostSkim, needle string) bool {
 	return strings.Contains(strings.ToLower(post.Title), needle)
+}
+
+// searchBodies returns the posts whose title or body contains needle, keyed
+// so GUIDs stay unique across feeds. The aggregate id scans every feed.
+func (p *Posts) searchBodies(feedID int64, needle string) (map[string]struct{}, error) {
+	feedIDs := []int64{feedID}
+	if feedID == AggregateFeedID {
+		feedIDs = feedIDs[:0]
+		for _, feed := range p.store.Feeds() {
+			feedIDs = append(feedIDs, feed.ID)
+		}
+	}
+	guids := make(map[string]struct{})
+	for _, id := range feedIDs {
+		found, err := p.store.SearchPostGUIDs(id, needle)
+		if err != nil {
+			return nil, err
+		}
+		for _, guid := range found {
+			guids[bodyKey(id, guid)] = struct{}{}
+		}
+	}
+	return guids, nil
+}
+
+// bodyKey joins a feed id and a GUID, which is unique only within its feed.
+func bodyKey(feedID int64, guid string) string {
+	return strconv.FormatInt(feedID, 10) + "/" + guid
 }

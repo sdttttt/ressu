@@ -74,6 +74,85 @@ func TestPostsListAggregatesFeeds(t *testing.T) {
 	}
 }
 
+func TestListSearchFulltext(t *testing.T) {
+	st := openStore(t)
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/fulltext", Title: "Fulltext"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := st.AddFeed(store.Feed{URL: "https://example.com/second", Title: "Second"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	base := time.Date(2024, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := st.MergePosts(feed.ID, []store.Post{
+		{GUID: "title-hit", Title: "Rust 发布说明", Content: "<p>无关正文</p>", PublishedAt: base},
+		{GUID: "body-hit", Title: "周记", Content: "<p>这周学了 Rust</p>", PublishedAt: base.Add(time.Minute)},
+		{GUID: "miss", Title: "另一篇", Content: "<p>什么都没有</p>", PublishedAt: base.Add(2 * time.Minute)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.MergePosts(second.ID, []store.Post{
+		{GUID: "cross-hit", Title: "别处", Content: "<p>Rust 跨源命中</p>", PublishedAt: base},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	posts := NewPosts(st)
+
+	titleOnly, err := posts.List(PostQuery{FeedID: feed.ID, Search: "rust", Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if titleOnly.Total != 1 || titleOnly.Posts[0].GUID != "title-hit" {
+		t.Errorf("title search = %+v; want title-hit only", titleOnly.Posts)
+	}
+
+	fulltext, err := posts.List(PostQuery{
+		FeedID:      feed.ID,
+		Search:      "rust",
+		SearchScope: SearchScopeFulltext,
+		Limit:       10,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fulltext.Total != 2 {
+		t.Errorf("fulltext total = %d; want 2", fulltext.Total)
+	}
+
+	aggregate, err := posts.List(PostQuery{
+		FeedID:      AggregateFeedID,
+		Search:      "rust",
+		SearchScope: SearchScopeFulltext,
+		Limit:       10,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aggregate.Total != 3 {
+		t.Errorf("aggregate fulltext total = %d; want 3", aggregate.Total)
+	}
+
+	// Body hits compose with the other filters.
+	if _, err := st.MarkAllRead(feed.ID); err != nil {
+		t.Fatal(err)
+	}
+	unread, err := posts.List(PostQuery{
+		FeedID:      AggregateFeedID,
+		Search:      "rust",
+		SearchScope: SearchScopeFulltext,
+		UnreadOnly:  true,
+		Limit:       10,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unread.Total != 1 || unread.Posts[0].GUID != "cross-hit" {
+		t.Errorf("unread fulltext = %+v; want cross-hit only", unread.Posts)
+	}
+}
+
 func TestGetRewritesRemoteImagesForLocalProtocol(t *testing.T) {
 	st := openStore(t)
 	_, err := st.AddFeed(store.Feed{
