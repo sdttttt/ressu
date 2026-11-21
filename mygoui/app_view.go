@@ -21,6 +21,7 @@ type AppView struct {
 	sidebar       *appsidebar.Sidebar
 	postHeader    *apppostheader.Header
 	postList      *apppostlist.List
+	actions       *app.App
 }
 
 // NewAppView creates the main window's native layout.
@@ -33,6 +34,7 @@ func NewAppView(
 	sidebar *appsidebar.Sidebar,
 	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
+	actions *app.App,
 ) *AppView {
 	return &AppView{
 		status:        NewStatusBar(statusModel, onAbout),
@@ -42,6 +44,7 @@ func NewAppView(
 		sidebar:       sidebar,
 		postHeader:    postHeader,
 		postList:      postList,
+		actions:       actions,
 	}
 }
 
@@ -126,4 +129,5 @@ func (a *AppView) installShortcuts(c *ui.Context) {
 		c.OnWindowShortcut(0, ui.KeyH, func() { a.sidebar.SelectNeighbour(-1) })
 		c.OnWindowShortcut(0, ui.KeyL, func() { a.sidebar.SelectNeighbour(1) })
 	}
+	installMenuShortcuts(c, a.actions)
 }

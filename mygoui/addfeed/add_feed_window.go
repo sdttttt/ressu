@@ -34,6 +34,7 @@ const (
 var addFeedWindow struct {
 	sync.Mutex
 	window *mygo.Window
+	view   *addFeedView
 }
 
 // Preview is the native subscription preview.
@@ -76,7 +77,11 @@ func OpenEdit(parent *mygo.Window, feed app.Feed, callbacks Callbacks) {
 func open(parent *mygo.Window, edit *app.Feed, callbacks Callbacks) {
 	addFeedWindow.Lock()
 	if window := addFeedWindow.window; window != nil && !window.IsDestroyed() {
+		view := addFeedWindow.view
 		addFeedWindow.Unlock()
+		if edit != nil && view != nil {
+			window.Update(func() { view.applyEdit(*edit) })
+		}
 		window.Show()
 		window.Focus()
 		return
@@ -87,19 +92,10 @@ func open(parent *mygo.Window, edit *app.Feed, callbacks Callbacks) {
 	view := &addFeedView{
 		callbacks:       callbacks,
 		prefs:           prefs,
-		edit:            edit,
 		remoteResources: prefs.RemoteResources,
 	}
 	if edit != nil {
-		view.url = edit.URL
-		view.testedURL = edit.URL
-		if edit.RemoteResources != "" {
-			view.remoteResources = edit.RemoteResources
-		}
-		if edit.CustomTitle {
-			view.title = edit.Title
-			view.titleTouched = true
-		}
+		view.applyEdit(*edit)
 	}
 	title := "添加订阅源"
 	if edit != nil {
@@ -122,14 +118,38 @@ func open(parent *mygo.Window, edit *app.Feed, callbacks Callbacks) {
 
 	addFeedWindow.Lock()
 	addFeedWindow.window = window
+	addFeedWindow.view = view
 	addFeedWindow.Unlock()
 	window.OnClosed(func() {
 		addFeedWindow.Lock()
 		if addFeedWindow.window == window {
 			addFeedWindow.window = nil
+			addFeedWindow.view = nil
 		}
 		addFeedWindow.Unlock()
 	})
+}
+
+// applyEdit switches the form to editing an existing feed, resetting any
+// state left over from a previous add or edit draft.
+func (s *addFeedView) applyEdit(feed app.Feed) {
+	s.edit = &feed
+	s.url = feed.URL
+	s.testedURL = feed.URL
+	if feed.RemoteResources != "" {
+		s.remoteResources = feed.RemoteResources
+	}
+	s.title = ""
+	s.lastTitle = ""
+	s.titleTouched = false
+	if feed.CustomTitle {
+		s.title = feed.Title
+		s.titleTouched = true
+	}
+	s.preview = nil
+	s.testing = false
+	s.pending = false
+	s.clearError()
 }
 
 // addFeedView keeps the subscription draft, preview, and operation state.

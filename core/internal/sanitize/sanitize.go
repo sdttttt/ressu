@@ -166,13 +166,15 @@ func enhance(node *html.Node, baseURL string) {
 	}
 }
 
-// absolute resolves reference against an absolute HTTP-like base URL.
+// absolute resolves reference against an absolute HTTP-like base URL. A base
+// with any other scheme is ignored so it cannot be inherited by relative
+// references.
 func absolute(baseURL string, reference string) string {
 	if baseURL == "" || reference == "" {
 		return reference
 	}
 	base, err := url.Parse(baseURL)
-	if err != nil || !base.IsAbs() {
+	if err != nil || !base.IsAbs() || (base.Scheme != "http" && base.Scheme != "https") {
 		return reference
 	}
 	parsed, err := url.Parse(reference)

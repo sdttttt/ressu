@@ -159,7 +159,8 @@ func TestParseFallsBackToTitleAndDate(t *testing.T) {
 		t.Fatal(err)
 	}
 	item := feed.Items[0]
-	if item.GUID != "Nameless|"+testNow.Format(time.RFC3339Nano) {
+	prefix := "Nameless|" + testNow.Format(time.RFC3339Nano) + "|"
+	if !strings.HasPrefix(item.GUID, prefix) {
 		t.Errorf("guid = %q", item.GUID)
 	}
 	if !item.PublishedAt.Equal(testNow) {
@@ -197,6 +198,39 @@ func TestPlainTextTruncates(t *testing.T) {
 	}
 	if n := len([]rune(got)); n != SummaryLimit+1 {
 		t.Errorf("rune count = %d", n)
+	}
+}
+
+func TestParseDropsNonHTTPLink(t *testing.T) {
+	raw := `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item><title>a</title><link>javascript:alert(1)</link></item>
+<item><title>b</title><link>https://example.com/posts/1</link></item>
+</channel></rss>`
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Items[0].URL != "" {
+		t.Errorf("javascript link survived as %q", feed.Items[0].URL)
+	}
+	if feed.Items[1].URL != "https://example.com/posts/1" {
+		t.Errorf("https link = %q", feed.Items[1].URL)
+	}
+}
+
+func TestParseFallbackGUIDSeparatesSameBatchItems(t *testing.T) {
+	raw := `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item><title>same</title><description>first</description></item>
+<item><title>same</title><description>second</description></item>
+</channel></rss>`
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Items[0].GUID == feed.Items[1].GUID {
+		t.Errorf("same-batch items without link or date share a GUID: %q", feed.Items[0].GUID)
 	}
 }
 

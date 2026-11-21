@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sdttttt/ressu/core/internal/safedial"
 )
 
 func TestImageTypeRecognizesAVIF(t *testing.T) {
@@ -264,33 +265,15 @@ func TestSourceValidationRejectsUnsafeAddresses(t *testing.T) {
 		"file:///etc/passwd",
 		"javascript:alert(1)",
 		"http://user:password@example.com/image.png",
-		"http://example.com:8080/image.png",
+		"http://example.com:70000/image.png",
 		"http://[fd00::1]/image.png",
 	} {
 		if _, ok := normalizeSource(source); ok {
 			t.Fatalf("normalizeSource accepted %q", source)
 		}
-		if validateSource(source) == nil {
-			t.Fatalf("validateSource accepted %q", source)
+		if safedial.Validate(source) == nil {
+			t.Fatalf("Validate accepted %q", source)
 		}
-	}
-}
-
-func TestPublicAddressRejectsPrivateNetworks(t *testing.T) {
-	for _, source := range []string{
-		"127.0.0.1",
-		"10.0.0.1",
-		"169.254.169.254",
-		"100.64.0.1",
-		"::1",
-		"fe80::1",
-	} {
-		if publicAddress(net.ParseIP(source)) {
-			t.Fatalf("publicAddress accepted %q", source)
-		}
-	}
-	if !publicAddress(net.ParseIP("93.184.216.34")) {
-		t.Fatal("publicAddress rejected a public address")
 	}
 }
 

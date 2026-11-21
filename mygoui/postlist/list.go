@@ -38,12 +38,19 @@ type Callbacks struct {
 }
 
 // List renders articles with the WebView list's visual contract.
+//
+// All state below is owned by the main UI thread: View, shortcuts, and draw
+// callbacks run there, and asynchronous completions arrive through submit,
+// which marshals them onto the main thread. mu guards only the wiring fields
+// set once at startup, which events from service goroutines may read before
+// Attach runs.
 type List struct {
 	mu         sync.Mutex
 	model      *app.Model
 	callbacks  Callbacks
 	invalidate func()
 	window     *mygo.Window
+	pending    []func()
 
 	panePercent   float32
 	paneSaveTimer *time.Timer
@@ -114,41 +121,35 @@ func (l *List) Theme(c *ui.Context) *ui.Theme {
 // SyncLayout copies the mirrored list layout into its splitter.
 func (l *List) SyncLayout() {
 	snapshot := l.model.Snapshot()
-	l.mu.Lock()
-	l.panePercent = snapshot.ListPercent
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.submit(func() {
+		l.panePercent = snapshot.ListPercent
+		l.redraw()
+	})
 }
 
 func (l *List) SplitPercent() *float32 {
 	return &l.panePercent
 }
 
+// SavePanePercent stores the splitter position once the drag settles.
 func (l *List) SavePanePercent() {
-	l.mu.Lock()
 	percent := l.panePercent
 	if l.paneSaveTimer != nil {
 		l.paneSaveTimer.Stop()
 	}
 	callbacks := l.callbacks
-	invalidate := l.invalidate
 	l.paneSaveTimer = time.AfterFunc(paneSaveDelay, func() {
-		l.mu.Lock()
-		l.paneSaveTimer = nil
-		l.mu.Unlock()
-		callbacks.SetPanePercent(percent)
+		l.submit(func() {
+			l.paneSaveTimer = nil
+			callbacks.SetPanePercent(percent)
+		})
 	})
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 // View builds the article list content.
 func (l *List) View(c *ui.Context) {
+	l.flushPending()
 	snapshot := l.model.Snapshot()
 	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
 	l.syncState(snapshot)
@@ -272,9 +273,7 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) 
 		})
 	})
 	if anchorKey != "" {
-		l.mu.Lock()
 		l.anchorKey = anchorKey
-		l.mu.Unlock()
 	}
 	l.autoLoadMore(theme)
 }
@@ -284,12 +283,10 @@ func (l *List) drawPosts(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot) 
 // load-more button. The button stays as the fallback for viewports the
 // content does not overflow, where no scroll event can reach the bottom.
 func (l *List) autoLoadMore(theme *ui.Theme) {
-	l.mu.Lock()
 	loading := l.loading
 	hasMore := l.matchCount() < l.total
 	threshold := l.scaled(theme, 72)
 	nearBottom := l.scroll.MaxY > 0 && l.scroll.Y >= l.scroll.MaxY-threshold
-	l.mu.Unlock()
 	if !loading && hasMore && nearBottom {
 		l.loadMore()
 	}
@@ -427,12 +424,10 @@ func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element
 }
 
 func (l *List) scrollPending(rowKey string, row ui.Element) {
-	l.mu.Lock()
 	pending := l.pendingScroll == rowKey
 	if pending {
 		l.pendingScroll = ""
 	}
-	l.mu.Unlock()
 	if pending {
 		row.ScrollIntoView(ui.ScrollIntoViewOptions{Block: ui.ScrollNearest})
 	}
@@ -452,10 +447,9 @@ func (l *List) installShortcuts(c *ui.Context) {
 }
 
 // directionFor reports where post sits relative to the current selection in
-// the loaded list: 1 later, -1 earlier, 0 unknown.
+// the loaded list: 1 later, -1 earlier, 0 unknown. It runs on the main
+// thread.
 func (l *List) directionFor(current app.PostSelection, post app.PostSummary) int {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	return selectionDirection(l.posts, current, post)
 }
 
@@ -488,7 +482,8 @@ func selectionDirection(posts []app.PostSummary, current app.PostSelection, post
 	}
 }
 
-// SelectNeighbour selects and reveals the next loaded article without wrapping.
+// SelectNeighbour selects and reveals the next loaded article without
+// wrapping. It runs on the main thread.
 func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 	snapshot := l.model.Snapshot()
 	direction := 1
@@ -496,9 +491,7 @@ func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 		direction = -1
 	}
 
-	l.mu.Lock()
 	if len(l.posts) == 0 {
-		l.mu.Unlock()
 		return
 	}
 	current := -1
@@ -521,14 +514,11 @@ func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 		index += direction
 	}
 	if index < 0 || index >= len(l.posts) {
-		l.mu.Unlock()
 		return
 	}
 	post := l.posts[index]
 	l.pendingScroll = postRowKey(post)
 	callbacks := l.callbacks
-	invalidate := l.invalidate
-	l.mu.Unlock()
 
 	if callbacks.Select != nil {
 		selectDirection := 0
@@ -541,16 +531,12 @@ func (l *List) SelectNeighbour(delta int, onlyUnread bool) {
 		}
 		callbacks.Select(post, selectDirection)
 	}
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) activateSelection() {
 	snapshot := l.model.Snapshot()
-	l.mu.Lock()
 	if len(l.posts) == 0 {
-		l.mu.Unlock()
 		return
 	}
 	post := l.posts[0]
@@ -562,7 +548,6 @@ func (l *List) activateSelection() {
 		}
 	}
 	callbacks := l.callbacks
-	l.mu.Unlock()
 	if callbacks.Select != nil {
 		callbacks.Select(post, 0)
 	}
@@ -570,7 +555,6 @@ func (l *List) activateSelection() {
 
 func (l *List) toggleSelectedStar() {
 	snapshot := l.model.Snapshot()
-	l.mu.Lock()
 	var post app.PostSummary
 	found := false
 	for _, candidate := range l.posts {
@@ -581,7 +565,6 @@ func (l *List) toggleSelectedStar() {
 			break
 		}
 	}
-	l.mu.Unlock()
 	if found {
 		l.toggleStar(post)
 	}
@@ -701,7 +684,6 @@ func (l *List) badge(c *ui.Context, theme *ui.Theme, label string, background, f
 }
 
 func (l *List) syncState(snapshot app.Snapshot) {
-	l.mu.Lock()
 	if snapshot.PostSort != "" {
 		l.query.SortBy = app.SortField(snapshot.PostSort)
 	}
@@ -709,7 +691,7 @@ func (l *List) syncState(snapshot app.Snapshot) {
 		l.appliedPostVersion = snapshot.PostVersion
 		for index, post := range l.posts {
 			if post.FeedID == snapshot.Post.FeedID && post.GUID == snapshot.Post.GUID {
-				l.adjustTotalLocked(post, snapshot.Post)
+				l.adjustTotal(post, snapshot.Post)
 				l.posts[index].Read = snapshot.Post.Read
 				l.posts[index].Starred = snapshot.Post.Starred
 				break
@@ -725,13 +707,11 @@ func (l *List) syncState(snapshot app.Snapshot) {
 		// A refresh bumps PostsVersion once per completed feed; coalesce
 		// that burst into one debounced reload instead of one per feed.
 		if changedPosts && !l.loading {
-			l.scheduleReloadLocked()
+			l.scheduleReload()
 		}
-		l.mu.Unlock()
 		return
 	}
 	if l.loading {
-		l.mu.Unlock()
 		return
 	}
 	l.forceReload = false
@@ -753,72 +733,49 @@ func (l *List) syncState(snapshot app.Snapshot) {
 	generation := l.loadVersion
 	l.loading = true
 	callbacks := l.callbacks
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 
 	go func() {
 		page, err := callbacks.List(query)
-		l.mu.Lock()
-		if generation == l.loadVersion {
+		l.submit(func() {
+			if generation != l.loadVersion {
+				return
+			}
 			if err == nil {
 				l.posts = page.Posts
 				l.total = page.Total
-				l.applyScrollRestoreLocked()
+				l.applyScrollRestore()
 			} else {
 				l.preserveScroll = false
 			}
 			l.loading = false
-		}
-		invalidate := l.invalidate
-		l.mu.Unlock()
+		})
 		if err != nil && callbacks.Notify != nil {
 			callbacks.Notify("error", "无法读取文章："+err.Error())
-		}
-		if invalidate != nil {
-			invalidate()
 		}
 	}()
 }
 
 func (l *List) setSortOrder() {
-	l.mu.Lock()
 	if l.query.SortOrder == app.SortOrderAscending {
 		l.query.SortOrder = app.SortOrderDescending
 	} else {
 		l.query.SortOrder = app.SortOrderAscending
 	}
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) setUnreadOnly(active bool) {
-	l.mu.Lock()
 	l.query.UnreadOnly = active
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) setStarredOnly(active bool) {
-	l.mu.Lock()
 	l.query.StarredOnly = active
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) setSearchOpen(open bool) {
-	l.mu.Lock()
 	l.searchOpen = open
 	if !open {
 		l.search = ""
@@ -828,15 +785,10 @@ func (l *List) setSearchOpen(open bool) {
 			l.searchTimer = nil
 		}
 	}
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) setSearch(value string) {
-	l.mu.Lock()
 	if l.searchTimer != nil {
 		l.searchTimer.Stop()
 	}
@@ -844,35 +796,21 @@ func (l *List) setSearch(value string) {
 	if query == "" {
 		l.search = query
 		l.query.Search = query
-		invalidate := l.invalidate
-		l.mu.Unlock()
-		if invalidate != nil {
-			invalidate()
-		}
+		l.redraw()
 		return
 	}
-	invalidate := l.invalidate
 	l.searchTimer = time.AfterFunc(searchDelay, func() {
-		l.mu.Lock()
-		l.search = query
-		l.query.Search = query
-		l.searchTimer = nil
-		current := l.invalidate
-		l.mu.Unlock()
-		if current != nil {
-			current()
-		}
+		l.submit(func() {
+			l.search = query
+			l.query.Search = query
+			l.searchTimer = nil
+		})
 	})
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
 func (l *List) loadMore() {
-	l.mu.Lock()
 	if l.loading {
-		l.mu.Unlock()
 		return
 	}
 	query := l.query
@@ -882,29 +820,22 @@ func (l *List) loadMore() {
 	generation := l.loadVersion
 	l.loading = true
 	callbacks := l.callbacks
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 
 	go func() {
 		page, err := callbacks.List(query)
-		l.mu.Lock()
-		if generation == l.loadVersion {
+		l.submit(func() {
+			if generation != l.loadVersion {
+				return
+			}
 			if err == nil {
 				l.posts = append(l.posts, page.Posts...)
 				l.total = page.Total
 			}
 			l.loading = false
-		}
-		invalidate := l.invalidate
-		l.mu.Unlock()
+		})
 		if err != nil && callbacks.Notify != nil {
 			callbacks.Notify("error", "无法读取文章："+err.Error())
-		}
-		if invalidate != nil {
-			invalidate()
 		}
 	}()
 }
@@ -934,10 +865,10 @@ func (l *List) matches(post app.PostSummary) bool {
 	return true
 }
 
-// adjustTotalLocked reconciles the matched total when one listed post flips
+// adjustTotal reconciles the matched total when one listed post flips
 // in or out of the active filters, so the load-more counter stays accurate
-// between page fetches. The caller must hold l.mu.
-func (l *List) adjustTotalLocked(before, after app.PostSummary) {
+// between page fetches.
+func (l *List) adjustTotal(before, after app.PostSummary) {
 	oldMatch := l.matches(before)
 	newMatch := l.matches(after)
 	switch {
@@ -961,7 +892,7 @@ func (l *List) markAllRead(feedID int64) {
 		if l.callbacks.MarkAllRead != nil {
 			l.callbacks.MarkAllRead(feedID)
 		}
-		l.reload()
+		l.submit(l.reload)
 	})
 }
 
@@ -977,7 +908,6 @@ func (l *List) reloadAfterDataChange() {
 }
 
 func (l *List) requestReload(preserve bool) {
-	l.mu.Lock()
 	if preserve {
 		l.preserveScroll = true
 		l.pendingRestoreKey = l.anchorKey
@@ -988,18 +918,14 @@ func (l *List) requestReload(preserve bool) {
 	}
 	l.forceReload = true
 	l.loadedVersion = 0
-	invalidate := l.invalidate
-	l.mu.Unlock()
-	if invalidate != nil {
-		invalidate()
-	}
+	l.redraw()
 }
 
-// applyScrollRestoreLocked re-anchors the viewport after a data-change
+// applyScrollRestore re-anchors the viewport after a data-change
 // reload. When the topmost visible post survived the reload, schedule a
 // minimal scroll to it; otherwise restore the pre-reload pixel offset and
-// let autoLoadMore backfill the deeper pages. The caller must hold l.mu.
-func (l *List) applyScrollRestoreLocked() {
+// let autoLoadMore backfill the deeper pages.
+func (l *List) applyScrollRestore() {
 	if !l.preserveScroll {
 		return
 	}
@@ -1024,18 +950,59 @@ func (l *List) applyScrollRestoreLocked() {
 	l.scroll.Y = l.pendingRestoreY
 }
 
-// scheduleReloadLocked arms the one-shot debounce that coalesces bursts of
-// posts.changed events into a single reload. The caller must hold l.mu.
-func (l *List) scheduleReloadLocked() {
+// scheduleReload arms the one-shot debounce that coalesces bursts of
+// posts.changed events into a single reload.
+func (l *List) scheduleReload() {
 	if l.reloadTimer != nil {
 		return
 	}
 	l.reloadTimer = time.AfterFunc(reloadDebounce, func() {
-		l.mu.Lock()
-		l.reloadTimer = nil
-		l.mu.Unlock()
-		l.reloadAfterDataChange()
+		l.submit(func() {
+			l.reloadTimer = nil
+			l.reloadAfterDataChange()
+		})
 	})
+}
+
+// submit runs fn on the main thread that owns the list state and redraws
+// afterwards. With a window it marshals through window.Update; windowless
+// tests queue the update for the next View instead, so state still changes
+// only on the thread that builds frames. A destroyed window drops the update:
+// the list is gone with it.
+func (l *List) submit(fn func()) {
+	l.mu.Lock()
+	window := l.window
+	if window == nil {
+		l.pending = append(l.pending, fn)
+		l.mu.Unlock()
+		return
+	}
+	l.mu.Unlock()
+	if window.IsDestroyed() {
+		return
+	}
+	window.Update(fn)
+}
+
+// flushPending applies queued windowless updates at the start of a frame.
+func (l *List) flushPending() {
+	l.mu.Lock()
+	pending := l.pending
+	l.pending = nil
+	l.mu.Unlock()
+	for _, fn := range pending {
+		fn()
+	}
+}
+
+// redraw requests a frame rebuild when the window still exists.
+func (l *List) redraw() {
+	l.mu.Lock()
+	invalidate := l.invalidate
+	l.mu.Unlock()
+	if invalidate != nil {
+		invalidate()
+	}
 }
 
 func (l *List) runAsync(operation func()) {

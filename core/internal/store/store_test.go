@@ -445,6 +445,62 @@ func TestMergePostsTrimsToLimit(t *testing.T) {
 	}
 }
 
+func TestMergePostsTrimsKeepsStarred(t *testing.T) {
+	s := openTemp(t)
+	prefs := s.Prefs()
+	prefs.PostsPerFeed = 50
+	if err := s.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	posts := make([]Post, 0, 60)
+	for i := range 60 {
+		posts = append(posts, Post{
+			GUID:        fmt.Sprintf("post-%d", i),
+			PublishedAt: base.Add(time.Duration(i) * time.Minute),
+		})
+	}
+	posts[0].Starred = true // oldest post, beyond the limit
+	if _, err := s.MergePosts(feed.ID, posts); err != nil {
+		t.Fatal(err)
+	}
+
+	kept, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 51 {
+		t.Fatalf("kept = %d", len(kept))
+	}
+	if kept[len(kept)-1].GUID != "post-0" || !kept[len(kept)-1].Starred {
+		t.Errorf("oldest kept = %q, starred = %v", kept[len(kept)-1].GUID, kept[len(kept)-1].Starred)
+	}
+	if kept[0].GUID != "post-59" {
+		t.Errorf("newest kept = %q", kept[0].GUID)
+	}
+
+	// The starred post survives a later merge that pushes it even further
+	// beyond the limit.
+	if _, err := s.MergePosts(feed.ID, []Post{{
+		GUID:        "post-60",
+		PublishedAt: base.Add(60 * time.Minute),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	kept, err = s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kept[len(kept)-1].GUID != "post-0" {
+		t.Errorf("starred dropped after later merge, oldest kept = %q", kept[len(kept)-1].GUID)
+	}
+}
+
 func TestMarkAllRead(t *testing.T) {
 	s := openTemp(t)
 	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})

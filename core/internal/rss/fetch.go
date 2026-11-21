@@ -12,6 +12,7 @@ import (
 	"github.com/mmcdole/gofeed"
 
 	"github.com/sdttttt/ressu/core/internal/limitreader"
+	"github.com/sdttttt/ressu/core/internal/safedial"
 )
 
 // MaxBody bounds the size of a feed response.
@@ -40,8 +41,13 @@ type Result struct {
 	LastModified string
 }
 
-// Client makes the requests.
-var Client = &http.Client{Timeout: Timeout}
+// Client makes the requests. It refuses private-network addresses, including
+// across redirects.
+var Client = &http.Client{
+	Transport:     safedial.Transport(),
+	CheckRedirect: safedial.CheckRedirect,
+	Timeout:       Timeout,
+}
 
 // ValidateURL checks that raw is an absolute http or https URL.
 func ValidateURL(raw string) error {

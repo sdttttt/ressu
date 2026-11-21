@@ -156,7 +156,7 @@ func Run() {
 						"operation", "app.startRefresh", "error", err)
 				}
 			}()
-		}, foreground, app.IsActive, about, notifications, confirmations, help, sidebar, postHeader, postList); err != nil {
+		}, foreground, app.IsActive, about, notifications, confirmations, help, sidebar, postHeader, postList, actions); err != nil {
 			fatal("main window creation failed", err)
 		}
 	})
@@ -230,6 +230,7 @@ func openWindow(
 	sidebar *appsidebar.Sidebar,
 	postHeader *apppostheader.Header,
 	postList *apppostlist.List,
+	actions *appcore.App,
 ) (*mygo.Window, error) {
 	var win *mygo.Window
 	view := NewAppView(statusModel, func() {
@@ -238,7 +239,7 @@ func openWindow(
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
 		appabout.Open(win, info)
-	}, notifications, confirmations, help, sidebar, postHeader, postList)
+	}, notifications, confirmations, help, sidebar, postHeader, postList, actions)
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "Ressu",
 		Width:           1200,

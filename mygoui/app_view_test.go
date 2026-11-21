@@ -32,7 +32,7 @@ func TestAppViewRendersNativeHelpAndFeedShortcuts(t *testing.T) {
 	help := appdialog.NewHelp(func() (string, string) {
 		return "system", "small"
 	})
-	view := NewAppView(model, func() {}, nil, nil, help, sidebar, nil, nil)
+	view := NewAppView(model, func() {}, nil, nil, help, sidebar, nil, nil, nil)
 	model.SetCurrentFeed(2)
 
 	tester := ui.NewTester(view.View, 900, 600)

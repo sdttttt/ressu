@@ -4,6 +4,9 @@ package rss
 
 import (
 	"bytes"
+	"fmt"
+	"hash/fnv"
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -107,7 +110,17 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 			item.WordCount = textmetrics.Count(item.Summary)
 		}
 		if item.GUID == "" {
-			item.GUID = item.Title + "|" + item.PublishedAt.Format(time.RFC3339Nano)
+			// Items without a GUID, link, or date would otherwise collide on
+			// the shared fetch timestamp; the content hash keeps same-batch
+			// duplicates apart and stays stable across refreshes.
+			sum := fnv.New32a()
+			_, _ = io.WriteString(sum, it.Title)
+			_, _ = io.WriteString(sum, "\x00")
+			_, _ = io.WriteString(sum, it.Description)
+			_, _ = io.WriteString(sum, "\x00")
+			_, _ = io.WriteString(sum, it.Content)
+			item.GUID = item.Title + "|" + item.PublishedAt.Format(time.RFC3339Nano) +
+				fmt.Sprintf("|%08x", sum.Sum32())
 		}
 		if item.Title == "" {
 			item.Title = item.GUID
@@ -137,17 +150,22 @@ func authorOf(it *gofeed.Item) string {
 }
 
 // resolve makes ref absolute against base, leaving absolute and empty ones as
-// they are.
+// they are. References with a non-HTTP scheme are dropped: they would
+// otherwise become the base that relative links in article bodies resolve
+// against.
 func resolve(base, ref string) string {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		return ""
 	}
-	b, err := url.Parse(base)
+	r, err := url.Parse(ref)
 	if err != nil {
 		return ref
 	}
-	r, err := url.Parse(ref)
+	if r.Scheme != "" && r.Scheme != "http" && r.Scheme != "https" {
+		return ""
+	}
+	b, err := url.Parse(base)
 	if err != nil {
 		return ref
 	}

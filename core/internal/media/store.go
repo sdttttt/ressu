@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sdttttt/ressu/core/internal/logging"
+	"github.com/sdttttt/ressu/core/internal/safedial"
 )
 
 const (
@@ -49,7 +50,7 @@ func cacheLoad(c *Cache) error {
 		}
 		var entry Entry
 		if err := json.Unmarshal(data, &entry); err != nil || entry.Key != key ||
-			validateSource(entry.SourceURL) != nil {
+			safedial.Validate(entry.SourceURL) != nil {
 			_ = os.Remove(filepath.Join(c.dir, indexPath, item.Name()))
 			_ = os.Remove(c.dataFile(key))
 			continue

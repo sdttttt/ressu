@@ -690,12 +690,26 @@ func deletePosts(tx *bolt.Tx, feedID int64) error {
 	return parent.DeleteBucket(key)
 }
 
+// trimPosts cuts posts beyond the per-feed limit, keeping the newest ones.
+// Starred posts are exempt from the limit and always kept.
 func (s *Store) trimPosts(posts []Post) []Post {
 	limit := s.prefs.PostsPerFeed
 	if limit <= 0 || len(posts) <= limit {
 		return posts
 	}
-	return posts[:limit]
+	kept := make([]Post, 0, len(posts))
+	remaining := limit
+	for _, p := range posts {
+		if p.Starred {
+			kept = append(kept, p)
+			continue
+		}
+		if remaining > 0 {
+			kept = append(kept, p)
+			remaining--
+		}
+	}
+	return kept
 }
 
 func countUnread(posts []Post) int {

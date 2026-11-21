@@ -301,7 +301,13 @@
       const post = await runtime.call("Posts.Get", layer.selection.feedId, layer.selection.guid);
       if (requestId !== state.request) return;
       if (!stack.layers.includes(layer)) return;
-      layer.body.innerHTML = post.content || post.summary;
+      // Post.Content is sanitized HTML; Post.Summary is plain text that must
+      // never be parsed as markup.
+      if (post.content) {
+        layer.body.innerHTML = post.content;
+      } else {
+        layer.body.textContent = post.summary;
+      }
       state.post = post;
     } catch (error) {
       if (requestId !== state.request) return;

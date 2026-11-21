@@ -104,6 +104,18 @@ func TestHTMLRemovesUnsafeURIsAndKeepsImageDataURIs(t *testing.T) {
 	}
 }
 
+func TestHTMLIgnoresNonHTTPBase(t *testing.T) {
+	input := `<a href="foo.html">relative</a>`
+	output := sanitize.HTML(input, "javascript:alert(1)")
+
+	if strings.Contains(output, "javascript:") {
+		t.Fatalf("relative link inherited the javascript base: %s", output)
+	}
+	if !strings.Contains(output, `href="foo.html"`) {
+		t.Fatalf("relative link was dropped: %s", output)
+	}
+}
+
 func TestHTMLRemovesComments(t *testing.T) {
 	input := `<!-- safe comment --><!-- <script>alert(1)</script> --><p>text</p>`
 	output := sanitize.HTML(input, "https://example.com/post")

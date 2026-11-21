@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/html"
 
 	"github.com/sdttttt/ressu/core/internal/rss"
+	"github.com/sdttttt/ressu/core/internal/safedial"
 )
 
 // MaxBytes bounds the bytes kept for one downloaded icon.
@@ -31,8 +32,13 @@ const requestTimeout = 10 * time.Second
 // ErrNoIcon reports that every icon candidate failed.
 var ErrNoIcon = errors.New("no usable icon")
 
-// Client makes icon requests.
-var Client = &http.Client{Timeout: requestTimeout}
+// Client makes icon requests. It refuses private-network addresses, including
+// across redirects.
+var Client = &http.Client{
+	Transport:     safedial.Transport(),
+	CheckRedirect: safedial.CheckRedirect,
+	Timeout:       requestTimeout,
+}
 
 // Source describes where a feed icon may come from.
 type Source struct {

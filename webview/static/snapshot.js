@@ -97,11 +97,15 @@
       header.append(author);
     }
 
-    // Post.Content is sanitized HTML from the database; nothing else may
-    // enter the card as HTML.
+    // Post.Content is sanitized HTML from the database; Post.Summary is plain
+    // text and must never be parsed as markup.
     const body = document.createElement("div");
     body.className = "post-body";
-    body.innerHTML = post.content || post.summary;
+    if (post.content) {
+      body.innerHTML = post.content;
+    } else {
+      body.textContent = post.summary;
+    }
 
     const footer = document.createElement("footer");
     if (post.url.trim()) {

@@ -555,7 +555,7 @@ func TestPostListReloadKeepsTopVisiblePost(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("article list did not load")
 	}
-	waitForCondition(t, func() bool { return len(postList.posts) == 20 }, "initial page")
+	waitForCondition(t, tester, func() bool { return len(postList.posts) == 20 }, "initial page")
 	tester.Frame()
 
 	postList.scroll.Y = 0
@@ -572,7 +572,7 @@ func TestPostListReloadKeepsTopVisiblePost(t *testing.T) {
 	if reload.Offset != 0 || reload.Limit != pageSize {
 		t.Errorf("reload query = %+v, want offset 0 limit %d", reload, pageSize)
 	}
-	waitForCondition(t, func() bool {
+	waitForCondition(t, tester, func() bool {
 		return len(postList.posts) == 20 && postList.posts[10].GUID == "guid-1"
 	}, "reloaded first page")
 	// The reload arms the restore with the anchor; whether the viewport then
@@ -612,7 +612,7 @@ func TestPostListReloadRestoresDeepScroll(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("article list did not load")
 	}
-	waitForCondition(t, func() bool { return len(postList.posts) == 20 }, "initial page")
+	waitForCondition(t, tester, func() bool { return len(postList.posts) == 20 }, "initial page")
 	tester.Frame()
 
 	// Page in the rest by scrolling to the bottom; autoLoadMore chains across
@@ -624,7 +624,7 @@ func TestPostListReloadRestoresDeepScroll(t *testing.T) {
 		if more.Offset != loaded {
 			t.Errorf("next page query offset = %d, want %d", more.Offset, loaded)
 		}
-		waitForCondition(t, func() bool { return len(postList.posts) > loaded }, "next page apply")
+		waitForCondition(t, tester, func() bool { return len(postList.posts) > loaded }, "next page apply")
 	}
 	tester.Frame()
 
@@ -644,10 +644,10 @@ func TestPostListReloadRestoresDeepScroll(t *testing.T) {
 	if reload.Offset != 0 || reload.Limit <= pageSize {
 		t.Errorf("reload query = %+v, want offset 0 and a limit covering the deep scroll", reload)
 	}
-	waitForCondition(t, func() bool { return len(postList.posts) == reload.Limit }, "reloaded posts")
+	waitForCondition(t, tester, func() bool { return len(postList.posts) == reload.Limit }, "reloaded posts")
 	// ScrollNearest may nudge the viewport by less than a row to fully reveal
 	// the anchor; what matters is the position stayed at the deep bottom.
-	waitForCondition(t, func() bool {
+	waitForCondition(t, tester, func() bool {
 		return postList.scroll.Y >= postList.scroll.MaxY-72
 	}, "restored scroll offset")
 }
@@ -687,10 +687,11 @@ func postRange(first, last int) []app.PostSummary {
 	return posts
 }
 
-func waitForCondition(t *testing.T, condition func() bool, message string) {
+func waitForCondition(t *testing.T, tester *ui.Tester, condition func() bool, message string) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
+		tester.Frame()
 		if condition() {
 			return
 		}
