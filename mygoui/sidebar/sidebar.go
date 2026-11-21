@@ -59,7 +59,7 @@ type Callbacks struct {
 	Select         func(int64)
 	RefreshAll     func()
 	RefreshFeed    func(int64)
-	MarkAllRead    func(int64)
+	MarkAllRead    func(parent *mygo.Window, feedID int64)
 	Remove         func(parent *mygo.Window, feedID int64)
 	Edit           func(parent *mygo.Window, feedID int64)
 	OpenAddFeed    func(parent *mygo.Window)
@@ -467,7 +467,7 @@ func (s *Sidebar) drawFeed(
 			s.runAsync(func() { s.callbacks.RefreshFeed(feed.ID) })
 		}
 		if menu.Item("标记全部已读").Chosen() {
-			s.runAsync(func() { s.callbacks.MarkAllRead(feed.ID) })
+			s.markAllRead(feed.ID)
 		}
 		if menu.Item("取消订阅").Chosen() {
 			s.removeFeed(feed.ID)
@@ -549,6 +549,16 @@ func (s *Sidebar) removeFeed(feedID int64) {
 	callbacks := s.callbacks
 	s.mu.Unlock()
 	s.runAsync(func() { callbacks.Remove(window, feedID) })
+}
+
+// markAllRead asks the application to confirm marking every unread post of
+// feedID read.
+func (s *Sidebar) markAllRead(feedID int64) {
+	s.mu.Lock()
+	window := s.window
+	callbacks := s.callbacks
+	s.mu.Unlock()
+	s.runAsync(func() { callbacks.MarkAllRead(window, feedID) })
 }
 
 // editFeed asks the application to open the subscription editor for feedID.

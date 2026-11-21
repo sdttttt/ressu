@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -260,6 +261,117 @@ func TestConfirmRemoveFeedRejectsMissingFeed(t *testing.T) {
 	if ui.confirmCalled {
 		t.Error("a missing feed showed a confirmation")
 	}
+}
+
+func TestConfirmMarkAllReadMarksReadAfterConfirmation(t *testing.T) {
+	actions, ui, st := newMarkAllReadTestActions(t)
+	feed := addFeedWithUnreadPosts(t, st, "测试源", 2)
+	ui.confirmed = true
+
+	changed, err := actions.ConfirmMarkAllRead(context.Background(), WindowHandle{}, feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ui.confirmCalled {
+		t.Fatal("MarkAllRead bypassed confirmation")
+	}
+	if got := ui.confirmation.Title; got != "将「测试源」的全部文章标记为已读？" {
+		t.Errorf("confirmation title = %q; want %q", got, "将「测试源」的全部文章标记为已读？")
+	}
+	if got := ui.confirmation.Description; got != "共 2 篇未读文章。" {
+		t.Errorf("confirmation description = %q; want %q", got, "共 2 篇未读文章。")
+	}
+	if got := ui.confirmation.ConfirmLabel; got != "全部已读" {
+		t.Errorf("confirmation label = %q; want %q", got, "全部已读")
+	}
+	if ui.confirmation.Destructive {
+		t.Error("mark-all-read confirmation should not be destructive")
+	}
+	if changed != 2 {
+		t.Errorf("changed = %d; want 2", changed)
+	}
+	if unread := st.Unread(); unread != 0 {
+		t.Errorf("unread = %d; want 0", unread)
+	}
+}
+
+func TestConfirmMarkAllReadKeepsUnreadWhenCanceled(t *testing.T) {
+	actions, ui, st := newMarkAllReadTestActions(t)
+	feed := addFeedWithUnreadPosts(t, st, "测试源", 2)
+
+	changed, err := actions.ConfirmMarkAllRead(context.Background(), WindowHandle{}, feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ui.confirmCalled {
+		t.Fatal("canceled mark-all-read did not reach the UI")
+	}
+	if changed != 0 {
+		t.Errorf("changed = %d; want 0", changed)
+	}
+	if unread := st.Unread(); unread != 2 {
+		t.Errorf("unread = %d; want 2", unread)
+	}
+}
+
+func TestConfirmMarkAllReadAggregatesEveryFeed(t *testing.T) {
+	actions, ui, st := newMarkAllReadTestActions(t)
+	addFeedWithUnreadPosts(t, st, "甲源", 2)
+	addFeedWithUnreadPosts(t, st, "乙源", 1)
+	ui.confirmed = true
+
+	changed, err := actions.ConfirmMarkAllRead(context.Background(), WindowHandle{}, AggregateFeedID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := ui.confirmation.Title; got != "将全部文章标记为已读？" {
+		t.Errorf("confirmation title = %q; want %q", got, "将全部文章标记为已读？")
+	}
+	if got := ui.confirmation.Description; got != "共 3 篇未读文章。" {
+		t.Errorf("confirmation description = %q; want %q", got, "共 3 篇未读文章。")
+	}
+	if changed != 3 {
+		t.Errorf("changed = %d; want 3", changed)
+	}
+	if unread := st.Unread(); unread != 0 {
+		t.Errorf("unread = %d; want 0", unread)
+	}
+}
+
+func newMarkAllReadTestActions(t *testing.T) (*App, *fakeUI, *store.Store) {
+	t.Helper()
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	ui := &fakeUI{}
+	return New(service.NewFeeds(st), service.NewPosts(st), nil, nil, nil, ui), ui, st
+}
+
+// addFeedWithUnreadPosts stores one feed with count fresh unread posts.
+func addFeedWithUnreadPosts(t *testing.T, st *store.Store, title string, count int) store.Feed {
+	t.Helper()
+	feed, err := st.AddFeed(store.Feed{URL: "https://example.com/" + title + ".xml", Title: title})
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts := make([]store.Post, 0, count)
+	for i := range count {
+		posts = append(posts, store.Post{
+			FeedID: feed.ID,
+			GUID:   fmt.Sprintf("%s-%d", title, i),
+			Title:  fmt.Sprintf("%s-%d", title, i),
+		})
+	}
+	if _, err := st.MergePosts(feed.ID, posts); err != nil {
+		t.Fatal(err)
+	}
+	return feed
 }
 
 func newRemovalTestActions(t *testing.T) (*App, *fakeUI, *store.Store) {

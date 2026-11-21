@@ -32,7 +32,7 @@ type Callbacks struct {
 	List           func(app.PostQuery) (app.PostPage, error)
 	Select         func(post app.PostSummary, direction int)
 	ToggleStar     func(feedID int64, guid string) (app.PostSummary, error)
-	MarkAllRead    func(feedID int64)
+	MarkAllRead    func(parent *mygo.Window, feedID int64)
 	SetPanePercent func(percent float32)
 	Notify         func(level, message string)
 }
@@ -888,9 +888,13 @@ func (l *List) toggleStar(post app.PostSummary) {
 }
 
 func (l *List) markAllRead(feedID int64) {
+	l.mu.Lock()
+	window := l.window
+	callbacks := l.callbacks
+	l.mu.Unlock()
 	l.runAsync(func() {
-		if l.callbacks.MarkAllRead != nil {
-			l.callbacks.MarkAllRead(feedID)
+		if callbacks.MarkAllRead != nil {
+			callbacks.MarkAllRead(window, feedID)
 		}
 		l.submit(l.reload)
 	})

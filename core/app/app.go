@@ -189,6 +189,36 @@ func (a *App) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle, id int
 	return a.feeds.Remove(id)
 }
 
+// ConfirmMarkAllRead asks before marking every unread post of a feed read,
+// and returns how many changed once confirmed.
+func (a *App) ConfirmMarkAllRead(ctx context.Context, parent WindowHandle, feedID int64) (int, error) {
+	snapshot := a.feeds.List()
+	scope := "全部文章"
+	unread := snapshot.Unread
+	if feedID != AggregateFeedID {
+		feed, err := a.feeds.Feed(feedID)
+		if err != nil {
+			return 0, err
+		}
+		scope = "「" + feed.Title + "」的全部文章"
+		unread = feed.Unread
+	}
+	request := ConfirmationRequest{
+		Title:        "将" + scope + "标记为已读？",
+		Description:  fmt.Sprintf("共 %d 篇未读文章。", unread),
+		ConfirmLabel: "全部已读",
+		CancelLabel:  "取消",
+	}
+	confirmed, err := a.ui.Confirm(ctx, parent, request)
+	if err != nil {
+		return 0, err
+	}
+	if !confirmed {
+		return 0, nil
+	}
+	return a.MarkAllPostsRead(feedID)
+}
+
 // RefreshFeed fetches one subscription.
 func (a *App) RefreshFeed(ctx context.Context, id int64) (store.Feed, error) {
 	return a.feeds.Refresh(ctx, id)

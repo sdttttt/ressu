@@ -21,7 +21,7 @@ func SidebarCallbacks(a *app.App) appsidebar.Callbacks {
 		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
 		RefreshAll:  func() { refreshAllWithNotice(a) },
 		RefreshFeed: func(feedID int64) { refreshFeedWithNotice(a, feedID) },
-		MarkAllRead: func(feedID int64) { markAllReadWithNotice(a, feedID) },
+		MarkAllRead: func(parent *mygo.Window, feedID int64) { markAllReadWithNotice(a, parent, feedID) },
 		Remove: func(parent *mygo.Window, feedID int64) {
 			if err := a.ConfirmRemoveFeed(context.Background(), app.NewWindowHandle(parent), feedID); err != nil {
 				slog.Warn("native feed removal failed",
@@ -45,7 +45,7 @@ func PostListCallbacks(a *app.App) apppostlist.Callbacks {
 		List:           a.ListPosts,
 		Select:         a.SelectPost,
 		ToggleStar:     a.TogglePostStar,
-		MarkAllRead:    func(feedID int64) { markAllReadWithNotice(a, feedID) },
+		MarkAllRead:    func(parent *mygo.Window, feedID int64) { markAllReadWithNotice(a, parent, feedID) },
 		SetPanePercent: a.SetListPercent,
 		Notify:         a.Notify,
 	}
@@ -83,8 +83,8 @@ func refreshFeedWithNotice(a *app.App, feedID int64) {
 	}
 }
 
-func markAllReadWithNotice(a *app.App, feedID int64) {
-	if _, err := a.MarkAllPostsRead(feedID); err != nil {
+func markAllReadWithNotice(a *app.App, parent *mygo.Window, feedID int64) {
+	if _, err := a.ConfirmMarkAllRead(context.Background(), app.NewWindowHandle(parent), feedID); err != nil {
 		slog.Warn("native mark all read failed",
 			"operation", "mygoui.sidebar.markAllRead", "feedID", feedID, "error", err)
 		a.Notify("error", "标记已读失败")
