@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-shiori/go-readability"
+	readability "codeberg.org/readeck/go-readability/v2"
 
 	"github.com/sdttttt/ressu/core/internal/limitreader"
 	"github.com/sdttttt/ressu/core/internal/safedial"
@@ -75,8 +75,12 @@ func Article(ctx context.Context, raw string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrExtraction, err)
 	}
-	if strings.TrimSpace(article.Content) == "" {
+	var readable strings.Builder
+	if err := article.RenderHTML(&readable); err != nil {
+		return "", fmt.Errorf("%w: %v", ErrExtraction, err)
+	}
+	if strings.TrimSpace(readable.String()) == "" {
 		return "", ErrExtraction
 	}
-	return sanitize.HTML(article.Content, raw), nil
+	return sanitize.HTML(readable.String(), raw), nil
 }
