@@ -44,8 +44,11 @@ func PostListCallbacks(a *app.App) apppostlist.Callbacks {
 	return apppostlist.Callbacks{
 		List:           a.ListPosts,
 		Select:         a.SelectPost,
+		ToggleRead:     a.TogglePostRead,
 		ToggleStar:     a.TogglePostStar,
 		MarkAllRead:    func(parent *mygo.Window, feedID int64) { markAllReadWithNotice(a, parent, feedID) },
+		OpenLink:       a.OpenLink,
+		CopyLink:       func(link string) { copyLinkToClipboard(a, link) },
 		SetPanePercent: a.SetListPercent,
 		Notify:         a.Notify,
 	}
@@ -57,11 +60,19 @@ func PostHeaderCallbacks(a *app.App) apppostheader.Callbacks {
 		ToggleStar: a.TogglePostStar,
 		MarkRead:   a.MarkPostRead,
 		OpenLink:   a.OpenLink,
+		CopyLink:   func(link string) { copyLinkToClipboard(a, link) },
 		RequestSnapshot: func(parent *mygo.Window) {
 			a.RequestSnapshot(app.NewWindowHandle(parent))
 		},
 		Notify: a.Notify,
 	}
+}
+
+// copyLinkToClipboard writes link to the system clipboard and confirms with
+// a toast.
+func copyLinkToClipboard(a *app.App, link string) {
+	mygo.Clipboard.WriteText(link)
+	a.Notify("success", "已复制链接")
 }
 
 func refreshAllWithNotice(a *app.App) {

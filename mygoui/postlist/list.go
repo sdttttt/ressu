@@ -31,8 +31,11 @@ const (
 type Callbacks struct {
 	List           func(app.PostQuery) (app.PostPage, error)
 	Select         func(post app.PostSummary, direction int)
+	ToggleRead     func(feedID int64, guid string) (app.PostSummary, error)
 	ToggleStar     func(feedID int64, guid string) (app.PostSummary, error)
 	MarkAllRead    func(parent *mygo.Window, feedID int64)
+	OpenLink       func(link string) error
+	CopyLink       func(link string)
 	SetPanePercent func(percent float32)
 	Notify         func(level, message string)
 }
@@ -412,6 +415,29 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 			l.callbacks.Select(selected, l.directionFor(snapshot.CurrentPost, selected))
 		})
 	}
+	row.ContextMenu(func(menu *ui.Menu) {
+		readLabel := "标记为已读"
+		if post.Read {
+			readLabel = "标记为未读"
+		}
+		if menu.Item(readLabel).Chosen() {
+			l.toggleRead(post)
+		}
+		starLabel := "加星标"
+		if post.Starred {
+			starLabel = "取消星标"
+		}
+		if menu.Item(starLabel).Chosen() {
+			l.toggleStar(post)
+		}
+		menu.Separator()
+		if menu.Item("复制链接").Disabled(post.URL == "").Chosen() {
+			l.copyLink(post)
+		}
+		if menu.Item("浏览器打开").Disabled(post.URL == "").Chosen() {
+			l.openOriginal(post)
+		}
+	})
 	l.scrollPending(rowKey, row)
 }
 
@@ -883,6 +909,32 @@ func (l *List) toggleStar(post app.PostSummary) {
 	l.runAsync(func() {
 		if _, err := l.callbacks.ToggleStar(post.FeedID, post.GUID); err != nil && l.callbacks.Notify != nil {
 			l.callbacks.Notify("error", "无法修改星标："+err.Error())
+		}
+	})
+}
+
+func (l *List) toggleRead(post app.PostSummary) {
+	l.runAsync(func() {
+		if _, err := l.callbacks.ToggleRead(post.FeedID, post.GUID); err != nil && l.callbacks.Notify != nil {
+			l.callbacks.Notify("error", "无法修改已读状态："+err.Error())
+		}
+	})
+}
+
+func (l *List) copyLink(post app.PostSummary) {
+	if l.callbacks.CopyLink == nil || post.URL == "" {
+		return
+	}
+	l.callbacks.CopyLink(post.URL)
+}
+
+func (l *List) openOriginal(post app.PostSummary) {
+	if l.callbacks.OpenLink == nil || post.URL == "" {
+		return
+	}
+	l.runAsync(func() {
+		if err := l.callbacks.OpenLink(post.URL); err != nil && l.callbacks.Notify != nil {
+			l.callbacks.Notify("error", "无法打开链接："+err.Error())
 		}
 	})
 }

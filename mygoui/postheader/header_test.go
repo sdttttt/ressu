@@ -30,14 +30,22 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	)
 	starred := make(chan bool, 1)
 	snapshotRequested := make(chan bool, 1)
+	linkCopied := make(chan string, 1)
 	header := New(model, Callbacks{
 		ToggleStar: func(int64, string) (app.PostSummary, error) {
-			model.SetPostUpdated(app.PostSummary{FeedID: 1, GUID: "first", Starred: false})
+			updated := app.PostSummary{
+				FeedID: 1, GUID: "first", Title: "First article",
+				URL: "https://example.com/first", Starred: false,
+			}
+			model.SetPostUpdated(updated)
 			starred <- false
-			return app.PostSummary{FeedID: 1, GUID: "first", Starred: false}, nil
+			return updated, nil
 		},
 		RequestSnapshot: func(*mygo.Window) {
 			snapshotRequested <- true
+		},
+		CopyLink: func(link string) {
+			linkCopied <- link
 		},
 	})
 
@@ -77,5 +85,17 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	case <-snapshotRequested:
 	case <-time.After(time.Second):
 		t.Fatal("clicking the snapshot action did not request a snapshot")
+	}
+
+	if err := tester.Click("复制链接"); err != nil {
+		t.Fatalf("click copy-link action: %v", err)
+	}
+	select {
+	case link := <-linkCopied:
+		if link != "https://example.com/first" {
+			t.Errorf("copied link = %q; want the article URL", link)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("clicking the copy-link action did not copy the link")
 	}
 }

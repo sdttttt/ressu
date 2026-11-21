@@ -27,6 +27,7 @@ type Callbacks struct {
 	ToggleStar      func(feedID int64, guid string) (app.PostSummary, error)
 	MarkRead        func(feedID int64, guid string, read bool) error
 	OpenLink        func(link string) error
+	CopyLink        func(link string)
 	RequestSnapshot func(parent *mygo.Window)
 	Notify          func(level, message string)
 }
@@ -178,6 +179,9 @@ func (h *Header) drawActions(c *ui.Context, theme *ui.Theme, post app.PostSummar
 	h.iconButton(c, theme, appicon.ExternalLink, "打开原文", false, post.URL != "", func() {
 		h.openOriginal(post)
 	})
+	h.iconButton(c, theme, appicon.Copy, "复制链接", false, post.URL != "", func() {
+		h.copyLink(post)
+	})
 	h.iconButton(c, theme, appicon.Camera, "生成快照", false, h.callbacks.RequestSnapshot != nil, func() {
 		h.mu.Lock()
 		window := h.window
@@ -241,6 +245,13 @@ func (h *Header) openOriginal(post app.PostSummary) {
 			h.notify("打开原文失败")
 		}
 	}()
+}
+
+func (h *Header) copyLink(post app.PostSummary) {
+	if h.callbacks.CopyLink == nil || post.URL == "" {
+		return
+	}
+	h.callbacks.CopyLink(post.URL)
 }
 
 func (h *Header) notify(message string) {
