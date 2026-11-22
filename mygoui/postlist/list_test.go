@@ -87,6 +87,67 @@ func TestPostListShowsArticles(t *testing.T) {
 	}
 }
 
+func TestPostListShowsFeedNameOnlyInAggregateView(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
+			{ID: 1, Title: "科技源播报"},
+			{ID: 2, Title: "设计源周报"},
+		},
+		Unread: 2,
+	})
+	loaded := make(chan struct{}, 2)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			defer func() { loaded <- struct{}{} }()
+			if query.FeedID == 1 {
+				return app.PostPage{
+					Posts:  []app.PostSummary{{FeedID: 1, GUID: "a", Title: "First article"}},
+					Total:  1,
+					Unread: 1,
+				}, nil
+			}
+			return app.PostPage{
+				Posts: []app.PostSummary{
+					{FeedID: 1, GUID: "a", Title: "First article"},
+					{FeedID: 2, GUID: "b", Title: "Second article"},
+				},
+				Total:  2,
+				Unread: 2,
+			}, nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case <-loaded:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	tester.Frame()
+
+	for _, text := range []string{"科技源播报", "设计源周报", "·"} {
+		if !tester.HasText(text) {
+			t.Errorf("aggregate article list is missing %q", text)
+		}
+	}
+
+	model.SetCurrentFeed(1)
+	tester.Frame()
+	select {
+	case <-loaded:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not reload the selected feed")
+	}
+	tester.Frame()
+
+	if tester.HasText("设计源周报") {
+		t.Error("single-feed view shows another feed's name")
+	}
+}
+
 func TestPostListNavigationShortcuts(t *testing.T) {
 	model := app.NewStatusModel("")
 	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)

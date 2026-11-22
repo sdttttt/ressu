@@ -368,7 +368,7 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 			}
 
 			ui.Row(c).Margin(l.scaled(theme, 6), 0, 0, 0).AlignItems(ui.Center).
-				Gap(l.scaled(theme, 8)).
+				Gap(l.scaled(theme, 3)).
 				Padding(0, l.scaled(theme, 28), 0, 0).Children(func() {
 				if !post.Read {
 					ui.Box(c).Shrink(0).
@@ -376,17 +376,21 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 						Radius(l.scaled(theme, 3)).
 						Background(palette.Primary)
 				}
-				l.metaText(c, theme, appformat.RelativeTime(post.PublishedAt, snapshot.RelativeStart))
-				if post.Author != "" {
-					l.metaText(c, theme, post.Author).
-						MaxWidth(l.scaled(theme, 128)).
-						SingleLine().
-						Ellipsis("…")
-				}
-				if post.WordCount > 0 {
-					l.metaText(c, theme, appformat.ReadingMinutes(post.WordCount)+" · "+appformat.WordCount(post.WordCount)).
-						Shrink(1).
-						Ellipsis("…")
+				for index, item := range postMetaItems(snapshot, post) {
+					if index > 0 {
+						ui.Text(c, "·").
+							FontSize(l.scaled(theme, 10)).
+							SingleLine().
+							TextColor(palette.TextMuted)
+					}
+					text := l.metaText(c, theme, item.value).SingleLine()
+					if item.maxWidth > 0 {
+						text = text.MaxWidth(l.scaled(theme, item.maxWidth))
+					}
+					if item.shrink {
+						text = text.Shrink(1)
+					}
+					text.Ellipsis("…")
 				}
 			})
 		})
@@ -467,6 +471,37 @@ func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element
 		SingleLine().
 		TextColor(guitheme.NewPostPalette(*theme).TextMuted).
 		FontFeatures("tnum")
+}
+
+// metaItem is one field of a row's meta line, with an optional width cap and
+// a shrink flag for the field that yields space first when the row overflows.
+type metaItem struct {
+	value    string
+	maxWidth float32 // zero means no cap
+	shrink   bool
+}
+
+// postMetaItems collects a row's meta-line fields in display order: the feed
+// name when the aggregate view mixes sources, then time, author and reading
+// length. The caller renders them separated by middots.
+func postMetaItems(snapshot app.Snapshot, post app.PostSummary) []metaItem {
+	items := make([]metaItem, 0, 4)
+	if snapshot.CurrentFeedID == app.AggregateFeedID {
+		if title := feedTitle(snapshot.Feeds, post.FeedID); title != "" {
+			items = append(items, metaItem{value: title, maxWidth: 112})
+		}
+	}
+	items = append(items, metaItem{value: appformat.RelativeTime(post.PublishedAt, snapshot.RelativeStart)})
+	if post.Author != "" {
+		items = append(items, metaItem{value: post.Author, maxWidth: 128})
+	}
+	if post.WordCount > 0 {
+		items = append(items, metaItem{
+			value:  appformat.ReadingMinutes(post.WordCount) + " · " + appformat.WordCount(post.WordCount),
+			shrink: true,
+		})
+	}
+	return items
 }
 
 func (l *List) scrollPending(rowKey string, row ui.Element) {
@@ -1110,6 +1145,18 @@ func postRowBackground(palette guitheme.PostPalette, selected bool) ui.Color {
 
 func postRowKey(post app.PostSummary) string {
 	return "post-" + formatPostID(post.FeedID) + "-" + post.GUID
+}
+
+// feedTitle resolves the subscription title behind a post. Aggregate rows
+// show it in the meta line so a mixed stream stays attributable; single-feed
+// rows omit it because the header already names the source.
+func feedTitle(feeds []app.Feed, id int64) string {
+	for _, feed := range feeds {
+		if feed.ID == id {
+			return feed.Title
+		}
+	}
+	return ""
 }
 
 func currentUnread(snapshot app.Snapshot) int {
