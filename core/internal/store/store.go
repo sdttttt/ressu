@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cmp"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -22,13 +23,14 @@ const (
 	iconsBucket      = "icons"
 	settingsBucket   = "settings"
 	prefsKey         = "prefs"
+	feedOrderKey     = "feedOrder"
 	schemaVersionKey = "schemaVersion"
 	iconDataKey      = "data"
 	iconMetaKey      = "meta"
 )
 
 // currentSchemaVersion marks the newest data layout and cleanup behavior.
-const currentSchemaVersion = 4
+const currentSchemaVersion = 5
 
 // maxIconBytes bounds the raw image kept in the local cache.
 const maxIconBytes = 256 << 10
@@ -124,6 +126,15 @@ func (s *Store) init(tx *bolt.Tx) error {
 		}
 	}
 
+	order, err := readFeedOrder(settings)
+	if err != nil {
+		return err
+	}
+	s.orderFeeds(order)
+	if err := putFeedOrder(settings, s.feeds); err != nil {
+		return err
+	}
+
 	if _, err := get(settings, []byte(prefsKey), &s.prefs); err != nil {
 		return err
 	}
@@ -173,6 +184,44 @@ func get(b *bolt.Bucket, key []byte, v any) (found bool, err error) {
 		return false, nil
 	}
 	return true, json.Unmarshal(data, v)
+}
+
+// readFeedOrder loads the stored subscription order.
+func readFeedOrder(settings *bolt.Bucket) ([]int64, error) {
+	var order []int64
+	_, err := get(settings, []byte(feedOrderKey), &order)
+	return order, err
+}
+
+// putFeedOrder stores the order of feeds as their ids.
+func putFeedOrder(settings *bolt.Bucket, feeds []Feed) error {
+	order := make([]int64, len(feeds))
+	for i, f := range feeds {
+		order[i] = f.ID
+	}
+	return put(settings, []byte(feedOrderKey), order)
+}
+
+// orderFeeds sorts the subscriptions by their stored positions. Ids missing
+// from order keep their relative order at the end, so subscriptions added by
+// a build predating the order land last instead of vanishing.
+func (s *Store) orderFeeds(order []int64) {
+	position := make(map[int64]int, len(order))
+	for i, id := range order {
+		position[id] = i
+	}
+	unknown := len(order)
+	slices.SortStableFunc(s.feeds, func(a, b Feed) int {
+		pa, ok := position[a.ID]
+		if !ok {
+			pa = unknown
+		}
+		pb, ok := position[b.ID]
+		if !ok {
+			pb = unknown
+		}
+		return cmp.Compare(pa, pb)
+	})
 }
 
 func (s *Store) putFeed(tx *bolt.Tx, f Feed) error {
@@ -245,7 +294,16 @@ func (s *Store) AddFeed(f Feed) (Feed, error) {
 	if f.CreatedAt.IsZero() {
 		f.CreatedAt = time.Now()
 	}
-	if err := s.db.Update(func(tx *bolt.Tx) error { return s.putFeed(tx, f) }); err != nil {
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		if err := s.putFeed(tx, f); err != nil {
+			return err
+		}
+		order := make([]int64, 0, len(s.feeds)+1)
+		for _, exist := range s.feeds {
+			order = append(order, exist.ID)
+		}
+		return put(tx.Bucket([]byte(settingsBucket)), []byte(feedOrderKey), append(order, f.ID))
+	}); err != nil {
 		return Feed{}, err
 	}
 	s.feeds = append(s.feeds, f)
@@ -281,6 +339,7 @@ func (s *Store) RemoveFeed(id int64) error {
 	if i < 0 {
 		return ErrNotFound
 	}
+	remaining := slices.Delete(slices.Clone(s.feeds), i, i+1)
 	if err := s.db.Update(func(tx *bolt.Tx) error {
 		if err := deletePosts(tx, id); err != nil {
 			return err
@@ -288,11 +347,42 @@ func (s *Store) RemoveFeed(id int64) error {
 		if err := deleteIcon(tx, id); err != nil {
 			return err
 		}
-		return tx.Bucket([]byte(feedsBucket)).Delete(feedKey(id))
+		if err := tx.Bucket([]byte(feedsBucket)).Delete(feedKey(id)); err != nil {
+			return err
+		}
+		return putFeedOrder(tx.Bucket([]byte(settingsBucket)), remaining)
 	}); err != nil {
 		return err
 	}
-	s.feeds = slices.Delete(s.feeds, i, i+1)
+	s.feeds = remaining
+	return nil
+}
+
+// MoveFeed moves the subscription id to index to in the subscription list
+// and persists the new order. to is clamped to the list; the subscription
+// takes that index in the resulting list.
+func (s *Store) MoveFeed(id int64, to int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	from := s.feedIndex(id)
+	if from < 0 {
+		return ErrNotFound
+	}
+	to = min(max(to, 0), len(s.feeds)-1)
+	if from == to {
+		return nil
+	}
+	feeds := slices.Clone(s.feeds)
+	feed := feeds[from]
+	feeds = slices.Delete(feeds, from, from+1)
+	feeds = slices.Insert(feeds, to, feed)
+	if err := s.db.Update(func(tx *bolt.Tx) error {
+		return putFeedOrder(tx.Bucket([]byte(settingsBucket)), feeds)
+	}); err != nil {
+		return err
+	}
+	s.feeds = feeds
 	return nil
 }
 

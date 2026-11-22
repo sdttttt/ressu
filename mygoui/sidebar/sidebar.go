@@ -57,6 +57,7 @@ var poseSnap = ui.Animation{Duration: time.Millisecond}
 type Callbacks struct {
 	Icon           func(context.Context, int64) (app.Icon, error)
 	Select         func(int64)
+	Move           func(draggedID int64, to int)
 	RefreshAll     func()
 	RefreshFeed    func(int64)
 	MarkAllRead    func(parent *mygo.Window, feedID int64)
@@ -427,27 +428,31 @@ func (s *Sidebar) drawFeed(
 		Grow(1).
 		Height(feedRowHeight).
 		Padding(10, 8).
-		Radius(6).
-		Children(func() {
-			s.drawFeedIcon(c, theme, feed)
-			title := ui.Text(c, feed.Title).Grow(1).PaddingStart(10)
-			if selected {
-				title = title.Bold()
-			}
-			title.Ellipsis("…")
-			if snapshot.Sync.Active && snapshot.Sync.FeedID == feed.ID {
-				ui.Spinner(c)
-			}
-			if feed.LastError != "" {
-				ui.Box(c).Size(8, 8).Radius(4).Background(theme.Danger).
-					Description(feed.LastError)
-			}
-			if feed.Unread > 0 {
-				ui.Box(c).PaddingStart(8).Children(func() {
-					ui.Badge(c, unreadText(feed.Unread))
-				})
-			}
-		})
+		Radius(6)
+	if reorderingFeeds(s.search) {
+		row = row.Drag(feed.ID)
+	}
+	row.Children(func() {
+		s.drawDropZones(c, theme, snapshot, feed)
+		s.drawFeedIcon(c, theme, feed)
+		title := ui.Text(c, feed.Title).Grow(1).PaddingStart(10)
+		if selected {
+			title = title.Bold()
+		}
+		title.Ellipsis("…")
+		if snapshot.Sync.Active && snapshot.Sync.FeedID == feed.ID {
+			ui.Spinner(c)
+		}
+		if feed.LastError != "" {
+			ui.Box(c).Size(8, 8).Radius(4).Background(theme.Danger).
+				Description(feed.LastError)
+		}
+		if feed.Unread > 0 {
+			ui.Box(c).PaddingStart(8).Children(func() {
+				ui.Badge(c, unreadText(feed.Unread))
+			})
+		}
+	})
 
 	if row.Clicked() {
 		target := feed.ID
@@ -473,6 +478,78 @@ func (s *Sidebar) drawFeed(
 			s.removeFeed(feed.ID)
 		}
 	})
+}
+
+// reorderingFeeds reports whether the subscription list can be reordered:
+// a search filter shows a subset of the rows, whose relative order does not
+// map onto the full list.
+func reorderingFeeds(filter string) bool {
+	return strings.TrimSpace(filter) == ""
+}
+
+// drawDropZones lays two transparent drop targets over a subscription row:
+// dragging onto its top half inserts before the row, onto its bottom half
+// after it. While a drag hovers, the matching edge shows an insertion line.
+func (s *Sidebar) drawDropZones(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, feed app.Feed) {
+	if !reorderingFeeds(s.search) {
+		return
+	}
+	s.drawDropZone(c, theme, snapshot, feed, true)
+	s.drawDropZone(c, theme, snapshot, feed, false)
+}
+
+func (s *Sidebar) drawDropZone(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, feed app.Feed, before bool) {
+	label := "移动到「" + feed.Title + "」之后"
+	if before {
+		label = "移动到「" + feed.Title + "」之前"
+	}
+	zone := ui.Box(c).
+		Absolute().
+		Left(0).
+		Right(0).
+		Height(feedRowHeight / 2).
+		Label(label)
+	if before {
+		zone = zone.Top(0)
+	} else {
+		zone = zone.Top(feedRowHeight / 2)
+	}
+	_, over := ui.DragOver[int64](zone)
+	zone.Children(func() {
+		if !over {
+			return
+		}
+		line := ui.Box(c).Absolute().Left(6).Right(6).Height(2).Radius(1).Background(theme.Accent)
+		if before {
+			line.Top(0)
+		} else {
+			line.Bottom(0)
+		}
+	})
+	if dragged, ok := ui.Drop[int64](zone); ok && dragged != feed.ID {
+		if index, valid := dropIndex(snapshot.Feeds, dragged, feed.ID, before); valid {
+			s.runAsync(func() { s.callbacks.Move(dragged, index) })
+		}
+	}
+}
+
+// dropIndex maps a drop of draggedID onto the targetID row to the index the
+// dragged subscription takes in the resulting list, accounting for the
+// removal of its own row when the target sits below it.
+func dropIndex(feeds []app.Feed, draggedID, targetID int64, before bool) (int, bool) {
+	from := slices.IndexFunc(feeds, func(f app.Feed) bool { return f.ID == draggedID })
+	to := slices.IndexFunc(feeds, func(f app.Feed) bool { return f.ID == targetID })
+	if from < 0 || to < 0 {
+		return 0, false
+	}
+	index := to
+	if !before {
+		index = to + 1
+	}
+	if from < index {
+		index--
+	}
+	return index, true
 }
 
 func (s *Sidebar) drawFeedIcon(c *ui.Context, theme *ui.Theme, feed app.Feed) {

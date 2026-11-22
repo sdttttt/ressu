@@ -47,7 +47,44 @@ func migrate(tx *bolt.Tx) error {
 			return err
 		}
 	}
+	if version < 5 {
+		if err := initFeedOrder(tx); err != nil {
+			return err
+		}
+	}
 	return put(settings, []byte(schemaVersionKey), currentSchemaVersion)
+}
+
+// initFeedOrder seeds the subscription order of databases saved before the
+// order was persisted. The id order of the feeds bucket is the order the
+// sidebar always showed, so it becomes the initial order.
+func initFeedOrder(tx *bolt.Tx) error {
+	settings := tx.Bucket([]byte(settingsBucket))
+	var stored []int64
+	found, err := get(settings, []byte(feedOrderKey), &stored)
+	if err != nil {
+		return err
+	}
+	if found {
+		return nil
+	}
+
+	feeds := tx.Bucket([]byte(feedsBucket))
+	if feeds == nil {
+		return nil
+	}
+	order := make([]int64, 0, 64)
+	if err := feeds.ForEach(func(_, value []byte) error {
+		var f Feed
+		if err := json.Unmarshal(value, &f); err != nil {
+			return err
+		}
+		order = append(order, f.ID)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return put(settings, []byte(feedOrderKey), order)
 }
 
 // backfillPostWordCounts counts the readable text of posts saved before the

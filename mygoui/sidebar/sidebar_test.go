@@ -229,3 +229,97 @@ func TestSelectionPillJumpsWhenReduceMotion(t *testing.T) {
 		t.Errorf("the pill did not jump to the second row: offset %v, want %v", offsetEnd, offset)
 	}
 }
+
+func TestSidebarDragReordersFeeds(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
+			{ID: 1, Title: "源一", URL: "https://example.com/one"},
+			{ID: 2, Title: "源二", URL: "https://example.com/two"},
+			{ID: 3, Title: "源三", URL: "https://example.com/three"},
+		},
+	})
+	type move struct {
+		id int64
+		to int
+	}
+	moves := make(chan move, 2)
+	sidebar := New(model, Callbacks{
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
+		},
+		Move: func(draggedID int64, to int) {
+			moves <- move{draggedID, to}
+		},
+	})
+
+	tester := ui.NewTester(sidebar.View, 280, 520)
+	tester.Frame()
+	one, ok := tester.Find("源一")
+	if !ok {
+		t.Fatal("the first feed row is missing")
+	}
+	// Dropping 源一 on the bottom half of 源三 places it after 源三: index
+	// 2 in the resulting list.
+	afterThree, ok := tester.Find("移动到「源三」之后")
+	if !ok {
+		t.Fatal("the after-drop zone of the third feed is missing")
+	}
+	startX, startY := one.X+one.W/2, one.Y+one.H/2
+	targetX, targetY := afterThree.X+afterThree.W/2, afterThree.Y+afterThree.H/2
+
+	tester.Press(startX, startY)
+	for k := 1; k <= 4; k++ {
+		f := float32(k) / 4
+		tester.Move(startX+(targetX-startX)*f, startY+(targetY-startY)*f)
+	}
+	tester.Release(targetX, targetY)
+
+	select {
+	case got := <-moves:
+		if got.id != 1 || got.to != 2 {
+			t.Fatalf("move = %+v, want {1 2}", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the drop did not report a move")
+	}
+}
+
+func TestSidebarDisablesDragWhileFiltering(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetFeeds(app.StatusFeedsSnapshot{
+		Feeds: []app.Feed{
+			{ID: 1, Title: "源一", URL: "https://example.com/one"},
+			{ID: 2, Title: "源二", URL: "https://example.com/two"},
+		},
+	})
+	moved := make(chan struct{}, 1)
+	sidebar := New(model, Callbacks{
+		Icon: func(context.Context, int64) (app.Icon, error) {
+			return app.Icon{}, app.ErrNotFound
+		},
+		Move: func(int64, int) { moved <- struct{}{} },
+	})
+	sidebar.search = "源一"
+
+	tester := ui.NewTester(sidebar.View, 280, 520)
+	tester.Frame()
+	one, ok := tester.Find("源一")
+	if !ok {
+		t.Fatal("the filtered feed row is missing")
+	}
+	if _, found := tester.Find("移动到「源一」之前"); found {
+		t.Error("drop zones should not render while filtering")
+	}
+
+	two, _ := tester.Find("源二")
+	tester.Press(one.X+one.W/2, one.Y+one.H/2)
+	tester.Move(two.X+two.W/2, two.Y+two.H/2)
+	tester.Release(two.X+two.W/2, two.Y+two.H/2)
+
+	select {
+	case <-moved:
+		t.Fatal("a move was reported while filtering")
+	case <-time.After(100 * time.Millisecond):
+	}
+}

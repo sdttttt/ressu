@@ -720,3 +720,128 @@ func TestPrefsNormalize(t *testing.T) {
 		t.Errorf("sidebar collapsed = false")
 	}
 }
+
+func feedIDOrder(feeds []Feed) []int64 {
+	ids := make([]int64, len(feeds))
+	for i, f := range feeds {
+		ids[i] = f.ID
+	}
+	return ids
+}
+
+func TestMoveFeedReordersSubscriptions(t *testing.T) {
+	s := openTemp(t)
+	var ids []int64
+	for _, url := range []string{"https://a.example/feed", "https://b.example/feed", "https://c.example/feed", "https://d.example/feed"} {
+		feed, err := s.AddFeed(Feed{URL: url})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, feed.ID)
+	}
+
+	if err := s.MoveFeed(ids[0], 2); err != nil {
+		t.Fatal(err)
+	}
+	if got := feedIDOrder(s.Feeds()); !slices.Equal(got, []int64{ids[1], ids[2], ids[0], ids[3]}) {
+		t.Fatalf("order after move = %v", got)
+	}
+
+	if err := s.MoveFeed(ids[3], 0); err != nil {
+		t.Fatal(err)
+	}
+	if got := feedIDOrder(s.Feeds()); !slices.Equal(got, []int64{ids[3], ids[1], ids[2], ids[0]}) {
+		t.Fatalf("order after move to front = %v", got)
+	}
+
+	if err := s.MoveFeed(ids[1], 99); err != nil {
+		t.Fatal(err)
+	}
+	if got := feedIDOrder(s.Feeds()); !slices.Equal(got, []int64{ids[3], ids[2], ids[0], ids[1]}) {
+		t.Fatalf("order after clamped move = %v", got)
+	}
+
+	if err := s.MoveFeed(9999, 0); !errors.Is(err, ErrNotFound) {
+		t.Errorf("MoveFeed unknown id error = %v", err)
+	}
+}
+
+func TestFeedOrderSurvivesReopen(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []int64
+	for _, url := range []string{"https://a.example/feed", "https://b.example/feed", "https://c.example/feed"} {
+		feed, err := s.AddFeed(Feed{URL: url})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, feed.ID)
+	}
+	if err := s.MoveFeed(ids[2], 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	want := []int64{ids[2], ids[0], ids[1]}
+	if got := feedIDOrder(reopened.Feeds()); !slices.Equal(got, want) {
+		t.Fatalf("order after reopen = %v, want %v", got, want)
+	}
+
+	feed, err := reopened.AddFeed(Feed{URL: "https://d.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := feedIDOrder(reopened.Feeds()); !slices.Equal(got, append(want, feed.ID)) {
+		t.Fatalf("order after add = %v", got)
+	}
+}
+
+func TestMigrationSeedsFeedOrder(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []int64
+	for _, url := range []string{"https://a.example/feed", "https://b.example/feed", "https://c.example/feed"} {
+		feed, err := s.AddFeed(Feed{URL: url})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, feed.ID)
+	}
+
+	// Simulate a v4 database: downgrade the version and drop the order key.
+	err = s.db.Update(func(tx *bolt.Tx) error {
+		settings := tx.Bucket([]byte(settingsBucket))
+		if err := settings.Delete([]byte(feedOrderKey)); err != nil {
+			return err
+		}
+		return put(settings, []byte(schemaVersionKey), 4)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	if got := feedIDOrder(reopened.Feeds()); !slices.Equal(got, ids) {
+		t.Fatalf("seeded order = %v, want id order %v", got, ids)
+	}
+}

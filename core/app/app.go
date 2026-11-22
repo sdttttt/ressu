@@ -166,6 +166,11 @@ func (a *App) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteRe
 	return a.feeds.Update(ctx, id, title, feedURL, remoteResources)
 }
 
+// MoveFeed places the subscription id at index to in the subscription list.
+func (a *App) MoveFeed(id int64, to int) error {
+	return a.feeds.Move(id, to)
+}
+
 // ConfirmRemoveFeed asks before deleting a subscription and its posts.
 func (a *App) ConfirmRemoveFeed(ctx context.Context, parent WindowHandle, id int64) error {
 	feed, err := a.feeds.Feed(id)

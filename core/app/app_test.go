@@ -531,3 +531,43 @@ func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
 		t.Errorf("selected feed = %d; want %d", selected, feed.ID)
 	}
 }
+
+func TestMoveFeedReordersSubscriptions(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	var ids []int64
+	for _, url := range []string{"https://a.example/feed", "https://b.example/feed", "https://c.example/feed"} {
+		feed, err := st.AddFeed(store.Feed{URL: url, Title: url})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, feed.ID)
+	}
+
+	model := appstatus.New("")
+	hub := appevent.NewHub(model, nil)
+	actions := New(
+		service.NewFeedsWithHub(st, hub),
+		service.NewPosts(st),
+		service.NewSettings(st),
+		service.NewStatus(hub, nil),
+		nil,
+		&fakeUI{},
+	)
+
+	if err := actions.MoveFeed(ids[2], 0); err != nil {
+		t.Fatal(err)
+	}
+	snapshot := model.Snapshot()
+	if len(snapshot.Feeds) != 3 || snapshot.Feeds[0].ID != ids[2] {
+		t.Fatalf("mirrored order = %+v", snapshot.Feeds)
+	}
+}

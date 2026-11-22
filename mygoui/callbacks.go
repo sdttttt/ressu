@@ -17,8 +17,15 @@ import (
 // actions.
 func SidebarCallbacks(a *app.App) appsidebar.Callbacks {
 	return appsidebar.Callbacks{
-		Icon:        a.FeedIcon,
-		Select:      func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
+		Icon:   a.FeedIcon,
+		Select: func(feedID int64) { a.SelectFeed(context.Background(), feedID) },
+		Move: func(draggedID int64, to int) {
+			if err := a.MoveFeed(draggedID, to); err != nil {
+				slog.Warn("native feed move failed",
+					"operation", "mygoui.sidebar.move", "feedID", draggedID, "error", err)
+				a.Notify("error", "调整订阅源顺序失败")
+			}
+		},
 		RefreshAll:  func() { refreshAllWithNotice(a) },
 		RefreshFeed: func(feedID int64) { refreshFeedWithNotice(a, feedID) },
 		MarkAllRead: func(parent *mygo.Window, feedID int64) { markAllReadWithNotice(a, parent, feedID) },

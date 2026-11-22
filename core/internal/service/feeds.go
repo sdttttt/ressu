@@ -355,6 +355,17 @@ func (f *Feeds) Remove(id int64) error {
 	return nil
 }
 
+// Move places the subscription id at index to in the subscription list.
+func (f *Feeds) Move(id int64, to int) error {
+	if err := f.store.MoveFeed(id, to); err != nil {
+		slog.Warn("feed move failed",
+			"operation", "feeds.move", "feedId", id, "error", err)
+		return err
+	}
+	f.broadcastFeeds()
+	return nil
+}
+
 // Refresh fetches one feed and stores the posts it does not have yet.
 func (f *Feeds) Refresh(ctx context.Context, id int64) (store.Feed, error) {
 	if _, err := f.refreshOne(ctx, id); err != nil {
