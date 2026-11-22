@@ -22,7 +22,7 @@ require (
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/itlightning/dateparse v0.2.1 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/mmcdole/gofeed v1.5.0 // indirect
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
