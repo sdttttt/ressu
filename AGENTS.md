@@ -61,12 +61,10 @@ core/                    独立后端 module，细节见 core/README.md
 mygoui/                  原生界面 module（启动装配、组合根与各功能包），细节见 mygoui/README.md
   run.go / menu_*.go     启动装配与 macOS 菜单
   webendpoint/           MyGO 绑定适配（Feeds/Posts/Settings/Snapshot/Status）
-tools/pgo-collect/       在 CPU profile 下跑核心热路径，产出 default.pgo（CI 发版前运行）
 webview/static/          阅读页与快照页静态源码，细节见 webview/static/README.md
 resources/               打包图标
 mygo.json                MyGO CLI 配置（应用名、版本号、内嵌前端目录、输出目录）
 .github/workflows/       CI、打包与发布
-default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 ```
 
 `build/`、`.mygo/` 和 `coverage/` 都是生成物或本地依赖，已被 git 忽略。
@@ -89,10 +87,6 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 - 发布必须显式传 `-platform`；CI 分别构建 `windows/amd64`、`linux/amd64`、
   `darwin/universal`。Windows 10 需要 WebView2 Runtime；Linux 需要 WebKitGTK 4.1 与
   AppIndicator 相关包。
-- PGO：`default.pgo` 随构建自动生效。本地用
-  `go run ./tools/pgo-collect -out default.pgo` 刷新，或用
-  `RESSU_CPUPROFILE=/tmp/ressu.pprof go tool mygo dev` 正常使用后用产出的 profile 替换；
-  发版时 CI 的 `package` job 会先用同一命令按当前代码重新采样。
 - Go 集成测试绑定本地 httptest 端口，受限沙箱需允许本地监听。
 
 ## 架构总纲
@@ -169,7 +163,7 @@ default.pgo              PGO profile，go build 自动启用（-pgo=auto）
 
 `.github/workflows/ci.yml`：`test`（Ubuntu + Windows，跑测试、`node --check`、验证构建）→
 `release-version`（校验 tag 为 `vYY.M.N` 且与 `mygo.json` 一致）→ `package`（三平台各自
-先重新采样 PGO profile 再 `mygo build -platform`）→ `release`（汇总产物、生成
+`mygo build -platform`）→ `release`（汇总产物、生成
 SHA256SUMS、发 GitHub Release；tag 含 `-` 标记预发布）。发版时修改 `mygo.json` 版本号并
 打对应 tag。没有自动更新；签名密钥走环境变量，不进仓库。
 
