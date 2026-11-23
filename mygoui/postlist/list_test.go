@@ -31,7 +31,6 @@ func TestPostListShowsArticles(t *testing.T) {
 						GUID:        "first",
 						Title:       "First article",
 						Summary:     "First summary",
-						Author:      "Author",
 						WordCount:   1234,
 						PublishedAt: now,
 					},
@@ -63,7 +62,6 @@ func TestPostListShowsArticles(t *testing.T) {
 		"First article",
 		"Second article",
 		"刚刚",
-		"Author",
 		"约 5 分钟 · 1,234 字",
 	} {
 		if !tester.HasText(text) {

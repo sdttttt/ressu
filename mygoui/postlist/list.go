@@ -482,19 +482,16 @@ type metaItem struct {
 }
 
 // postMetaItems collects a row's meta-line fields in display order: the feed
-// name when the aggregate view mixes sources, then time, author and reading
-// length. The caller renders them separated by middots.
+// name when the aggregate view mixes sources, then time and reading length.
+// The caller renders them separated by middots.
 func postMetaItems(snapshot app.Snapshot, post app.PostSummary) []metaItem {
-	items := make([]metaItem, 0, 4)
+	items := make([]metaItem, 0, 3)
 	if snapshot.CurrentFeedID == app.AggregateFeedID {
 		if title := feedTitle(snapshot.Feeds, post.FeedID); title != "" {
 			items = append(items, metaItem{value: title, maxWidth: 112})
 		}
 	}
 	items = append(items, metaItem{value: appformat.RelativeTime(post.PublishedAt, snapshot.RelativeStart)})
-	if post.Author != "" {
-		items = append(items, metaItem{value: post.Author, maxWidth: 128})
-	}
 	if post.WordCount > 0 {
 		items = append(items, metaItem{
 			value:  appformat.ReadingMinutes(post.WordCount) + " · " + appformat.WordCount(post.WordCount),
