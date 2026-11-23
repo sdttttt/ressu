@@ -63,7 +63,7 @@ func TestHTMLCleansRealRSSFeeds(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			feed, err := rss.Parse(data, fixture.feedURL, now)
+			feed, err := rss.Parse(data, fixture.feedURL, now, false)
 			if err != nil {
 				t.Fatalf("Parse() error = %v", err)
 			}
@@ -77,7 +77,7 @@ func TestHTMLCleansRealRSSFeeds(t *testing.T) {
 			}
 
 			for i, item := range feed.Items {
-				cleaned := sanitize.HTML(item.Content, item.URL)
+				cleaned := sanitize.HTML(item.Content, item.URL, false)
 				if cleaned != item.Content {
 					t.Fatalf("item %d is not idempotent:\nstored = %q\ncleaned = %q", i, item.Content, cleaned)
 				}
@@ -103,7 +103,7 @@ func TestHTMLCleansReal12306Article(t *testing.T) {
 	}
 
 	now := time.Date(2026, 11, 8, 8, 0, 0, 0, time.UTC)
-	feed, err := rss.Parse(data, "https://www.12306.cn/mormhweb/zxdt/index_zxdt.html", now)
+	feed, err := rss.Parse(data, "https://www.12306.cn/mormhweb/zxdt/index_zxdt.html", now, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestHTMLCleansRealSputnikArticle(t *testing.T) {
 	}
 
 	now := time.Date(2026, 11, 8, 8, 0, 0, 0, time.UTC)
-	feed, err := rss.Parse(data, "https://sputniknews.com/news", now)
+	feed, err := rss.Parse(data, "https://sputniknews.com/news", now, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestHTMLCleansRealYYSTVArticle(t *testing.T) {
 	}
 
 	now := time.Date(2026, 11, 8, 8, 0, 0, 0, time.UTC)
-	feed, err := rss.Parse(data, "https://www.yystv.cn", now)
+	feed, err := rss.Parse(data, "https://www.yystv.cn", now, false)
 	if err != nil {
 		t.Fatal(err)
 	}

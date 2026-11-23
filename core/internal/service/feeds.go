@@ -190,7 +190,7 @@ func (f *Feeds) Test(ctx context.Context, feedURL string, excludeID int64) (Feed
 		return FeedPreview{}, store.ErrDuplicate
 	}
 
-	result, err := rss.Fetch(ctx, feedURL, "", "")
+	result, err := rss.Fetch(ctx, feedURL, "", "", f.store.Prefs().StripTrackers)
 	if err != nil {
 		slog.Warn("feed test failed",
 			"operation", "feeds.test",
@@ -235,7 +235,7 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string)
 		remoteResources = f.store.Prefs().RemoteResources
 	}
 
-	result, err := rss.Fetch(ctx, feedURL, "", "")
+	result, err := rss.Fetch(ctx, feedURL, "", "", f.store.Prefs().StripTrackers)
 	if err != nil {
 		slog.Warn("feed add failed",
 			"operation", "feeds.add", "feedHost", feedHost(feedURL),
@@ -297,7 +297,7 @@ func (f *Feeds) Update(ctx context.Context, id int64, title, feedURL, remoteReso
 	urlChanged := feedURL != feed.URL
 	var added int
 	if urlChanged {
-		result, err := rss.Fetch(ctx, feedURL, "", "")
+		result, err := rss.Fetch(ctx, feedURL, "", "", f.store.Prefs().StripTrackers)
 		if err != nil {
 			slog.Warn("feed update failed",
 				"operation", "feeds.update", "feedId", id, "feedHost", feedHost(feedURL),
@@ -487,7 +487,7 @@ func (f *Feeds) refreshOne(ctx context.Context, id int64) (int, error) {
 	}
 
 	started := time.Now()
-	result, err := rss.Fetch(ctx, feed.URL, feed.ETag, feed.LastModified)
+	result, err := rss.Fetch(ctx, feed.URL, feed.ETag, feed.LastModified, f.store.Prefs().StripTrackers)
 	if errors.Is(err, rss.ErrNotModified) {
 		feed.LastFetchedAt = &started
 		feed.LastError = ""

@@ -15,6 +15,7 @@ import (
 
 	appevent "github.com/sdttttt/ressu/core/internal/event"
 	"github.com/sdttttt/ressu/core/internal/media"
+	"github.com/sdttttt/ressu/core/internal/sanitize"
 	"github.com/sdttttt/ressu/core/internal/service"
 	appstatus "github.com/sdttttt/ressu/core/internal/status"
 	"github.com/sdttttt/ressu/core/internal/store"
@@ -494,6 +495,11 @@ func (a *App) OpenLink(link string) error {
 	if err != nil || parsed.Host == "" ||
 		(strings.ToLower(parsed.Scheme) != "http" && strings.ToLower(parsed.Scheme) != "https") {
 		return ErrInvalidLink
+	}
+	if a.settings.Get().StripTrackers {
+		// The article context is gone at click time, so self-referencing
+		// parameters such as ref keep their value-based exception there.
+		link = sanitize.StripTrackingParams(link, "")
 	}
 	if a.settings.Get().OpenLinks == store.OpenLinksWindow {
 		a.ui.OpenLinkWindow(link, link)

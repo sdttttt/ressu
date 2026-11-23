@@ -263,7 +263,7 @@ func (p *Posts) ExtractFullText(ctx context.Context, feedID int64, guid string) 
 		return errors.New("the article has no original page")
 	}
 
-	content, err := extract.Article(ctx, post.URL)
+	content, err := extract.Article(ctx, post.URL, p.store.Prefs().StripTrackers)
 	if err != nil {
 		slog.Warn("full-text extraction failed",
 			"operation", "posts.extractFullText",

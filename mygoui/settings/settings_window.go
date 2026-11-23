@@ -153,6 +153,11 @@ func (s *settingsView) draw(c *ui.Context) {
 							changed = true
 						}
 					})
+					ui.Field(c, "剥离链接跟踪参数", func() {
+						if ui.Switch(c, &s.prefs.StripTrackers).Changed() {
+							changed = true
+						}
+					}).Description("移除链接中的 utm_source、fbclid 等已知跟踪参数；个别依赖参数的站点可关闭。")
 					ui.Field(c, "启动时自动刷新", func() {
 						if ui.Switch(c, &s.prefs.RefreshOnStart).Changed() {
 							changed = true

@@ -59,13 +59,14 @@ func ValidateURL(raw string) error {
 }
 
 // Fetch downloads and parses a feed. It sends etag and lastModified as
-// validators and returns ErrNotModified when the server answers 304.
-func Fetch(ctx context.Context, feedURL, etag, lastModified string) (*Result, error) {
-	return fetch(ctx, feedURL, etag, lastModified, MaxBody)
+// validators and returns ErrNotModified when the server answers 304. strip
+// enables tracking-parameter removal from the links of item bodies.
+func Fetch(ctx context.Context, feedURL, etag, lastModified string, strip bool) (*Result, error) {
+	return fetch(ctx, feedURL, etag, lastModified, strip, MaxBody)
 }
 
 // fetch implements Fetch with an explicit body limit.
-func fetch(ctx context.Context, feedURL, etag, lastModified string, maxBody int64) (*Result, error) {
+func fetch(ctx context.Context, feedURL, etag, lastModified string, strip bool, maxBody int64) (*Result, error) {
 	if err := ValidateURL(feedURL); err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func fetch(ctx context.Context, feedURL, etag, lastModified string, maxBody int6
 	}
 
 	return &Result{
-		Feed:         convertFeed(parsed, feedURL, time.Now()),
+		Feed:         convertFeed(parsed, feedURL, time.Now(), strip),
 		ETag:         res.Header.Get("ETag"),
 		LastModified: res.Header.Get("Last-Modified"),
 	}, nil

@@ -39,7 +39,7 @@ func TestArticleExtractsReadableBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	content, err := extract.Article(context.Background(), server.URL+"/article")
+	content, err := extract.Article(context.Background(), server.URL+"/article", false)
 	if err != nil {
 		t.Fatalf("Article: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestArticleExtractsReadableBody(t *testing.T) {
 
 func TestArticleRejectsBadAddresses(t *testing.T) {
 	for _, raw := range []string{"", "ftp://example.com/a", "javascript:alert(1)", "/relative"} {
-		if _, err := extract.Article(context.Background(), raw); err == nil {
+		if _, err := extract.Article(context.Background(), raw, false); err == nil {
 			t.Errorf("Article(%q) succeeded; want an error", raw)
 		}
 	}
@@ -66,7 +66,7 @@ func TestArticleReportsServerErrors(t *testing.T) {
 	server := httptest.NewServer(http.NotFoundHandler())
 	defer server.Close()
 
-	if _, err := extract.Article(context.Background(), server.URL+"/missing"); err == nil {
+	if _, err := extract.Article(context.Background(), server.URL+"/missing", false); err == nil {
 		t.Fatal("Article succeeded on a 404; want an error")
 	}
 }
@@ -77,7 +77,7 @@ func TestArticleReportsUnextractablePages(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := extract.Article(context.Background(), server.URL)
+	_, err := extract.Article(context.Background(), server.URL, false)
 	if !errors.Is(err, extract.ErrExtraction) {
 		t.Fatalf("error = %v, want extract.ErrExtraction", err)
 	}

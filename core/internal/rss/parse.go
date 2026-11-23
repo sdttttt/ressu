@@ -59,12 +59,13 @@ type Feed struct {
 const SummaryLimit = 280
 
 // Parse reads the text of a feed. now dates the items that carry no date.
-func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
+// strip enables tracking-parameter removal from the links of item bodies.
+func Parse(data []byte, feedURL string, now time.Time, strip bool) (*Feed, error) {
 	parsed, err := gofeed.NewParser().Parse(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
-	return convertFeed(parsed, feedURL, now), nil
+	return convertFeed(parsed, feedURL, now, strip), nil
 }
 
 // maxEnclosures bounds the attachments kept for one item.
@@ -103,7 +104,7 @@ func enclosureLength(raw string) int64 {
 	}
 	return length
 }
-func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
+func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time, strip bool) *Feed {
 	feed := &Feed{
 		Meta: Meta{
 			Title:       strings.TrimSpace(parsed.Title),
@@ -149,7 +150,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 			PublishedAt: published,
 			Enclosures:  enclosuresOf(feedURL, it),
 		}
-		item.Content = sanitize.HTML(item.Content, item.URL)
+		item.Content = sanitize.HTML(item.Content, item.URL, strip)
 		item.WordCount = textmetrics.Count(item.Content)
 		if item.WordCount == 0 {
 			item.WordCount = textmetrics.Count(item.Summary)

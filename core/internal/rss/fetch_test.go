@@ -30,7 +30,7 @@ func TestFetchParsesFeedFormats(t *testing.T) {
 			}))
 			t.Cleanup(server.Close)
 
-			result, err := fetch(context.Background(), server.URL, "", "", int64(len(data)))
+			result, err := fetch(context.Background(), server.URL, "", "", false, int64(len(data)))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -51,7 +51,7 @@ func TestFetchRejectsOversizedBody(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	_, err := fetch(context.Background(), server.URL, "", "", int64(len(data)-1))
+	_, err := fetch(context.Background(), server.URL, "", "", false, int64(len(data)-1))
 	if !errors.Is(err, limitreader.ErrTooLarge) {
 		t.Fatalf("error = %v, want limitreader.ErrTooLarge", err)
 	}
@@ -65,7 +65,7 @@ func TestFetchRejectsTrailingDataOverLimit(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	_, err := fetch(context.Background(), server.URL, "", "", int64(len(feed)+8_192))
+	_, err := fetch(context.Background(), server.URL, "", "", false, int64(len(feed)+8_192))
 	if !errors.Is(err, limitreader.ErrTooLarge) {
 		t.Fatalf("error = %v, want limitreader.ErrTooLarge", err)
 	}

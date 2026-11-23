@@ -20,7 +20,7 @@ func readFixture(t *testing.T, name string) string {
 }
 
 func TestParseRSS2(t *testing.T) {
-	feed, err := Parse([]byte(readFixture(t, "rss2.xml")), "https://example.com/feed.xml", testNow)
+	feed, err := Parse([]byte(readFixture(t, "rss2.xml")), "https://example.com/feed.xml", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestParseRSS2(t *testing.T) {
 }
 
 func TestParseAtom(t *testing.T) {
-	feed, err := Parse([]byte(readFixture(t, "atom.xml")), "https://atom.example/feed", testNow)
+	feed, err := Parse([]byte(readFixture(t, "atom.xml")), "https://atom.example/feed", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestParseAtom(t *testing.T) {
 }
 
 func TestParseJSONFeed(t *testing.T) {
-	feed, err := Parse([]byte(readFixture(t, "jsonfeed.json")), "https://json.example/feed.json", testNow)
+	feed, err := Parse([]byte(readFixture(t, "jsonfeed.json")), "https://json.example/feed.json", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestParseJSONFeed(t *testing.T) {
 }
 
 func TestParseBrokenFeed(t *testing.T) {
-	if _, err := Parse([]byte(readFixture(t, "broken.xml")), "https://example.com/", testNow); err == nil {
+	if _, err := Parse([]byte(readFixture(t, "broken.xml")), "https://example.com/", testNow, false); err == nil {
 		t.Fatal("a page that is not a feed should fail")
 	}
 }
@@ -154,7 +154,7 @@ func TestParseFallsBackToTitleAndDate(t *testing.T) {
 <item><title>Nameless</title></item>
 </channel></rss>`
 
-	feed, err := Parse([]byte(text), "https://example.com/feed", testNow)
+	feed, err := Parse([]byte(text), "https://example.com/feed", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestParseDropsNonHTTPLink(t *testing.T) {
 <item><title>a</title><link>javascript:alert(1)</link></item>
 <item><title>b</title><link>https://example.com/posts/1</link></item>
 </channel></rss>`
-	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow)
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestParseFallbackGUIDSeparatesSameBatchItems(t *testing.T) {
 <item><title>same</title><description>first</description></item>
 <item><title>same</title><description>second</description></item>
 </channel></rss>`
-	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow)
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}

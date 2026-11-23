@@ -616,3 +616,28 @@ func TestDownloadEnclosureSuggestsFileName(t *testing.T) {
 func testActions(ui *fakeUI) *App {
 	return New(nil, nil, nil, nil, nil, ui)
 }
+
+func TestOpenLinkStripsTrackingParams(t *testing.T) {
+	actions, ui := newTestActions(t)
+
+	tracked := "https://target.example/page?utm_source=newsletter&id=42"
+	if err := actions.OpenLink(tracked); err != nil {
+		t.Fatal(err)
+	}
+	want := "https://target.example/page?id=42"
+	if ui.externalLink != want {
+		t.Errorf("browser open = %q, want %q", ui.externalLink, want)
+	}
+
+	prefs := store.DefaultPrefs()
+	prefs.StripTrackers = false
+	if _, err := actions.UpdatePreferences(prefs); err != nil {
+		t.Fatal(err)
+	}
+	if err := actions.OpenLink(tracked); err != nil {
+		t.Fatal(err)
+	}
+	if ui.externalLink != tracked {
+		t.Errorf("disabled stripping changed the link: %q", ui.externalLink)
+	}
+}

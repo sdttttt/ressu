@@ -40,8 +40,9 @@ var client = &http.Client{
 }
 
 // Article fetches raw and returns the sanitized readable body of the page.
-// The address must be an absolute HTTP or HTTPS URL.
-func Article(ctx context.Context, raw string) (string, error) {
+// The address must be an absolute HTTP or HTTPS URL. strip enables
+// tracking-parameter removal from outbound links.
+func Article(ctx context.Context, raw string, strip bool) (string, error) {
 	if err := safedial.Validate(raw); err != nil {
 		return "", err
 	}
@@ -82,5 +83,5 @@ func Article(ctx context.Context, raw string) (string, error) {
 	if strings.TrimSpace(readable.String()) == "" {
 		return "", ErrExtraction
 	}
-	return sanitize.HTML(readable.String(), raw), nil
+	return sanitize.HTML(readable.String(), raw, strip), nil
 }

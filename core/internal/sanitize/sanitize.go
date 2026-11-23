@@ -80,8 +80,9 @@ func newPolicy() *bluemonday.Policy {
 
 // HTML removes unsafe markup from an HTML fragment and resolves links and
 // images against baseURL. Unsafe attributes are removed, and ordinary text
-// remains intact.
-func HTML(markup string, baseURL string) string {
+// remains intact. When strip is true, known tracking parameters are also
+// removed from the addresses of outbound links.
+func HTML(markup string, baseURL string, strip bool) string {
 	if markup == "" {
 		return ""
 	}
@@ -103,7 +104,7 @@ func HTML(markup string, baseURL string) string {
 	var output strings.Builder
 	output.Grow(cleanLen)
 	for child := body.FirstChild; child != nil; child = child.NextSibling {
-		enhance(child, baseURL)
+		enhance(child, baseURL, strip)
 		if err := html.Render(&output, child); err != nil {
 			return ""
 		}
@@ -125,13 +126,17 @@ func bodyOf(document *html.Node) *html.Node {
 }
 
 // enhance performs rendering adjustments after bluemonday sanitization:
-// absolute URLs, safe external links, and lazy images.
-func enhance(node *html.Node, baseURL string) {
+// absolute URLs, safe external links, lazy images, and optionally stripped
+// tracking parameters on outbound links.
+func enhance(node *html.Node, baseURL string, strip bool) {
 	if node.Type == html.ElementNode {
 		name := strings.ToLower(node.Data)
 		if name == "a" {
 			if href := attribute(node, "href"); href != nil {
 				href.Val = absolute(baseURL, href.Val)
+				if strip {
+					href.Val = StripTrackingParams(href.Val, hostnameOf(baseURL))
+				}
 				setAttribute(node, "target", "_blank")
 				setAttribute(node, "rel", "noopener noreferrer")
 			}
@@ -162,8 +167,141 @@ func enhance(node *html.Node, baseURL string) {
 		})
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		enhance(child, baseURL)
+		enhance(child, baseURL, strip)
 	}
+}
+
+// trackingPrefixes name the query parameter families stripped from outbound
+// link addresses: UTM (Google Analytics) and Matomo campaign parameters.
+var trackingPrefixes = []string{"utm_", "mtm_"}
+
+// trackingParams names the exact query parameters stripped from outbound
+// link addresses. The list follows Miniflux's urlcleaner, plus Alibaba's
+// spm, and stays conservative: parameters that some sites use legitimately
+// (for example ref and from) live in trackingParamsSelf instead.
+var trackingParams = map[string]bool{
+	// Facebook
+	"fbclid":          true,
+	"fb_action_ids":   true,
+	"fb_action_types": true,
+	"fb_ref":          true,
+	"fb_source":       true,
+	"fb_comment_id":   true,
+	"_openstat":       true,
+
+	// Google
+	"gclid":         true,
+	"dclid":         true,
+	"gbraid":        true,
+	"wbraid":        true,
+	"gclsrc":        true,
+	"srsltid":       true,
+	"campaign_id":   true,
+	"campaign_name": true,
+
+	// Yandex, Twitter, Microsoft
+	"yclid":   true,
+	"ysclid":  true,
+	"twclid":  true,
+	"msclkid": true,
+
+	// ESP and product analytics click identifiers
+	"mc_cid":             true,
+	"mc_eid":             true,
+	"mc_tc":              true,
+	"mkt_tok":            true,
+	"wickedid":           true,
+	"vero_id":            true,
+	"vero_conv":          true,
+	"hsa_cam":            true,
+	"_hsenc":             true,
+	"__hssc":             true,
+	"__hstc":             true,
+	"__hsfp":             true,
+	"_hsmi":              true,
+	"hsctatracking":      true,
+	"rb_clickid":         true,
+	"oly_anon_id":        true,
+	"oly_enc_id":         true,
+	"sc_cid":             true,
+	"_bhlid":             true,
+	"_branch_match_id":   true,
+	"_branch_referrer":   true,
+	"__readwiselocation": true,
+
+	// Humble Bundle, ITM, Alibaba
+	"hmb_campaign": true,
+	"hmb_medium":   true,
+	"hmb_source":   true,
+	"itm_campaign": true,
+	"itm_medium":   true,
+	"itm_source":   true,
+	"spm":          true,
+}
+
+// trackingParamsSelf names query parameters that are tracking only when
+// their value points back at the originating site (Ghost-style self
+// references on outbound links).
+var trackingParamsSelf = map[string]bool{
+	"ref":  true,
+	"from": true,
+}
+
+// StripTrackingParams removes known tracking parameters from raw, an outbound
+// link address. siteHost limits ref/from stripping to values that name the
+// originating site; pass "" to skip that rule, for example when the link no
+// longer carries its article context. Addresses without a host or a query
+// are returned unchanged.
+func StripTrackingParams(raw, siteHost string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Host == "" || parsed.RawQuery == "" {
+		return raw
+	}
+	query := parsed.Query()
+	cleaned := false
+	for name := range query {
+		lower := strings.ToLower(name)
+		if isTrackingParam(lower) {
+			query.Del(name)
+			cleaned = true
+			continue
+		}
+		if !trackingParamsSelf[lower] || siteHost == "" {
+			continue
+		}
+		for _, value := range query[name] {
+			if strings.EqualFold(strings.TrimSpace(value), siteHost) {
+				query.Del(name)
+				cleaned = true
+				break
+			}
+		}
+	}
+	if !cleaned {
+		return raw
+	}
+	parsed.RawQuery = query.Encode()
+	return strings.TrimSuffix(parsed.String(), "?")
+}
+
+func isTrackingParam(lower string) bool {
+	for _, prefix := range trackingPrefixes {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return trackingParams[lower]
+}
+
+// hostnameOf returns the host of an absolute HTTP-like base URL, or "" when
+// the base cannot provide one.
+func hostnameOf(baseURL string) string {
+	base, err := url.Parse(baseURL)
+	if err != nil || !base.IsAbs() ||
+		(base.Scheme != "http" && base.Scheme != "https") {
+		return ""
+	}
+	return base.Hostname()
 }
 
 // absolute resolves reference against an absolute HTTP-like base URL. A base

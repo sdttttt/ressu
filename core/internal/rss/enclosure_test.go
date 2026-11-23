@@ -22,7 +22,7 @@ func TestParseKeepsEnclosures(t *testing.T) {
     </item>
   </channel>
 </rss>`
-	feed, err := Parse([]byte(data), "https://example.com/feed.xml", testNow)
+	feed, err := Parse([]byte(data), "https://example.com/feed.xml", testNow, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,11 +57,42 @@ func TestParseCapsEnclosureCount(t *testing.T) {
 		b.WriteString(`<enclosure url="https://cdn.example.com/f` + strconv.Itoa(i) + `" type="audio/mpeg"/>`)
 	}
 	b.WriteString(`</item></channel></rss>`)
-	feed, err := Parse([]byte(b.String()), "https://example.com/feed.xml", time.Now())
+	feed, err := Parse([]byte(b.String()), "https://example.com/feed.xml", time.Now(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := len(feed.Items[0].Enclosures); got != maxEnclosures {
 		t.Errorf("enclosures = %d, want %d", got, maxEnclosures)
+	}
+}
+
+func TestParseStripsTrackingParamsFromLinks(t *testing.T) {
+	data := `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Blog</title>
+    <item>
+      <title>Post</title>
+      <guid>post-1</guid>
+      <description>&lt;a href="https://target.example/p?utm_source=x&amp;amp;id=1"&gt;go&lt;/a&gt;</description>
+    </item>
+  </channel>
+</rss>`
+
+	stripped, err := Parse([]byte(data), "https://example.com/feed.xml", testNow, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(stripped.Items[0].Content, "utm_source") ||
+		!strings.Contains(stripped.Items[0].Content, "id=1") {
+		t.Errorf("stripped content = %q", stripped.Items[0].Content)
+	}
+
+	kept, err := Parse([]byte(data), "https://example.com/feed.xml", testNow, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(kept.Items[0].Content, "utm_source") {
+		t.Errorf("strip=false content = %q", kept.Items[0].Content)
 	}
 }

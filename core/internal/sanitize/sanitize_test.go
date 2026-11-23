@@ -17,7 +17,7 @@ func TestHTMLRemovesForbiddenElements(t *testing.T) {
 		`<form action="/subscribe"><p>form text</p></form>` +
 		`<input type="text">` +
 		`<button><p>button text</p></button>`
-	output := sanitize.HTML(input, "https://example.com/post")
+	output := sanitize.HTML(input, "https://example.com/post", false)
 
 	for _, unsafe := range []string{
 		"<script", "alert(1)", "<style", "color:red", "<iframe", "<object", "<embed",
@@ -39,7 +39,7 @@ func TestHTMLAllowsSafeHTMLAndDropsUnsafeAttributes(t *testing.T) {
 		`onclick="alert(1)" style="color:red"><table><tr><td>cell</td></tr></table>` +
 		`<custom-tag>custom text</custom-tag><template><p>template body</p></template>` +
 		`<video controls><source src="/media.mp4">fallback</video></article>`
-	output := sanitize.HTML(input, "https://example.com/post")
+	output := sanitize.HTML(input, "https://example.com/post", false)
 
 	for _, safe := range []string{
 		`<article aria-label="Article" class="post" data-feed="rss" tabindex="0">`,
@@ -64,7 +64,7 @@ func TestHTMLCompletesURLsAndAddsReadingBehavior(t *testing.T) {
 	input := `<a href="/next">next</a><a href="mailto:hi@example.com">mail</a>` +
 		`<img src="cover.png" width="800" height="600">` +
 		`<source src="/audio.ogg">`
-	output := sanitize.HTML(input, "https://example.com/posts/1")
+	output := sanitize.HTML(input, "https://example.com/posts/1", false)
 
 	for _, safe := range []string{
 		`<a href="https://example.com/next" rel="noopener noreferrer" target="_blank">next</a>`,
@@ -87,7 +87,7 @@ func TestHTMLRemovesUnsafeURIsAndKeepsImageDataURIs(t *testing.T) {
 		`<img src="javascript:alert(1)">` +
 		`<img src="data:image/png;base64,aGVsbG8=">` +
 		`<source src="data:text/html,bad">`
-	output := sanitize.HTML(input, "https://example.com/post")
+	output := sanitize.HTML(input, "https://example.com/post", false)
 
 	for _, unsafe := range []string{
 		`href="javascript:`, `href="data:text/html`,
@@ -106,7 +106,7 @@ func TestHTMLRemovesUnsafeURIsAndKeepsImageDataURIs(t *testing.T) {
 
 func TestHTMLIgnoresNonHTTPBase(t *testing.T) {
 	input := `<a href="foo.html">relative</a>`
-	output := sanitize.HTML(input, "javascript:alert(1)")
+	output := sanitize.HTML(input, "javascript:alert(1)", false)
 
 	if strings.Contains(output, "javascript:") {
 		t.Fatalf("relative link inherited the javascript base: %s", output)
@@ -118,7 +118,7 @@ func TestHTMLIgnoresNonHTTPBase(t *testing.T) {
 
 func TestHTMLRemovesComments(t *testing.T) {
 	input := `<!-- safe comment --><!-- <script>alert(1)</script> --><p>text</p>`
-	output := sanitize.HTML(input, "https://example.com/post")
+	output := sanitize.HTML(input, "https://example.com/post", false)
 
 	for _, unsafe := range []string{"safe comment", "alert(1)", "<script", "<!--"} {
 		if strings.Contains(output, unsafe) {
@@ -130,8 +130,8 @@ func TestHTMLRemovesComments(t *testing.T) {
 func TestHTMLOmitsDocumentWrapperAndIsIdempotent(t *testing.T) {
 	input := `<!doctype html><html><head><title>hidden</title></head>` +
 		`<body><p>visible</p></body></html>`
-	first := sanitize.HTML(input, "https://example.com/")
-	second := sanitize.HTML(first, "https://example.com/")
+	first := sanitize.HTML(input, "https://example.com/", false)
+	second := sanitize.HTML(first, "https://example.com/", false)
 
 	if strings.Contains(first, "<html>") || strings.Contains(first, "<head>") ||
 		strings.Contains(first, "hidden") {
@@ -144,7 +144,7 @@ func TestHTMLOmitsDocumentWrapperAndIsIdempotent(t *testing.T) {
 
 func TestHTMLPreservesWhitespaceOnlyInput(t *testing.T) {
 	input := " \n\t"
-	if output := sanitize.HTML(input, "https://example.com/"); output != input {
+	if output := sanitize.HTML(input, "https://example.com/", false); output != input {
 		t.Fatalf("output = %q, want %q", output, input)
 	}
 }

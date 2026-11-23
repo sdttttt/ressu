@@ -177,6 +177,7 @@ type Prefs struct {
 	RemoteResources  string `json:"remoteResources"`
 	OpenLinks        string `json:"openLinks"`
 	PostSort         string `json:"postSort"`
+	StripTrackers    bool   `json:"stripTrackers"` // remove known tracking parameters from outbound links
 	PostsPerFeed     int    `json:"postsPerFeed"`
 	ImageCacheLimit  int    `json:"imageCacheLimit"` // maximum image cache size, in MB
 	PaneSizes        []int  `json:"paneSizes"`       // widths of the sidebar and the list, in percent
@@ -194,6 +195,7 @@ func DefaultPrefs() Prefs {
 		RemoteResources:  ResourceAccessWebview,
 		OpenLinks:        OpenLinksBrowser,
 		PostSort:         PostSortPublished,
+		StripTrackers:    true,
 		PostsPerFeed:     DefaultPostsPerFeed,
 		ImageCacheLimit:  DefaultImageCacheLimit,
 		PaneSizes:        []int{18, 30},

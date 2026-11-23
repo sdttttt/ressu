@@ -33,7 +33,11 @@ func migrate(tx *bolt.Tx) error {
 		)
 	}
 	if version < 2 {
-		if err := sanitizeStoredPosts(tx); err != nil {
+		prefs := DefaultPrefs()
+		if _, err := get(settings, []byte(prefsKey), &prefs); err != nil {
+			return err
+		}
+		if err := sanitizeStoredPosts(tx, prefs.StripTrackers); err != nil {
 			return err
 		}
 	}
@@ -119,8 +123,9 @@ func backfillPostWordCounts(tx *bolt.Tx) error {
 	})
 }
 
-// sanitizeStoredPosts rewrites HTML saved before content was cleaned on parse.
-func sanitizeStoredPosts(tx *bolt.Tx) error {
+// sanitizeStoredPosts rewrites HTML saved before content was cleaned on
+// parse. strip also removes known tracking parameters from outbound links.
+func sanitizeStoredPosts(tx *bolt.Tx, strip bool) error {
 	parent := tx.Bucket([]byte(postsBucket))
 	if parent == nil {
 		return nil
@@ -141,7 +146,7 @@ func sanitizeStoredPosts(tx *bolt.Tx) error {
 			if err := json.Unmarshal(value, &post); err != nil {
 				return err
 			}
-			cleaned := sanitize.HTML(post.Content, post.URL)
+			cleaned := sanitize.HTML(post.Content, post.URL, strip)
 			if cleaned == post.Content {
 				return nil
 			}
