@@ -113,6 +113,16 @@ func (NativeUI) SelectSnapshotSavePath(parent app.WindowHandle, defaultPath stri
 	})
 }
 
+// SelectFileSavePath shows the save picker used by attachment downloads.
+func (NativeUI) SelectFileSavePath(parent app.WindowHandle, defaultPath string) (string, error) {
+	return mygo.Dialog.Save(mygo.SaveDialogOptions{
+		Parent:      windowOf(parent),
+		Title:       "下载附件",
+		DefaultPath: defaultPath,
+		ButtonLabel: "保存",
+	})
+}
+
 // OpenPath shows a path in the file manager.
 func (NativeUI) OpenPath(path string) error {
 	return mygo.Shell.OpenPath(path)

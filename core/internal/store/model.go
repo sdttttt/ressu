@@ -39,20 +39,28 @@ type Icon struct {
 	Data []byte   `json:"data"`
 }
 
+// Enclosure is a media attachment of a post, such as a podcast episode.
+type Enclosure struct {
+	URL    string `json:"url"`
+	Type   string `json:"type"`
+	Length int64  `json:"length"` // declared size in bytes, zero when unknown
+}
+
 // Post is an item of a feed, with the HTML of its body.
 type Post struct {
-	FeedID      int64     `json:"feedId"`
-	GUID        string    `json:"guid"`
-	Title       string    `json:"title"`
-	URL         string    `json:"url"`
-	Author      string    `json:"author"`
-	Summary     string    `json:"summary"`
-	Content     string    `json:"content"`
-	WordCount   int       `json:"wordCount"`
-	PublishedAt time.Time `json:"publishedAt"`
-	FetchedAt   time.Time `json:"fetchedAt"`
-	Read        bool      `json:"read"`
-	Starred     bool      `json:"starred"`
+	FeedID      int64       `json:"feedId"`
+	GUID        string      `json:"guid"`
+	Title       string      `json:"title"`
+	URL         string      `json:"url"`
+	Author      string      `json:"author"`
+	Summary     string      `json:"summary"`
+	Content     string      `json:"content"`
+	WordCount   int         `json:"wordCount"`
+	PublishedAt time.Time   `json:"publishedAt"`
+	FetchedAt   time.Time   `json:"fetchedAt"`
+	Read        bool        `json:"read"`
+	Starred     bool        `json:"starred"`
+	Enclosures  []Enclosure `json:"enclosures"`
 }
 
 // ToSummary returns the post without its body, as lists show it.

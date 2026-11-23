@@ -17,6 +17,9 @@ func (callbackFakeUI) SelectOPMLExport(app.WindowHandle, string) (string, error)
 func (callbackFakeUI) SelectSnapshotSavePath(app.WindowHandle, string) (string, error) {
 	return "", nil
 }
+func (callbackFakeUI) SelectFileSavePath(app.WindowHandle, string) (string, error) {
+	return "", nil
+}
 func (callbackFakeUI) OpenPath(string) error         { return nil }
 func (callbackFakeUI) OpenExternal(string) error     { return nil }
 func (callbackFakeUI) OpenLinkWindow(string, string) {}

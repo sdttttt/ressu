@@ -18,6 +18,9 @@ var AppEvent = mygo.NewEvent[app.Event]("app:event")
 // ErrNoSnapshotWindow reports that the snapshot caller window is unavailable.
 var ErrNoSnapshotWindow = errors.New("no snapshot window")
 
+// ErrNoCallerWindow reports that a binding call arrived without a window.
+var ErrNoCallerWindow = errors.New("no caller window")
+
 // WebEndpoint is the page binding for subscription actions. It is exposed to
 // the page as Feeds.
 type WebEndpoint struct {
@@ -97,6 +100,15 @@ func NewPosts(actions *app.App) *Posts {
 // OpenImage loads an article image into the native viewer.
 func (p *Posts) OpenImage(ctx context.Context, source, alt string) error {
 	return p.actions.OpenImage(ctx, app.NewWindowHandle(mygo.CallerWindow(ctx)), source, alt)
+}
+
+// DownloadEnclosure downloads a post attachment to a path the user picks.
+func (p *Posts) DownloadEnclosure(ctx context.Context, source string) error {
+	caller := mygo.CallerWindow(ctx)
+	if caller == nil {
+		return ErrNoCallerWindow
+	}
+	return p.actions.DownloadEnclosure(ctx, app.NewWindowHandle(caller), source)
 }
 
 // List returns a page of posts.

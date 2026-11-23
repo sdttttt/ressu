@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	appevent "github.com/sdttttt/ressu/core/internal/event"
+	"github.com/sdttttt/ressu/core/internal/media"
 	"github.com/sdttttt/ressu/core/internal/service"
 	appstatus "github.com/sdttttt/ressu/core/internal/status"
 	"github.com/sdttttt/ressu/core/internal/store"
@@ -84,6 +85,7 @@ type UI interface {
 	SelectOPMLImport(parent WindowHandle) ([]string, error)
 	SelectOPMLExport(parent WindowHandle, defaultPath string) (string, error)
 	SelectSnapshotSavePath(parent WindowHandle, defaultPath string) (string, error)
+	SelectFileSavePath(parent WindowHandle, defaultPath string) (string, error)
 	OpenPath(string) error
 	OpenExternal(string) error
 	OpenLinkWindow(title, link string)
@@ -287,6 +289,23 @@ func (a *App) OpenImage(ctx context.Context, parent WindowHandle, source, alt st
 		return err
 	}
 	return a.ui.OpenImageViewer(parent, image.Data, image.ViewerURL, alt)
+}
+
+// DownloadEnclosure saves a post attachment through the native save dialog.
+// The address must pass the public-URL policy before the dialog opens; the
+// download itself streams through the guarded media client.
+func (a *App) DownloadEnclosure(ctx context.Context, parent WindowHandle, source string) error {
+	if err := media.ValidateSource(source); err != nil {
+		return err
+	}
+	path, err := a.ui.SelectFileSavePath(parent, media.FileName(source))
+	if err != nil {
+		return err
+	}
+	if path == "" {
+		return nil
+	}
+	return media.DownloadFile(ctx, source, path)
 }
 
 // ListPosts returns a page of posts.

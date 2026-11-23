@@ -615,9 +615,22 @@ func toPosts(items []rss.Item) []store.Post {
 			Content:     item.Content,
 			WordCount:   item.WordCount,
 			PublishedAt: item.PublishedAt,
+			Enclosures:  toEnclosures(item.Enclosures),
 		})
 	}
 	return posts
+}
+
+// toEnclosures copies parsed attachments into stored values.
+func toEnclosures(items []rss.Enclosure) []store.Enclosure {
+	if len(items) == 0 {
+		return nil
+	}
+	enclosures := make([]store.Enclosure, 0, len(items))
+	for _, item := range items {
+		enclosures = append(enclosures, store.Enclosure(item))
+	}
+	return enclosures
 }
 
 func titleOf(feed *rss.Feed, feedURL string) string {

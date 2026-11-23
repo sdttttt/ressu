@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"io"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -38,6 +39,14 @@ type Item struct {
 	Content     string
 	WordCount   int
 	PublishedAt time.Time
+	Enclosures  []Enclosure
+}
+
+// Enclosure is a media attachment of an item, such as a podcast episode.
+type Enclosure struct {
+	URL    string
+	Type   string
+	Length int64 // declared size in bytes, zero when the feed omits or garbles it
 }
 
 // Feed is a parsed feed.
@@ -58,7 +67,42 @@ func Parse(data []byte, feedURL string, now time.Time) (*Feed, error) {
 	return convertFeed(parsed, feedURL, now), nil
 }
 
-// convertFeed turns a gofeed feed into the shape stored by Ressu.
+// maxEnclosures bounds the attachments kept for one item.
+const maxEnclosures = 8
+
+// enclosuresOf converts the attachments gofeed parsed, keeping only
+// resolvable HTTP addresses and a bounded count per item.
+func enclosuresOf(feedURL string, it *gofeed.Item) []Enclosure {
+	if len(it.Enclosures) == 0 {
+		return nil
+	}
+	enclosures := make([]Enclosure, 0, min(len(it.Enclosures), maxEnclosures))
+	for _, e := range it.Enclosures {
+		if e == nil || len(enclosures) >= maxEnclosures {
+			continue
+		}
+		address := resolve(feedURL, e.URL)
+		if address == "" {
+			continue
+		}
+		enclosures = append(enclosures, Enclosure{
+			URL:    address,
+			Type:   truncate(strings.TrimSpace(e.Type), 64),
+			Length: enclosureLength(e.Length),
+		})
+	}
+	return enclosures
+}
+
+// enclosureLength parses the declared size, treating missing or malformed
+// values as zero.
+func enclosureLength(raw string) int64 {
+	length, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil || length < 0 {
+		return 0
+	}
+	return length
+}
 func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 	feed := &Feed{
 		Meta: Meta{
@@ -103,6 +147,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time) *Feed {
 			Summary:     plainText(descriptionOf(it)),
 			Content:     content,
 			PublishedAt: published,
+			Enclosures:  enclosuresOf(feedURL, it),
 		}
 		item.Content = sanitize.HTML(item.Content, item.URL)
 		item.WordCount = textmetrics.Count(item.Content)

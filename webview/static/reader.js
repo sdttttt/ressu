@@ -259,6 +259,84 @@
     }
   };
 
+  const enclosureName = (url) => {
+    try {
+      const segments = new URL(url).pathname.split("/").filter(Boolean);
+      const segment = segments.pop() || "attachment";
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    } catch {
+      return "attachment";
+    }
+  };
+
+  const enclosureSize = (length) => {
+    if (typeof length !== "number" || !Number.isFinite(length) || length <= 0) {
+      return "";
+    }
+    if (length >= 1 << 30) return `${(length / (1 << 30)).toFixed(1)} GB`;
+    if (length >= 1 << 20) return `${(length / (1 << 20)).toFixed(1)} MB`;
+    if (length >= 1 << 10) return `${Math.round(length / (1 << 10))} KB`;
+    return `${length} B`;
+  };
+
+  const downloadEnclosure = async (url) => {
+    try {
+      await runtime.call("Posts.DownloadEnclosure", url);
+    } catch (error) {
+      notifyError("下载附件失败", error);
+    }
+  };
+
+  // Enclosure values are untrusted feed data: the bar is built with DOM
+  // calls and textContent only, and every address re-passes externalHref.
+  // Audio plays natively in the WebView, which connects to the address
+  // directly, the same as media embedded in the article body; downloading
+  // goes through the Go binding instead.
+  const renderAttachments = (body, enclosures) => {
+    if (!Array.isArray(enclosures)) return;
+    const rows = [];
+    for (const enclosure of enclosures) {
+      const url = externalHref(enclosure && enclosure.url);
+      if (!url) continue;
+      const row = document.createElement("div");
+      row.className = "enclosure";
+
+      const label = document.createElement("span");
+      label.className = "enclosure-label";
+      const size = enclosureSize(enclosure.length);
+      label.textContent = size
+        ? `${enclosureName(url)}（${size}）`
+        : enclosureName(url);
+      row.append(label);
+
+      const type = typeof enclosure.type === "string" ? enclosure.type : "";
+      if (type.startsWith("audio/")) {
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.src = url;
+        row.append(audio);
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "enclosure-download";
+      button.textContent = "下载附件";
+      button.addEventListener("click", () => downloadEnclosure(url));
+      row.append(button);
+      rows.push(row);
+    }
+    if (rows.length === 0) return;
+    const bar = document.createElement("div");
+    bar.className = "enclosures";
+    for (const row of rows) bar.append(row);
+    body.append(bar);
+  };
+
   const samePost = (first, second) =>
     first.feedId === second.feedId && first.guid === second.guid;
 
@@ -308,6 +386,7 @@
       } else {
         layer.body.textContent = post.summary;
       }
+      renderAttachments(layer.body, post.enclosures);
       state.post = post;
     } catch (error) {
       if (requestId !== state.request) return;

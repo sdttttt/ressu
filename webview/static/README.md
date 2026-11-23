@@ -45,5 +45,9 @@
   `textContent` 写入。禁止 `fetch`/`XMLHttpRequest`/`WebSocket`/`EventSource`。
 - 正文里的链接点击先经 `externalHref()` 过滤只留 `http:`/`https:`，再交
   `Settings.OpenLink`；图片点击走 `Posts.OpenImage` 原生预览。
+- 正文底部的附件条（`post.enclosures`）全部用 DOM API + `textContent` 构建，地址再过一次
+  `externalHref()`。音频用原生 `<audio controls>` 播放，WebView 直连附件地址，与正文内嵌
+  媒体同语义（不经 Go 代理）；「下载附件」走 `Posts.DownloadEnclosure` Go 绑定，经安全
+  下载管线后由原生保存对话框选路径，页面不发起任何下载请求。
 - 样式使用 `reader.css` 的语义变量和系统主题类，不写死主题颜色；页面字符串用简体中文，
   JS 标识符和注释用英文。

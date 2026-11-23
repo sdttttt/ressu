@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	appevent "github.com/sdttttt/ressu/core/internal/event"
@@ -18,6 +19,7 @@ import (
 type fakeUI struct {
 	openFiles             []string
 	savePath              string
+	fileSaveDefault       string
 	openedPath            string
 	externalLink          string
 	windowTitle           string
@@ -48,6 +50,11 @@ func (f *fakeUI) SelectOPMLExport(WindowHandle, string) (string, error) {
 }
 
 func (f *fakeUI) SelectSnapshotSavePath(WindowHandle, string) (string, error) {
+	return f.savePath, nil
+}
+
+func (f *fakeUI) SelectFileSavePath(_ WindowHandle, defaultPath string) (string, error) {
+	f.fileSaveDefault = defaultPath
 	return f.savePath, nil
 }
 
@@ -570,4 +577,42 @@ func TestMoveFeedReordersSubscriptions(t *testing.T) {
 	if len(snapshot.Feeds) != 3 || snapshot.Feeds[0].ID != ids[2] {
 		t.Fatalf("mirrored order = %+v", snapshot.Feeds)
 	}
+}
+
+func TestDownloadEnclosureValidatesBeforeDialog(t *testing.T) {
+	ui := &fakeUI{savePath: filepath.Join(t.TempDir(), "ep1.mp3")}
+	actions := testActions(ui)
+
+	err := actions.DownloadEnclosure(context.Background(), WindowHandle{}, "file:///etc/passwd")
+	if err == nil {
+		t.Fatal("DownloadEnclosure accepted a non-HTTP address")
+	}
+	if ui.fileSaveDefault != "" {
+		t.Error("the save dialog opened for an unsafe address")
+	}
+}
+
+func TestDownloadEnclosureSkipsCancelledDialog(t *testing.T) {
+	ui := &fakeUI{savePath: ""}
+	actions := testActions(ui)
+
+	if err := actions.DownloadEnclosure(context.Background(), WindowHandle{}, "https://cdn.example.com/ep1.mp3"); err != nil {
+		t.Fatalf("cancelled dialog returned %v, want nil", err)
+	}
+}
+
+func TestDownloadEnclosureSuggestsFileName(t *testing.T) {
+	ui := &fakeUI{savePath: ""}
+	actions := testActions(ui)
+
+	if err := actions.DownloadEnclosure(context.Background(), WindowHandle{}, "https://cdn.example.com/audio/ep1.mp3?token=x"); err != nil {
+		t.Fatal(err)
+	}
+	if ui.fileSaveDefault != "ep1.mp3" {
+		t.Errorf("suggested name = %q, want ep1.mp3", ui.fileSaveDefault)
+	}
+}
+
+func testActions(ui *fakeUI) *App {
+	return New(nil, nil, nil, nil, nil, ui)
 }
