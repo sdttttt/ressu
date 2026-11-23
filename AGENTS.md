@@ -16,7 +16,8 @@ Ressu 是一个免费的桌面 RSS 阅读器：Go 进程抓取、解析、持久
 
 ## 快速约束
 
-- 工具链只使用 Go：MyGO CLI 由 `go.mod` 的 `tool` 指令固定。不要引入 Bun、npm 或 pnpm 配置。
+- 工具链只使用 Go：MyGO CLI 由 `go.mod` 的 `tool` 指令固定，Go 版本由 `mise.toml`
+  固定（mise 用户自动获得对应工具链）。不要引入 Bun、npm 或 pnpm 配置。
 - Go 代码、标识符、代码注释、文档注释和提交信息用英文；界面字符串、toast、README 和
   `AGENTS.md` 用简体中文。
 - 提交遵循 Conventional Commits，例如 `feat: ...`、`fix(ui): ...`、`docs: ...`。破坏性
