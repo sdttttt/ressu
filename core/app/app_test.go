@@ -527,7 +527,7 @@ func TestAddAndSelectFeedMirrorsSelection(t *testing.T) {
 		&fakeUI{},
 	)
 
-	feed, err := actions.addAndSelectFeed(context.Background(), "", server.URL, "")
+	feed, err := actions.addAndSelectFeed(context.Background(), "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}

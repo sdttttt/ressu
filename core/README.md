@@ -97,12 +97,16 @@ Ressu 阅读器的后端核心。
 - `settings/schemaVersion` 记录数据库版本；修改持久化结构必须兼容旧记录，或在
   `internal/store/migrate.go` 加入迁移。
 - `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
-  按 `publishedAt` 倒序，裁剪到 `Prefs.PostsPerFeed`，并重算未读；它在一个事务里重写该
+  按 `publishedAt` 倒序，裁剪到该源的保留上限（`Feed.KeepCount` 大于 0 时用它，否则用
+  `Prefs.PostsPerFeed`；星标文章不受上限约束），并重算未读；它在一个事务里重写该
   订阅的整个文章桶。`UpdatePost` 和 `MarkAllRead` 只写受影响的数据。
 - `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
 - 远程资源访问方式全局默认存于 `Prefs.RemoteResources`；每个订阅源可用
   `Feed.RemoteResources` 覆盖（空串 = 跟随全局，新增时由界面写入当时的全局值），
   `Posts.Get` 按文章所属订阅源的判断决定是否经 `media.RewriteHTML` 走本地缓存。
+  每源文章保留数同理：`Feed.KeepCount` 为 0 跟随 `Prefs.PostsPerFeed`，正数覆盖并
+  限幅到 50–2000（`MinPostsPerFeed`/`MaxPostsPerFeed`），由 `Feeds.Add`/`Update`
+  归一化。
 - `Prefs.Normalize` 替换越界值：未知主题回落 `system`，未知字号回落 `medium`，
   `postSort` 不是 `fetched` 就回落 `published`，`openLinks` 不是 `window` 就变成
   `browser`，`remoteResources` 不是 `webview` 就回落 `goProxy`，`postsPerFeed` 限制在

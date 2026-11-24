@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -58,8 +59,8 @@ type Summary struct {
 type Callbacks struct {
 	Appearance func() app.Prefs
 	Test       func(context.Context, string, int64) (Preview, error)
-	Add        func(context.Context, string, string, string) (app.Feed, error)
-	Save       func(context.Context, int64, string, string, string) (app.Feed, error)
+	Add        func(context.Context, string, string, string, int) (app.Feed, error)
+	Save       func(context.Context, int64, string, string, string, int) (app.Feed, error)
 	ImportOPML func(parent *mygo.Window) (Summary, error)
 }
 
@@ -149,6 +150,11 @@ func (s *addFeedView) applyEdit(feed app.Feed) {
 	s.preview = nil
 	s.testing = false
 	s.pending = false
+	if feed.KeepCount > 0 {
+		s.keepCount = strconv.Itoa(feed.KeepCount)
+	} else {
+		s.keepCount = ""
+	}
 	s.clearError()
 }
 
@@ -161,6 +167,7 @@ type addFeedView struct {
 	url             string
 	title           string
 	remoteResources string
+	keepCount       string
 	testedURL       string
 	titleTouched    bool
 	lastTitle       string
@@ -205,6 +212,12 @@ func (s *addFeedView) draw(c *ui.Context) {
 							app.ResourceAccessWebview, "由 WebView 直接加载")
 					})
 				}).Description("只影响这个订阅源的正文图片加载。")
+				if s.edit != nil {
+					ui.Field(c, "文章保留数", func() {
+						ui.TextInput(c, &s.keepCount).Placeholder("跟随全局设置")
+					}).Description(fmt.Sprintf("只影响这个订阅源，范围 %d–%d；留空时跟随全局设置。",
+						app.MinPostsPerFeed, app.MaxPostsPerFeed))
+				}
 			})
 
 			ui.Column(c).Padding(16, 0).Gap(8).Children(func() {
@@ -344,6 +357,12 @@ func (s *addFeedView) startAdd() {
 		s.invalidate()
 		return
 	}
+	keepCount, err := parseKeepCount(s.keepCount)
+	if err != nil {
+		s.err = err.Error()
+		s.invalidate()
+		return
+	}
 	if !s.beginBusy(&s.pending, "处理中不能同时执行其他操作") {
 		return
 	}
@@ -353,9 +372,9 @@ func (s *addFeedView) startAdd() {
 	go func() {
 		var err error
 		if s.edit != nil {
-			_, err = s.callbacks.Save(context.Background(), s.edit.ID, title, feedURL, s.remoteResources)
+			_, err = s.callbacks.Save(context.Background(), s.edit.ID, title, feedURL, s.remoteResources, keepCount)
 		} else {
-			_, err = s.callbacks.Add(context.Background(), title, feedURL, s.remoteResources)
+			_, err = s.callbacks.Add(context.Background(), title, feedURL, s.remoteResources, keepCount)
 		}
 		window := s.window
 		s.complete(func() {
@@ -443,7 +462,22 @@ func (s *addFeedView) reset() {
 	s.testedURL = ""
 	s.titleTouched = false
 	s.preview = nil
+	s.keepCount = ""
 	s.clearError()
+}
+
+// parseKeepCount converts the per-feed posts-kept draft: empty follows the
+// global preference, anything else must be a positive integer.
+func parseKeepCount(draft string) (int, error) {
+	draft = strings.TrimSpace(draft)
+	if draft == "" {
+		return 0, nil
+	}
+	keepCount, err := strconv.Atoi(draft)
+	if err != nil || keepCount <= 0 {
+		return 0, errors.New("文章保留数需为正整数，或留空跟随全局设置")
+	}
+	return keepCount, nil
 }
 
 // clearError removes the previous operation result.

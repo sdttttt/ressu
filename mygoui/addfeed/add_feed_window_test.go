@@ -19,8 +19,8 @@ func TestAddFeedViewRendersDraft(t *testing.T) {
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Add:        func(context.Context, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs:     prefs,
@@ -52,6 +52,9 @@ func TestAddFeedViewRendersDraft(t *testing.T) {
 			t.Errorf("Add-feed window is missing %q", want)
 		}
 	}
+	if tester.HasText("文章保留数") {
+		t.Error("Add-feed window should not render the per-feed keep count")
+	}
 }
 
 func TestAddFeedViewRendersError(t *testing.T) {
@@ -62,8 +65,8 @@ func TestAddFeedViewRendersError(t *testing.T) {
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Add:        func(context.Context, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs: prefs,
@@ -85,8 +88,8 @@ func TestAddFeedViewRendersEditMode(t *testing.T) {
 			Test: func(context.Context, string, int64) (Preview, error) {
 				return Preview{}, nil
 			},
-			Add:        func(context.Context, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
-			Save:       func(context.Context, int64, string, string, string) (app.Feed, error) { return app.Feed{}, nil },
+			Add:        func(context.Context, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
+			Save:       func(context.Context, int64, string, string, string, int) (app.Feed, error) { return app.Feed{}, nil },
 			ImportOPML: func(*mygo.Window) (Summary, error) { return Summary{}, nil },
 		},
 		prefs:           prefs,
@@ -97,7 +100,7 @@ func TestAddFeedViewRendersEditMode(t *testing.T) {
 	}
 
 	tester := ui.NewTester(view.draw, addFeedWidth, addFeedHeight)
-	for _, want := range []string{"订阅地址", "订阅名称", "保存修改", "测试地址", "远程资源访问方式"} {
+	for _, want := range []string{"订阅地址", "订阅名称", "保存修改", "测试地址", "远程资源访问方式", "文章保留数"} {
 		if !tester.HasText(want) {
 			t.Errorf("Edit-feed window is missing %q", want)
 		}

@@ -69,7 +69,7 @@ func TestAddRefreshAndRead(t *testing.T) {
 	posts := NewPosts(st)
 
 	ctx := context.Background()
-	feed, err := feeds.Add(ctx, "", server.URL, "")
+	feed, err := feeds.Add(ctx, "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,14 +184,14 @@ func TestAddRejectsWhatIsNotAFeed(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(context.Background(), "", server.URL, ""); err == nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL, "", 0); err == nil {
 		t.Fatal("a page that is not a feed should be refused")
 	}
 	if len(st.Feeds()) != 0 {
 		t.Error("nothing should be stored")
 	}
 
-	if _, err := feeds.Add(context.Background(), "", "not a url", ""); err == nil {
+	if _, err := feeds.Add(context.Background(), "", "not a url", "", 0); err == nil {
 		t.Fatal("an invalid address should be refused")
 	}
 }
@@ -205,10 +205,10 @@ func TestAddRejectsDuplicates(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(context.Background(), "", server.URL, ""); err != nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL, "", 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := feeds.Add(context.Background(), "", server.URL, ""); err == nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL, "", 0); err == nil {
 		t.Fatal("the same URL should not be added twice")
 	}
 }
@@ -234,7 +234,7 @@ func TestFeedAndAddTitle(t *testing.T) {
 		t.Fatal("testing should not subscribe to the feed")
 	}
 
-	feed, err := feeds.Add(ctx, "自定义名称", server.URL, "")
+	feed, err := feeds.Add(ctx, "自定义名称", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +252,7 @@ func TestFeedRejectsDuplicates(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	if _, err := feeds.Add(context.Background(), "", server.URL, ""); err != nil {
+	if _, err := feeds.Add(context.Background(), "", server.URL, "", 0); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := feeds.Test(context.Background(), server.URL, 0); err == nil {
@@ -271,7 +271,7 @@ func TestAddAndUpdateStoreRemoteResourcesMode(t *testing.T) {
 	ctx := context.Background()
 
 	// An empty mode inherits the current global preference.
-	feed, err := feeds.Add(ctx, "", server.URL, "")
+	feed, err := feeds.Add(ctx, "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +284,7 @@ func TestAddAndUpdateStoreRemoteResourcesMode(t *testing.T) {
 	if err := st.SetPrefs(prefs); err != nil {
 		t.Fatal(err)
 	}
-	feed, err = feeds.Add(ctx, "", server.URL+"/proxied", store.ResourceAccessWebview)
+	feed, err = feeds.Add(ctx, "", server.URL+"/proxied", store.ResourceAccessWebview, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,19 +292,65 @@ func TestAddAndUpdateStoreRemoteResourcesMode(t *testing.T) {
 		t.Errorf("explicit mode = %q; want %q", feed.RemoteResources, store.ResourceAccessWebview)
 	}
 
-	updated, err := feeds.Update(ctx, feed.ID, "", feed.URL, store.ResourceAccessGoProxy)
+	updated, err := feeds.Update(ctx, feed.ID, "", feed.URL, store.ResourceAccessGoProxy, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if updated.RemoteResources != store.ResourceAccessGoProxy {
 		t.Errorf("updated mode = %q; want %q", updated.RemoteResources, store.ResourceAccessGoProxy)
 	}
-	kept, err := feeds.Update(ctx, feed.ID, "", feed.URL, "")
+	kept, err := feeds.Update(ctx, feed.ID, "", feed.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if kept.RemoteResources != store.ResourceAccessGoProxy {
 		t.Errorf("empty update mode = %q; want %q", kept.RemoteResources, store.ResourceAccessGoProxy)
+	}
+}
+
+func TestAddAndUpdateStoreKeepCount(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, feedXML(itemXML("a", "第一篇")))
+	}))
+	defer server.Close()
+
+	st := openStore(t)
+	feeds := NewFeeds(st)
+	ctx := context.Background()
+
+	// A non-positive count follows the global preference.
+	feed, err := feeds.Add(ctx, "", server.URL, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.KeepCount != 0 {
+		t.Errorf("default keep count = %d; want 0", feed.KeepCount)
+	}
+
+	// An explicit count is stored, clamped to the allowed range.
+	feed, err = feeds.Add(ctx, "", server.URL+"/limited", "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.KeepCount != store.MinPostsPerFeed {
+		t.Errorf("clamped keep count = %d; want %d", feed.KeepCount, store.MinPostsPerFeed)
+	}
+
+	updated, err := feeds.Update(ctx, feed.ID, "", feed.URL, "", 800)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.KeepCount != 800 {
+		t.Errorf("updated keep count = %d; want 800", updated.KeepCount)
+	}
+
+	// A non-positive update returns the feed to the global preference.
+	cleared, err := feeds.Update(ctx, feed.ID, "", feed.URL, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleared.KeepCount != 0 {
+		t.Errorf("cleared keep count = %d; want 0", cleared.KeepCount)
 	}
 }
 
@@ -317,7 +363,7 @@ func TestTestExcludesEditedFeed(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	feed, err := feeds.Add(context.Background(), "", server.URL, "")
+	feed, err := feeds.Add(context.Background(), "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,12 +385,12 @@ func TestUpdateChangesTitleAndAddress(t *testing.T) {
 	feeds := NewFeeds(st)
 	ctx := context.Background()
 
-	feed, err := feeds.Add(ctx, "", server.URL, "")
+	feed, err := feeds.Add(ctx, "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	updated, err := feeds.Update(ctx, feed.ID, "自定义名称", server.URL, "")
+	updated, err := feeds.Update(ctx, feed.ID, "自定义名称", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +404,7 @@ func TestUpdateChangesTitleAndAddress(t *testing.T) {
 	}))
 	defer moved.Close()
 
-	updated, err = feeds.Update(ctx, feed.ID, "自定义名称", moved.URL, "")
+	updated, err = feeds.Update(ctx, feed.ID, "自定义名称", moved.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +421,7 @@ func TestUpdateChangesTitleAndAddress(t *testing.T) {
 
 	// Clearing the title drops the custom flag; the next refresh restores the
 	// channel title.
-	if updated, err = feeds.Update(ctx, feed.ID, "", moved.URL, ""); err != nil {
+	if updated, err = feeds.Update(ctx, feed.ID, "", moved.URL, "", 0); err != nil {
 		t.Fatal(err)
 	}
 	if updated.CustomTitle || updated.Title != "自定义名称" {
@@ -403,7 +449,7 @@ func TestUpdateRejectsDuplicates(t *testing.T) {
 	feeds := NewFeeds(st)
 	ctx := context.Background()
 
-	first, err := feeds.Add(ctx, "", server.URL, "")
+	first, err := feeds.Add(ctx, "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,15 +457,15 @@ func TestUpdateRejectsDuplicates(t *testing.T) {
 		_, _ = io.WriteString(w, feedXML(itemXML("b", "另一篇")))
 	}))
 	defer secondServer.Close()
-	second, err := feeds.Add(ctx, "", secondServer.URL, "")
+	second, err := feeds.Add(ctx, "", secondServer.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := feeds.Update(ctx, second.ID, "", server.URL, ""); err == nil {
+	if _, err := feeds.Update(ctx, second.ID, "", server.URL, "", 0); err == nil {
 		t.Fatal("moving onto a stored address should be refused")
 	}
-	if _, err := feeds.Update(ctx, first.ID, "", first.URL, ""); err != nil {
+	if _, err := feeds.Update(ctx, first.ID, "", first.URL, "", 0); err != nil {
 		t.Fatal("keeping the same address should pass:", err)
 	}
 }
@@ -440,7 +486,7 @@ func TestRefreshKeepsCustomTitle(t *testing.T) {
 	feeds := NewFeeds(st)
 	ctx := context.Background()
 
-	custom, err := feeds.Add(ctx, "我的名称", server.URL, "")
+	custom, err := feeds.Add(ctx, "我的名称", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -516,7 +562,7 @@ func TestRefreshFailsWithoutLosingTheFeed(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 
-	feed, err := feeds.Add(context.Background(), "", server.URL, "")
+	feed, err := feeds.Add(context.Background(), "", server.URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,11 +607,11 @@ func TestRefreshStaleSkipsRecentlyFetchedFeeds(t *testing.T) {
 	st := openStore(t)
 	feeds := NewFeeds(st)
 	ctx := context.Background()
-	first, err := feeds.Add(ctx, "", servers[0].URL, "")
+	first, err := feeds.Add(ctx, "", servers[0].URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := feeds.Add(ctx, "", servers[1].URL, "")
+	second, err := feeds.Add(ctx, "", servers[1].URL, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}

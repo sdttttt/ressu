@@ -76,8 +76,8 @@ type SettingsCallbacks struct {
 type AddFeedCallbacks struct {
 	Appearance func() store.Prefs
 	Test       func(ctx context.Context, feedURL string, excludeID int64) (service.FeedPreview, error)
-	Add        func(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error)
-	Save       func(ctx context.Context, feedID int64, title, feedURL, remoteResources string) (store.Feed, error)
+	Add        func(ctx context.Context, title, feedURL, remoteResources string, keepCount int) (store.Feed, error)
+	Save       func(ctx context.Context, feedID int64, title, feedURL, remoteResources string, keepCount int) (store.Feed, error)
 	ImportOPML func(ctx context.Context, parent WindowHandle) (service.ImportSummary, error)
 }
 
@@ -160,13 +160,14 @@ func (a *App) TestFeed(ctx context.Context, feedURL string, excludeID int64) (se
 }
 
 // AddFeed subscribes to a feed.
-func (a *App) AddFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
-	return a.feeds.Add(ctx, title, feedURL, remoteResources)
+func (a *App) AddFeed(ctx context.Context, title, feedURL, remoteResources string, keepCount int) (store.Feed, error) {
+	return a.feeds.Add(ctx, title, feedURL, remoteResources, keepCount)
 }
 
-// UpdateFeed changes the address or title of a subscription.
-func (a *App) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
-	return a.feeds.Update(ctx, id, title, feedURL, remoteResources)
+// UpdateFeed changes the address, title, or per-feed settings of a
+// subscription.
+func (a *App) UpdateFeed(ctx context.Context, id int64, title, feedURL, remoteResources string, keepCount int) (store.Feed, error) {
+	return a.feeds.Update(ctx, id, title, feedURL, remoteResources, keepCount)
 }
 
 // MoveFeed places the subscription id at index to in the subscription list.
@@ -628,8 +629,8 @@ func (a *App) SelectPost(post store.PostSummary, direction int) {
 }
 
 // addAndSelectFeed subscribes to a feed and broadcasts its selection.
-func (a *App) addAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
-	feed, err := a.AddFeed(ctx, title, feedURL, remoteResources)
+func (a *App) addAndSelectFeed(ctx context.Context, title, feedURL, remoteResources string, keepCount int) (store.Feed, error) {
+	feed, err := a.AddFeed(ctx, title, feedURL, remoteResources, keepCount)
 	if err != nil {
 		return store.Feed{}, err
 	}

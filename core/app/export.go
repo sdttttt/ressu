@@ -58,6 +58,9 @@ const (
 
 	ResourceAccessWebview = store.ResourceAccessWebview
 	ResourceAccessGoProxy = store.ResourceAccessGoProxy
+
+	MinPostsPerFeed = store.MinPostsPerFeed
+	MaxPostsPerFeed = store.MaxPostsPerFeed
 )
 
 var (

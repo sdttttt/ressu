@@ -16,6 +16,7 @@ type Feed struct {
 	Title           string     `json:"title"`
 	CustomTitle     bool       `json:"customTitle"`
 	RemoteResources string     `json:"remoteResources"` // empty follows the global preference
+	KeepCount       int        `json:"keepCount"`       // posts kept for this feed; 0 follows the global preference
 	SiteURL         string     `json:"siteUrl"`
 	Description     string     `json:"description"`
 	IconURL         string     `json:"iconUrl"`
@@ -210,6 +211,16 @@ func ResolveFontFamily(value string) string {
 const DefaultPostsPerFeed = 500
 
 const (
+	// MinPostsPerFeed bounds a posts-kept limit from below, whether global or
+	// per feed.
+	MinPostsPerFeed = 50
+
+	// MaxPostsPerFeed bounds a posts-kept limit from above, whether global or
+	// per feed.
+	MaxPostsPerFeed = 2000
+)
+
+const (
 	// MinImageCacheLimit bounds the article image cache from below, in MB.
 	MinImageCacheLimit = 32
 
@@ -283,7 +294,7 @@ func (p *Prefs) Normalize() {
 	if p.OpenLinks != OpenLinksWindow {
 		p.OpenLinks = OpenLinksBrowser
 	}
-	if p.PostsPerFeed < 50 || p.PostsPerFeed > 2000 {
+	if p.PostsPerFeed < MinPostsPerFeed || p.PostsPerFeed > MaxPostsPerFeed {
 		p.PostsPerFeed = DefaultPostsPerFeed
 	}
 	if p.ImageCacheLimit < MinImageCacheLimit || p.ImageCacheLimit > MaxImageCacheLimit {

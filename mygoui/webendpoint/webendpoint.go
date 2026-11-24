@@ -47,9 +47,10 @@ func (w *WebEndpoint) Test(ctx context.Context, feedURL string) (app.FeedPreview
 	return w.actions.TestFeed(ctx, feedURL, 0)
 }
 
-// Add subscribes to a feed with the global default remote-resource mode.
+// Add subscribes to a feed with the global default remote-resource mode and
+// the global posts-kept limit.
 func (w *WebEndpoint) Add(ctx context.Context, title, feedURL string) (app.Feed, error) {
-	return w.actions.AddFeed(ctx, title, feedURL, "")
+	return w.actions.AddFeed(ctx, title, feedURL, "", 0)
 }
 
 // OpenAddFeed opens the native subscription surface.

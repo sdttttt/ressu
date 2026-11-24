@@ -752,7 +752,7 @@ func (s *Store) MergePosts(feedID int64, incoming []Post) (int, error) {
 		}
 
 		slices.SortStableFunc(posts, byPublishedDesc)
-		posts = s.trimPosts(posts)
+		posts = s.trimPosts(feedID, posts)
 		if err := replacePosts(tx, feedID, posts); err != nil {
 			return err
 		}
@@ -820,9 +820,13 @@ func deletePosts(tx *bolt.Tx, feedID int64) error {
 }
 
 // trimPosts cuts posts beyond the per-feed limit, keeping the newest ones.
-// Starred posts are exempt from the limit and always kept.
-func (s *Store) trimPosts(posts []Post) []Post {
+// The limit is the feed's own KeepCount when set, otherwise the global
+// preference. Starred posts are exempt from the limit and always kept.
+func (s *Store) trimPosts(feedID int64, posts []Post) []Post {
 	limit := s.prefs.PostsPerFeed
+	if i := s.feedIndex(feedID); i >= 0 && s.feeds[i].KeepCount > 0 {
+		limit = s.feeds[i].KeepCount
+	}
 	if limit <= 0 || len(posts) <= limit {
 		return posts
 	}

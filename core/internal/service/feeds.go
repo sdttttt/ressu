@@ -222,8 +222,9 @@ func (f *Feeds) duplicateFeed(feedURL string, excludeID int64) bool {
 
 // Add subscribes to a feed: it fetches the address once, stores the channel
 // and its posts. A non-empty title replaces the feed's channel title. An empty
-// remoteResources stores the current global remote-resource mode.
-func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string) (store.Feed, error) {
+// remoteResources stores the current global remote-resource mode. A
+// non-positive keepCount stores 0, following the global posts-kept limit.
+func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string, keepCount int) (store.Feed, error) {
 	feedURL = strings.TrimSpace(feedURL)
 	if err := rss.ValidateURL(feedURL); err != nil {
 		return store.Feed{}, err
@@ -250,6 +251,7 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string)
 		Title:           firstNonEmpty(title, titleOf(result.Feed, feedURL)),
 		CustomTitle:     title != "",
 		RemoteResources: remoteResources,
+		KeepCount:       normalizeKeepCount(keepCount),
 		SiteURL:         result.Feed.Meta.SiteURL,
 		Description:     result.Feed.Meta.Description,
 		IconURL:         result.Feed.Meta.IconURL,
@@ -279,8 +281,9 @@ func (f *Feeds) Add(ctx context.Context, title, feedURL, remoteResources string)
 // Update changes the address or title of a subscription. A changed address is
 // fetched once and its posts are merged in; a cleared title falls back to the
 // channel title on the next refresh. An empty remoteResources keeps the stored
-// mode.
-func (f *Feeds) Update(ctx context.Context, id int64, title, feedURL, remoteResources string) (store.Feed, error) {
+// mode. keepCount replaces the per-feed posts-kept limit: non-positive stores
+// 0, following the global preference again.
+func (f *Feeds) Update(ctx context.Context, id int64, title, feedURL, remoteResources string, keepCount int) (store.Feed, error) {
 	feedURL = strings.TrimSpace(feedURL)
 	if err := rss.ValidateURL(feedURL); err != nil {
 		return store.Feed{}, err
@@ -330,6 +333,7 @@ func (f *Feeds) Update(ctx context.Context, id int64, title, feedURL, remoteReso
 	if remoteResources != "" {
 		feed.RemoteResources = remoteResources
 	}
+	feed.KeepCount = normalizeKeepCount(keepCount)
 	if err := f.store.UpdateFeed(feed); err != nil {
 		slog.Error("feed update save failed",
 			"operation", "feeds.update", "feedId", id, "error", err)
@@ -589,7 +593,7 @@ func (f *Feeds) BuildOPML() ([]byte, error) {
 func (f *Feeds) importOPMLURLs(ctx context.Context, urls []string) (ImportSummary, error) {
 	var summary ImportSummary
 	for _, feedURL := range urls {
-		if _, err := f.Add(ctx, "", feedURL, ""); err != nil {
+		if _, err := f.Add(ctx, "", feedURL, "", 0); err != nil {
 			if err == store.ErrDuplicate {
 				summary.Skipped++
 			} else {
@@ -647,6 +651,16 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// normalizeKeepCount maps a per-feed posts-kept limit to its stored value:
+// non-positive follows the global preference, positive values are clamped to
+// the same range the global preference allows.
+func normalizeKeepCount(keepCount int) int {
+	if keepCount <= 0 {
+		return 0
+	}
+	return min(max(keepCount, store.MinPostsPerFeed), store.MaxPostsPerFeed)
 }
 
 // feedHost returns only the host of an address, keeping post and query data

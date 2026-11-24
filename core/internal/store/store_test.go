@@ -446,6 +446,56 @@ func TestMergePostsTrimsToLimit(t *testing.T) {
 	}
 }
 
+func TestMergePostsTrimsToFeedKeepCount(t *testing.T) {
+	s := openTemp(t)
+	prefs := s.Prefs()
+	prefs.PostsPerFeed = 50
+	if err := s.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+
+	limited, err := s.AddFeed(Feed{URL: "https://a.example/feed", KeepCount: 60})
+	if err != nil {
+		t.Fatal(err)
+	}
+	following, err := s.AddFeed(Feed{URL: "https://b.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	posts := make([]Post, 0, 80)
+	for i := range 80 {
+		posts = append(posts, Post{
+			GUID:        fmt.Sprintf("post-%d", i),
+			PublishedAt: base.Add(time.Duration(i) * time.Minute),
+		})
+	}
+	for _, feed := range []Feed{limited, following} {
+		if _, err := s.MergePosts(feed.ID, posts); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	kept, err := s.Posts(limited.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 60 {
+		t.Errorf("feed keep count kept = %d", len(kept))
+	}
+	if kept[0].GUID != "post-79" {
+		t.Errorf("newest kept = %q", kept[0].GUID)
+	}
+
+	kept, err = s.Posts(following.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 50 {
+		t.Errorf("global limit kept = %d", len(kept))
+	}
+}
+
 func TestMergePostsTrimsKeepsStarred(t *testing.T) {
 	s := openTemp(t)
 	prefs := s.Prefs()
