@@ -11,6 +11,19 @@
     "dev:web": "vite --config webview/vite.config.ts",
     "build:web": "vite build --config webview/vite.config.ts",
     "typecheck": "tsc -p webview/tsconfig.json --noEmit",
-    "check": "bun run typecheck"
+    "test": "vitest run --config webview/vitest.config.ts",
+    "check": "bun run typecheck && bun run test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "mygo-cli": "0.10.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-solid": "^2.11.17",
+    "vitest": "^5.1.1"
+  },
+  "dependencies": {
+    "mygo-runtime": "0.10.0",
+    "solid-js": "^1.9.0"
   }
 }

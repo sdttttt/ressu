@@ -111,7 +111,10 @@ body {
   overflow-wrap: anywhere;
 }
 
-.post-body > * + * {
+/* Sanitized content lives in a .post-content wrapper; both levels keep
+ * the same rhythm. */
+.post-body > * + *,
+.post-content > * + * {
   margin-top: 0.9em;
 }
 

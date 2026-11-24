@@ -154,14 +154,14 @@ mygo.config.ts           MyGO CLI 配置（defineConfig 类型化；版本号取
   `mygoui/webendpoint` 对应绑定对象加只做参数/调用方窗口适配的导出方法 → 页面或原生
   组件调用。细节见 `core/app/README.md`。
 - 新增事件：`core/internal/event/event.go` 加 EID 和字段，补 `Validate` 与 Hub 发布方
-  法，`bun run generate` 更新绑定，在 `webview/src/reader/main.ts` dispatcher 加分支。
+  法，`bun run generate` 更新绑定，在 `webview/src/reader/store.ts` dispatcher 加分支。
 - 新增偏好：`store.Prefs`、`DefaultPrefs`、`Prefs.Normalize`（在
   `core/internal/store`）→ `mygoui/settings` 加原生控件 → `mygo generate` 更新绑定 →
-  若影响阅读更新 `webview/src/reader/main.ts`。
+  若影响阅读更新 `webview/src/reader/store.ts`。
 - 新增快捷键：先确认属于原生列表、主窗口还是正文页，分别接在
-  `mygoui/postlist`、`mygoui/app_view.go`、`webview/src/reader/main.ts`。WebView 焦点下转交
+  `mygoui/postlist`、`mygoui/app_view.go`、`webview/src/reader/app.tsx`。WebView 焦点下转交
   原生行为的按键必须调用 `Status` 绑定并 `preventDefault()`。
-- 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、`webview/src/reader/main.ts`、原生
+- 新增主题：同步 Go 常量/校验、原生主题、CSS 变量、`webview/src/reader/store.ts`、原生
   设置窗口和测试。
 
 ## 测试
@@ -172,14 +172,15 @@ mygo.config.ts           MyGO CLI 配置（defineConfig 类型化；版本号取
   `event` 覆盖校验、revision 顺序、并发与快照；`core/app` 覆盖门面方法与 UI 副作用；
   `mygoui` 子包用 `ui.NewTester` 渲染各原生组件并断言行为（侧栏含选中胶囊滑动测试）。
 - 前端：`bun run typecheck`（TS 7 原生编译器，覆盖 `webview/src` 与 vite 配置）；
-  vitest 组件/逻辑测试待阶段 4 引入。
+  `bun run test` 跑 vitest（纯函数用例：`links`/`enclosures`/`offsets`）；`bun run check`
+  两者一起。
 - 没有 E2E、浏览器自动化或覆盖率阈值。提交前至少运行与改动相关的测试；跨层改动跑
-  三个 module 的 `go test`/`go vet`、`bun run typecheck` 和 `bun run build`。
+  三个 module 的 `go test`/`go vet`、`bun run check` 和 `bun run build`。
 
 ## CI 与发布
 
 `.github/workflows/ci.yml`：`test`（Ubuntu + Windows，setup-bun + `bun install`，跑
-Go 测试、`bun run typecheck`、验证构建）→
+Go 测试、`bun run check`、验证构建）→
 `release-version`（校验 tag 为 `vYY.M.N` 且与 `package.json` 版本一致）→ `package`（三平台各自
 setup-bun + `bun install` 后 `mygo build -platform`，前端由 `buildCommand` 自动构建）→
 `release`（汇总产物、生成

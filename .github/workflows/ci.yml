@@ -44,6 +44,9 @@ jobs:
       - name: Typecheck webview
         run: bun run typecheck
 
+      - name: Frontend tests
+        run: bun run test
+
       - name: Verify application build
         run: bun run build
 
