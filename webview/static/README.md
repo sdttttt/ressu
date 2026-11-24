@@ -30,6 +30,11 @@
   平滑滚动同步降级。
 - 文章请求用递增 requestId 防止快速切换时旧响应覆盖新文章；加载失败时恢复被盖住的
   旧层。
+- **阅读进度条**：`#progress` 吸顶细条（`muted-foreground` 混色灰，随三套主题自适应）
+  跟踪顶层文章层的滚动进度，可见更新经 CSS transition 缓动逼近，换篇重现时瞬时到位，
+  减少动效时全程无动画；scroll 事件不冒泡，用 `#article` 上一处 capture 监听覆盖所有层；
+  换篇、正文加载、`post.fulltext` 替换、字体/行高变化和窗口 resize 后重算；一屏读完的
+  短文章隐藏。
 - 打开正文由 `Posts.Get` 完成；已读标记在 Go 侧按偏好自动处理（见 core/README），页面
   不再消费 `post.updated`、`m` 键调 `Posts.ToggleRead` 服务端翻转。
 - `post.fulltext` 的正文已在 Go 侧清洗（与 `Post.Content` 同一管线），页面按 feedId/guid

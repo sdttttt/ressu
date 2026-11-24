@@ -23,6 +23,7 @@
   const elements = {
     article: document.getElementById("article"),
     empty: document.getElementById("empty"),
+    progress: document.getElementById("progress"),
   };
 
   // Article swap choreography: 300ms slides, leftover layers dropped after
@@ -108,6 +109,10 @@
     } else {
       style.removeProperty("--reader-line-height");
     }
+
+    // Font and line-height changes resize the content under the same
+    // scroll offset.
+    updateProgress();
   };
 
   const applyPrefs = (prefs) => {
@@ -158,6 +163,36 @@
   };
 
   const topLayer = () => stack.layers[stack.layers.length - 1] || null;
+
+  /**
+   * Reading progress: the bar tracks the top layer's scroll. Scroll events
+   * do not bubble, so one capture-phase listener on #article covers every
+   * layer. An article that fits the pane has no progress to show; the bar
+   * hides rather than sitting full. Visible updates ease toward the new
+   * ratio (the CSS transition); a bar reappearing after being hidden jumps
+   * to its position, and the reduce-motion preference pins every update.
+   */
+  const updateProgress = () => {
+    const layer = topLayer();
+    const box = layer && layer.element;
+    const total = box ? box.scrollHeight - box.clientHeight : 0;
+    if (total <= 1) {
+      elements.progress.hidden = true;
+      return;
+    }
+    const ratio = Math.min(Math.max(box.scrollTop / total, 0), 1);
+    const instant = elements.progress.hidden || reduceMotion();
+    elements.progress.hidden = false;
+    if (instant) {
+      elements.progress.style.transition = "none";
+    }
+    elements.progress.style.transform = `scaleX(${ratio})`;
+    if (instant) {
+      requestAnimationFrame(() => {
+        elements.progress.style.transition = "";
+      });
+    }
+  };
 
   /** Stop any in-flight slide and clear the pinned first frame. */
   const stopLayerAnimation = (layer) => {
@@ -256,6 +291,7 @@
     elements.article.append(element);
     stack.layers.push(layer);
     syncPane();
+    updateProgress();
     setLayerKind(layer, kind);
     return layer;
   };
@@ -269,6 +305,7 @@
     }
     stack.layers = [];
     syncPane();
+    updateProgress();
   };
 
   const externalHref = (href) => {
@@ -421,6 +458,7 @@
       }
       renderAttachments(layer.body, post.enclosures);
       state.post = post;
+      updateProgress();
     } catch (error) {
       if (requestId !== state.request) return;
       restoreCovered(layer);
@@ -442,6 +480,7 @@
       stopLayerAnimation(previous);
     }
     syncPane();
+    updateProgress();
   };
 
   const scrollOrNext = () => {
@@ -566,6 +605,7 @@
         if (state.post && samePost(state.post, fullText)) {
           state.post = { ...state.post, content: fullText.content };
         }
+        updateProgress();
         break;
       }
     }
@@ -591,10 +631,13 @@
     mediaQuery.addEventListener("change", onSystemThemeChange);
     window.addEventListener("keydown", handleKey);
     elements.article.addEventListener("click", handleBodyClick);
+    elements.article.addEventListener("scroll", updateProgress, true);
+    window.addEventListener("resize", updateProgress);
     window.addEventListener("unload", () => {
       unsubscribe();
       stopThemeWatch();
       window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("resize", updateProgress);
     });
 
     try {

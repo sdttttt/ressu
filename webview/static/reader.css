@@ -41,6 +41,26 @@ body,
   height: 100%;
 }
 
+#reader {
+  position: relative;
+}
+
+/* Reading progress: a thin theme-following gray fill pinned to the top of
+   the pane, above the article layers (which use z-index 10 while swapping).
+   Visible updates ease toward the new ratio; the script pins transitions
+   off for instant jumps (reappearing bar) and the reduce-motion preference. */
+#progress {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 20;
+  background: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 160ms ease-out;
+  pointer-events: none;
+}
+
 html {
   font-size: calc(1rem * var(--mygo-text-scale, 1) * var(--app-text-scale, 1));
 }
