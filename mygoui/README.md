@@ -51,9 +51,9 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 | -------------------------- | ---------------------------- |
 | `j` `k` `n` `p` `Enter` `s` | 文章列表（postlist）        |
 | `h` `l` `?`（Shift+/）     | 主窗口（app_view）          |
-| `Space` `m` `v`            | 阅读页正文（reader.js）     |
+| `Space` `m` `v`            | 阅读页正文（src/reader/main.ts） |
 
-文本输入获得焦点时全部跳过。WebView 持有焦点时，`reader.js` 只拦截 `h`、`l` 和 `?`，
+文本输入获得焦点时全部跳过。WebView 持有焦点时，阅读页只拦截 `h`、`l` 和 `?`，
 经 `Status` 绑定转交原生 GUI 并 `preventDefault()`，避免物理按键丢失。
 
 ## 阅读页后台挂起（page_lifecycle.go）
