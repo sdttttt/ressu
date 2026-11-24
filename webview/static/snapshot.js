@@ -182,6 +182,37 @@
     elements.error.hidden = false;
   };
 
+  // Preset article font family keywords resolve to the same stacks as the
+  // Go side; any other value is a custom CSS font-family list used as-is.
+  const articleFontFamilyStacks = {
+    serif: 'Georgia, "Times New Roman", "Songti SC", "SimSun", serif',
+    sans: 'system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+    mono: 'ui-monospace, "Cascadia Mono", Consolas, "Sarasa Mono SC", monospace',
+  };
+
+  // The snapshot card follows the reading preferences so the captured
+  // image reads like the article view.
+  const applyReadingPrefs = async () => {
+    const prefs = await runtime.call("Settings.Get");
+    const style = document.documentElement.style;
+    const family = prefs.articleFontFamily || "";
+    if (!family || family === "system") {
+      style.removeProperty("--reader-font-family");
+    } else if (articleFontFamilyStacks[family]) {
+      style.setProperty("--reader-font-family", articleFontFamilyStacks[family]);
+    } else {
+      style.setProperty("--reader-font-family", family);
+    }
+    const size = Number(prefs.articleFontSize) || 0;
+    if (size) {
+      style.setProperty("--reader-font-size", `${size}px`);
+    }
+    const lineHeight = Number(prefs.articleLineHeight) || 0;
+    if (lineHeight) {
+      style.setProperty("--reader-line-height", String(lineHeight));
+    }
+  };
+
   const run = async () => {
     try {
       const target = await runtime.call("Snapshot.Selected");
@@ -189,6 +220,7 @@
         throw new Error("没有选中的文章");
       }
       const post = await runtime.call("Posts.Get", target.feedId, target.guid);
+      await applyReadingPrefs();
       const card = buildCard(post, target.feedTitle || "");
       elements.stage.append(card);
       post.card = card;

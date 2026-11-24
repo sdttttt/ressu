@@ -4,6 +4,7 @@ package settings
 import (
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -51,6 +52,8 @@ func Open(parent *mygo.Window, callbacks Callbacks) {
 	settingsWindow.Unlock()
 
 	view := &settingsView{callbacks: callbacks, prefs: callbacks.Load()}
+	view.uiFontDraft = fontFamilyLabel(view.prefs.UIFontFamily)
+	view.articleFontDraft = fontFamilyLabel(view.prefs.ArticleFontFamily)
 	options := mygo.WindowOptions{
 		Title:           "设置",
 		Width:           settingsWidth,
@@ -87,13 +90,16 @@ type settingsView struct {
 	notice    string
 	noticeAt  time.Time
 
+	uiFontDraft      string
+	articleFontDraft string
+
 	storage   app.StorageInfo
 	storageAt time.Time
 }
 
 // draw renders one frame of the settings form.
 func (s *settingsView) draw(c *ui.Context) {
-	theme := guitheme.New(c, s.prefs.Theme, s.prefs.FontSize)
+	theme := guitheme.New(c, guitheme.Appearance{Theme: s.prefs.Theme, FontSize: s.prefs.FontSize, FontFamily: s.prefs.UIFontFamily})
 	changed := false
 	s.refreshStorage(c)
 
@@ -128,6 +134,9 @@ func (s *settingsView) draw(c *ui.Context) {
 							changed = true
 						}
 					})
+					if s.fontFamilyField(c, theme, "界面字体", &s.uiFontDraft, &s.prefs.UIFontFamily) {
+						changed = true
+					}
 					ui.Field(c, "减少动效", func() {
 						if ui.Switch(c, &s.prefs.ReduceMotion).Changed() {
 							changed = true
@@ -136,6 +145,28 @@ func (s *settingsView) draw(c *ui.Context) {
 				})
 
 				ui.Fieldset(c, "阅读", func() {
+					if s.fontFamilyField(c, theme, "文章字体", &s.articleFontDraft, &s.prefs.ArticleFontFamily) {
+						changed = true
+					}
+					ui.Field(c, "文章字号（像素）", func() {
+						value := float64(s.prefs.ArticleFontSize)
+						if ui.NumberInput(c, &value, 0, app.MaxArticleFontSize, 1).
+							Label("文章字号").Changed() {
+							size := int(math.Round(value))
+							if size == 0 || (size >= app.MinArticleFontSize && size <= app.MaxArticleFontSize) {
+								s.prefs.ArticleFontSize = size
+								changed = true
+							}
+						}
+					}).Description("0 表示跟随界面字号；自定义范围 12–28。")
+					ui.Field(c, "文章行高", func() {
+						value := s.prefs.ArticleLineHeight
+						if ui.NumberInput(c, &value, app.MinArticleLineHeight, app.MaxArticleLineHeight, 0.05).
+							Label("文章行高").Changed() {
+							s.prefs.ArticleLineHeight = math.Round(value*100) / 100
+							changed = true
+						}
+					}).Description("默认 1.78；范围 1.2–2.4。")
 					ui.Field(c, "文章排序依据", func() {
 						sortFields := []string{
 							app.PostSortPublished,
@@ -328,4 +359,86 @@ func indexOf(values []string, value string) int {
 		}
 	}
 	return 0
+}
+
+// fontFamilyOption is one preset font family of the settings comboboxes.
+type fontFamilyOption struct {
+	value string
+	label string
+}
+
+// fontFamilyOptions are the preset font families offered by the settings
+// comboboxes; any other text is kept as a custom CSS font-family list.
+var fontFamilyOptions = []fontFamilyOption{
+	{value: app.FontFamilySystem, label: "系统默认"},
+	{value: app.FontFamilySerif, label: "衬线"},
+	{value: app.FontFamilySans, label: "无衬线"},
+	{value: app.FontFamilyMono, label: "等宽"},
+}
+
+// fontFamilyLabel renders a stored font family value: preset keywords show
+// their option label and custom values show as typed.
+func fontFamilyLabel(value string) string {
+	for _, option := range fontFamilyOptions {
+		if option.value == value {
+			return option.label
+		}
+	}
+	return value
+}
+
+// fontFamilyValue maps a combobox label back to its preset keyword; custom
+// text is kept as the font-family list itself and empty input resets to the
+// system default.
+func fontFamilyValue(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return app.FontFamilySystem
+	}
+	for _, option := range fontFamilyOptions {
+		if option.label == text || option.value == text {
+			return option.value
+		}
+	}
+	return text
+}
+
+// fontFamilyField renders one font family preference as a combobox: preset
+// stacks are picked from the popup and a custom CSS font-family list can be
+// typed. The draft commits when an option is chosen or the input loses
+// focus, so typing does not save on every keystroke. It reports whether the
+// stored value changed.
+func (s *settingsView) fontFamilyField(c *ui.Context, theme *ui.Theme, label string, draft *string, current *string) bool {
+	changed := false
+	ui.Field(c, label, func() {
+		cb := ui.ComboboxBase(c, draft)
+		cb.Input.Placeholder("系统默认").Label(label).AutoComplete(ui.AutoCompleteList)
+		cb.Popup(func(panel ui.Element) {
+			panel.Padding(4).Background(theme.Surface).Border(1, theme.Border)
+			for _, option := range fontFamilyOptions {
+				item := cb.Item(option.value).Padding(6, 10)
+				if item.Highlighted() {
+					item.Background(theme.Accent).TextColor(theme.AccentText)
+				}
+				item.Children(func() { ui.Text(c, option.label) })
+			}
+		})
+		commit := false
+		if chosen, ok := cb.Chosen(); ok {
+			*draft = fontFamilyLabel(chosen)
+			commit = true
+		}
+		if !commit && !cb.Input.Focused() && *draft != fontFamilyLabel(*current) {
+			commit = true
+		}
+		if !commit {
+			return
+		}
+		if value := fontFamilyValue(*draft); value != *current {
+			*current = value
+			*draft = fontFamilyLabel(value)
+			changed = true
+		}
+	}).Description("选择预设字体，或输入字体名称（多个字体用英文逗号分隔）。")
+	return changed
 }

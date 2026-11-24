@@ -7,6 +7,8 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/sdttttt/ressu/core/app"
+
+	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
 
 func TestNotificationsNormalizeAndCap(t *testing.T) {
@@ -32,8 +34,8 @@ func TestNotificationsNormalizeAndCap(t *testing.T) {
 }
 
 func TestNotificationsDrawShowsToast(t *testing.T) {
-	notifications := NewNotifications(func() (string, string) {
-		return app.ThemeSepia, app.FontSizeLarge
+	notifications := NewNotifications(func() guitheme.Appearance {
+		return guitheme.Appearance{Theme: app.ThemeSepia, FontSize: app.FontSizeLarge}
 	})
 	notifications.Show(Notification{
 		Type:        "success",

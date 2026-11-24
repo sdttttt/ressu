@@ -25,7 +25,7 @@ func NewStatusBar(model *app.Model, onAbout func()) *StatusBar {
 // View builds one frame of the status bar.
 func (b *StatusBar) View(c *ui.Context) {
 	snapshot := b.model.Snapshot()
-	theme := guitheme.New(c, snapshot.Theme, snapshot.FontSize)
+	theme := guitheme.New(c, guitheme.Appearance{Theme: snapshot.Theme, FontSize: snapshot.FontSize, FontFamily: snapshot.UIFontFamily})
 	fontScale := guitheme.FontScale(snapshot.FontSize)
 	height := guitheme.StatusBarContentHeight * fontScale
 	spacing := 12 * fontScale

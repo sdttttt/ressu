@@ -40,13 +40,14 @@ func TestModelMirrorsStatusState(t *testing.T) {
 		t.Fatalf("unexpected current feed: %+v", snapshot.CurrentFeed)
 	}
 
-	model.SetAppearance(store.ThemeSepia, store.FontSizeLarge)
+	model.SetAppearance(store.ThemeSepia, store.FontSizeLarge, store.FontFamilySerif)
 	select {
 	case <-changed:
 	case <-time.After(time.Second):
 		t.Fatal("SetAppearance did not notify")
 	}
-	if snapshot := model.Snapshot(); snapshot.Theme != store.ThemeSepia || snapshot.FontSize != store.FontSizeLarge {
+	if snapshot := model.Snapshot(); snapshot.Theme != store.ThemeSepia || snapshot.FontSize != store.FontSizeLarge ||
+		snapshot.UIFontFamily != store.FontFamilySerif {
 		t.Fatalf("appearance was not mirrored: %+v", snapshot)
 	}
 

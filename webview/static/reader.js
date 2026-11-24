@@ -14,6 +14,9 @@
       theme: "system",
       fontSize: "medium",
       reduceMotion: false,
+      articleFontFamily: "system",
+      articleFontSize: 0,
+      articleLineHeight: 1.78,
     },
   };
 
@@ -61,6 +64,14 @@
     return "1";
   };
 
+  // Preset article font family keywords resolve to the same stacks as the
+  // Go side; any other value is a custom CSS font-family list used as-is.
+  const articleFontFamilyStacks = {
+    serif: 'Georgia, "Times New Roman", "Songti SC", "SimSun", serif',
+    sans: 'system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+    mono: 'ui-monospace, "Cascadia Mono", Consolas, "Sarasa Mono SC", monospace',
+  };
+
   const applyAppearance = (appearance) => {
     if (!appearance) return;
     state.prefs.theme = appearance.theme;
@@ -69,12 +80,34 @@
   };
 
   const applyAppearanceFromPrefs = () => {
-    document.documentElement.classList.toggle("dark", isDark(state.prefs.theme));
-    document.documentElement.classList.toggle("theme-sepia", state.prefs.theme === "sepia");
-    document.documentElement.style.setProperty(
-      "--app-text-scale",
-      fontScale(state.prefs.fontSize),
-    );
+    const root = document.documentElement;
+    root.classList.toggle("dark", isDark(state.prefs.theme));
+    root.classList.toggle("theme-sepia", state.prefs.theme === "sepia");
+    const style = root.style;
+    style.setProperty("--app-text-scale", fontScale(state.prefs.fontSize));
+
+    const family = state.prefs.articleFontFamily || "";
+    if (!family || family === "system") {
+      style.removeProperty("--reader-font-family");
+    } else if (articleFontFamilyStacks[family]) {
+      style.setProperty("--reader-font-family", articleFontFamilyStacks[family]);
+    } else {
+      style.setProperty("--reader-font-family", family);
+    }
+
+    const size = Number(state.prefs.articleFontSize) || 0;
+    if (size) {
+      style.setProperty("--reader-font-size", `${size}px`);
+    } else {
+      style.removeProperty("--reader-font-size");
+    }
+
+    const lineHeight = Number(state.prefs.articleLineHeight) || 0;
+    if (lineHeight) {
+      style.setProperty("--reader-line-height", String(lineHeight));
+    } else {
+      style.removeProperty("--reader-line-height");
+    }
   };
 
   const applyPrefs = (prefs) => {

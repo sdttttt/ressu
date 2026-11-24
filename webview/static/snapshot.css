@@ -96,8 +96,18 @@ body {
 }
 
 .post-body {
-  font-size: 0.95rem;
-  line-height: 1.78;
+  font-family: var(
+    --reader-font-family,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif
+  );
+  font-size: var(--reader-font-size, 0.95rem);
+  line-height: var(--reader-line-height, 1.78);
   overflow-wrap: anywhere;
 }
 

@@ -139,12 +139,12 @@ func (s *Sidebar) SetInvalidate(invalidate func()) {
 // Theme returns the theme used by the sidebar and its splitter.
 func (s *Sidebar) Theme(c *ui.Context) *ui.Theme {
 	snapshot := s.model.Snapshot()
-	return Theme(c, snapshot.Theme, snapshot.FontSize)
+	return Theme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 }
 
 // Theme sizes the native sidebar text like the webview's list titles.
-func Theme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := guitheme.New(c, appearance, fontSize)
+func Theme(c *ui.Context, appearance, fontSize, uiFontFamily string) *ui.Theme {
+	theme := guitheme.New(c, guitheme.Appearance{Theme: appearance, FontSize: fontSize, FontFamily: uiFontFamily})
 	if nativeTextSize > 0 {
 		theme.FontSize *= textSize / nativeTextSize
 	}
@@ -224,7 +224,7 @@ func (s *Sidebar) SelectNeighbour(delta int) {
 // View builds the docked sidebar content.
 func (s *Sidebar) View(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
+	theme := Theme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Background(theme.Background).Gap(8).Padding(10, 10).Children(func() {
 			s.drawHeader(c, theme, snapshot)
@@ -236,7 +236,7 @@ func (s *Sidebar) View(c *ui.Context) {
 // DrawOverlay draws the collapsed sidebar's hover zone and floating panel.
 func (s *Sidebar) DrawOverlay(c *ui.Context) {
 	snapshot := s.model.Snapshot()
-	theme := Theme(c, snapshot.Theme, snapshot.FontSize)
+	theme := Theme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 
 	hot := ui.Box(c).Absolute().Top(0).Left(0).
 		Bottom(guitheme.StatusBarHeight(snapshot.FontSize)).

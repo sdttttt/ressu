@@ -19,6 +19,7 @@ import (
 	apppostheader "github.com/sdttttt/ressu/mygoui/postheader"
 	apppostlist "github.com/sdttttt/ressu/mygoui/postlist"
 	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
+	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	"github.com/sdttttt/ressu/mygoui/webendpoint"
 )
 
@@ -77,7 +78,7 @@ func Run() {
 
 	prefs := st.Prefs()
 	statusModel := appcore.NewStatusModel(app.Version())
-	statusModel.SetAppearance(prefs.Theme, prefs.FontSize)
+	statusModel.SetAppearance(prefs.Theme, prefs.FontSize, prefs.UIFontFamily)
 	statusModel.SetReduceMotion(prefs.ReduceMotion)
 	sidebarPercent := float32(18)
 	if len(prefs.PaneSizes) == 2 {
@@ -102,17 +103,17 @@ func Run() {
 		default:
 		}
 	})
-	notifications := appdialog.NewNotifications(func() (string, string) {
+	notifications := appdialog.NewNotifications(func() guitheme.Appearance {
 		snapshot := statusModel.Snapshot()
-		return snapshot.Theme, snapshot.FontSize
+		return guitheme.Appearance{Theme: snapshot.Theme, FontSize: snapshot.FontSize, FontFamily: snapshot.UIFontFamily}
 	})
-	confirmations := appdialog.NewConfirmations(func() (string, string) {
+	confirmations := appdialog.NewConfirmations(func() guitheme.Appearance {
 		prefs := st.Prefs()
-		return prefs.Theme, prefs.FontSize
+		return guitheme.Appearance{Theme: prefs.Theme, FontSize: prefs.FontSize, FontFamily: prefs.UIFontFamily}
 	})
-	help := appdialog.NewHelp(func() (string, string) {
+	help := appdialog.NewHelp(func() guitheme.Appearance {
 		prefs := st.Prefs()
-		return prefs.Theme, prefs.FontSize
+		return guitheme.Appearance{Theme: prefs.Theme, FontSize: prefs.FontSize, FontFamily: prefs.UIFontFamily}
 	})
 	nativeUI := NewNativeUI(notifications, confirmations)
 	actions := appcore.New(feeds, posts, settings, status, hub, nativeUI)
@@ -209,6 +210,7 @@ func openWindow(
 		snapshot := statusModel.Snapshot()
 		info.Theme = snapshot.Theme
 		info.FontSize = snapshot.FontSize
+		info.UIFontFamily = snapshot.UIFontFamily
 		appabout.Open(win, info)
 	}, notifications, confirmations, help, sidebar, postHeader, postList, actions)
 	win = mygo.NewWindow(mygo.WindowOptions{

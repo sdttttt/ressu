@@ -54,11 +54,12 @@ func (h *Hub) PostsChanged(change PostsChanged) {
 	h.Publish(Event{EID: EventPostsChanged, Posts: &change})
 }
 
-// AppearanceChanged broadcasts the current theme and interface font size.
-func (h *Hub) AppearanceChanged(theme, fontSize string) {
+// AppearanceChanged broadcasts the current theme, interface font size and
+// interface font family.
+func (h *Hub) AppearanceChanged(theme, fontSize, uiFontFamily string) {
 	h.Publish(Event{
 		EID:        EventAppearanceChanged,
-		Appearance: &Appearance{Theme: theme, FontSize: fontSize},
+		Appearance: &Appearance{Theme: theme, FontSize: fontSize, UIFontFamily: uiFontFamily},
 	})
 }
 
@@ -165,7 +166,7 @@ func (h *Hub) applyLocked(e Event) {
 	case EventFeedsChanged:
 		h.model.SetFeeds(*e.Feeds)
 	case EventAppearanceChanged:
-		h.model.SetAppearance(e.Appearance.Theme, e.Appearance.FontSize)
+		h.model.SetAppearance(e.Appearance.Theme, e.Appearance.FontSize, e.Appearance.UIFontFamily)
 	case EventPrefsChanged:
 		sidebarPercent := float32(18)
 		if len(e.Prefs.PaneSizes) == 2 {

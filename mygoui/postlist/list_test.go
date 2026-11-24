@@ -13,7 +13,7 @@ import (
 
 func TestPostListShowsArticles(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{Unread: 1})
 	loaded := make(chan struct{}, 1)
 	selected := make(chan app.PostSummary, 1)
@@ -87,7 +87,7 @@ func TestPostListShowsArticles(t *testing.T) {
 
 func TestPostListShowsFeedNameOnlyInAggregateView(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds: []app.Feed{
 			{ID: 1, Title: "科技源播报"},
@@ -148,7 +148,7 @@ func TestPostListShowsFeedNameOnlyInAggregateView(t *testing.T) {
 
 func TestPostListNavigationShortcuts(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{Unread: 2})
 	loaded := make(chan struct{}, 1)
 	selected := make(chan app.PostSummary, 8)
@@ -230,7 +230,7 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 
 func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	loaded := make(chan struct{}, 1)
 	selected := make(chan struct{}, 1)
 	starred := make(chan string, 1)
@@ -285,7 +285,7 @@ func TestPostListStarDoesNotOpenArticle(t *testing.T) {
 
 func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 2}},
 		Unread: 2,
@@ -336,7 +336,7 @@ func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 
 func TestPostListLoadMoreCountsOnlyUnreadPosts(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 25}},
 		Unread: 25,
@@ -403,7 +403,7 @@ func TestPostListLoadMoreCountsOnlyUnreadPosts(t *testing.T) {
 
 func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 25}},
 		Unread: 25,
@@ -472,7 +472,7 @@ func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
 
 func TestPostListFilterIconButtons(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	queries := make(chan app.PostQuery, 3)
 	postList := New(model, Callbacks{
 		List: func(query app.PostQuery) (app.PostPage, error) {
@@ -522,7 +522,7 @@ func TestPostListFilterIconButtons(t *testing.T) {
 
 func TestPostListMatchesWebviewTextSize(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	postList := New(model, Callbacks{})
 
 	var fontSize float32
@@ -538,7 +538,7 @@ func TestPostListMatchesWebviewTextSize(t *testing.T) {
 
 func TestPostListSearchScopeToggle(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	queries := make(chan app.PostQuery, 4)
 	postList := New(model, Callbacks{
 		List: func(query app.PostQuery) (app.PostPage, error) {
@@ -591,7 +591,7 @@ func TestPostListSearchScopeToggle(t *testing.T) {
 
 func TestPostListScalesLayoutWithFontSize(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeLarge)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeLarge, "")
 	postList := New(model, Callbacks{
 		List: func(app.PostQuery) (app.PostPage, error) {
 			return app.PostPage{}, nil
@@ -640,7 +640,7 @@ func TestSelectionDirection(t *testing.T) {
 
 func TestPostListReloadKeepsTopVisiblePost(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 20}},
 		Unread: 20,
@@ -697,7 +697,7 @@ func TestPostListReloadKeepsTopVisiblePost(t *testing.T) {
 
 func TestPostListReloadRestoresDeepScroll(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{
 		Feeds:  []app.Feed{{ID: 7, Title: "Selected feed", Unread: 60}},
 		Unread: 60,

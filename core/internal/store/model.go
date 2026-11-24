@@ -2,7 +2,12 @@
 // the application's user data directory.
 package store
 
-import "time"
+import (
+	"math"
+	"strings"
+	"time"
+	"unicode"
+)
 
 // Feed is a subscription and the metadata of its channel.
 type Feed struct {
@@ -153,6 +158,54 @@ const (
 	ResourceAccessWebview = "webview"
 )
 
+// Values of Prefs.UIFontFamily and Prefs.ArticleFontFamily. Any other value
+// is a custom CSS font-family list entered by the user.
+const (
+	FontFamilySystem = "system"
+	FontFamilySerif  = "serif"
+	FontFamilySans   = "sans"
+	FontFamilyMono   = "mono"
+)
+
+const (
+	// MinArticleFontSize bounds a custom article font size, in px.
+	MinArticleFontSize = 12
+	// MaxArticleFontSize bounds a custom article font size, in px.
+	MaxArticleFontSize = 28
+
+	// MinArticleLineHeight bounds the article line height.
+	MinArticleLineHeight = 1.2
+	// DefaultArticleLineHeight is the article line height of a new install.
+	DefaultArticleLineHeight = 1.78
+	// MaxArticleLineHeight bounds the article line height.
+	MaxArticleLineHeight = 2.4
+
+	// MaxFontFamilyLen bounds a custom font-family value, in runes.
+	MaxFontFamilyLen = 160
+)
+
+// fontFamilyStacks maps the preset family keywords to CSS font-family
+// stacks.
+var fontFamilyStacks = map[string]string{
+	FontFamilySystem: `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`,
+	FontFamilySerif:  `Georgia, "Times New Roman", "Songti SC", "SimSun", serif`,
+	FontFamilySans:   `system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`,
+	FontFamilyMono:   `ui-monospace, "Cascadia Mono", Consolas, "Sarasa Mono SC", monospace`,
+}
+
+// ResolveFontFamily maps a font family preference to a CSS font-family
+// value: preset keywords expand to their stacks, empty selects the default
+// system stack, and anything else is a custom family list used as given.
+func ResolveFontFamily(value string) string {
+	if stack, ok := fontFamilyStacks[value]; ok {
+		return stack
+	}
+	if value == "" {
+		return fontFamilyStacks[FontFamilySystem]
+	}
+	return value
+}
+
 // DefaultPostsPerFeed bounds the posts kept for a feed.
 const DefaultPostsPerFeed = 500
 
@@ -170,37 +223,45 @@ const (
 
 // Prefs are the user's preferences, kept in the settings bucket.
 type Prefs struct {
-	Theme            string `json:"theme"`
-	FontSize         string `json:"fontSize"`
-	RefreshOnStart   bool   `json:"refreshOnStart"`
-	MarkReadOnOpen   bool   `json:"markReadOnOpen"`
-	RemoteResources  string `json:"remoteResources"`
-	OpenLinks        string `json:"openLinks"`
-	PostSort         string `json:"postSort"`
-	StripTrackers    bool   `json:"stripTrackers"` // remove known tracking parameters from outbound links
-	PostsPerFeed     int    `json:"postsPerFeed"`
-	ImageCacheLimit  int    `json:"imageCacheLimit"` // maximum image cache size, in MB
-	PaneSizes        []int  `json:"paneSizes"`       // widths of the sidebar and the list, in percent
-	SidebarCollapsed bool   `json:"sidebarCollapsed"`
-	ReduceMotion     bool   `json:"reduceMotion"` // cut article swaps and native slides short
+	Theme             string  `json:"theme"`
+	FontSize          string  `json:"fontSize"`
+	RefreshOnStart    bool    `json:"refreshOnStart"`
+	MarkReadOnOpen    bool    `json:"markReadOnOpen"`
+	RemoteResources   string  `json:"remoteResources"`
+	OpenLinks         string  `json:"openLinks"`
+	PostSort          string  `json:"postSort"`
+	StripTrackers     bool    `json:"stripTrackers"` // remove known tracking parameters from outbound links
+	PostsPerFeed      int     `json:"postsPerFeed"`
+	ImageCacheLimit   int     `json:"imageCacheLimit"` // maximum image cache size, in MB
+	PaneSizes         []int   `json:"paneSizes"`       // widths of the sidebar and the list, in percent
+	SidebarCollapsed  bool    `json:"sidebarCollapsed"`
+	ReduceMotion      bool    `json:"reduceMotion"` // cut article swaps and native slides short
+	UIFontFamily      string  `json:"uiFontFamily"` // preset keyword or custom CSS font-family; system is the default stack
+	ArticleFontFamily string  `json:"articleFontFamily"`
+	ArticleFontSize   int     `json:"articleFontSize"`   // custom article font size in px; zero follows the interface scale
+	ArticleLineHeight float64 `json:"articleLineHeight"` // article line height, DefaultArticleLineHeight out of the box
 }
 
 // DefaultPrefs are the preferences of a new install.
 func DefaultPrefs() Prefs {
 	return Prefs{
-		Theme:            ThemeSystem,
-		FontSize:         FontSizeMedium,
-		RefreshOnStart:   true,
-		MarkReadOnOpen:   true,
-		RemoteResources:  ResourceAccessWebview,
-		OpenLinks:        OpenLinksBrowser,
-		PostSort:         PostSortPublished,
-		StripTrackers:    true,
-		PostsPerFeed:     DefaultPostsPerFeed,
-		ImageCacheLimit:  DefaultImageCacheLimit,
-		PaneSizes:        []int{18, 30},
-		SidebarCollapsed: false,
-		ReduceMotion:     false,
+		Theme:             ThemeSystem,
+		FontSize:          FontSizeMedium,
+		RefreshOnStart:    true,
+		MarkReadOnOpen:    true,
+		RemoteResources:   ResourceAccessWebview,
+		OpenLinks:         OpenLinksBrowser,
+		PostSort:          PostSortPublished,
+		StripTrackers:     true,
+		PostsPerFeed:      DefaultPostsPerFeed,
+		ImageCacheLimit:   DefaultImageCacheLimit,
+		PaneSizes:         []int{18, 30},
+		SidebarCollapsed:  false,
+		ReduceMotion:      false,
+		UIFontFamily:      FontFamilySystem,
+		ArticleFontFamily: FontFamilySystem,
+		ArticleFontSize:   0,
+		ArticleLineHeight: DefaultArticleLineHeight,
 	}
 }
 
@@ -235,4 +296,44 @@ func (p *Prefs) Normalize() {
 		p.PaneSizes[1] < 5 || p.PaneSizes[1] > 90 {
 		p.PaneSizes = []int{18, 30}
 	}
+	p.UIFontFamily = normalizeFontFamily(p.UIFontFamily)
+	p.ArticleFontFamily = normalizeFontFamily(p.ArticleFontFamily)
+	if p.ArticleFontSize != 0 &&
+		(p.ArticleFontSize < MinArticleFontSize || p.ArticleFontSize > MaxArticleFontSize) {
+		p.ArticleFontSize = 0
+	}
+	if math.IsNaN(p.ArticleLineHeight) || p.ArticleLineHeight < MinArticleLineHeight ||
+		p.ArticleLineHeight > MaxArticleLineHeight {
+		p.ArticleLineHeight = DefaultArticleLineHeight
+	}
+}
+
+// normalizeFontFamily keeps preset keywords (empty values from older
+// databases migrate to the system default) and strips characters from
+// custom values that could break out of a CSS font-family declaration.
+func normalizeFontFamily(value string) string {
+	value = strings.TrimSpace(value)
+	switch value {
+	case "", FontFamilySystem, FontFamilySerif, FontFamilySans, FontFamilyMono:
+		if value == "" {
+			return FontFamilySystem
+		}
+		return value
+	}
+	var b strings.Builder
+	for _, r := range value {
+		switch {
+		case r == ';' || r == '{' || r == '}' || r == '<' || r == '>' || unicode.IsControl(r):
+			continue
+		case b.Len() >= MaxFontFamilyLen:
+			continue
+		default:
+			b.WriteRune(r)
+		}
+	}
+	cleaned := strings.Join(strings.Fields(b.String()), " ")
+	if cleaned == "" {
+		return FontFamilySystem
+	}
+	return cleaned
 }

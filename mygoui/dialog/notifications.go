@@ -25,12 +25,12 @@ type Notification struct {
 type Notifications struct {
 	mu         sync.Mutex
 	window     *mygo.Window
-	appearance func() (theme, fontSize string)
+	appearance func() guitheme.Appearance
 	pending    []Notification
 }
 
 // NewNotifications creates a notification queue.
-func NewNotifications(appearance func() (theme, fontSize string)) *Notifications {
+func NewNotifications(appearance func() guitheme.Appearance) *Notifications {
 	return &Notifications{appearance: appearance}
 }
 
@@ -96,13 +96,13 @@ func (n *Notifications) Draw(c *ui.Context) {
 
 	appearance := n.appearance
 	if appearance == nil {
-		appearance = func() (string, string) { return "", "" }
+		appearance = func() guitheme.Appearance { return guitheme.Appearance{} }
 	}
-	appearanceName, fontSize := appearance()
-	theme := guitheme.New(c, appearanceName, fontSize)
+	state := appearance()
+	theme := guitheme.New(c, state)
 
 	ui.ToastViewportBase(c, func(viewport ui.Element, toasts []ui.Toast) {
-		viewport.Bottom(guitheme.StatusBarHeight(fontSize)).Padding(theme.Space(4)).
+		viewport.Bottom(guitheme.StatusBarHeight(state.FontSize)).Padding(theme.Space(4)).
 			AlignItems(ui.End).Gap(theme.Space(2))
 		for _, toast := range toasts {
 			drawNotification(c, theme, toast)

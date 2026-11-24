@@ -174,7 +174,7 @@ type addFeedView struct {
 
 // draw renders one frame of the subscription form.
 func (s *addFeedView) draw(c *ui.Context) {
-	theme := guitheme.New(c, s.prefs.Theme, s.prefs.FontSize)
+	theme := guitheme.New(c, guitheme.Appearance{Theme: s.prefs.Theme, FontSize: s.prefs.FontSize, FontFamily: s.prefs.UIFontFamily})
 
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Padding(20, 24).Children(func() {

@@ -46,13 +46,13 @@ type queuedConfirmation struct {
 type Confirmations struct {
 	mu         sync.Mutex
 	window     *mygo.Window
-	appearance func() (theme, fontSize string)
+	appearance func() guitheme.Appearance
 	queued     []*queuedConfirmation
 	active     *queuedConfirmation
 }
 
 // NewConfirmations creates the in-app confirmation host.
-func NewConfirmations(appearance func() (theme, fontSize string)) *Confirmations {
+func NewConfirmations(appearance func() guitheme.Appearance) *Confirmations {
 	return &Confirmations{appearance: appearance}
 }
 
@@ -218,8 +218,7 @@ func (c *Confirmations) Draw(uiContext *ui.Context) {
 
 // drawConfirmation renders one modal and completes its pending request.
 func (c *Confirmations) drawConfirmation(uiContext *ui.Context, confirmation *queuedConfirmation) {
-	appearanceName, fontSize := c.appearance()
-	theme := guitheme.New(uiContext, appearanceName, fontSize)
+	theme := guitheme.New(uiContext, c.appearance())
 
 	ui.Themed(uiContext, theme).Children(func() {
 		modal := ui.Modal(uiContext, &confirmation.open, func() {

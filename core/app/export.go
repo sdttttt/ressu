@@ -35,6 +35,11 @@ const (
 	FontSizeMedium = store.FontSizeMedium
 	FontSizeLarge  = store.FontSizeLarge
 
+	FontFamilySystem = store.FontFamilySystem
+	FontFamilySerif  = store.FontFamilySerif
+	FontFamilySans   = store.FontFamilySans
+	FontFamilyMono   = store.FontFamilyMono
+
 	ThemeSystem = store.ThemeSystem
 	ThemeLight  = store.ThemeLight
 	ThemeDark   = store.ThemeDark
@@ -45,6 +50,11 @@ const (
 
 	OpenLinksBrowser = store.OpenLinksBrowser
 	OpenLinksWindow  = store.OpenLinksWindow
+
+	MinArticleFontSize   = store.MinArticleFontSize
+	MaxArticleFontSize   = store.MaxArticleFontSize
+	MinArticleLineHeight = store.MinArticleLineHeight
+	MaxArticleLineHeight = store.MaxArticleLineHeight
 
 	ResourceAccessWebview = store.ResourceAccessWebview
 	ResourceAccessGoProxy = store.ResourceAccessGoProxy
@@ -57,6 +67,9 @@ var (
 	DefaultPrefs = store.DefaultPrefs
 	// OpenStore opens the database in dir.
 	OpenStore = store.Open
+	// ResolveFontFamily maps a font family preference to a CSS font-family
+	// value.
+	ResolveFontFamily = store.ResolveFontFamily
 )
 
 // Service types for feeds, posts, and settings.

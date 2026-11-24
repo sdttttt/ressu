@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+
+	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
 
 func TestConfirmationShowsChinesePromptAndConfirms(t *testing.T) {
-	confirmations := NewConfirmations(func() (string, string) {
-		return "system", "small"
+	confirmations := NewConfirmations(func() guitheme.Appearance {
+		return guitheme.Appearance{Theme: "system", FontSize: "small"}
 	})
 	request := ConfirmationRequest{
 		Title:        "取消订阅「测试源」？",
@@ -45,8 +47,8 @@ func TestConfirmationShowsChinesePromptAndConfirms(t *testing.T) {
 }
 
 func TestConfirmationCancelDismissesWithoutRemoval(t *testing.T) {
-	confirmations := NewConfirmations(func() (string, string) {
-		return "system", "small"
+	confirmations := NewConfirmations(func() guitheme.Appearance {
+		return guitheme.Appearance{Theme: "system", FontSize: "small"}
 	})
 	confirmation := &queuedConfirmation{
 		ConfirmationRequest: ConfirmationRequest{

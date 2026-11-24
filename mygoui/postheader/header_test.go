@@ -13,7 +13,7 @@ import (
 
 func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{Feeds: []app.Feed{{ID: 1, Title: "A"}}, Unread: 1})
 	published := time.Date(2026, time.November, 9, 12, 0, 0, 0, time.UTC)
 	model.SetCurrentPost(
@@ -103,7 +103,7 @@ func TestHeaderShowsSelectedArticleAndTogglesStar(t *testing.T) {
 
 func TestHeaderExtractFullText(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	model.SetFeeds(app.StatusFeedsSnapshot{Feeds: []app.Feed{{ID: 1, Title: "A"}}, Unread: 1})
 	model.SetCurrentPost(
 		app.PostSelection{FeedID: 1, GUID: "first"},

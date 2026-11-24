@@ -92,7 +92,7 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 	)
 	hub.PostUpdated(store.PostSummary{FeedID: 1, GUID: "first", Read: true, Starred: true})
 	hub.PostsChanged(PostsChanged{FeedID: 1, New: 2})
-	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge)
+	hub.AppearanceChanged(store.ThemeSepia, store.FontSizeLarge, store.FontFamilyMono)
 	hub.PrefsChanged(store.Prefs{
 		Theme:     store.ThemeSepia,
 		FontSize:  store.FontSizeLarge,

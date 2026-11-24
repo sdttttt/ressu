@@ -7,18 +7,22 @@ import (
 	"github.com/sdttttt/ressu/core/app"
 )
 
-// Family is the native interface font used across all windows.
-const Family = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`
-
 // StatusBarHeight returns the rendered status bar height for a font size.
 func StatusBarHeight(fontSize string) float32 {
 	return 1 + StatusBarContentHeight*FontScale(fontSize)
 }
 
-// New maps an app theme preference to the colors used by native UI.
-func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
+// Appearance bundles the preference values that shape a native theme.
+type Appearance struct {
+	Theme      string
+	FontSize   string
+	FontFamily string // UIFontFamily preference: preset keyword or custom CSS list
+}
+
+// New maps appearance preferences to the colors and fonts used by native UI.
+func New(c *ui.Context, appearance Appearance) *ui.Theme {
 	base := ui.LightTheme()
-	switch appearance {
+	switch appearance.Theme {
 	case app.ThemeDark:
 		base = ui.DarkTheme()
 	case app.ThemeSepia:
@@ -30,9 +34,9 @@ func New(c *ui.Context, appearance, fontSize string) *ui.Theme {
 	}
 
 	nativeTheme := *base
-	nativeTheme.FontSize *= FontScale(fontSize)
-	nativeTheme.Font = Family
-	if appearance == app.ThemeSepia {
+	nativeTheme.FontSize *= FontScale(appearance.FontSize)
+	nativeTheme.Font = app.ResolveFontFamily(appearance.FontFamily)
+	if appearance.Theme == app.ThemeSepia {
 		ApplySepia(&nativeTheme)
 	}
 	return &nativeTheme

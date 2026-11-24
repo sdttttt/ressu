@@ -44,6 +44,7 @@ type Snapshot struct {
 	ListPercent      float32
 	Theme            string
 	FontSize         string
+	UIFontFamily     string
 	ReduceMotion     bool
 	PostSort         string
 	Version          string
@@ -72,6 +73,7 @@ type Model struct {
 	selectedPost     store.PostSummary
 	theme            string
 	font             string
+	uiFontFamily     string
 	reduceMotion     bool
 	postSort         string
 	version          string
@@ -136,12 +138,14 @@ func (m *Model) SetCurrentFeed(feedID int64) {
 	}
 }
 
-// SetAppearance mirrors the reader's theme and interface font size.
-func (m *Model) SetAppearance(theme, fontSize string) {
+// SetAppearance mirrors the reader's theme, interface font size and
+// interface font family.
+func (m *Model) SetAppearance(theme, fontSize, uiFontFamily string) {
 	m.mu.Lock()
-	changed := m.theme != theme || m.font != fontSize
+	changed := m.theme != theme || m.font != fontSize || m.uiFontFamily != uiFontFamily
 	m.theme = theme
 	m.font = fontSize
+	m.uiFontFamily = uiFontFamily
 	callback := m.changed
 	m.mu.Unlock()
 	if changed && callback != nil {
@@ -259,6 +263,7 @@ func (m *Model) Snapshot() Snapshot {
 		ListPercent:      m.listPercent,
 		Theme:            m.theme,
 		FontSize:         m.font,
+		UIFontFamily:     m.uiFontFamily,
 		ReduceMotion:     m.reduceMotion,
 		PostSort:         m.postSort,
 		Version:          m.version,

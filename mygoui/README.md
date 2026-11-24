@@ -76,6 +76,10 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 - 控件通过 `settings.Callbacks`（`Load`/`Save`/`DataDir`/`ExportOPML`/`OpenDataDir`）
   读写数据；每次改动立即保存并广播 `prefs.changed`。保存时用
   `app.UpdateSettingsDraft` 保留当前的 `PaneSizes` 和 `SidebarCollapsed`。
+- 「界面字体」与「文章字体」用 `ui.ComboboxBase` 做“预设 + 自定义输入”：弹出层列出
+  系统默认/衬线/无衬线/等宽预设，也可直接键入 CSS font-family 列表；输入草稿在选中
+  预设或输入框失焦时才提交，避免逐键保存。「文章字号」「文章行高」用 NumberInput：
+  字号 0 表示跟随界面缩放（自定义 12–28 px），行高默认 1.78（范围 1.2–2.4）。
 
 ## 关于窗口（about）
 

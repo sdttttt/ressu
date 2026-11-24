@@ -13,8 +13,8 @@ const postTextSize = 13
 var nativeTextSize = ui.LightTheme().FontSize
 
 // PostTheme maps app appearance preferences to the article list palette.
-func PostTheme(c *ui.Context, appearance, fontSize string) *ui.Theme {
-	theme := New(c, appearance, fontSize)
+func PostTheme(c *ui.Context, appearance, fontSize, uiFontFamily string) *ui.Theme {
+	theme := New(c, Appearance{Theme: appearance, FontSize: fontSize, FontFamily: uiFontFamily})
 	if nativeTextSize > 0 {
 		theme.FontSize *= postTextSize / nativeTextSize
 	}

@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+
+	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
 
 func TestHelpModalShowsShortcutsAndDismisses(t *testing.T) {
-	help := NewHelp(func() (string, string) {
-		return "system", "small"
+	help := NewHelp(func() guitheme.Appearance {
+		return guitheme.Appearance{Theme: "system", FontSize: "small"}
 	})
 	help.Show()
 	if !help.Visible() {

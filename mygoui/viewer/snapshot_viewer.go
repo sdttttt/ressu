@@ -93,7 +93,7 @@ func newSnapshotViewerContent(
 
 // draw renders the preview toolbar and scrollable snapshot image.
 func (v *snapshotViewerContent) draw(c *ui.Context) {
-	theme := guitheme.New(c, app.ThemeLight, app.FontSizeMedium)
+	theme := guitheme.New(c, guitheme.Appearance{Theme: app.ThemeLight, FontSize: app.FontSizeMedium})
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Background(theme.Background).Children(func() {
 			ui.Row(c).Shrink(0).

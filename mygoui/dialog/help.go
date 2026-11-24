@@ -30,11 +30,11 @@ type Help struct {
 	requested  atomic.Bool
 	visible    atomic.Bool
 	window     *mygo.Window
-	appearance func() (theme, fontSize string)
+	appearance func() guitheme.Appearance
 }
 
 // NewHelp creates the in-app keyboard shortcut host.
-func NewHelp(appearance func() (theme, fontSize string)) *Help {
+func NewHelp(appearance func() guitheme.Appearance) *Help {
 	return &Help{appearance: appearance}
 }
 
@@ -72,8 +72,7 @@ func (h *Help) Draw(uiContext *ui.Context) {
 		return
 	}
 
-	appearanceName, fontSize := h.appearance()
-	theme := guitheme.New(uiContext, appearanceName, fontSize)
+	theme := guitheme.New(uiContext, h.appearance())
 	ui.Themed(uiContext, theme).Children(func() {
 		modal := ui.Modal(uiContext, &h.open, func() {
 			ui.Column(uiContext).MaxWidth(390).Gap(12).Children(func() {

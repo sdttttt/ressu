@@ -26,13 +26,14 @@ var aboutWindow struct {
 
 // Info is the metadata shown by the native About window.
 type Info struct {
-	Version    string
-	BuildDate  string
-	SourceCode string
-	Developer  string
-	Email      string
-	Theme      string
-	FontSize   string
+	Version      string
+	BuildDate    string
+	SourceCode   string
+	Developer    string
+	Email        string
+	Theme        string
+	FontSize     string
+	UIFontFamily string
 }
 
 // Open opens the single native About window.
@@ -78,7 +79,7 @@ type aboutView struct {
 
 // draw renders one frame of the About window.
 func (a *aboutView) draw(c *ui.Context) {
-	theme := guitheme.New(c, a.info.Theme, a.info.FontSize)
+	theme := guitheme.New(c, guitheme.Appearance{Theme: a.info.Theme, FontSize: a.info.FontSize, FontFamily: a.info.UIFontFamily})
 
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Column(c).Fill().Padding(24, 28).Gap(12).Children(func() {

@@ -25,10 +25,10 @@ func TestComponentThemesIgnoreInheritedTextScale(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var sidebarSize, postListSize float32
 			view := func(c *ui.Context) {
-				outer := appsidebar.Theme(c, app.ThemeSystem, test.fontSize)
+				outer := appsidebar.Theme(c, app.ThemeSystem, test.fontSize, "")
 				ui.Themed(c, outer).Children(func() {
-					sidebarSize = appsidebar.Theme(c, app.ThemeSystem, test.fontSize).FontSize
-					postListSize = guitheme.PostTheme(c, app.ThemeSystem, test.fontSize).FontSize
+					sidebarSize = appsidebar.Theme(c, app.ThemeSystem, test.fontSize, "").FontSize
+					postListSize = guitheme.PostTheme(c, app.ThemeSystem, test.fontSize, "").FontSize
 				})
 			}
 

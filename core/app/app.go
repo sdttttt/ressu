@@ -455,7 +455,7 @@ func (a *App) UpdatePreferences(prefs store.Prefs) (store.Prefs, error) {
 	}
 	a.ui.ApplyTheme(stored.Theme)
 	if a.hub != nil {
-		a.hub.AppearanceChanged(stored.Theme, stored.FontSize)
+		a.hub.AppearanceChanged(stored.Theme, stored.FontSize, stored.UIFontFamily)
 		a.hub.PrefsChanged(stored)
 	}
 	return stored, nil

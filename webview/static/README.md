@@ -18,8 +18,8 @@
 
 - 局部状态只保存当前文章、事件 revision 和影响渲染的偏好；没有路由或全局 store。
 - 启动时订阅一次 `app:event`；唯一 dispatcher 按 `eid` 路由，丢弃 `revision` 不递增的
-  事件。消费的分支：`state.snapshot`/`appearance.changed`/`prefs.changed`（主题、字号与
-  减少动效）、
+  事件。消费的分支：`state.snapshot`/`appearance.changed`/`prefs.changed`（主题、字号、
+  阅读字体/字号/行高与减少动效）、
   `selection.changed`（清空文章栈）、`post.selected`（打开正文）、`post.fulltext`
   （原生头部「提取全文」的按需结果，匹配当前文章时替换正文）。
 - **文章层栈**：每篇文章一个绝对定位层，被盖住的层保留 DOM 和滚动位置；换篇动画由

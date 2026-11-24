@@ -107,7 +107,11 @@ Ressu 阅读器的后端核心。
   `postSort` 不是 `fetched` 就回落 `published`，`openLinks` 不是 `window` 就变成
   `browser`，`remoteResources` 不是 `webview` 就回落 `goProxy`，`postsPerFeed` 限制在
   50–2000（默认 500），`imageCacheLimit` 限制在 32–512 MB（默认 256），面板宽度恢复
-  `[18,30]`。偏好默认值只以 `store.DefaultPrefs` 为准。
+  `[18,30]`；字体族偏好（`UIFontFamily`/`ArticleFontFamily`）默认 `system` 关键字，
+  只放行预设或净化后的自定义 CSS font-family 列表（旧库的空值自动迁移为
+  `system`），`articleFontSize` 为 0 表示跟随界面缩放、自定义限 12–28 px，
+  `articleLineHeight` 默认 1.78、限 1.2–2.4，越界回落默认值。偏好默认值只以
+  `store.DefaultPrefs` 为准。
 - `Post.Content` 是入库前清洗后的 HTML，`Post.Summary` 是截到 280 个字符的纯文本。
 
 ## 示例代码

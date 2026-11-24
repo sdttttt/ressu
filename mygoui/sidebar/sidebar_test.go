@@ -39,7 +39,7 @@ func TestSidebarShowsSubscriptionActions(t *testing.T) {
 
 func TestSidebarMatchesWebviewTextSize(t *testing.T) {
 	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall)
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
 	sidebar := New(model, Callbacks{})
 
 	var fontSize float32

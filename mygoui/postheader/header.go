@@ -64,7 +64,7 @@ func (h *Header) View(c *ui.Context) {
 		return
 	}
 
-	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 	palette := guitheme.NewPostPalette(*theme)
 	ui.Themed(c, theme).FillWidth().Children(func() {
 		ui.Column(c).FillWidth().

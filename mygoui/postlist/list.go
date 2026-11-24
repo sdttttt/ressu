@@ -119,7 +119,7 @@ func (l *List) SetInvalidate(invalidate func()) {
 // Theme returns the theme used by the article list and splitter.
 func (l *List) Theme(c *ui.Context) *ui.Theme {
 	snapshot := l.model.Snapshot()
-	return guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
+	return guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 }
 
 // SyncLayout copies the mirrored list layout into its splitter.
@@ -155,7 +155,7 @@ func (l *List) SavePanePercent() {
 func (l *List) View(c *ui.Context) {
 	l.flushPending()
 	snapshot := l.model.Snapshot()
-	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize)
+	theme := guitheme.PostTheme(c, snapshot.Theme, snapshot.FontSize, snapshot.UIFontFamily)
 	l.syncState(snapshot)
 	l.installShortcuts(c)
 
@@ -234,7 +234,7 @@ func (l *List) drawHeader(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot)
 			// The post theme makes the control surfaces transparent for
 			// the list; the segmented control needs the standard surfaces
 			// to read as a control, as in the settings window.
-			base := guitheme.New(c, snapshot.Theme, snapshot.FontSize)
+			base := guitheme.New(c, guitheme.Appearance{Theme: snapshot.Theme, FontSize: snapshot.FontSize, FontFamily: snapshot.UIFontFamily})
 			base.FontSize = theme.FontSize
 			ui.Themed(c, base).Children(func() {
 				scope := ui.Segmented(c, &l.searchScope, "标题", "全文").

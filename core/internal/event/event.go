@@ -39,7 +39,8 @@ const (
 
 	// View events are published by the desktop shell rather than the
 	// service layer. Alternate frontends may ignore them.
-	// EventAppearanceChanged carries the theme and interface font size.
+	// EventAppearanceChanged carries the theme, interface font size and
+	// interface font family.
 	EventAppearanceChanged EventID = "appearance.changed"
 	// EventPrefsChanged carries the complete preferences.
 	EventPrefsChanged EventID = "prefs.changed"
@@ -51,10 +52,12 @@ type PostsChanged struct {
 	New    int   `json:"new"`
 }
 
-// Appearance is the reader's theme and interface font size.
+// Appearance is the reader's theme, interface font size and interface
+// font family.
 type Appearance struct {
-	Theme    string `json:"theme"`
-	FontSize string `json:"fontSize"`
+	Theme        string `json:"theme"`
+	FontSize     string `json:"fontSize"`
+	UIFontFamily string `json:"uiFontFamily"`
 }
 
 // Selection is the feed selected by the page. Zero selects all feeds.

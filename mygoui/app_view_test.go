@@ -10,6 +10,7 @@ import (
 	"github.com/sdttttt/ressu/core/app"
 	appdialog "github.com/sdttttt/ressu/mygoui/dialog"
 	appsidebar "github.com/sdttttt/ressu/mygoui/sidebar"
+	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 )
 
 func TestAppViewRendersNativeHelpAndFeedShortcuts(t *testing.T) {
@@ -29,8 +30,8 @@ func TestAppViewRendersNativeHelpAndFeedShortcuts(t *testing.T) {
 			selections <- feedID
 		},
 	})
-	help := appdialog.NewHelp(func() (string, string) {
-		return "system", "small"
+	help := appdialog.NewHelp(func() guitheme.Appearance {
+		return guitheme.Appearance{Theme: "system", FontSize: "small"}
 	})
 	view := NewAppView(model, func() {}, nil, nil, help, sidebar, nil, nil, nil)
 	model.SetCurrentFeed(2)

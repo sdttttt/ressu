@@ -5,6 +5,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/sdttttt/ressu/core/app"
 	"github.com/sdttttt/ressu/mygoui/theme"
 )
 
@@ -30,5 +31,20 @@ func TestApplySepiaUsesWarmInteractiveColors(t *testing.T) {
 		if test.got != test.want {
 			t.Errorf("%s = %v, want %v", test.name, test.got, test.want)
 		}
+	}
+}
+
+func TestNewResolvesFontFamily(t *testing.T) {
+	var got string
+	view := func(c *ui.Context) {
+		native := theme.New(c, theme.Appearance{Theme: app.ThemeSystem, FontSize: app.FontSizeMedium, FontFamily: app.FontFamilyMono})
+		got = native.Font
+	}
+
+	tester := ui.NewTester(view, 100, 100)
+	tester.Frame()
+
+	if want := app.ResolveFontFamily(app.FontFamilyMono); got != want {
+		t.Errorf("mono font = %q, want %q", got, want)
 	}
 }
