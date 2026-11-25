@@ -146,7 +146,8 @@ func TestHubUpdatesModelAndStampsEvents(t *testing.T) {
 		t.Errorf("snapshot feeds = %+v", snapshot.Feeds)
 	}
 	if snapshot.Appearance.Theme != store.ThemeSepia ||
-		snapshot.Appearance.FontSize != store.FontSizeLarge {
+		snapshot.Appearance.FontSize != store.FontSizeLarge ||
+		snapshot.Appearance.UIFontFamily != store.FontFamilyMono {
 		t.Errorf("snapshot appearance = %+v", snapshot.Appearance)
 	}
 	if snapshot.Selection.FeedID != 1 {

@@ -552,6 +552,357 @@ func TestMergePostsTrimsKeepsStarred(t *testing.T) {
 	}
 }
 
+func TestMergePostsKeepsPublishedAt(t *testing.T) {
+	s := openTemp(t)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "a", Title: "A", PublishedAt: base},
+		{GUID: "b", Title: "B", PublishedAt: base.Add(time.Hour)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The feed now dates "a" at the time of the fetch, as it does for an
+	// item that carries no date.
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "a", Title: "A", PublishedAt: base.Add(48 * time.Hour)},
+		{GUID: "b", Title: "B", PublishedAt: base.Add(time.Hour)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	posts, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 2 {
+		t.Fatalf("posts = %d, want 2", len(posts))
+	}
+	if posts[0].GUID != "b" || posts[1].GUID != "a" {
+		t.Errorf("order = %s, %s; want b, a", posts[0].GUID, posts[1].GUID)
+	}
+	if !posts[1].PublishedAt.Equal(base) {
+		t.Errorf("published = %s, want %s", posts[1].PublishedAt, base)
+	}
+}
+
+// numberedPosts returns n posts that get newer with their number.
+func numberedPosts(n int) []Post {
+	posts := make([]Post, 0, n)
+	for i := range n {
+		posts = append(posts, Post{
+			GUID:        fmt.Sprintf("post-%d", i),
+			PublishedAt: base.Add(time.Duration(i) * time.Minute),
+		})
+	}
+	return posts
+}
+
+// limitPostsTo sets the global posts-kept limit.
+func limitPostsTo(t *testing.T, s *Store, limit int) {
+	t.Helper()
+	prefs := s.Prefs()
+	prefs.PostsPerFeed = limit
+	if err := s.SetPrefs(prefs); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMergePostsDoesNotCountCutPostsAsNew(t *testing.T) {
+	s := openTemp(t)
+	limitPostsTo(t, s, 50)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts := numberedPosts(60)
+	if _, err := s.MergePosts(feed.ID, posts); err != nil {
+		t.Fatal(err)
+	}
+
+	// The feed still lists every post on its next refresh.
+	added, err := s.MergePosts(feed.ID, posts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 0 {
+		t.Errorf("added = %d, want 0: cut posts came back as new", added)
+	}
+	kept, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 50 {
+		t.Errorf("kept = %d, want 50", len(kept))
+	}
+	if got := s.Unread(); got != 50 {
+		t.Errorf("unread = %d, want 50", got)
+	}
+}
+
+func TestMergePostsCutPostsReturnWithTheirState(t *testing.T) {
+	s := openTemp(t)
+	limitPostsTo(t, s, 50)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, numberedPosts(60)); err != nil {
+		t.Fatal(err)
+	}
+	for i := 10; i < 20; i++ {
+		if _, err := s.UpdatePost(feed.ID, fmt.Sprintf("post-%d", i), func(post *Post) {
+			post.Read = true
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Ten newer posts push the ten the user has read beyond the limit.
+	added, err := s.MergePosts(feed.ID, numberedPosts(70))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 10 {
+		t.Errorf("added = %d, want 10", added)
+	}
+	kept, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 50 || kept[len(kept)-1].GUID != "post-20" {
+		t.Fatalf("kept = %d, oldest %q; want 50, oldest post-20", len(kept), kept[len(kept)-1].GUID)
+	}
+
+	// Raising the limit brings the cut posts back as they were.
+	limitPostsTo(t, s, 70)
+	added, err = s.MergePosts(feed.ID, numberedPosts(70))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 0 {
+		t.Errorf("added after raising the limit = %d, want 0", added)
+	}
+	kept, err = s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 70 {
+		t.Fatalf("kept = %d, want 70", len(kept))
+	}
+	for _, post := range kept {
+		want := post.GUID >= "post-10" && post.GUID <= "post-19"
+		if post.Read != want {
+			t.Errorf("%s read = %v, want %v", post.GUID, post.Read, want)
+		}
+	}
+	if got := s.Unread(); got != 60 {
+		t.Errorf("unread = %d, want 60", got)
+	}
+}
+
+func TestMergePostsForgetsCutPostsMissingFromTheFeed(t *testing.T) {
+	s := openTemp(t)
+	limitPostsTo(t, s, 50)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, numberedPosts(60)); err != nil {
+		t.Fatal(err)
+	}
+
+	// The feed drops the ten cut posts and lists a new one, which pushes
+	// post-10 beyond the limit too.
+	if _, err := s.MergePosts(feed.ID, numberedPosts(61)[10:]); err != nil {
+		t.Fatal(err)
+	}
+
+	// A post is remembered for as long as the feed keeps listing it.
+	limitPostsTo(t, s, 61)
+	added, err := s.MergePosts(feed.ID, numberedPosts(61))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 10 {
+		t.Errorf("added = %d, want 10: post-0 to post-9 were forgotten, post-10 was not", added)
+	}
+}
+
+func TestMergePostsRemembersCutPostsAcrossReopen(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	limitPostsTo(t, s, 50)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, numberedPosts(60)); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	added, err := reopened.MergePosts(feed.ID, numberedPosts(60))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 0 {
+		t.Errorf("added = %d, want 0: cut posts did not survive the reopen", added)
+	}
+}
+
+func TestRemoveFeedForgetsCutPosts(t *testing.T) {
+	s := openTemp(t)
+	limitPostsTo(t, s, 50)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.MergePosts(feed.ID, numberedPosts(60)); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RemoveFeed(feed.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// A subscription added afterwards reuses the id of the removed one.
+	limitPostsTo(t, s, 60)
+	next, err := s.AddFeed(Feed{URL: "https://b.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.ID != feed.ID {
+		t.Fatalf("id = %d, want the reused %d", next.ID, feed.ID)
+	}
+	added, err := s.MergePosts(next.ID, numberedPosts(60))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 60 {
+		t.Errorf("added = %d, want 60: the new subscription inherited the cut posts", added)
+	}
+}
+
+func TestMergePostsFoldsLegacyFallbackGUIDs(t *testing.T) {
+	s := openTemp(t)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const hash = "1a2b3c4d"
+	legacy := func(title string, at time.Time) string {
+		return title + "|" + at.Format(time.RFC3339Nano) + "|" + hash
+	}
+	// Builds before the fallback GUID dropped the fetch time stored one
+	// copy of an undated item per refresh.
+	first, later := base, base.Add(time.Hour)
+	if _, err := s.MergePosts(feed.ID, []Post{
+		{GUID: legacy("无链接", later), Title: "无链接", PublishedAt: later},
+		{GUID: legacy("无链接", first), Title: "无链接", PublishedAt: first},
+		{GUID: legacy("", first), Title: legacy("", first), PublishedAt: first},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// A merge dates a new post by itself, so stamp when each copy was really
+	// fetched. The user read the later copy.
+	stamp := func(guid string, fetched time.Time, read bool) {
+		t.Helper()
+		if _, err := s.UpdatePost(feed.ID, guid, func(post *Post) {
+			post.FetchedAt = fetched
+			post.Read = read
+			post.Starred = read
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	stamp(legacy("无链接", later), later, true)
+	stamp(legacy("无链接", first), first, false)
+	stamp(legacy("", first), first, false)
+
+	arrived := later.Add(time.Hour)
+	added, err := s.MergePosts(feed.ID, []Post{
+		{GUID: "无链接|" + hash, Title: "无链接", PublishedAt: arrived},
+		{GUID: "|" + hash, Title: "|" + hash, PublishedAt: arrived},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 0 {
+		t.Errorf("added = %d, want 0: the items were stored already", added)
+	}
+
+	posts, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 2 {
+		t.Fatalf("posts = %d, want 2", len(posts))
+	}
+	var item Post
+	for _, post := range posts {
+		if post.GUID == "无链接|"+hash {
+			item = post
+		} else if post.GUID != "|"+hash || post.Title != "|"+hash {
+			t.Errorf("untitled post = %q, title %q", post.GUID, post.Title)
+		}
+	}
+	if !item.Read || !item.Starred {
+		t.Errorf("state was lost: read=%v starred=%v", item.Read, item.Starred)
+	}
+	if !item.PublishedAt.Equal(first) || !item.FetchedAt.Equal(first) {
+		t.Errorf("the first copy did not survive: published %s, fetched %s; want %s",
+			item.PublishedAt, item.FetchedAt, first)
+	}
+}
+
+func TestMergePostsKeepsGUIDsThatAreNotLegacyFallbacks(t *testing.T) {
+	s := openTemp(t)
+	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The time in this GUID is not the publication time of the post, so the
+	// parser did not synthesize it as a fallback.
+	if _, err := s.MergePosts(feed.ID, []Post{{
+		GUID:        "a|2024-10-01T12:00:00Z|1a2b3c4d",
+		Title:       "a",
+		PublishedAt: base.Add(time.Hour),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	added, err := s.MergePosts(feed.ID, []Post{{GUID: "a|1a2b3c4d", Title: "a"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 1 {
+		t.Errorf("added = %d, want 1", added)
+	}
+	kept, err := s.Posts(feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 2 {
+		t.Errorf("kept = %d, want 2", len(kept))
+	}
+}
+
 func TestMarkAllRead(t *testing.T) {
 	s := openTemp(t)
 	feed, err := s.AddFeed(Feed{URL: "https://a.example/feed"})
@@ -893,5 +1244,42 @@ func TestMigrationSeedsFeedOrder(t *testing.T) {
 	defer reopened.Close()
 	if got := feedIDOrder(reopened.Feeds()); !slices.Equal(got, ids) {
 		t.Fatalf("seeded order = %v, want id order %v", got, ids)
+	}
+}
+
+func TestMigrationCreatesTombstonesBucket(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Simulate a v5 database: drop the bucket and downgrade the version.
+	err = s.db.Update(func(tx *bolt.Tx) error {
+		if err := tx.DeleteBucket([]byte(tombstonesBucket)); err != nil {
+			return err
+		}
+		return put(tx.Bucket([]byte(settingsBucket)), []byte(schemaVersionKey), 5)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	err = reopened.db.View(func(tx *bolt.Tx) error {
+		if tx.Bucket([]byte(tombstonesBucket)) == nil {
+			return errors.New("tombstones bucket is missing")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

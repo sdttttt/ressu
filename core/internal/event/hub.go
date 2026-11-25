@@ -201,8 +201,9 @@ func (h *Hub) snapshotLocked() Event {
 			Unread: snapshot.Unread,
 		},
 		Appearance: &Appearance{
-			Theme:    snapshot.Theme,
-			FontSize: snapshot.FontSize,
+			Theme:        snapshot.Theme,
+			FontSize:     snapshot.FontSize,
+			UIFontFamily: snapshot.UIFontFamily,
 		},
 		Selection: &Selection{FeedID: snapshot.CurrentFeedID},
 	}

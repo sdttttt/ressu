@@ -66,7 +66,7 @@ const defaultPrefs: Prefs = {
   remoteResources: "webview",
   openLinks: "browser",
   postSort: "published",
-  stripTrackers: false,
+  stripTrackers: true,
   postsPerFeed: 500,
   imageCacheLimit: 256,
   paneSizes: [18, 30],

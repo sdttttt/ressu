@@ -378,7 +378,7 @@ func (f *Feeds) Refresh(ctx context.Context, id int64) (store.Feed, error) {
 	return f.store.Feed(id)
 }
 
-// RefreshAll fetches every feed, four at a time, and reports each one through
+// RefreshAll fetches every feed, two at a time, and reports each one through
 // sync events.
 func (f *Feeds) RefreshAll(ctx context.Context) (SyncSummary, error) {
 	return f.refreshFeeds(ctx, f.store.Feeds())
@@ -406,7 +406,7 @@ func (f *Feeds) RefreshStale(ctx context.Context) (SyncSummary, error) {
 	return f.refreshFeeds(ctx, due)
 }
 
-// refreshFeeds fetches the given feeds, four at a time, and reports each one
+// refreshFeeds fetches the given feeds, two at a time, and reports each one
 // through sync events.
 func (f *Feeds) refreshFeeds(ctx context.Context, feeds []store.Feed) (SyncSummary, error) {
 	f.mu.Lock()

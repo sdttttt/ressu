@@ -122,6 +122,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time, strip bool)
 		if it == nil {
 			continue
 		}
+		dated := it.PublishedParsed != nil || it.UpdatedParsed != nil
 		published := now
 		switch {
 		case it.PublishedParsed != nil:
@@ -158,17 +159,17 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time, strip bool)
 			item.WordCount = textmetrics.Count(item.Summary)
 		}
 		if item.GUID == "" {
-			// Items without a GUID, link, or date would otherwise collide on
-			// the shared fetch timestamp; the content hash keeps same-batch
-			// duplicates apart and stays stable across refreshes.
+			// Items without a GUID or a link are told apart by a hash of
+			// their content, which keeps same-batch duplicates apart. A
+			// dated item also carries its date.
 			sum := fnv.New32a()
 			_, _ = io.WriteString(sum, it.Title)
 			_, _ = io.WriteString(sum, "\x00")
 			_, _ = io.WriteString(sum, it.Description)
 			_, _ = io.WriteString(sum, "\x00")
 			_, _ = io.WriteString(sum, it.Content)
-			item.GUID = item.Title + "|" + item.PublishedAt.Format(time.RFC3339Nano) +
-				fmt.Sprintf("|%08x", sum.Sum32())
+			item.GUID = item.Title + "|" + fallbackDate(published, dated) +
+				fmt.Sprintf("%08x", sum.Sum32())
 		}
 		if item.Title == "" {
 			item.Title = item.GUID
@@ -176,6 +177,17 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time, strip bool)
 		feed.Items = append(feed.Items, item)
 	}
 	return feed
+}
+
+// fallbackDate is the date part of the GUID given to an item without a GUID
+// or a link, empty for an item that has no date. Such an item must not carry
+// a time at all: the only one available is the fetch time, and a GUID that
+// changes on every refresh would store a new copy of the item each time.
+func fallbackDate(published time.Time, dated bool) string {
+	if !dated {
+		return ""
+	}
+	return published.Format(time.RFC3339Nano) + "|"
 }
 
 func descriptionOf(it *gofeed.Item) string {

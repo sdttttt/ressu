@@ -148,7 +148,7 @@ func TestParseBrokenFeed(t *testing.T) {
 	}
 }
 
-func TestParseFallsBackToTitleAndDate(t *testing.T) {
+func TestParseFallsBackToTitleAndContent(t *testing.T) {
 	text := `<?xml version="1.0"?>
 <rss version="2.0"><channel><title>No ids</title>
 <item><title>Nameless</title></item>
@@ -159,9 +159,8 @@ func TestParseFallsBackToTitleAndDate(t *testing.T) {
 		t.Fatal(err)
 	}
 	item := feed.Items[0]
-	prefix := "Nameless|" + testNow.Format(time.RFC3339Nano) + "|"
-	if !strings.HasPrefix(item.GUID, prefix) {
-		t.Errorf("guid = %q", item.GUID)
+	if !strings.HasPrefix(item.GUID, "Nameless|") || strings.Count(item.GUID, "|") != 1 {
+		t.Errorf("guid = %q, want Nameless|<8 hex digits>", item.GUID)
 	}
 	if !item.PublishedAt.Equal(testNow) {
 		t.Errorf("published = %s", item.PublishedAt)
@@ -231,6 +230,51 @@ func TestParseFallbackGUIDSeparatesSameBatchItems(t *testing.T) {
 	}
 	if feed.Items[0].GUID == feed.Items[1].GUID {
 		t.Errorf("same-batch items without link or date share a GUID: %q", feed.Items[0].GUID)
+	}
+}
+
+func TestParseFallbackGUIDIsStableAcrossRefreshes(t *testing.T) {
+	raw := `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item><title>undated</title><description>body</description></item>
+</channel></rss>`
+	first, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow.Add(time.Hour), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Only the fetch time dates the item. Carrying it would store a new copy
+	// on every refresh.
+	guid := first.Items[0].GUID
+	if guid != next.Items[0].GUID {
+		t.Errorf("fallback GUID changes with the fetch time: %q, then %q", guid, next.Items[0].GUID)
+	}
+	if title, hash, found := strings.Cut(guid, "|"); !found || title != "undated" ||
+		len(hash) != 8 || strings.Contains(hash, "|") {
+		t.Errorf("fallback GUID = %q, want undated|<8 hex digits>", guid)
+	}
+	if !first.Items[0].PublishedAt.Equal(testNow) || !next.Items[0].PublishedAt.Equal(testNow.Add(time.Hour)) {
+		t.Error("an undated item should be dated by its fetch")
+	}
+}
+
+func TestParseFallbackGUIDKeepsTheDate(t *testing.T) {
+	raw := `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item><title>dated</title><description>body</description>
+<pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate></item>
+</channel></rss>`
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if guid := feed.Items[0].GUID; !strings.HasPrefix(guid, "dated|2024-01-01T00:00:00Z|") {
+		t.Errorf("fallback GUID = %q, want the date after the title", guid)
 	}
 }
 

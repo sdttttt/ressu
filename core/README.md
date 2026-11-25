@@ -43,7 +43,8 @@ Ressu 阅读器的后端核心。
   `Accept`，以及可用的 `If-None-Match`/`If-Modified-Since`。请求和读取 body 共享 15 秒超时；
   响应最多读取 16 MiB；非 200/304 状态直接报错。
 - `rss.Parse` 使用 gofeed 读取 RSS 0.9x/1.0/2.0、Atom 和 JSON Feed。GUID 缺失时先退回
-  链接，再退回“标题 + 发布时间”；标题也缺失时使用 GUID。频道和文章里的相对链接按订阅源
+  链接，再由标题和内容哈希合成：条目有日期时把日期一并拼入，没有日期则不带任何时间，
+  否则每次刷新都会被当成新文章；标题也缺失时使用 GUID。频道和文章里的相对链接按订阅源
   地址解析为绝对地址，摘要去掉 HTML、折叠空白并截断。
 - 正文在 `core/internal/sanitize` 基于 bluemonday 清洗后入库；链接和媒体地址按文章地址补全。
   损坏 XML 或不是订阅源的页面返回错误，由服务层展示给用户。
@@ -91,15 +92,19 @@ Ressu 阅读器的后端核心。
 | `posts`    | 订阅 id（嵌套桶） | 每个 GUID 一条 `Post` 的 JSON                           |
 | `settings` | `prefs`           | 整个 `Prefs` 的 JSON                                    |
 | `icons`    | 订阅 id（嵌套桶） | `data` 键存原始图片字节；`meta` 键存缓存元数据 JSON     |
+| `tombstones` | 订阅 id（嵌套桶） | 被保留上限裁掉的文章：GUID 一条，值是 1 字节状态位（已读、星标） |
 
 - `Store` 在内存缓存订阅和偏好，文章每次从数据库读取；一把互斥锁串行化写操作；返回的
   slice 会克隆。bbolt 的文件锁意味着同一数据目录只能有一个进程打开数据库。
 - `settings/schemaVersion` 记录数据库版本；修改持久化结构必须兼容旧记录，或在
   `internal/store/migrate.go` 加入迁移。
-- `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt`，其余字段刷新；
-  按 `publishedAt` 倒序，裁剪到该源的保留上限（`Feed.KeepCount` 大于 0 时用它，否则用
-  `Prefs.PostsPerFeed`；星标文章不受上限约束），并重算未读；它在一个事务里重写该
-  订阅的整个文章桶。`UpdatePost` 和 `MarkAllRead` 只写受影响的数据。
+- `MergePosts` 按 GUID 合并：已有文章保留 `read`、`starred`、`fetchedAt` 和 `publishedAt`
+  （订阅源改了日期或不给日期，都不会把文章顶到列表最前），其余字段刷新；按 `publishedAt`
+  倒序，裁剪到该源的保留上限（`Feed.KeepCount` 大于 0 时用它，否则用 `Prefs.PostsPerFeed`；
+  星标文章不受上限约束），并重算未读；它在一个事务里重写该订阅的整个文章桶。被裁掉的
+  文章连同状态记入墓碑：之后再出现在订阅源里不计入新增，上限调大后带着原状态回来；
+  墓碑只覆盖最近一次合并见过的文章，退订时一并删除。`UpdatePost` 和 `MarkAllRead` 只写
+  受影响的数据。
 - `AddFeed` 使用“当前最大 id + 1”；删除最高 id 后该 id 会被复用。
 - 远程资源访问方式全局默认存于 `Prefs.RemoteResources`；每个订阅源可用
   `Feed.RemoteResources` 覆盖（空串 = 跟随全局，新增时由界面写入当时的全局值），

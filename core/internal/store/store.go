@@ -21,6 +21,7 @@ const (
 	feedsBucket      = "feeds"
 	postsBucket      = "posts"
 	iconsBucket      = "icons"
+	tombstonesBucket = "tombstones"
 	settingsBucket   = "settings"
 	prefsKey         = "prefs"
 	feedOrderKey     = "feedOrder"
@@ -30,7 +31,7 @@ const (
 )
 
 // currentSchemaVersion marks the newest data layout and cleanup behavior.
-const currentSchemaVersion = 5
+const currentSchemaVersion = 6
 
 // maxIconBytes bounds the raw image kept in the local cache.
 const maxIconBytes = 256 << 10
@@ -345,6 +346,9 @@ func (s *Store) RemoveFeed(id int64) error {
 			return err
 		}
 		if err := deleteIcon(tx, id); err != nil {
+			return err
+		}
+		if err := deleteTombstones(tx, id); err != nil {
 			return err
 		}
 		if err := tx.Bucket([]byte(feedsBucket)).Delete(feedKey(id)); err != nil {
@@ -709,8 +713,11 @@ func (s *Store) MarkAllRead(feedID int64) (int, error) {
 }
 
 // MergePosts adds the incoming posts that are new, refreshes the ones that are
-// already stored while keeping their read and starred flags, and saves the
-// feed's posts. It returns how many posts were new.
+// already stored while keeping their read and starred flags, the time they
+// were first fetched, and their publication time, and saves the feed's posts.
+// It returns how many posts were new. Posts cut by the retention limit are
+// remembered with their state: a later merge does not count them as new, and
+// they come back as they were once the limit has room for them.
 func (s *Store) MergePosts(feedID int64, incoming []Post) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -727,6 +734,11 @@ func (s *Store) MergePosts(feedID int64, incoming []Post) (int, error) {
 		if err != nil {
 			return err
 		}
+		tombstones, err := readTombstones(tx, feedID)
+		if err != nil {
+			return err
+		}
+		posts = foldLegacyGUIDs(posts, incoming)
 
 		index := make(map[string]int, len(posts))
 		for j, p := range posts {
@@ -742,21 +754,35 @@ func (s *Store) MergePosts(feedID int64, incoming []Post) (int, error) {
 				p.Read = kept.Read
 				p.Starred = kept.Starred
 				p.FetchedAt = kept.FetchedAt
+				// A stored post keeps its publication time. A feed that
+				// re-dates an item, or gives it none, would otherwise move
+				// it to the top of the list on every refresh.
+				p.PublishedAt = kept.PublishedAt
 				posts[j] = p
 				continue
 			}
 			p.FetchedAt = now
+			if state, remembered := tombstones[p.GUID]; remembered {
+				// The limit cut this post before. It returns as it was, and
+				// is cut again unless the limit has room for it now.
+				p.Read = state&tombstoneRead != 0
+				p.Starred = state&tombstoneStarred != 0
+			} else {
+				added++
+			}
 			posts = append(posts, p)
 			index[p.GUID] = len(posts) - 1
-			added++
 		}
 
 		slices.SortStableFunc(posts, byPublishedDesc)
-		posts = s.trimPosts(feedID, posts)
-		if err := replacePosts(tx, feedID, posts); err != nil {
+		kept, cut := s.trimPosts(feedID, posts)
+		if err := replacePosts(tx, feedID, kept); err != nil {
 			return err
 		}
-		unread = countUnread(posts)
+		if err := writeTombstones(tx, feedID, cut, tombstones); err != nil {
+			return err
+		}
+		unread = countUnread(kept)
 		return s.updateUnread(tx, feedID, unread)
 	}); err != nil {
 		return 0, err
@@ -819,30 +845,117 @@ func deletePosts(tx *bolt.Tx, feedID int64) error {
 	return parent.DeleteBucket(key)
 }
 
-// trimPosts cuts posts beyond the per-feed limit, keeping the newest ones.
-// The limit is the feed's own KeepCount when set, otherwise the global
-// preference. Starred posts are exempt from the limit and always kept.
-func (s *Store) trimPosts(feedID int64, posts []Post) []Post {
+// trimPosts cuts posts beyond the per-feed limit and returns the ones that
+// stay, then the ones cut. The limit is the feed's own KeepCount when set,
+// otherwise the global preference. Starred posts are exempt from the limit and
+// always kept.
+func (s *Store) trimPosts(feedID int64, posts []Post) (kept, cut []Post) {
 	limit := s.prefs.PostsPerFeed
 	if i := s.feedIndex(feedID); i >= 0 && s.feeds[i].KeepCount > 0 {
 		limit = s.feeds[i].KeepCount
 	}
 	if limit <= 0 || len(posts) <= limit {
-		return posts
+		return posts, nil
 	}
-	kept := make([]Post, 0, len(posts))
+	kept = make([]Post, 0, limit)
+	cut = make([]Post, 0, len(posts)-limit)
 	remaining := limit
 	for _, p := range posts {
-		if p.Starred {
+		switch {
+		case p.Starred:
 			kept = append(kept, p)
-			continue
-		}
-		if remaining > 0 {
+		case remaining > 0:
 			kept = append(kept, p)
 			remaining--
+		default:
+			cut = append(cut, p)
+		}
+	}
+	return kept, cut
+}
+
+// foldLegacyGUIDs folds the copies earlier versions stored for an item without
+// a GUID, a link, or a date. Its fallback GUID carried the time of the fetch,
+// so every refresh stored another copy. Such an item now arrives under a GUID
+// without a time, which is how a stored copy is recognized: the copy fetched
+// first keeps its place under the new GUID and absorbs the read and starred
+// flags of the others.
+func foldLegacyGUIDs(posts, incoming []Post) []Post {
+	known := make(map[string]bool, len(posts))
+	for _, p := range posts {
+		known[p.GUID] = true
+	}
+	var wanted []string
+	for _, p := range incoming {
+		if !known[p.GUID] && strings.Contains(p.GUID, "|") && !slices.Contains(wanted, p.GUID) {
+			wanted = append(wanted, p.GUID)
+		}
+	}
+	if len(wanted) == 0 {
+		return posts
+	}
+
+	copies := map[string][]int{}
+	for j, p := range posts {
+		if stable, ok := legacyFallbackGUID(p); ok && slices.Contains(wanted, stable) {
+			copies[stable] = append(copies[stable], j)
+		}
+	}
+	if len(copies) == 0 {
+		return posts
+	}
+
+	folded := false
+	removed := make([]bool, len(posts))
+	for stable, group := range copies {
+		first := group[0]
+		for _, j := range group[1:] {
+			if posts[j].FetchedAt.Before(posts[first].FetchedAt) {
+				first = j
+			}
+		}
+		survivor := &posts[first]
+		untitled := survivor.Title == survivor.GUID
+		for _, j := range group {
+			survivor.Read = survivor.Read || posts[j].Read
+			survivor.Starred = survivor.Starred || posts[j].Starred
+			if j != first {
+				removed[j] = true
+				folded = true
+			}
+		}
+		survivor.GUID = stable
+		if untitled {
+			survivor.Title = stable
+		}
+	}
+	if !folded {
+		return posts
+	}
+
+	kept := make([]Post, 0, len(posts))
+	for j, p := range posts {
+		if !removed[j] {
+			kept = append(kept, p)
 		}
 	}
 	return kept
+}
+
+// legacyFallbackGUID returns the GUID without a time that replaced the one an
+// earlier version gave a post without a GUID or a link: its title, a time, and
+// a content hash joined by "|". The time was the item's date, or the fetch time
+// when it had none. ok is false for any other GUID.
+func legacyFallbackGUID(p Post) (string, bool) {
+	last := strings.LastIndexByte(p.GUID, '|')
+	if last < 0 {
+		return "", false
+	}
+	middle := strings.LastIndexByte(p.GUID[:last], '|')
+	if middle < 0 || p.GUID[middle+1:last] != p.PublishedAt.Format(time.RFC3339Nano) {
+		return "", false
+	}
+	return p.GUID[:middle+1] + p.GUID[last+1:], true
 }
 
 func countUnread(posts []Post) int {

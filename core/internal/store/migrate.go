@@ -56,6 +56,11 @@ func migrate(tx *bolt.Tx) error {
 			return err
 		}
 	}
+	if version < 6 {
+		if _, err := tx.CreateBucketIfNotExists([]byte(tombstonesBucket)); err != nil {
+			return err
+		}
+	}
 	return put(settings, []byte(schemaVersionKey), currentSchemaVersion)
 }
 
