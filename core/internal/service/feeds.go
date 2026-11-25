@@ -617,6 +617,7 @@ func toPosts(items []rss.Item) []store.Post {
 			Author:      item.Author,
 			Summary:     item.Summary,
 			Content:     item.Content,
+			Image:       item.Image,
 			WordCount:   item.WordCount,
 			PublishedAt: item.PublishedAt,
 			Enclosures:  toEnclosures(item.Enclosures),

@@ -125,6 +125,44 @@ func bodyOf(document *html.Node) *html.Node {
 	return nil
 }
 
+// FirstImage returns the address of the first loadable image in sanitized
+// markup, or "" when the markup has none. The markup must already have gone
+// through HTML, so image addresses are absolute; data URIs are skipped
+// because storing them outside the body would duplicate their bytes.
+func FirstImage(markup string) string {
+	if markup == "" {
+		return ""
+	}
+	document, err := html.Parse(strings.NewReader(markup))
+	if err != nil {
+		return ""
+	}
+	body := bodyOf(document)
+	if body == nil {
+		return ""
+	}
+	return firstImageIn(body)
+}
+
+// firstImageIn walks the tree in document order and returns the first img
+// source the media cache may load.
+func firstImageIn(node *html.Node) string {
+	if node.Type == html.ElementNode && node.Data == "img" {
+		if src := attribute(node, "src"); src != nil {
+			if parsed, err := url.Parse(src.Val); err == nil && parsed.Host != "" &&
+				(parsed.Scheme == "http" || parsed.Scheme == "https") {
+				return src.Val
+			}
+		}
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		if found := firstImageIn(child); found != "" {
+			return found
+		}
+	}
+	return ""
+}
+
 // enhance performs rendering adjustments after bluemonday sanitization:
 // absolute URLs, safe external links, lazy images, and optionally stripped
 // tracking parameters on outbound links.

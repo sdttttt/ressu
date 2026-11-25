@@ -56,6 +56,7 @@ func PostListCallbacks(a *app.App) apppostlist.Callbacks {
 		MarkAllRead:    func(parent *mygo.Window, feedID int64) { markAllReadWithNotice(a, parent, feedID) },
 		OpenLink:       a.OpenLink,
 		CopyLink:       func(link string) { copyLinkToClipboard(a, link) },
+		Image:          a.ArticleImage,
 		SetPanePercent: a.SetListPercent,
 		Notify:         a.Notify,
 	}

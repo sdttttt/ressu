@@ -37,6 +37,7 @@ type Item struct {
 	Author      string
 	Summary     string
 	Content     string
+	Image       string
 	WordCount   int
 	PublishedAt time.Time
 	Enclosures  []Enclosure
@@ -151,6 +152,7 @@ func convertFeed(parsed *gofeed.Feed, feedURL string, now time.Time, strip bool)
 			Enclosures:  enclosuresOf(feedURL, it),
 		}
 		item.Content = sanitize.HTML(item.Content, item.URL, strip)
+		item.Image = sanitize.FirstImage(item.Content)
 		item.WordCount = textmetrics.Count(item.Content)
 		if item.WordCount == 0 {
 			item.WordCount = textmetrics.Count(item.Summary)

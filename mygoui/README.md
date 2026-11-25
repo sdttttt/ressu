@@ -45,6 +45,9 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
   加载，每页 100 篇。
 - 通过 `OnWindowShortcut` 处理 `j`/`k`/`n`/`p`/`Enter`/`s`；选择文章时携带完整摘要发布
   `post.selected`，已读和星标变化由服务层发布 `post.updated`。
+- 文章带首图（`PostSummary.Image`，入库时由 `sanitize.FirstImage` 从清洗后正文提取）时，
+  卡片右侧显示圆角方形缩略图，边长取上一帧卡片内容高度；图片经 `App.ArticleImage` 走
+  media 缓存异步加载解码，加载失败或无法解码（如 AVIF）的卡片保持纯文本。
 
 ## 快捷键分工
 

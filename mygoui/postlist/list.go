@@ -2,6 +2,7 @@
 package postlist
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -25,6 +26,11 @@ const (
 	pageSize       = 20
 	timeRefresh    = 30 * time.Second
 	reloadDebounce = 300 * time.Millisecond
+	// minThumbSide skips thumbnails on cards too short to show them.
+	minThumbSide = 24
+	// maxThumbs bounds the decoded thumbnail cache; reaching it drops the
+	// whole cache, and visible rows reload their images on demand.
+	maxThumbs = 256
 )
 
 // Callbacks connects the native article list to application actions.
@@ -36,8 +42,16 @@ type Callbacks struct {
 	MarkAllRead    func(parent *mygo.Window, feedID int64)
 	OpenLink       func(link string) error
 	CopyLink       func(link string)
+	Image          func(ctx context.Context, source string) ([]byte, error)
 	SetPanePercent func(percent float32)
 	Notify         func(level, message string)
+}
+
+// postThumb is one decoded article thumbnail, or the note that its image
+// cannot be shown.
+type postThumb struct {
+	source  ui.ImageSource
+	missing bool
 }
 
 // List renders articles with the WebView list's visual contract.
@@ -67,6 +81,9 @@ type List struct {
 	loadVersion   int
 	forceReload   bool
 
+	thumbs       map[string]postThumb
+	loadingThumb map[string]bool
+
 	appliedPostVersion uint64
 	query              app.PostQuery
 	search             string
@@ -95,10 +112,12 @@ func New(model *app.Model, callbacks Callbacks) *List {
 		SortBy:     app.SortField(snapshot.PostSort),
 	}
 	return &List{
-		model:       model,
-		callbacks:   callbacks,
-		panePercent: snapshot.ListPercent,
-		query:       query,
+		model:        model,
+		callbacks:    callbacks,
+		panePercent:  snapshot.ListPercent,
+		query:        query,
+		thumbs:       make(map[string]postThumb),
+		loadingThumb: make(map[string]bool),
 	}
 }
 
@@ -327,8 +346,8 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 		Background(postRowBackground(palette, selected)).
 		Transition(ui.ElementTransition{Duration: 100 * time.Millisecond, Colors: true}).
 		Label(post.Title)
+	bounds := row.Bounds()
 	if *frameAnchor == "" {
-		bounds := row.Bounds()
 		if viewport.H > 0 && bounds.H > 0 && bounds.Y+bounds.H > viewport.Y {
 			*frameAnchor = rowKey
 		}
@@ -342,57 +361,68 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 	if row.Pressed() {
 		row.Scale(0.98, 0.98)
 	}
+	side := bounds.H - 2*l.scaled(theme, 8)
+	thumb, showThumb := l.thumbFor(post, side)
 	row.Children(func() {
-		ui.Column(c).FillWidth().Children(func() {
-			title := ui.Text(c, post.Title).
-				FontSize(l.scaled(theme, 13)).
-				LineHeight(1.375).
-				MaxLines(2).
-				Ellipsis("…").
-				Wrap()
-			if post.Read {
-				title.TextColor(palette.TextMuted)
-			} else {
-				title.FontWeight(600)
-			}
-
-			if post.Summary != "" {
-				ui.Text(c, post.Summary).
-					Margin(l.scaled(theme, 4), 0, 0, 0).
-					FontSize(l.scaled(theme, 11)).
-					LineHeight(1.625).
-					MaxLines(3).
+		ui.Row(c).FillWidth().Gap(l.scaled(theme, 10)).Children(func() {
+			ui.Column(c).Grow(1).Children(func() {
+				title := ui.Text(c, post.Title).
+					FontSize(l.scaled(theme, 13)).
+					LineHeight(1.375).
+					MaxLines(2).
 					Ellipsis("…").
-					Wrap().
-					TextColor(palette.TextMuted)
-			}
+					Wrap()
+				if post.Read {
+					title.TextColor(palette.TextMuted)
+				} else {
+					title.FontWeight(600)
+				}
 
-			ui.Row(c).Margin(l.scaled(theme, 6), 0, 0, 0).AlignItems(ui.Center).
-				Gap(l.scaled(theme, 3)).
-				Padding(0, l.scaled(theme, 28), 0, 0).Children(func() {
-				if !post.Read {
-					ui.Box(c).Shrink(0).
-						Size(l.scaled(theme, 6), l.scaled(theme, 6)).
-						Radius(l.scaled(theme, 3)).
-						Background(palette.Primary)
+				if post.Summary != "" {
+					ui.Text(c, post.Summary).
+						Margin(l.scaled(theme, 4), 0, 0, 0).
+						FontSize(l.scaled(theme, 11)).
+						LineHeight(1.625).
+						MaxLines(3).
+						Ellipsis("…").
+						Wrap().
+						TextColor(palette.TextMuted)
 				}
-				for index, item := range postMetaItems(snapshot, post) {
-					if index > 0 {
-						ui.Text(c, "·").
-							FontSize(l.scaled(theme, 10)).
-							SingleLine().
-							TextColor(palette.TextMuted)
+
+				ui.Row(c).Margin(l.scaled(theme, 6), 0, 0, 0).AlignItems(ui.Center).
+					Gap(l.scaled(theme, 3)).
+					Padding(0, l.scaled(theme, 28), 0, 0).Children(func() {
+					if !post.Read {
+						ui.Box(c).Shrink(0).
+							Size(l.scaled(theme, 6), l.scaled(theme, 6)).
+							Radius(l.scaled(theme, 3)).
+							Background(palette.Primary)
 					}
-					text := l.metaText(c, theme, item.value).SingleLine()
-					if item.maxWidth > 0 {
-						text = text.MaxWidth(l.scaled(theme, item.maxWidth))
+					for index, item := range postMetaItems(snapshot, post) {
+						if index > 0 {
+							ui.Text(c, "·").
+								FontSize(l.scaled(theme, 10)).
+								SingleLine().
+								TextColor(palette.TextMuted)
+						}
+						text := l.metaText(c, theme, item.value).SingleLine()
+						if item.maxWidth > 0 {
+							text = text.MaxWidth(l.scaled(theme, item.maxWidth))
+						}
+						if item.shrink {
+							text = text.Shrink(1)
+						}
+						text.Ellipsis("…")
 					}
-					if item.shrink {
-						text = text.Shrink(1)
-					}
-					text.Ellipsis("…")
-				}
+				})
 			})
+			if showThumb {
+				ui.Image(c, thumb.source).
+					Size(side, side).
+					Fit(ui.Cover).
+					Radius(l.scaled(theme, 6)).
+					Shrink(0)
+			}
 		})
 
 		star := ui.ButtonBase(c).Absolute().
@@ -471,6 +501,54 @@ func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element
 		SingleLine().
 		TextColor(guitheme.NewPostPalette(*theme).TextMuted).
 		FontFeatures("tnum")
+}
+
+// thumbFor returns the decoded thumbnail of post and whether the card draws
+// it this frame. side is the square's edge: the card's content height from
+// the row's previous-frame bounds. The card height is text-driven and stable
+// per post, so sizing the image to it never feeds back into the row height.
+func (l *List) thumbFor(post app.PostSummary, side float32) (postThumb, bool) {
+	if post.Image == "" {
+		return postThumb{}, false
+	}
+	thumb, ok := l.thumbs[post.Image]
+	if !ok {
+		l.loadThumb(post.Image)
+		return postThumb{}, false
+	}
+	if thumb.missing || side < minThumbSide {
+		return postThumb{}, false
+	}
+	return thumb, true
+}
+
+// loadThumb fetches and decodes one article image off the main thread. The
+// media cache behind the callback deduplicates downloads and remembers
+// failures, so a missing thumbnail is not retried on every frame.
+func (l *List) loadThumb(source string) {
+	if l.callbacks.Image == nil || l.loadingThumb[source] {
+		return
+	}
+	if len(l.thumbs) >= maxThumbs {
+		l.thumbs = make(map[string]postThumb)
+	}
+	l.loadingThumb[source] = true
+	load := l.callbacks.Image
+	go func() {
+		data, err := load(context.Background(), source)
+		thumb := postThumb{missing: err != nil || len(data) == 0}
+		if !thumb.missing {
+			if decoded, decodeErr := ui.DecodeImage(data); decodeErr != nil {
+				thumb = postThumb{missing: true}
+			} else {
+				thumb = postThumb{source: decoded}
+			}
+		}
+		l.submit(func() {
+			delete(l.loadingThumb, source)
+			l.thumbs[source] = thumb
+		})
+	}()
 }
 
 // metaItem is one field of a row's meta line, with an optional width cap and

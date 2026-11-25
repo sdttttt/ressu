@@ -293,6 +293,16 @@ func (a *App) OpenImage(ctx context.Context, parent WindowHandle, source, alt st
 	return a.ui.OpenImageViewer(parent, image.Data, image.ViewerURL, alt)
 }
 
+// ArticleImage loads an article image for native surfaces, such as the
+// article list thumbnails.
+func (a *App) ArticleImage(ctx context.Context, source string) ([]byte, error) {
+	image, err := a.posts.LoadImage(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+	return image.Data, nil
+}
+
 // DownloadEnclosure saves a post attachment through the native save dialog.
 // The address must pass the public-URL policy before the dialog opens; the
 // download itself streams through the guarded media client.

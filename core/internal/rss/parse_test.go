@@ -248,3 +248,23 @@ func TestValidateURL(t *testing.T) {
 		}
 	}
 }
+
+func TestParseExtractsFirstImage(t *testing.T) {
+	raw := `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item><title>with image</title><link>https://example.com/posts/1</link>
+<description>&lt;p&gt;text&lt;/p&gt;&lt;img src="/pic/cover.png"&gt;</description></item>
+<item><title>text only</title><link>https://example.com/posts/2</link>
+<description>&lt;p&gt;plain&lt;/p&gt;</description></item>
+</channel></rss>`
+	feed, err := Parse([]byte(raw), "https://example.com/feed.xml", testNow, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := feed.Items[0].Image; got != "https://example.com/pic/cover.png" {
+		t.Errorf("image = %q", got)
+	}
+	if got := feed.Items[1].Image; got != "" {
+		t.Errorf("image = %q, want empty", got)
+	}
+}

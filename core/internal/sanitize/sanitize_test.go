@@ -148,3 +148,63 @@ func TestHTMLPreservesWhitespaceOnlyInput(t *testing.T) {
 		t.Fatalf("output = %q, want %q", output, input)
 	}
 }
+
+func TestFirstImage(t *testing.T) {
+	tests := []struct {
+		name   string
+		markup string
+		want   string
+	}{
+		{
+			name:   "first of several images",
+			markup: `<p>text</p><img src="https://example.com/a.png"><img src="https://example.com/b.png">`,
+			want:   "https://example.com/a.png",
+		},
+		{
+			name:   "nested image",
+			markup: `<figure><a href="https://example.com"><img src="https://example.com/nested.jpg"></a></figure>`,
+			want:   "https://example.com/nested.jpg",
+		},
+		{
+			name:   "no image",
+			markup: `<p>text only</p>`,
+			want:   "",
+		},
+		{
+			name:   "empty markup",
+			markup: "",
+			want:   "",
+		},
+		{
+			name:   "data URI skipped",
+			markup: `<img src="data:image/png;base64,aGk="><img src="https://example.com/real.png">`,
+			want:   "https://example.com/real.png",
+		},
+		{
+			name:   "only data URI",
+			markup: `<img src="data:image/png;base64,aGk=">`,
+			want:   "",
+		},
+		{
+			name:   "image without source",
+			markup: `<img alt="broken">`,
+			want:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitize.FirstImage(tt.markup); got != tt.want {
+				t.Errorf("FirstImage() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFirstImageReadsSanitizedOutput(t *testing.T) {
+	clean := sanitize.HTML(
+		`<p>正文</p><img src="/pic/cover.png">`,
+		"https://example.com/post", false)
+	if got := sanitize.FirstImage(clean); got != "https://example.com/pic/cover.png" {
+		t.Errorf("FirstImage(sanitized) = %q", got)
+	}
+}

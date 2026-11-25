@@ -1,7 +1,13 @@
 package postlist
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"fmt"
+	"image"
+	"image/png"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -843,5 +849,82 @@ func frameUntilQuery(t *testing.T, tester *ui.Tester, queries chan app.PostQuery
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for %s", message)
 		}
+	}
+}
+
+func TestPostListLoadsArticleThumbnails(t *testing.T) {
+	model := app.NewStatusModel("")
+	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
+	model.SetFeeds(app.StatusFeedsSnapshot{Unread: 3})
+	loaded := make(chan struct{}, 1)
+	var picture bytes.Buffer
+	if err := png.Encode(&picture, image.NewRGBA(image.Rect(0, 0, 8, 8))); err != nil {
+		t.Fatal(err)
+	}
+	requested := make(chan string, 4)
+	postList := New(model, Callbacks{
+		List: func(query app.PostQuery) (app.PostPage, error) {
+			defer func() { loaded <- struct{}{} }()
+			return app.PostPage{
+				Posts: []app.PostSummary{
+					{FeedID: 1, GUID: "with", Title: "With image", Image: "https://example.com/a.png"},
+					{FeedID: 1, GUID: "broken", Title: "Broken image", Image: "https://example.com/broken.png"},
+					{FeedID: 1, GUID: "plain", Title: "No image"},
+				},
+				Total:  3,
+				Unread: 3,
+			}, nil
+		},
+		Image: func(_ context.Context, source string) ([]byte, error) {
+			requested <- source
+			if strings.HasSuffix(source, "broken.png") {
+				return nil, errors.New("gone")
+			}
+			return picture.Bytes(), nil
+		},
+	})
+
+	tester := ui.NewTester(postList.View, 360, 520)
+	tester.Frame()
+	select {
+	case <-loaded:
+	case <-time.After(time.Second):
+		t.Fatal("article list did not load")
+	}
+	tester.Frame()
+
+	for range 2 {
+		select {
+		case <-requested:
+		case <-time.After(time.Second):
+			t.Fatal("article thumbnails were not requested")
+		}
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for len(postList.thumbs) < 2 {
+		tester.Frame()
+		if time.Now().After(deadline) {
+			t.Fatalf("thumbnails not decoded, cache = %+v", postList.thumbs)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if postList.thumbs["https://example.com/a.png"].missing {
+		t.Error("loadable image marked missing")
+	}
+	if !postList.thumbs["https://example.com/broken.png"].missing {
+		t.Error("failed image not marked missing")
+	}
+	// Render the loaded state: the decoded thumbnail joins the card and the
+	// missing one leaves the card text-only.
+	tester.Frame()
+	for _, text := range []string{"With image", "Broken image", "No image"} {
+		if !tester.HasText(text) {
+			t.Errorf("article list is missing %q", text)
+		}
+	}
+	select {
+	case source := <-requested:
+		t.Errorf("thumbnail %q was requested again after settling", source)
+	case <-time.After(50 * time.Millisecond):
 	}
 }

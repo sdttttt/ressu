@@ -132,6 +132,8 @@ export interface Post {
   author: string;
   summary: string;
   content: string;
+  /** first loadable image of the body, empty when none */
+  image: string;
   wordCount: number;
   publishedAt: string;
   fetchedAt: string;
@@ -182,6 +184,7 @@ export interface PostSummary {
   url: string;
   author: string;
   summary: string;
+  image: string;
   wordCount: number;
   publishedAt: string;
   fetchedAt: string;

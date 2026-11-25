@@ -61,6 +61,7 @@ type Post struct {
 	Author      string      `json:"author"`
 	Summary     string      `json:"summary"`
 	Content     string      `json:"content"`
+	Image       string      `json:"image"` // first loadable image of the body, empty when none
 	WordCount   int         `json:"wordCount"`
 	PublishedAt time.Time   `json:"publishedAt"`
 	FetchedAt   time.Time   `json:"fetchedAt"`
@@ -78,6 +79,7 @@ func (p Post) ToSummary() PostSummary {
 		URL:         p.URL,
 		Author:      p.Author,
 		Summary:     p.Summary,
+		Image:       p.Image,
 		WordCount:   p.WordCount,
 		PublishedAt: p.PublishedAt,
 		FetchedAt:   p.FetchedAt,
@@ -94,6 +96,7 @@ type PostSummary struct {
 	URL         string    `json:"url"`
 	Author      string    `json:"author"`
 	Summary     string    `json:"summary"`
+	Image       string    `json:"image"`
 	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
 	FetchedAt   time.Time `json:"fetchedAt"`
@@ -111,6 +114,7 @@ type PostSkim struct {
 	URL         string    `json:"url"`
 	Author      string    `json:"author"`
 	Summary     string    `json:"summary"`
+	Image       string    `json:"image"`
 	WordCount   int       `json:"wordCount"`
 	PublishedAt time.Time `json:"publishedAt"`
 	FetchedAt   time.Time `json:"fetchedAt"`
