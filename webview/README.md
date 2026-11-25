@@ -11,7 +11,7 @@ WebView。页面**没有网络权限**：所有数据走生成的类型化绑定
 | -------------------- | ---------------------------------------------------------- |
 | `index.html`         | 阅读页入口（仅挂载点），`lang="zh-CN"`                      |
 | `snapshot.html`      | 快照采集页入口，独立子窗口加载                              |
-| `vite.config.ts`     | 多页构建（两个入口）、dev server 端口 5173                  |
+| `vite.config.ts`     | 多页构建（两个入口）、dev server 端口 1886                  |
 | `vitest.config.ts`   | vitest 配置（node 环境，跑 `src/**/*.test.ts`）             |
 | `tsconfig.json`      | 严格模式 TS 配置（`tsc --noEmit` 即 `bun run typecheck`）   |
 | `src/mygo.ts`        | `bun run generate` 生成的类型化绑定，**不要手改**           |
@@ -22,7 +22,7 @@ WebView。页面**没有网络权限**：所有数据走生成的类型化绑定
 ## 构建与开发
 
 - `bun run dev` 按 `mygo.config.ts` 的 `devCommand` 自动启动 vite dev server（HMR），
-  窗口加载 `devUrl`（http://localhost:5173）。
+  窗口加载 `devUrl`（http://localhost:1886）。
 - `bun run build` 按 `buildCommand` 先构建前端再内嵌打包。
 - `bun run typecheck` 类型检查；`bun run test` 跑 vitest；`bun run check` 两者一起；
   `bun run build:web` 只构建前端（调试产物用）。
