@@ -27,6 +27,13 @@ jobs:
         with:
           bun-version: "1.4.4"
 
+      - name: Replace lockfile registry URLs
+        shell: bash
+        run: |
+          sed 's#https://registry\.npmmirror\.com#https://registry.npmjs.org#g' \
+            bun.lock > bun.lock.tmp
+          mv bun.lock.tmp bun.lock
+
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
@@ -78,6 +85,13 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
+
+      - name: Replace lockfile registry URLs
+        shell: bash
+        run: |
+          sed 's#https://registry\.npmmirror\.com#https://registry.npmjs.org#g' \
+            bun.lock > bun.lock.tmp
+          mv bun.lock.tmp bun.lock
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
