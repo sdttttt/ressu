@@ -28,6 +28,8 @@ const (
 	reloadDebounce = 300 * time.Millisecond
 	// minThumbSide skips thumbnails on cards too short to show them.
 	minThumbSide = 24
+	// thumbRatio sizes the thumbnail below the card's full content height.
+	thumbRatio = 0.75
 	// maxThumbs bounds the decoded thumbnail cache; reaching it drops the
 	// whole cache, and visible rows reload their images on demand.
 	maxThumbs = 256
@@ -361,7 +363,7 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 	if row.Pressed() {
 		row.Scale(0.98, 0.98)
 	}
-	side := bounds.H - 2*l.scaled(theme, 8)
+	side := (bounds.H - 2*l.scaled(theme, 8)) * thumbRatio
 	thumb, showThumb := l.thumbFor(post, side)
 	row.Children(func() {
 		ui.Row(c).FillWidth().Gap(l.scaled(theme, 10)).Children(func() {
@@ -383,15 +385,14 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 						Margin(l.scaled(theme, 4), 0, 0, 0).
 						FontSize(l.scaled(theme, 11)).
 						LineHeight(1.625).
-						MaxLines(3).
+						MaxLines(2).
 						Ellipsis("…").
 						Wrap().
 						TextColor(palette.TextMuted)
 				}
 
 				ui.Row(c).Margin(l.scaled(theme, 6), 0, 0, 0).AlignItems(ui.Center).
-					Gap(l.scaled(theme, 3)).
-					Padding(0, l.scaled(theme, 28), 0, 0).Children(func() {
+					Gap(l.scaled(theme, 3)).Children(func() {
 					if !post.Read {
 						ui.Box(c).Shrink(0).
 							Size(l.scaled(theme, 6), l.scaled(theme, 6)).
@@ -421,46 +422,10 @@ func (l *List) drawPost(c *ui.Context, theme *ui.Theme, snapshot app.Snapshot, p
 					Size(side, side).
 					Fit(ui.Cover).
 					Radius(l.scaled(theme, 6)).
+					AlignSelf(ui.Center).
 					Shrink(0)
 			}
 		})
-
-		star := ui.ButtonBase(c).Absolute().
-			Bottom(l.scaled(theme, 4)).Right(l.scaled(theme, 4)).
-			Size(l.scaled(theme, 24), l.scaled(theme, 24)).
-			Radius(l.scaled(theme, 6)).Cursor(ui.CursorPointer).
-			Label(map[bool]string{true: "取消星标", false: "加星标"}[post.Starred]).
-			IgnoreInput(!post.Starred && !hovered)
-		starHovered := star.Hovered()
-		starPressed := star.Pressed()
-		if starHovered || starPressed {
-			star.Background(palette.Accent)
-		} else {
-			star.Background(ui.Transparent)
-		}
-		if post.Starred || hovered {
-			icon := appicon.Star
-			if post.Starred {
-				icon = appicon.StarFilled
-			}
-			iconColor := palette.Foreground
-			if post.Starred {
-				iconColor = palette.Warning
-			}
-			if starHovered || starPressed {
-				iconColor = palette.AccentForeground
-			}
-			star.Children(func() {
-				ui.Icon(c, icon).
-					Size(l.scaled(theme, 14), l.scaled(theme, 14)).
-					TextColor(iconColor)
-			})
-		} else {
-			star.Opacity(0)
-		}
-		if star.Clicked() {
-			l.toggleStar(post)
-		}
 	})
 	if row.Clicked() {
 		selected := post
@@ -504,9 +469,10 @@ func (l *List) metaText(c *ui.Context, theme *ui.Theme, value string) ui.Element
 }
 
 // thumbFor returns the decoded thumbnail of post and whether the card draws
-// it this frame. side is the square's edge: the card's content height from
-// the row's previous-frame bounds. The card height is text-driven and stable
-// per post, so sizing the image to it never feeds back into the row height.
+// it this frame. side is the square's edge: a share of the card's content
+// height from the row's previous-frame bounds. The card height is
+// text-driven and stable per post, so sizing the image to it never feeds
+// back into the row height.
 func (l *List) thumbFor(post app.PostSummary, side float32) (postThumb, bool) {
 	if post.Image == "" {
 		return postThumb{}, false

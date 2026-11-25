@@ -234,61 +234,6 @@ func TestPostListNavigationShortcuts(t *testing.T) {
 	}
 }
 
-func TestPostListStarDoesNotOpenArticle(t *testing.T) {
-	model := app.NewStatusModel("")
-	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
-	loaded := make(chan struct{}, 1)
-	selected := make(chan struct{}, 1)
-	starred := make(chan string, 1)
-	postList := New(model, Callbacks{
-		List: func(app.PostQuery) (app.PostPage, error) {
-			defer func() { loaded <- struct{}{} }()
-			return app.PostPage{
-				Posts: []app.PostSummary{
-					{FeedID: 1, GUID: "first", Title: "First article", Starred: true},
-				},
-				Total:  1,
-				Unread: 1,
-			}, nil
-		},
-		Select: func(app.PostSummary, int) {
-			selected <- struct{}{}
-		},
-		ToggleStar: func(_ int64, guid string) (app.PostSummary, error) {
-			starred <- guid
-			return app.PostSummary{GUID: guid, Starred: false}, nil
-		},
-	})
-
-	tester := ui.NewTester(postList.View, 360, 520)
-	tester.Frame()
-	select {
-	case <-loaded:
-	case <-time.After(time.Second):
-		t.Fatal("article list did not load")
-	}
-	tester.Frame()
-
-	row, ok := tester.Access("First article")
-	if !ok {
-		t.Fatal("article row is missing")
-	}
-	tester.ClickAt(row.Bounds.X+row.Bounds.W-16, row.Bounds.Y+row.Bounds.H-16)
-	select {
-	case guid := <-starred:
-		if guid != "first" {
-			t.Errorf("toggled star for %q, want first", guid)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("clicking the star did not toggle it")
-	}
-	select {
-	case <-selected:
-		t.Fatal("clicking the star opened the article")
-	default:
-	}
-}
-
 func TestPostListLoadsSelectedFeedAndNextPage(t *testing.T) {
 	model := app.NewStatusModel("")
 	model.SetAppearance(app.ThemeSystem, app.FontSizeSmall, "")
