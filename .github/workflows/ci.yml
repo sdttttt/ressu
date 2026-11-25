@@ -4,8 +4,18 @@ on:
   push:
     branches: [master, develop]
     tags: ["v*"]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
   pull_request:
     branches: [master, develop]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
 
 jobs:
   test:
