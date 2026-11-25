@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, flush } from "solid-js";
 
 import { Posts, Settings, Status, events } from "../mygo";
 import type {
@@ -166,12 +166,15 @@ export const applyAppearanceFromPrefs = () => {
 const applyAppearance = (appearance: Appearance | null) => {
   if (!appearance) return;
   setPrefs((current) => ({ ...current, theme: appearance.theme, fontSize: appearance.fontSize }));
+  // Solid 2 stages writes; commit before reading prefs back.
+  flush();
   applyAppearanceFromPrefs();
 };
 
 const applyPrefs = (next: Prefs | null) => {
   if (!next) return;
   setPrefs(next);
+  flush();
   applyAppearanceFromPrefs();
 };
 
@@ -334,6 +337,7 @@ export const clearPost = () => {
     stopLayerAnimation(layer);
   }
   setLayers([]);
+  flush();
   updateProgress();
 };
 
@@ -382,6 +386,7 @@ const openPost = (selection: PostSelection, direction: number) => {
 
   const entering = new Layer(selection, direction > 0 ? "enter" : "cover-down", swap);
   setLayers((stack) => [...stack, entering]);
+  flush();
   updateProgress();
   void loadIntoLayer(entering, requestId);
 };
@@ -411,6 +416,7 @@ const loadIntoLayer = async (layer: Layer, requestId: number) => {
 const restoreCovered = (layer: Layer) => {
   stopLayerAnimation(layer);
   removeLayer(layer);
+  flush();
   const previous = topLayer();
   if (previous && previous.retired) {
     previous.retired = false;

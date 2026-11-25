@@ -1,4 +1,4 @@
-import { Show, createEffect, onCleanup, onMount } from "solid-js";
+import { Show, createEffect, onSettled } from "solid-js";
 import { createSignal } from "solid-js";
 
 import { Posts, Settings, Snapshot } from "../mygo";
@@ -79,13 +79,16 @@ const applyReadingPrefs = async () => {
  */
 function CardBody(props: { post: Post }) {
   let element!: HTMLDivElement;
-  createEffect(() => {
-    if (props.post.content) {
-      element.innerHTML = props.post.content;
-    } else {
-      element.textContent = props.post.summary;
-    }
-  });
+  createEffect(
+    () => props.post,
+    (post) => {
+      if (post.content) {
+        element.innerHTML = post.content;
+      } else {
+        element.textContent = post.summary;
+      }
+    },
+  );
   return <div class="post-content" ref={element} />;
 }
 
@@ -221,12 +224,12 @@ export function SnapshotApp() {
     closeWindow();
   };
 
-  onMount(() => {
+  onSettled(() => {
     window.addEventListener("keydown", handleKey);
-    onCleanup(() => {
-      window.removeEventListener("keydown", handleKey);
-    });
     void run();
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
   });
 
   return (

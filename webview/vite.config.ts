@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vite";
-import solid from "vite-plugin-solid";
+import solid from "@solidjs/vite-plugin";
 
 // The config sits in webview/, but the scripts run from the repository root.
 const root = fileURLToPath(new URL(".", import.meta.url));

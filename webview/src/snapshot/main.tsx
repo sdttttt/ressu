@@ -1,5 +1,5 @@
 import { isMyGo } from "mygo-runtime";
-import { render } from "solid-js/web";
+import { render } from "@solidjs/web";
 
 import { SnapshotApp } from "./app";
 

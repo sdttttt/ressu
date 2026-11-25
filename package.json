@@ -15,15 +15,16 @@
     "check": "bun run typecheck && bun run test"
   },
   "devDependencies": {
-    "@types/node": "^26.6.6",
+    "@solidjs/vite-plugin": "^3.0.1",
+    "@types/node": "^26.6.7",
     "mygo-cli": "0.10.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vite-plugin-solid": "^2.11.17",
     "vitest": "^5.1.1"
   },
   "dependencies": {
+    "@solidjs/web": "^2.0.4",
     "mygo-runtime": "0.10.0",
-    "solid-js": "^1.9.0"
+    "solid-js": "^2.0.4"
   }
 }

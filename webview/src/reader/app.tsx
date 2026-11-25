@@ -1,4 +1,4 @@
-import { For, onCleanup, onMount } from "solid-js";
+import { For, onSettled } from "solid-js";
 
 import { Posts } from "../mygo";
 import { ArticleLayerView } from "./article-layer";
@@ -79,7 +79,7 @@ const handleBodyClick = (event: MouseEvent) => {
 export function ReaderApp() {
   let stackEl!: HTMLDivElement;
 
-  onMount(() => {
+  onSettled(() => {
     let unsubscribe: (() => void) | undefined;
     void startStore().then((stop) => {
       unsubscribe = stop;
@@ -94,12 +94,12 @@ export function ReaderApp() {
     stackEl.addEventListener("scroll", updateProgress, true);
     window.addEventListener("resize", updateProgress);
 
-    onCleanup(() => {
+    return () => {
       unsubscribe?.();
       mediaQuery.removeEventListener("change", onSystemThemeChange);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("resize", updateProgress);
-    });
+    };
   });
 
   const hasLayers = () => layers().length > 0;

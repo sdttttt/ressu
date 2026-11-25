@@ -1,4 +1,4 @@
-import { Show, createEffect, onCleanup } from "solid-js";
+import { Show, createEffect } from "solid-js";
 
 import { Attachments } from "./attachments";
 import { Layer, playKind } from "./store";
@@ -23,14 +23,16 @@ function Skeleton() {
  */
 function PostContent(props: { post: LayerPost }) {
   let element!: HTMLDivElement;
-  createEffect(() => {
-    const post = props.post;
-    if (post.html) {
-      element.innerHTML = post.html;
-    } else {
-      element.textContent = post.summary;
-    }
-  });
+  createEffect(
+    () => props.post,
+    (post) => {
+      if (post.html) {
+        element.innerHTML = post.html;
+      } else {
+        element.textContent = post.summary;
+      }
+    },
+  );
   return <div class="post-content" ref={element} />;
 }
 
@@ -42,15 +44,18 @@ function PostContent(props: { post: LayerPost }) {
 export function ArticleLayerView(props: { layer: Layer }) {
   const layer = props.layer;
 
-  createEffect(() => {
-    playKind(layer, layer.kind());
-  });
-  onCleanup(() => {
-    if (layer.animation) {
-      layer.animation.cancel();
-      layer.animation = null;
-    }
-  });
+  createEffect(
+    () => layer.kind(),
+    (kind) => {
+      playKind(layer, kind);
+      return () => {
+        if (layer.animation) {
+          layer.animation.cancel();
+          layer.animation = null;
+        }
+      };
+    },
+  );
 
   return (
     <div
