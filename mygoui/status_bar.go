@@ -61,17 +61,25 @@ func (b *StatusBar) View(c *ui.Context) {
 					ui.Text(c, "刷新失败").TextColor(theme.Danger).
 						Tooltip(snapshot.Sync.Error).SingleLine()
 				}
-				if snapshot.CurrentFeed != nil && snapshot.CurrentFeed.LastFetchedAt != nil {
+				feed := snapshot.CurrentFeed
+				if feed != nil && feed.LastError != "" {
 					if snapshot.Sync.Active || snapshot.Sync.Error != "" {
 						divider(c, theme, fontScale)
 					}
-					fetched := *snapshot.CurrentFeed.LastFetchedAt
+					ui.Textf(c, "刷新失败:%s", feed.LastError).TextColor(theme.Danger).
+						Tooltip(feed.LastError).MinWidth(0).SingleLine()
+				}
+				if feed != nil && feed.LastFetchedAt != nil {
+					if feed.LastError != "" || snapshot.Sync.Active || snapshot.Sync.Error != "" {
+						divider(c, theme, fontScale)
+					}
+					fetched := *feed.LastFetchedAt
 					ui.Textf(c, "上次刷新 %s", relativeTime(snapshot.RelativeStart, fetched)).
 						TextColor(theme.TextMuted).FontFeatures("tnum").SingleLine()
 					scheduleRelativeRefresh(c, snapshot.RelativeStart)
 				}
 				if snapshot.Version != "" {
-					if snapshot.CurrentFeed != nil && snapshot.CurrentFeed.LastFetchedAt != nil {
+					if feed != nil && (feed.LastError != "" || feed.LastFetchedAt != nil) {
 						divider(c, theme, fontScale)
 					}
 					version := ui.Textf(c, "v%s", snapshot.Version).
