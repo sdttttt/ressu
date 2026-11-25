@@ -7,7 +7,7 @@ module，只依赖 mygo 与 `ressu/core`。core 侧只允许 import
 组合 service 与 `core/app.App`、注册 `webendpoint` 绑定、创建主窗），`menu_*.go` 实现
 macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文章列表、文章头部的回调组装
 集中在根包的 `callbacks.go`；可复用的主题、格式化、图标、控件、对话框和子窗口放在基础包，
-订阅源栏、文章列表、文章头部和各类窗口放在功能包。组件只持有 `status.Model` 快照与
+订阅源栏、文章列表、文章头部和各类窗口放在功能包。组件只持有 `app.Model` 快照与
 `core/app.App` 提供的回调，不得直接访问数据库或实现业务规则。
 
 原生界面是即时模式 UI：构造器写入指针，用 `Element.Changed()` 判断变化，用
@@ -21,7 +21,8 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
   `app.SetListPercent` 保存。
 - 原生界面主题从 `ui.LightTheme()`/`ui.DarkTheme()` 重新构建，不能复制嵌套
   `ui.Themed` 里的 `c.Theme()` 后再缩放字号，否则会重复应用系统/应用字号。侧栏和文章
-  列表都以 13px 为基准字号，文章列表使用与旧 WebView 一致的 OKLCH 色彩 token。
+  列表都以 13px 为基准字号，文章列表使用与阅读页（`webview/src/reader/styles.css`）一致
+  的 OKLCH 色彩 token。
 
 ## 订阅源栏（sidebar）
 
@@ -51,7 +52,7 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 | -------------------------- | ---------------------------- |
 | `j` `k` `n` `p` `Enter` `s` | 文章列表（postlist）        |
 | `h` `l` `?`（Shift+/）     | 主窗口（app_view）          |
-| `Space` `m` `v`            | 阅读页正文（src/reader/main.ts） |
+| `Space` `m` `v`            | 阅读页正文（`webview/src/reader/app.tsx`） |
 
 文本输入获得焦点时全部跳过。WebView 持有焦点时，阅读页只拦截 `h`、`l` 和 `?`，
 经 `Status` 绑定转交原生 GUI 并 `preventDefault()`，避免物理按键丢失。
@@ -90,7 +91,7 @@ macOS 菜单；根包还做主窗布局、状态栏和 `NativeUI`；侧栏、文
 
 ## 原生通知（dialog）
 
-- 页面不使用网页 toast。静态页经 `Status.Notify` → `core/app.App.Notify` →
+- 页面不使用网页 toast。阅读页经 `Status.Notify` → `core/app.App.Notify` →
   `NativeUI.ShowNotification` 进入原生队列。
 - 通知在非 UI goroutine 上入队并触发主窗口 `Invalidate()`；`AppView.View` 下一帧取出
   队列调用 `ui.ToastViewportBase` 渲染。队列最多 32 条，类型只接受

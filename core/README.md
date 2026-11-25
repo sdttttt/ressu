@@ -153,7 +153,7 @@ func main() {
 
 	// 4. 正常使用：订阅、刷新、读文章。
 	ctx := context.Background()
-	feed, err := feeds.Add(ctx, "", "https://example.com/feed.xml")
+	feed, err := feeds.Add(ctx, "", "https://example.com/feed.xml", "", 0)
 	if err != nil {
 		log.Fatal(err)
 	}
