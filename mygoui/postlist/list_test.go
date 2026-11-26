@@ -346,10 +346,8 @@ func TestPostListLoadMoreCountsOnlyUnreadPosts(t *testing.T) {
 	if second.Offset != 17 {
 		t.Errorf("second query offset = %d, want 17 (only unread rows count)", second.Offset)
 	}
-	tester.Frame()
-	if !tester.HasText("Post 25") {
-		t.Error("article list is missing posts after the in-place read rows")
-	}
+	waitForCondition(t, tester, func() bool { return tester.HasText("Post 25") },
+		"the loaded page to render after the in-place read rows")
 }
 
 func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
@@ -388,7 +386,8 @@ func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("article list did not load")
 	}
-	tester.Frame()
+	waitForCondition(t, tester, func() bool { return tester.HasText("Post 20") },
+		"the first page to render")
 
 	select {
 	case extra := <-queries:
@@ -406,10 +405,8 @@ func TestPostListAutoLoadsNextPageNearBottom(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("scrolling to the bottom did not load the next page")
 	}
-	tester.Frame()
-	if !tester.HasText("Post 25") {
-		t.Error("article list is missing posts from the auto-loaded page")
-	}
+	waitForCondition(t, tester, func() bool { return tester.HasText("Post 25") },
+		"the auto-loaded page to render")
 
 	// Everything is loaded now: staying at the bottom must not query again.
 	postList.scroll.Y = postList.scroll.MaxY
