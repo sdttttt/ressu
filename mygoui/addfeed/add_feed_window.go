@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	"github.com/sdttttt/ressu/core/app"
+	"github.com/sdttttt/ressu/mygoui/format"
 	guitheme "github.com/sdttttt/ressu/mygoui/theme"
 	appwindow "github.com/sdttttt/ressu/mygoui/window"
 )
@@ -135,6 +137,7 @@ func open(parent *mygo.Window, edit *app.Feed, callbacks Callbacks) {
 // state left over from a previous add or edit draft.
 func (s *addFeedView) applyEdit(feed app.Feed) {
 	s.edit = &feed
+	s.openedAt = time.Now()
 	s.url = feed.URL
 	s.testedURL = feed.URL
 	if feed.RemoteResources != "" {
@@ -163,6 +166,7 @@ type addFeedView struct {
 	callbacks       Callbacks
 	prefs           app.Prefs
 	edit            *app.Feed
+	openedAt        time.Time // reference time for relative health timestamps
 	window          *mygo.Window
 	url             string
 	title           string
@@ -186,6 +190,9 @@ func (s *addFeedView) draw(c *ui.Context) {
 	ui.Themed(c, theme).Fill().Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Padding(20, 24).Children(func() {
 			ui.Form(c, func() {
+				if s.edit != nil {
+					s.drawHealth(c, theme)
+				}
 				ui.Field(c, "订阅地址", func() {
 					if ui.TextInput(c, &s.url).
 						Placeholder("https://example.com/feed.xml").Changed() {
@@ -281,6 +288,35 @@ func (s *addFeedView) draw(c *ui.Context) {
 			}
 		})
 	})
+}
+
+// drawHealth renders the read-only refresh state of the edited feed. The
+// window is a snapshot taken when the edit started, so the relative stamp
+// does not tick while the window stays open.
+func (s *addFeedView) drawHealth(c *ui.Context, theme *ui.Theme) {
+	status, color := "尚未刷新", theme.TextMuted
+	switch {
+	case s.edit.LastFetchedAt == nil:
+	case s.edit.LastError != "":
+		status, color = "上次刷新失败", theme.Danger
+	default:
+		status, color = "正常", theme.Text
+	}
+	ui.Field(c, "状态", func() {
+		ui.Text(c, status).TextColor(color)
+	})
+	if s.edit.LastFetchedAt != nil {
+		fetched := *s.edit.LastFetchedAt
+		ui.Field(c, "上次刷新", func() {
+			ui.Text(c, format.RelativeTime(fetched, s.openedAt)).
+				FontFeatures("tnum").Tooltip(format.DateTime(fetched))
+		})
+	}
+	if s.edit.LastError != "" {
+		ui.Field(c, "错误信息", func() {
+			ui.Text(c, s.edit.LastError).TextColor(theme.Danger)
+		})
+	}
 }
 
 // drawPreview renders the validated subscription metadata.
