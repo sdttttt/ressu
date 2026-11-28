@@ -16,11 +16,11 @@
   },
   "devDependencies": {
     "@solidjs/vite-plugin": "^3.0.1",
-    "@types/node": "^26.6.7",
+    "@types/node": "^26.6.11",
     "mygo-cli": "0.10.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.8",
-    "vitest": "^5.1.1"
+    "vite": "^8.4.0",
+    "vitest": "^5.1.2"
   },
   "dependencies": {
     "@solidjs/web": "^2.0.4",

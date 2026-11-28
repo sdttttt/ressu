@@ -1,6 +1,6 @@
 module github.com/sdttttt/ressu
 
-go 1.27.3
+go 1.27.4
 
 require github.com/sdttttt/ressu/mygoui v0.0.0
 
